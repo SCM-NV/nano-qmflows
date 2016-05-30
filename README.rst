@@ -10,7 +10,7 @@ Installation
 ============
 
 - Clone the packages using the following commands:
-  ``git clone git@github.com:SciSoftTech/nonAdiabaticCoupling.gitt``
+  ``git clone git@github.com:SciSoftTech/nonAdiabaticCoupling.git``
 
 - in the console type: ``pip install .``
 
