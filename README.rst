@@ -10,7 +10,7 @@ Installation
 ============
 
 - Clone the packages using the following commands:
-  ``git clone git@gitlab.pyadf.org:felipeZ/nonAdiabaticCoupling.git``
+  ``git clone git@github.com:SciSoftTech/nonAdiabaticCoupling.gitt``
 
 - in the console type: ``pip install .``
 
