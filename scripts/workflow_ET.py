@@ -4,7 +4,9 @@ __author__ = "Felipe Zapata"
 from collections import namedtuple
 from os.path import join
 
+import fnmatch
 import h5py
+import numpy as np
 import os
 import plams
 
@@ -26,41 +28,6 @@ from workflow_coupling import (calculate_mos, create_dict_CGFs,
 JobFiles = namedtuple("JobFiles", ("get_xyz", "get_inp", "get_out", "get_MO"))
 
 # ==============================> Main <==================================
-
-
-def main():
-    plams.init()
-    project_name = 'NAC'
-
-    # create Settings for the Cp2K Jobs
-    cp2k_args = Settings()
-    cp2k_args.basis = "DZVP-MOLOPT-SR-GTH"
-    cp2k_args.potential = "GTH-PBE"
-    cp2k_args.cell_parameters = [28.0] * 3
-    cp2k_args.specific.cp2k.force_eval.dft.scf.eps_scf = 3e-5
-    cp2k_args.specific.cp2k.force_eval.dft.scf.added_mos = 100
-
-    # Path to the MD geometries
-    path_traj_xyz = "./data/traj_3_points.xyz"
-
-    # HDF5 path
-    scratch_folder = "/scratch-shared"
-    path_hdf5 = generate_hdf5_file(project_name, scratch_folder)
-
-    # Named the points of the MD starting from this number
-    enumerate_from = 0
-
-    # all_geometries type :: [String]
-    geometries = split_file_geometries(path_traj_xyz)
-
-    # Electron Transfer rate calculation
-    
-    # Electron transfer rate computation computation
-    calculate_ETR('cp2k', project_name, geometries, cp2k_args,
-                  path_hdf5=path_hdf5, enumerate_from=enumerate_from)
-
-    print("PATH TO HDF5:{}\n".format(path_hdf5))
-    plams.finish()
 
 
 def generate_hdf5_file(project_name, scratch_folder):
@@ -232,6 +199,106 @@ def create_file_names(work_dir, i):
     return JobFiles(file_xyz, file_inp, file_out, file_MO)
 
 
-# ==============<>========================================
+def parse_population(filePath):
+    """
+    returns a matrix contaning the pop for each time in each row.
+    """
+    with open(filePath, 'r') as f:
+        xss = f.readlines()
+    rss = [[float(x) for i, x in enumerate(l.split())
+            if i % 2 == 1 and i > 2] for l in xss]
+        
+    return np.array(rss)
+
+
+def read_time_dependent_coeffs(path_hdf5, pathProperty, path_pyxaid_out):
+    """
+    
+    :param path_hdf5: Path to the HDF5 file that contains the
+    numerical results.
+    :type path_hdf5: String
+    :param pathProperty: path to the node that contains the time
+    coeffficients.
+    :type pathProperty: String
+    :param path_pyxaid_out: Path to the out of the NA-MD carried out by
+    PYXAID.
+    :type path_pyxaid_out: String
+    :returns: None
+    """
+    # Read output files
+    files_out = os.listdir(path_pyxaid_out)
+    names_out_es, names_out_pop  = [fnmatch.filter(files_out, x) for x
+                                    in ["*energies*", "out*"]]
+    paths_out_es, paths_out_pop = [[join(path_pyxaid_out, x) for x in xs]
+                                   for xs in [names_out_es, names_out_pop]]
+
+    # ess = map(parse_energies, paths_out_es)
+    pss = map(parse_population, paths_out_pop)
+
+    # Make a 3D stack of arrays the calculate the mean value
+    # for the same time
+    # average_es = np.mean(np.stack(ess), axis=0)
+    # average_pop = np.mean(np.stack(pss), axis=0)
+    data = np.mean(np.stack(pss), axis=0)
+
+    with open(path_hdf5) as f5:
+        f5.require_dataset(pathProperty, shape=np.shape(data),
+                           data=data, dtype=np.float32)
+    
+# ==============================> Main <==================================
+
+
+def main():
+    plams.init()
+    project_name = 'NAC'
+
+    # Path to the MD geometries
+    path_traj_xyz = "./data/traj_3_points.xyz"
+
+    # CP2k Configuration
+
+    # create Settings for the Cp2K Jobs
+    cp2k_args = Settings()
+    cp2k_args.basis = "DZVP-MOLOPT-SR-GTH"
+    cp2k_args.potential = "GTH-PBE"
+    cp2k_args.cell_parameters = [28.0] * 3
+    cp2k_args.specific.cp2k.force_eval.dft.scf.eps_scf = 3e-5
+    cp2k_args.specific.cp2k.force_eval.dft.scf.added_mos = 100
+
+    # Work_dir
+    scratch = "/scratch-shared"
+    scratch_path = join(scratch, project_name)
+    if not os.path.exists(scratch_path):
+        os.makedirs(scratch)
+
+    # HDF5 path
+    path_hdf5 = join(scratch_path, 'quantum.hdf5')
+
+    # PYXAID Results
+    pyxaid_out_dir = "./step3/out"
+    pyxaid_macro_dir = "./step3/out"
+
+    # Process PYXAID results
+    pathProperty = FIXME
+    read_time_dependent_coeffs(path_hdf5, pathProperty, path_pyxaid_out)
+
+
+    # Named the points of the MD starting from this number
+    enumerate_from = 0
+
+    # all_geometries type :: [String]
+    geometries = split_file_geometries(path_traj_xyz)
+
+    # Electron Transfer rate calculation
+    
+    # Electron transfer rate computation computation
+    calculate_ETR('cp2k', project_name, geometries, cp2k_args,
+                  path_hdf5=path_hdf5, enumerate_from=enumerate_from)
+
+    print("PATH TO HDF5:{}\n".format(path_hdf5))
+    plams.finish()
+
+# ==============<>=============
+    
 if __name__ == "__main__":
     main()

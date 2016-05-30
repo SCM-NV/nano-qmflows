@@ -15,6 +15,46 @@ import subprocess
 # ==============================> Main <==================================
 
 
+def split_trajectory(path, nBlocks, pathOut):
+    """
+    Split an XYZ trajectory in n Block and write
+    them in a given path.
+
+    :Param path: Path to the XYZ file.
+    :type path: String
+    :param nBlocks: number of Block into which the xyz file is split.
+    :type nBlocks: Int
+    :param pathOut: Path were the block are written.
+    :type pathOut: String
+    :returns: tuple (Number of structures per block, path to blocks)
+    """
+    with open(path, 'r') as f:
+            l = f.readline()  # Read First line
+            numat = int(l.split()[0])
+
+    # Number of lines in the file
+    cmd = "wc -l {}".format(path)
+    l = subprocess.check_output(cmd.split()).decode()
+    lines = int(l.split()[0])
+    # Number of points in the xyz file
+    nPoints = lines // (numat + 2)
+    # Number of points for each chunk
+    nChunks = nPoints // nBlocks
+    # Number of lines per block
+    lines_per_block = nChunks * (numat + 2)
+    # Path where the splitted xyz files are written
+    prefix = join(pathOut, 'chunk_xyz_')
+    cmd = 'split -a 1 -l {} {} {}'.format(lines_per_block, path, prefix)
+    subprocess.run(cmd, shell=True)
+
+    # the unix split command starts naming from 'a' the files created after
+    # splitting
+    lim = ord('a')
+    folders = [prefix + chr(x) for x in range(lim, lim + nChunks)]
+
+    return nChunks, folders
+
+
 def process_arguments(xs):
     """
     Initialize and submit the slurm scripts to compute the derivative coupling.
@@ -35,33 +75,6 @@ def process_arguments(xs):
         else:
             # remove comments
             return xs.split('#')[0]
-
-    def split_trajectory(path, nBlocks, scratch):
-        with open(path, 'r') as f:
-            l = f.readline()  # Read First line
-            numat = int(l.split()[0])
-
-        # Number of lines in the file
-        cmd = "wc -l {}".format(path)
-        l = subprocess.check_output(cmd.split()).decode()
-        lines = int(l.split()[0])
-        # Number of points in the xyz file
-        nPoints = lines // (numat + 2)
-        # Number of points for each chunk
-        nChunks = nPoints // nBlocks
-        # Number of lines per block
-        lines_per_block = nChunks * (numat + 2)
-        # Path where the splitted xyz files are written
-        prefix = join(scratch, 'chunk_xyz_')
-        cmd = 'split -a 1 -l {} {} {}'.format(lines_per_block, path, prefix)
-        subprocess.run(cmd, shell=True)
-
-        # the unix split command starts naming from 'a' the files created after
-        # splitting
-        lim = ord('a')
-        folders = [prefix + chr(x) for x in range(lim, lim + nChunks)]
-        
-        return nChunks, folders
     
     # Create a dictionary with the arguments provided by the user
     ls = filter(lambda x: not x.startswith('#'), xs.splitlines())

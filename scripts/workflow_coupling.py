@@ -335,6 +335,8 @@ def create_file_names(work_dir, i):
 
 # ============<>===============
 
+
+# Example of Workflow
 def main():
     plams.init()
     project_name = 'ET_Pb79S44'

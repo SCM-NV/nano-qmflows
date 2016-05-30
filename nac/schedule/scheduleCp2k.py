@@ -57,7 +57,7 @@ def prepare_cp2k_settings(geometry, files, cp2k_args, k, work_dir,
         wfn_file = list(filter(lambda x: fnmatch.fnmatch(x, '*wfn'), xs))[0]
         file_path = join(output_dir, wfn_file)
         cp2k_args.specific.cp2k.force_eval.dft.wfn_restart_file_name = file_path
-        # cp2k_args.specific.cp2k.force_eval.dft.scf.diagonalization.jacobi_threshold = 1e-6
+        cp2k_args.specific.cp2k.force_eval.dft.scf.diagonalization.jacobi_threshold = 1e-6
     else:
         cp2k_args.specific.cp2k.force_eval.dft.scf.scf_guess = 'atomic'
         cp2k_args.specific.cp2k.force_eval.dft.scf.ot.minimizer = 'DIIS'
