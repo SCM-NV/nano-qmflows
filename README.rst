@@ -2,8 +2,7 @@
 NonAdiabaticCoupling
 ====================
 
-Package to calculate the non-Adiabatic coupling using the approximation described at:
-
+Package to calculate several properties related to the Nonadiabatic behaviour of a molecular system.
 
  
 Installation
