@@ -64,7 +64,8 @@ def prepare_cp2k_settings(geometry, files, cp2k_args, k, work_dir,
         cp2k_args.specific.cp2k.force_eval.dft.scf.ot.n_diis = 7
         cp2k_args.specific.cp2k.force_eval.dft.scf.ot.preconditioner = 'FULL_SINGLE_INVERSE'
         cp2k_args.specific.cp2k.force_eval.dft.scf.added_mos = 0
-
+        cp2k_args.specific.cp2k.force_eval.dft.scf.eps_scf = 5e-06
+        
     with open(files.get_xyz, 'w') as f:
         f.write(geometry)
 
