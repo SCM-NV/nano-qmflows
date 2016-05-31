@@ -41,8 +41,22 @@ def generate_hdf5_file(project_name, scratch_folder):
     return join(scratch, 'quantum.hdf5')
 
 
+def search_data_in_hdf5(path_hdf5, path_to_prop):
+    """
+    Search if the node exists in the HDF5 file.
+    """
+    with h5py.File(path_hdf5, 'r') as f5:
+        if isinstance(paths_to_prop, list):
+            pred = all(path in f5 for path in paths_to_prop)
+        else:
+            pred = paths_to_prop in f5
+
+    return pred
+
+
 def calculate_ETR(package_name, project_name, all_geometries, cp2k_args,
-                  use_wf_guess_each=1, path_hdf5=None, enumerate_from=0):
+                  pathTimeCoeffs=None, initial_conditions=[0],
+                  path_hdf5=None, enumerate_from=0):
     """
     Use a md trajectory to calculate the Electron transfer rate
     nmad.
@@ -94,10 +108,12 @@ def calculate_ETR(package_name, project_name, all_geometries, cp2k_args,
                                        enumerate_from)
 
     # Time-dependent coefficients
-    time_depend_coeffs = FIXME
+    time_depend_coeffs = retrieve_hdf5_data(path_hdf5, pathTimeCoeffs)
     
     # prepare Cp2k Jobs
     # Point calculations Using CP2K
+    use_wf_guess_each = 1  # Use previous restart
+    enumerate_from = 0  # starts naming from 0
     mo_paths_hdf5 = calculate_mos(package_name, all_geometries, work_dir,
                                   path_hdf5, traj_folders, cp2k_args,
                                   use_wf_guess_each, enumerate_from)
@@ -239,7 +255,7 @@ def read_time_dependent_coeffs(path_hdf5, pathProperty, path_pyxaid_out):
     # for the same time
     # average_es = np.mean(np.stack(ess), axis=0)
     # average_pop = np.mean(np.stack(pss), axis=0)
-    data = np.mean(np.stack(pss), axis=0)
+    data = np.stack(pss)
 
     with open(path_hdf5) as f5:
         f5.require_dataset(pathProperty, shape=np.shape(data),
@@ -276,12 +292,10 @@ def main():
 
     # PYXAID Results
     pyxaid_out_dir = "./step3/out"
-    pyxaid_macro_dir = "./step3/out"
 
     # Process PYXAID results
-    pathProperty = FIXME
-    read_time_dependent_coeffs(path_hdf5, pathProperty, path_pyxaid_out)
-
+    pathProperty = join(project_name, "pyxaid/timeCoeffs")
+    read_time_dependent_coeffs(path_hdf5, pathProperty, pyxaid_out_dir)
 
     # Named the points of the MD starting from this number
     enumerate_from = 0
@@ -290,9 +304,12 @@ def main():
     geometries = split_file_geometries(path_traj_xyz)
 
     # Electron Transfer rate calculation
+    pyxaid_initial_cond = [0, 24, 49]
     
     # Electron transfer rate computation computation
     calculate_ETR('cp2k', project_name, geometries, cp2k_args,
+                  pathTimeCoeffs=pathProperty,
+                  initial_conditions=pyxaid_initial_cond,
                   path_hdf5=path_hdf5, enumerate_from=enumerate_from)
 
     print("PATH TO HDF5:{}\n".format(path_hdf5))

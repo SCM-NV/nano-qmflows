@@ -357,7 +357,7 @@ def main():
     scratch = "/scratch-shared"
     scratch_path = join(scratch, project_name)
     if not os.path.exists(scratch_path):
-        os.makedirs(scratch)
+        os.makedirs(scratch_path)
     
     # HDF5 path
     path_hdf5 = join(scratch_path, 'quantum.hdf5')
