@@ -124,8 +124,8 @@ def generate_pyxaid_hamiltonians(package_name, project_name, all_geometries,
 
 
 def calculate_mos(package_name, all_geometries, work_dir, path_hdf5, folders,
-                  package_args, guess_args=None, calc_new_wf_guess_on_points=[0],
-                  enumerate_from=0):
+                  package_args, guess_args=None,
+                  calc_new_wf_guess_on_points=[0], enumerate_from=0):
     """
     Look for the MO in the HDF5 file if they do not exists calculate them by
     splitting the jobs in batches given by the ``restart_chunk`` variables.
@@ -149,7 +149,8 @@ def calculate_mos(package_name, all_geometries, work_dir, path_hdf5, folders,
     :param enumerate_from: Number from where to start enumerating the folders
     create for each point in the MD
     :type enumerate_from: Int
-    :returns: path to nodes in the HDF5 file to MO energies and MO coefficients.
+    :returns: path to nodes in the HDF5 file to MO energies
+    and MO coefficients.
     """
     def create_properties_path(i):
         """
@@ -170,11 +171,14 @@ def calculate_mos(package_name, all_geometries, work_dir, path_hdf5, folders,
             else:
                 pred = paths_to_prop in f5
 
-        return paths_to_prop if pred else  None
+        return paths_to_prop if pred else None
+
+    path_to_orbitals = [] # list to the nodes in the HDF5 containing the MOs
+
+    # First calculation has no initial guess
+    old_guess, guess_job = None, None
 
     # calculate the rest of the job using the previous point as initial guess
-    path_to_orbitals = []
-    old_guess, guess_job = None, None
     for j, gs in enumerate(all_geometries):
         k = j + enumerate_from
         if k in calc_new_wf_guess_on_points:
