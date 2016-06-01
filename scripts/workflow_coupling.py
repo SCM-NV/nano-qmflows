@@ -357,9 +357,9 @@ def main():
 
     # Setting to calculate the WF use as guess
     cp2k_OT = Settings()
-    cp2k_args.basis = "DZVP-MOLOPT-SR-GTH"
-    cp2k_args.potential = "GTH-PBE"
-    cp2k_args.cell_parameters = [50.0] * 3
+    cp2k_OT.basis = "DZVP-MOLOPT-SR-GTH"
+    cp2k_OT.potential = "GTH-PBE"
+    cp2k_OT.cell_parameters = [50.0] * 3
     cp2k_OT.specific.cp2k.force_eval.dft.scf.scf_guess = 'atomic'
     cp2k_OT.specific.cp2k.force_eval.dft.scf.ot.minimizer = 'DIIS'
     cp2k_OT.specific.cp2k.force_eval.dft.scf.ot.n_diis = 7
@@ -390,7 +390,7 @@ def main():
 
     # Hamiltonian computation
     generate_pyxaid_hamiltonians('cp2k', project_name, geometries, cp2k_args,
-                                 setting_guess=cp2k_OT,
+                                 guess_args=cp2k_OT,
                                  calc_new_wf_guess_on_points=pointsGuess,
                                  path_hdf5=path_hdf5,
                                  enumerate_from=enumerate_from)
