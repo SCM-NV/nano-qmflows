@@ -32,7 +32,8 @@ JobFiles = namedtuple("JobFiles", ("get_xyz", "get_inp", "get_out", "get_MO"))
 
 
 def generate_pyxaid_hamiltonians(package_name, project_name, all_geometries,
-                                 cp2k_args, calc_new_wf_guess_on_points=[0],
+                                 cp2k_args, guess_args=None,
+                                 calc_new_wf_guess_on_points=[0],
                                  path_hdf5=None, enumerate_from=0):
     """
     Use a md trajectory to generate the hamiltonian components to tun PYXAID
@@ -88,7 +89,7 @@ def generate_pyxaid_hamiltonians(package_name, project_name, all_geometries,
     # Point calculations Using CP2K
     mo_paths_hdf5 = calculate_mos(package_name, all_geometries, work_dir,
                                   path_hdf5, traj_folders, cp2k_args,
-                                  calc_new_wf_guess_on_points,
+                                  guess_args, calc_new_wf_guess_on_points,
                                   enumerate_from)
 
     # Calculate Non-Adiabatic Coupling
@@ -123,7 +124,7 @@ def generate_pyxaid_hamiltonians(package_name, project_name, all_geometries,
 
 
 def calculate_mos(package_name, all_geometries, work_dir, path_hdf5, folders,
-                  package_args, calc_new_wf_guess_on_points=[0],
+                  package_args, guess_args=None, calc_new_wf_guess_on_points=[0],
                   enumerate_from=0):
     """
     Look for the MO in the HDF5 file if they do not exists calculate them by
@@ -181,10 +182,9 @@ def calculate_mos(package_name, all_geometries, work_dir, path_hdf5, folders,
     for j, gs in enumerate(all_geometries):
         k = j + enumerate_from
         if k in calc_new_wf_guess_on_points:
-            guess_job = call_schedule_qm(package_name, package_args,
-                                         path_hdf5, point_dir, job_files,
-                                         k, all_geometries[k],
-                                         guess_job=guess_job,
+            guess_job = call_schedule_qm(package_name, guess_args, path_hdf5,
+                                         point_dir, job_files, k,
+                                         all_geometries[k], guess_job=guess_job,
                                          store_in_hdf5=False)
         point_dir = folders[j]
         job_files = create_file_names(point_dir, k)
@@ -353,7 +353,19 @@ def main():
     cp2k_args.potential = "GTH-PBE"
     cp2k_args.cell_parameters = [50.0] * 3
     cp2k_args.specific.cp2k.force_eval.dft.scf.added_mos = 100
-    # cp2k_args.specific.cp2k.force_eval.dft.scf.diagonalization.jacobi_threshold = 1e-6
+    cp2k_args.specific.cp2k.force_eval.dft.scf.diagonalization.jacobi_threshold = 1e-6
+
+    # Setting to calculate the WF use as guess
+    cp2k_OT = Settings()
+    cp2k_args.basis = "DZVP-MOLOPT-SR-GTH"
+    cp2k_args.potential = "GTH-PBE"
+    cp2k_args.cell_parameters = [50.0] * 3
+    cp2k_OT.specific.cp2k.force_eval.dft.scf.scf_guess = 'atomic'
+    cp2k_OT.specific.cp2k.force_eval.dft.scf.ot.minimizer = 'DIIS'
+    cp2k_OT.specific.cp2k.force_eval.dft.scf.ot.n_diis = 7
+    cp2k_OT.specific.cp2k.force_eval.dft.scf.ot.preconditioner = 'FULL_SINGLE_INVERSE'
+    cp2k_OT.specific.cp2k.force_eval.dft.scf.added_mos = 0
+    cp2k_OT.specific.cp2k.force_eval.dft.scf.eps_scf = 5e-06
 
     # Path to the MD geometries
     path_traj_xyz = "./trajectory_4000-5000.xyz"
@@ -363,7 +375,7 @@ def main():
     scratch_path = join(scratch, project_name)
     if not os.path.exists(scratch_path):
         os.makedirs(scratch_path)
-    
+
     # HDF5 path
     path_hdf5 = join(scratch_path, 'quantum.hdf5')
 
@@ -375,9 +387,10 @@ def main():
 
     # Calculate new Guess in each Geometry
     pointsGuess = [enumerate_from + i for i in range(len(geometries))]
-    
+
     # Hamiltonian computation
     generate_pyxaid_hamiltonians('cp2k', project_name, geometries, cp2k_args,
+                                 setting_guess=cp2k_OT,
                                  calc_new_wf_guess_on_points=pointsGuess,
                                  path_hdf5=path_hdf5,
                                  enumerate_from=enumerate_from)
