@@ -32,7 +32,7 @@ JobFiles = namedtuple("JobFiles", ("get_xyz", "get_inp", "get_out", "get_MO"))
 
 
 def generate_pyxaid_hamiltonians(package_name, project_name, all_geometries,
-                                 cp2k_args, use_wf_guess_each=1,
+                                 cp2k_args, calc_new_wf_guess_on_points=[0],
                                  path_hdf5=None, enumerate_from=0):
     """
     Use a md trajectory to generate the hamiltonian components to tun PYXAID
@@ -88,7 +88,8 @@ def generate_pyxaid_hamiltonians(package_name, project_name, all_geometries,
     # Point calculations Using CP2K
     mo_paths_hdf5 = calculate_mos(package_name, all_geometries, work_dir,
                                   path_hdf5, traj_folders, cp2k_args,
-                                  use_wf_guess_each, enumerate_from)
+                                  calc_new_wf_guess_on_points,
+                                  enumerate_from)
 
     # Calculate Non-Adiabatic Coupling
     # Number of Coupling points calculated with the MD trajectory
@@ -122,7 +123,8 @@ def generate_pyxaid_hamiltonians(package_name, project_name, all_geometries,
 
 
 def calculate_mos(package_name, all_geometries, work_dir, path_hdf5, folders,
-                  package_args, use_wf_guess_each, enumerate_from):
+                  package_args, calc_new_wf_guess_on_points=[0],
+                  enumerate_from=0):
     """
     Look for the MO in the HDF5 file if they do not exists calculate them by
     splitting the jobs in batches given by the ``restart_chunk`` variables.
@@ -139,8 +141,10 @@ def calculate_mos(package_name, all_geometries, work_dir, path_hdf5, folders,
     :type path_hdf5: String
     :param folders: path to the directories containing the MO outputs
     :type folders: String list
-    :param use_wf_guess_each: number of Computations that used a previous
-    calculation as guess for the wave function.
+    :param calc_new_wf_guess_on_points: Calculate a new Wave function guess in
+    each of the geometries indicated. By Default only an initial guess is
+    computed.
+    :type calc_new_wf_guess_on_points: [Int]
     :param enumerate_from: Number from where to start enumerating the folders
     create for each point in the MD
     :type enumerate_from: Int
@@ -172,14 +176,16 @@ def calculate_mos(package_name, all_geometries, work_dir, path_hdf5, folders,
     # Calculating initial guess
     point_dir = folders[0]
     job_files = create_file_names(point_dir, 0)
-    gs_0 = all_geometries[0]
-    guess_job = call_schedule_qm(package_name, package_args,
-                                 path_hdf5, point_dir, job_files,
-                                 0, gs_0, None, store_in_hdf5=False)
-
     # calculate the rest of the job using the previous point as initial guess
+    guess_job = None
     for j, gs in enumerate(all_geometries):
         k = j + enumerate_from
+        if k in calc_new_wf_guess_on_points:
+            guess_job = call_schedule_qm(package_name, package_args,
+                                         path_hdf5, point_dir, job_files,
+                                         k, all_geometries[k],
+                                         guess_job=guess_job,
+                                         store_in_hdf5=False)
         point_dir = folders[j]
         job_files = create_file_names(point_dir, k)
         paths_to_prop = search_data_in_hdf5(k)
@@ -346,7 +352,6 @@ def main():
     cp2k_args.basis = "DZVP-MOLOPT-SR-GTH"
     cp2k_args.potential = "GTH-PBE"
     cp2k_args.cell_parameters = [50.0] * 3
-    cp2k_args.specific.cp2k.force_eval.dft.scf.eps_scf = 3e-5
     cp2k_args.specific.cp2k.force_eval.dft.scf.added_mos = 100
     # cp2k_args.specific.cp2k.force_eval.dft.scf.diagonalization.jacobi_threshold = 1e-6
 
@@ -368,8 +373,12 @@ def main():
     # Named the points of the MD starting from this number
     enumerate_from = 0
 
+    # Calculate new Guess in each Geometry
+    pointsGuess = [enumerate_from + i for i in range(len(geometries))]
+    
     # Hamiltonian computation
     generate_pyxaid_hamiltonians('cp2k', project_name, geometries, cp2k_args,
+                                 calc_new_wf_guess_on_points=pointsGuess,
                                  path_hdf5=path_hdf5,
                                  enumerate_from=enumerate_from)
 
