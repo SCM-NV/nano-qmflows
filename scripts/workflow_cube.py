@@ -12,15 +12,13 @@ from qmworks.utils import concatMap
 # =====================================<>======================================
 
 
-
-
 def calculateGrid(timeCoeffs, mo, center=(0, 0, 0), nPoints=(80, 80, 80),
                   nmin=None, nmax=None):
     """
     """
 
 
-def read_cube_file(path_to_cube, numat):
+def read_cube_file(path_to_cube):
     """
     Read a cube files and return the array together with the grid
     parameters.
@@ -28,16 +26,29 @@ def read_cube_file(path_to_cube, numat):
     :param path_to_cube: path to the cube file to read
     :type path_to_cube: String
     """
+    def read_int_list_float(xs, n):
+        line = head[n].split()
+        i = int(line[0])
+        floats = list(map(float), line[1:])
+
+        return i, floats
+
     with open(path_to_cube, 'r') as f:
         head = [next(f) for i in range(6)]
     # There are 2 initial lines cotaining comments.
     # Then one line cotaining the grid center and finally
-    # 3 lines with the number of voxels and the axis vector. 
-    num_lines = numat + 6  # 
-    np.loadtxt(path_to_cube, skiprows=num_lines)
+    # 3 lines with the number of voxels and the axis vector.
+    numat, center = read_int_list_float(head, 2)
+    xStep, xvector = read_int_list_float(head, 3)
+    yStep, yvector = read_int_list_float(head, 4)
+    zStep, zvector = read_int_list_float(head, 5)
+
+    # read grid using numpy
+    num_lines = numat + 6
+    arr = np.loadtxt(path_to_cube, skiprows=num_lines)
 
 
-    def write_cube_file(center, coordinates, grid_spec, arr):
+def write_cube_file(center, coordinates, grid_spec, arr):
     """
     Write some density using the cubefile format
     :param center: Center of the grid
