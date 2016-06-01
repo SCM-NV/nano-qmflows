@@ -1,15 +1,43 @@
 __author__ = "Felipe Zapata"
 
+
+import numpy as np
+
 # ==================> Internal modules <==========
 from noodles import gather
 from qmworks import run
 from qmworks.utils import concatMap
 
 
-# ==================<>====================
+# =====================================<>======================================
 
 
-def write_cube_file(center, coordinates, grid_spec, arr):
+
+
+def calculateGrid(timeCoeffs, mo, center=(0, 0, 0), nPoints=(80, 80, 80),
+                  nmin=None, nmax=None):
+    """
+    """
+
+
+def read_cube_file(path_to_cube, numat):
+    """
+    Read a cube files and return the array together with the grid
+    parameters.
+
+    :param path_to_cube: path to the cube file to read
+    :type path_to_cube: String
+    """
+    with open(path_to_cube, 'r') as f:
+        head = [next(f) for i in range(6)]
+    # There are 2 initial lines cotaining comments.
+    # Then one line cotaining the grid center and finally
+    # 3 lines with the number of voxels and the axis vector. 
+    num_lines = numat + 6  # 
+    np.loadtxt(path_to_cube, skiprows=num_lines)
+
+
+    def write_cube_file(center, coordinates, grid_spec, arr):
     """
     Write some density using the cubefile format
     :param center: Center of the grid
