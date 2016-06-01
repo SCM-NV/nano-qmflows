@@ -172,22 +172,20 @@ def calculate_mos(package_name, all_geometries, work_dir, path_hdf5, folders,
 
         return paths_to_prop if pred else  None
 
-    path_to_orbitals = []
-
-    # Calculating initial guess
-    point_dir = folders[0]
-    job_files = create_file_names(point_dir, 0)
     # calculate the rest of the job using the previous point as initial guess
+    path_to_orbitals = []
     old_guess, guess_job = None, None
     for j, gs in enumerate(all_geometries):
         k = j + enumerate_from
         if k in calc_new_wf_guess_on_points:
+            point_dir = folders[j]
+            job_files = create_file_names(point_dir, k)
+            # Calculating initial guess
             guess_job = call_schedule_qm(package_name, guess_args, path_hdf5,
                                          point_dir, job_files, k,
-                                         all_geometries[k], guess_job=old_guess,
+                                         gs, guess_job=old_guess,
                                          store_in_hdf5=False)
-        point_dir = folders[j]
-        job_files = create_file_names(point_dir, k)
+
         paths_to_prop = search_data_in_hdf5(k)
 
         # If the MOs are already store in the HDF5 format return the path
