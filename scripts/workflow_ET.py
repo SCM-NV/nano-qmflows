@@ -10,22 +10,16 @@ import numpy as np
 import os
 import plams
 
-# ==================> Internal modules <==========
+# ==============================> Internal modules <===========================
+from .components import (calculate_mos, create_dict_CGFs, create_point_folder,
+                         split_file_geometries)
 from nac.common import retrieve_hdf5_data
 from nac.schedule.scheduleCoupling import schedule_transf_matrix
 from nac.integrals.electronTransfer import photoExcitationRate
-from noodles import (gather, schedule)
-
+from noodles import gather
 from qmworks import run, Settings
-from qmworks.common import AtomXYZ
 from qmworks.parsers import parse_string_xyz
-from qmworks.utils import chunksOf, flatten
-
-from workflow_coupling import (calculate_mos, create_dict_CGFs,
-                               create_point_folder)
-# ==============================<>=========================
-# Tuple contanining file paths
-JobFiles = namedtuple("JobFiles", ("get_xyz", "get_inp", "get_out", "get_MO"))
+from qmworks.utils import flatten
 
 # ==============================> Main <==================================
 
@@ -46,10 +40,10 @@ def search_data_in_hdf5(path_hdf5, path_to_prop):
     Search if the node exists in the HDF5 file.
     """
     with h5py.File(path_hdf5, 'r') as f5:
-        if isinstance(paths_to_prop, list):
-            pred = all(path in f5 for path in paths_to_prop)
+        if isinstance(path_to_prop, list):
+            pred = all(path in f5 for path in path_to_prop)
         else:
-            pred = paths_to_prop in f5
+            pred = path_to_prop in f5
 
     return pred
 
@@ -110,7 +104,7 @@ def calculate_ETR(package_name, project_name, all_geometries, cp2k_args,
     # Time-dependent coefficients
     time_depend_coeffs = retrieve_hdf5_data(path_hdf5, pathTimeCoeffs)
     
-    # prepare Cp2k Jobs
+    # prepare Cp2k Job
     # Point calculations Using CP2K
     use_wf_guess_each = 1  # Use previous restart
     enumerate_from = 0  # starts naming from 0
@@ -183,36 +177,6 @@ def schedule_photoexcitation(i, path_hdf5, dictCGFs, all_geometries,
     
     return photoExcitationRate(geometries, dictCGFs, time_coeffs, mos,
                                trans_mtx=trans_mtx)
-
-
-def split_file_geometries(pathXYZ):
-    """
-    Reads a set of molecular geometries in xyz format and returns
-    a list of string, where is element a molecular geometry
-    
-    :returns: String list containing the molecular geometries.
-    """
-    # Read Cartesian Coordinates
-    with open(pathXYZ) as f:
-        xss = f.readlines()
-
-    numat = int(xss[0].split()[0])
-    return list(map(flatten, chunksOf(xss, numat + 2)))
-
-
-def create_file_names(work_dir, i):
-    """
-    Creates a namedTuple with the name of the 4 files used
-    for each point in the trajectory
-    
-    :returns: Namedtuple containing the IO files
-    """
-    file_xyz = join(work_dir, 'coordinates_{}.xyz'.format(i))
-    file_inp = join(work_dir, 'point_{}.inp'.format(i))
-    file_out = join(work_dir, 'point_{}.out'.format(i))
-    file_MO = join(work_dir, 'mo_coeff_{}.out'.format(i))
-
-    return JobFiles(file_xyz, file_inp, file_out, file_MO)
 
 
 def parse_population(filePath):
