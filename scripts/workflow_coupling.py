@@ -6,7 +6,7 @@ import os
 import plams
 
 # ==================> Internal modules <==========
-from .components import (calculate_mos, create_dict_CGFs, create_point_folder,
+from components import (calculate_mos, create_dict_CGFs, create_point_folder,
                          split_file_geometries)
 from noodles import gather, schedule
 

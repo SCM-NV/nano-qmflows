@@ -26,7 +26,8 @@ JobFiles = namedtuple("JobFiles", ("get_xyz", "get_inp", "get_out", "get_MO"))
 
 def calculate_mos(package_name, all_geometries, work_dir, path_hdf5, folders,
                   package_args, guess_args=None,
-                  calc_new_wf_guess_on_points=[0], enumerate_from=0):
+                  calc_new_wf_guess_on_points=[0], enumerate_from=0,
+                  nHOMOS=100, nLUMOS=100):
     """
     Look for the MO in the HDF5 file if they do not exists calculate them by
     splitting the jobs in batches given by the ``restart_chunk`` variables.
@@ -82,9 +83,9 @@ def calculate_mos(package_name, all_geometries, work_dir, path_hdf5, folders,
     # calculate the rest of the job using the previous point as initial guess
     for j, gs in enumerate(all_geometries):
         k = j + enumerate_from
+        point_dir = folders[j]
+        job_files = create_file_names(point_dir, k)
         if k in calc_new_wf_guess_on_points:
-            point_dir = folders[j]
-            job_files = create_file_names(point_dir, k)
             # Calculating initial guess
             guess_job = call_schedule_qm(package_name, guess_args, path_hdf5,
                                          point_dir, job_files, k,
@@ -100,7 +101,7 @@ def calculate_mos(package_name, all_geometries, work_dir, path_hdf5, folders,
         else:
             promise_qm = call_schedule_qm(package_name, package_args,
                                           path_hdf5, point_dir, job_files,
-                                          k, gs, guess_job)
+                                          k, gs, guess_job, nHOMOS, nLUMOS)
             path_to_orbitals.append(promise_qm.orbitals)
             old_guess = promise_qm
 
@@ -108,7 +109,7 @@ def calculate_mos(package_name, all_geometries, work_dir, path_hdf5, folders,
 
 
 def call_schedule_qm(packageName, package_args, path_hdf5, point_dir,
-                     job_files, k, geometry, guess_job=None,
+                     job_files, k, geometry, nHOMOS, nLUMOS, guess_job=None,
                      store_in_hdf5=True):
     """
     Call an external computational chemistry software to do some calculations
@@ -128,13 +129,19 @@ def call_schedule_qm(packageName, package_args, path_hdf5, point_dir,
     :type k: Int
     :param geometry: Molecular geometry
     :type geometry: String
+    :param nHOMOS: number of HOMOS to store in HDF5.
+    :type nHOMOS: Int
+    :param nLUMOS: number of HOMOS to store in HDF5.
+    :type nLUMOS: Int
+    :returns: promise QMWORK
     """
     prepare_and_schedule = {'cp2k': prepare_job_cp2k}
-    
+
     job = prepare_and_schedule[packageName](geometry, job_files, package_args, k,
                                             point_dir, hdf5_file=path_hdf5,
                                             wfn_restart_job=guess_job,
-                                            store_in_hdf5=store_in_hdf5)
+                                            store_in_hdf5=store_in_hdf5,
+                                            nHOMOS=nHOMOS, nLUMOS=nLUMOS)
 
     return job
 
@@ -151,7 +158,7 @@ def create_point_folder(work_dir, n, enumerate_from):
         if not os.path.exists(new_dir):
             os.makedirs(new_dir)
         folders.append(new_dir)
-    
+
     return folders
 
 
