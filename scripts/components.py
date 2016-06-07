@@ -78,7 +78,7 @@ def calculate_mos(package_name, all_geometries, work_dir, path_hdf5, folders,
     path_to_orbitals = []  # list to the nodes in the HDF5 containing the MOs
 
     # First calculation has no initial guess
-    old_guess, guess_job = None, None
+    guess_job = None
 
     # calculate the rest of the job using the previous point as initial guess
     for j, gs in enumerate(all_geometries):
@@ -88,8 +88,8 @@ def calculate_mos(package_name, all_geometries, work_dir, path_hdf5, folders,
         if k in calc_new_wf_guess_on_points:
             # Calculating initial guess
             guess_job = call_schedule_qm(package_name, guess_args, path_hdf5,
-                                         point_dir, job_files, k,
-                                         gs, guess_job=old_guess,
+                                         point_dir, job_files, k, gs, nHOMOS,
+                                         nLUMOS, guess_job=guess_job,
                                          store_in_hdf5=False)
 
         paths_to_prop = search_data_in_hdf5(k)
@@ -101,9 +101,10 @@ def calculate_mos(package_name, all_geometries, work_dir, path_hdf5, folders,
         else:
             promise_qm = call_schedule_qm(package_name, package_args,
                                           path_hdf5, point_dir, job_files,
-                                          k, gs, guess_job, nHOMOS, nLUMOS)
+                                          k, gs, nHOMOS, nLUMOS,
+                                          guess_job=guess_job)
             path_to_orbitals.append(promise_qm.orbitals)
-            old_guess = promise_qm
+            guess_job = promise_qm
 
     return gather(*path_to_orbitals)
 
@@ -137,8 +138,8 @@ def call_schedule_qm(packageName, package_args, path_hdf5, point_dir,
     """
     prepare_and_schedule = {'cp2k': prepare_job_cp2k}
 
-    job = prepare_and_schedule[packageName](geometry, job_files, package_args, k,
-                                            point_dir, hdf5_file=path_hdf5,
+    job = prepare_and_schedule[packageName](geometry, job_files, package_args,
+                                            k, point_dir, hdf5_file=path_hdf5,
                                             wfn_restart_job=guess_job,
                                             store_in_hdf5=store_in_hdf5,
                                             nHOMOS=nHOMOS, nLUMOS=nLUMOS)
