@@ -72,7 +72,8 @@ def prepare_cp2k_settings(geometry, files, cp2k_args, k, work_dir,
 
 @schedule
 def prepare_job_cp2k(geometry, files, dict_input, k, work_dir, hdf5_file=None,
-                     wfn_restart_job=None, store_in_hdf5=True):
+                     wfn_restart_job=None, store_in_hdf5=True, nHOMOS=100,
+                     nLUMOS=100):
     """
     Fills in the parameters for running a single job in CP2K.
 
@@ -94,6 +95,10 @@ def prepare_job_cp2k(geometry, files, dict_input, k, work_dir, hdf5_file=None,
     :type wfn_restart_job: String
     :param farming_use_guess: Use a guess for the WF using a previous job.
     :type farming_use_guess: Bool
+    :param nHOMOS: number of HOMOS to store in HDF5.
+    :type nHOMOS: Int
+    :param nLUMOS: number of HOMOS to store in HDF5.
+    :type nLUMOS: Int
     :returns: ~qmworks.CP2K
     """
     job_settings = prepare_cp2k_settings(geometry, files, dict_input, k, work_dir,
@@ -101,7 +106,8 @@ def prepare_job_cp2k(geometry, files, dict_input, k, work_dir, hdf5_file=None,
 
     return cp2k(job_settings, plams.Molecule(files.get_xyz), work_dir=work_dir,
                 hdf5_file=hdf5_file, input_file_name=files.get_inp,
-                out_file_name=files.get_out, store_in_hdf5=store_in_hdf5)
+                out_file_name=files.get_out, store_in_hdf5=store_in_hdf5,
+                nHOMOS=nHOMOS, nLUMOS=nLUMOS)
 
 
 def prepare_farming_cp2k_settings(work_dirs, input_file_names, nGroups=1):
