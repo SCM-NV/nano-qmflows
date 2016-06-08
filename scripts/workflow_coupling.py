@@ -193,7 +193,7 @@ def main():
     home = os.path.expanduser('~')
 
     # Cp2k
-    basiscp2k = join(home, "Cp2k/cp2k_basis/BASIS_MOLOP")
+    basiscp2k = join(home, "Cp2k/cp2k_basis/BASIS_MOLOPT")
     potcp2k = join(home, "Cp2k/cp2k_basis/GTH_POTENTIALS")
     cp2k_config = {"basis": basiscp2k, "potential": potcp2k}
 

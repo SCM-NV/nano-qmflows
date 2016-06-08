@@ -89,7 +89,8 @@ def calculate_mos(package_name, all_geometries, work_dir, path_hdf5, folders,
             guess_job = call_schedule_qm(package_name, guess_args, path_hdf5,
                                          point_dir, job_files, k, gs, nHOMOS,
                                          nLUMOS, guess_job=guess_job,
-                                         store_in_hdf5=False)
+                                         store_in_hdf5=False,
+                                         package_config=package_config)
 
         paths_to_prop = search_data_in_hdf5(k)
 
