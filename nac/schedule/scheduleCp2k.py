@@ -10,14 +10,13 @@ import plams
 
 # ==================> Internal modules <==========
 from qmworks import Settings, templates
-from qmworks.fileFunctions import search_environ_var
 from qmworks.packages import cp2k
 
 # ==============================> Schedule Tasks <=========================
 
 
 def prepare_cp2k_settings(geometry, files, cp2k_args, k, work_dir,
-                          wfn_restart_job, store_in_hdf5):
+                          wfn_restart_job, store_in_hdf5, cp2k_config):
     """
     Fills in the parameters for running a single job in CP2K.
 
@@ -37,13 +36,15 @@ def prepare_cp2k_settings(geometry, files, cp2k_args, k, work_dir,
     :param store_in_hdf5: Wether or not the numerical result are store in HDF5.
     numerical results.
     :type store_in_hdf5: Bool
+    :param cp2k_config:  Parameters required by cp2k.
+    :type cp2k_config: Dict
    :returns: ~qmworks.Settings
     """
     # Search for the environmental variable BASISCP2K containing the path
     # to the Basis set folder
 
-    basis_file = search_environ_var('BASISCP2K')
-    potential_file = search_environ_var('POTENTIALCP2K')
+    basis_file = cp2k_config["basis"]
+    potential_file = cp2k_config["potential"]
 
     cp2k_args.specific.cp2k.force_eval.dft.basis_set_file_name = basis_file
     cp2k_args.specific.cp2k.force_eval.dft.potential_file_name = potential_file
@@ -73,7 +74,7 @@ def prepare_cp2k_settings(geometry, files, cp2k_args, k, work_dir,
 @schedule
 def prepare_job_cp2k(geometry, files, dict_input, k, work_dir, hdf5_file=None,
                      wfn_restart_job=None, store_in_hdf5=True, nHOMOS=100,
-                     nLUMOS=100):
+                     nLUMOS=100, package_config=None):
     """
     Fills in the parameters for running a single job in CP2K.
 
@@ -102,7 +103,8 @@ def prepare_job_cp2k(geometry, files, dict_input, k, work_dir, hdf5_file=None,
     :returns: ~qmworks.CP2K
     """
     job_settings = prepare_cp2k_settings(geometry, files, dict_input, k, work_dir,
-                                         wfn_restart_job, store_in_hdf5)
+                                         wfn_restart_job, store_in_hdf5,
+                                         cp2k_config)
 
     return cp2k(job_settings, plams.Molecule(files.get_xyz), work_dir=work_dir,
                 hdf5_file=hdf5_file, input_file_name=files.get_inp,

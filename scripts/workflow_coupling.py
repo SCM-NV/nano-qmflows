@@ -7,7 +7,7 @@ import plams
 
 # ==================> Internal modules <==========
 from components import (calculate_mos, create_dict_CGFs, create_point_folder,
-                         split_file_geometries)
+                        split_file_geometries)
 from noodles import gather, schedule
 
 from qmworks import run, Settings
@@ -22,7 +22,8 @@ from nac.schedule.scheduleCoupling import (lazy_schedule_couplings,
 def generate_pyxaid_hamiltonians(package_name, project_name, all_geometries,
                                  cp2k_args, guess_args=None,
                                  calc_new_wf_guess_on_points=[0],
-                                 path_hdf5=None, enumerate_from=0):
+                                 path_hdf5=None, enumerate_from=0,
+                                 package_config=None):
     """
     Use a md trajectory to generate the hamiltonian components to tun PYXAID
     nmad.
@@ -43,6 +44,8 @@ def generate_pyxaid_hamiltonians(package_name, project_name, all_geometries,
     :param enumerate_from: Number from where to start enumerating the folders
     create for each point in the MD
     :type enumerate_from: Int
+    :param package_config: Parameters required by the Package.
+    :type package_config: Dict
     :returns: None
     """
     #  Environmental Variables
@@ -61,7 +64,7 @@ def generate_pyxaid_hamiltonians(package_name, project_name, all_geometries,
     # and the coordinates to generate
     # the primitive CGFs
     atoms = parse_string_xyz(all_geometries[0])
-    dictCGFs = create_dict_CGFs(path_hdf5, basisName, atoms)
+    dictCGFs = create_dict_CGFs(path_hdf5, basisName, atoms, package_config)
 
     # Calculcate the matrix to transform from cartesian to spherical
     # representation of the overlap matrix
@@ -78,7 +81,7 @@ def generate_pyxaid_hamiltonians(package_name, project_name, all_geometries,
     mo_paths_hdf5 = calculate_mos(package_name, all_geometries, work_dir,
                                   path_hdf5, traj_folders, cp2k_args,
                                   guess_args, calc_new_wf_guess_on_points,
-                                  enumerate_from)
+                                  enumerate_from, package_config)
 
     # Calculate Non-Adiabatic Coupling
     # Number of Coupling points calculated with the MD trajectory
@@ -186,6 +189,14 @@ def main():
     if not os.path.exists(scratch_path):
         os.makedirs(scratch_path)
 
+    # HOME definition
+    home = os.path.expanduser('~')
+
+    # Cp2k
+    basiscp2k = join(home, "Cp2k/cp2k_basis/BASIS_MOLOP")
+    potcp2k = join(home, "Cp2k/cp2k_basis/GTH_POTENTIALS")
+    cp2k_config = {"basis": basiscp2k, "potential": potcp2k}
+
     # HDF5 path
     path_hdf5 = join(scratch_path, 'quantum.hdf5')
 
@@ -203,7 +214,8 @@ def main():
                                  guess_args=cp2k_OT,
                                  calc_new_wf_guess_on_points=pointsGuess,
                                  path_hdf5=path_hdf5,
-                                 enumerate_from=enumerate_from)
+                                 enumerate_from=enumerate_from,
+                                 package_config=cp2k_config)
 
     print("PATH TO HDF5:{}\n".format(path_hdf5))
     plams.finish()

@@ -11,7 +11,6 @@ import os
 # ==================> Internal modules <==========
 from nac.basisSet.basisNormalization import createNormalizedCGFs
 from nac.schedule.scheduleCp2k import prepare_job_cp2k
-from qmworks.fileFunctions import search_environ_var
 from qmworks.common import InputKey
 from qmworks.hdf5.quantumHDF5 import cp2k2hdf5
 from qmworks.utils import chunksOf, flatten
@@ -27,7 +26,7 @@ JobFiles = namedtuple("JobFiles", ("get_xyz", "get_inp", "get_out", "get_MO"))
 def calculate_mos(package_name, all_geometries, work_dir, path_hdf5, folders,
                   package_args, guess_args=None,
                   calc_new_wf_guess_on_points=[0], enumerate_from=0,
-                  nHOMOS=100, nLUMOS=100):
+                  nHOMOS=100, nLUMOS=100, package_config):
     """
     Look for the MO in the HDF5 file if they do not exists calculate them by
     splitting the jobs in batches given by the ``restart_chunk`` variables.
@@ -102,7 +101,8 @@ def calculate_mos(package_name, all_geometries, work_dir, path_hdf5, folders,
             promise_qm = call_schedule_qm(package_name, package_args,
                                           path_hdf5, point_dir, job_files,
                                           k, gs, nHOMOS, nLUMOS,
-                                          guess_job=guess_job)
+                                          guess_job=guess_job,
+                                          package_config=package_config)
             path_to_orbitals.append(promise_qm.orbitals)
             guess_job = promise_qm
 
@@ -111,7 +111,7 @@ def calculate_mos(package_name, all_geometries, work_dir, path_hdf5, folders,
 
 def call_schedule_qm(packageName, package_args, path_hdf5, point_dir,
                      job_files, k, geometry, nHOMOS, nLUMOS, guess_job=None,
-                     store_in_hdf5=True):
+                     store_in_hdf5=True, package_config=None):
     """
     Call an external computational chemistry software to do some calculations
 
@@ -134,6 +134,8 @@ def call_schedule_qm(packageName, package_args, path_hdf5, point_dir,
     :type nHOMOS: Int
     :param nLUMOS: number of HOMOS to store in HDF5.
     :type nLUMOS: Int
+    :param package_config: Parameters required by the Package.
+    :type package_config: Dict
     :returns: promise QMWORK
     """
     prepare_and_schedule = {'cp2k': prepare_job_cp2k}
@@ -142,7 +144,8 @@ def call_schedule_qm(packageName, package_args, path_hdf5, point_dir,
                                             k, point_dir, hdf5_file=path_hdf5,
                                             wfn_restart_job=guess_job,
                                             store_in_hdf5=store_in_hdf5,
-                                            nHOMOS=nHOMOS, nLUMOS=nLUMOS)
+                                            nHOMOS=nHOMOS, nLUMOS=nLUMOS,
+                                            package_config=package_config)
 
     return job
 
@@ -178,7 +181,7 @@ def split_file_geometries(pathXYZ):
     return list(map(flatten, chunksOf(xss, numat + 2)))
 
 
-def create_dict_CGFs(path_hdf5, basisname, xyz):
+def create_dict_CGFs(path_hdf5, basisname, xyz, package_config=None):
     """
     FIXME: Extended to other QM packages
     If the Cp2k Basis are already stored in the hdf5 file continue,
@@ -190,7 +193,8 @@ def create_dict_CGFs(path_hdf5, basisname, xyz):
             f5["cp2k/basis"]
         except KeyError:
             # Search Path to the file containing the basis set
-            pathBasis = search_environ_var('BASISCP2K')
+            # pathBasis = search_environ_var('BASISCP2K')
+            pathBasis = package_config["basis"]
             keyBasis = InputKey("basis", [pathBasis])
             cp2k2hdf5(f5, [keyBasis])             # Store the basis sets
         # Read the basis Set from HDF5 and calculate the CGF for each atom
