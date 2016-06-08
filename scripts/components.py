@@ -82,16 +82,6 @@ def calculate_mos(package_name, all_geometries, work_dir, path_hdf5, folders,
     # calculate the rest of the job using the previous point as initial guess
     for j, gs in enumerate(all_geometries):
         k = j + enumerate_from
-        point_dir = folders[j]
-        job_files = create_file_names(point_dir, k)
-        if k in calc_new_wf_guess_on_points:
-            # Calculating initial guess
-            guess_job = call_schedule_qm(package_name, guess_args, path_hdf5,
-                                         point_dir, job_files, k, gs, nHOMOS,
-                                         nLUMOS, guess_job=guess_job,
-                                         store_in_hdf5=False,
-                                         package_config=package_config)
-
         paths_to_prop = search_data_in_hdf5(k)
 
         # If the MOs are already store in the HDF5 format return the path
@@ -99,6 +89,16 @@ def calculate_mos(package_name, all_geometries, work_dir, path_hdf5, folders,
         if paths_to_prop is not None:
             path_to_orbitals.append(paths_to_prop)
         else:
+            point_dir = folders[j]
+            job_files = create_file_names(point_dir, k)
+            # Calculating initial guess
+            if k in calc_new_wf_guess_on_points:
+                guess_job = call_schedule_qm(package_name, guess_args, path_hdf5,
+                                             point_dir, job_files, k, gs,
+                                             nHOMOS, nLUMOS, guess_job=guess_job,
+                                             store_in_hdf5=False,
+                                             package_config=package_config)
+
             promise_qm = call_schedule_qm(package_name, package_args,
                                           path_hdf5, point_dir, job_files,
                                           k, gs, nHOMOS, nLUMOS,

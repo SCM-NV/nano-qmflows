@@ -4,6 +4,7 @@ __author__ = "Felipe Zapata"
 from os.path import join
 import os
 import plams
+import shutil
 
 # ==================> Internal modules <==========
 from components import (calculate_mos, create_dict_CGFs, create_point_folder,
@@ -57,7 +58,8 @@ def generate_pyxaid_hamiltonians(package_name, project_name, all_geometries,
         path_hdf5 = os.path.join(work_dir, "quantum.hdf5")
 
     # Create Work_dir if it does not exist
-    if not os.path.exists(work_dir):
+    if os.path.exists(work_dir):
+        shutil.rmtree(work_dir)
         os.makedirs(work_dir)
 
     # Generate a list of tuples containing the atomic label
@@ -81,8 +83,8 @@ def generate_pyxaid_hamiltonians(package_name, project_name, all_geometries,
     mo_paths_hdf5 = calculate_mos(package_name, all_geometries, work_dir,
                                   path_hdf5, traj_folders, cp2k_args,
                                   guess_args, calc_new_wf_guess_on_points,
-                                  enumerate_from, package_config)
-
+                                  enumerate_from, package_config=package_config)
+    
     # Calculate Non-Adiabatic Coupling
     # Number of Coupling points calculated with the MD trajectory
     nPoints = len(all_geometries) - 2
@@ -189,10 +191,10 @@ def main():
     if not os.path.exists(scratch_path):
         os.makedirs(scratch_path)
 
-    # HOME definition
+    # HOME Path
     home = os.path.expanduser('~')
 
-    # Cp2k
+    # Cp2k configuration files
     basiscp2k = join(home, "Cp2k/cp2k_basis/BASIS_MOLOPT")
     potcp2k = join(home, "Cp2k/cp2k_basis/GTH_POTENTIALS")
     cp2k_config = {"basis": basiscp2k, "potential": potcp2k}
