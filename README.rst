@@ -8,8 +8,7 @@ Package to calculate several properties related to the Nonadiabatic behaviour of
 Installation
 ============
 
-- Clone the packages using the following commands:
-  ``git clone git@github.com:SciSoftTech/nonAdiabaticCoupling.git``
+- type the following command in ther terminal: ::
+    ``pip install https://github.com/felipeZ/nonAdiabaticCoupling/tarball/master#egg=NonAdiabaticCouling-0.1.2``
 
-- in the console type: ``pip install .``
 
