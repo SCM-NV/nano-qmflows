@@ -65,6 +65,9 @@ The function to calculate the Hamiltonian to carry out *Nonadiabatic molecular d
        :returns: None
        """
 
+.. image:: docs/images/nac_worflow.png
+
+
 
 .. _cp2k: https://www.cp2k.org/
 

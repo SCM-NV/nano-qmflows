@@ -12,7 +12,7 @@ Installation
     ``git clone git@github.com:felipeZ/nonAdiabaticCoupling.git``
 
 - Then move to the new folder called *nonAdibatic* and type: ::
-    pip install . 
+    ``pip install .`` 
 
 Overview
 ========
@@ -25,7 +25,8 @@ and numpy_ that are the core of the library. While the scripts are set of workfl
 
 Worflow to calculate Hamiltonians for nonadiabatic molecular simulations
 ************************************************************************
+The figure represents schematically a Worflow to compute the **Hamiltonians** that described the behavior and coupling between the excited state of a molecular system. These **Hamiltonians** are used by thy PYXAID_ simulation package to carry out nonadiabatic molecular dynamics.
 
 .. image:: docs/images/nac_worflow.png
 
-
+.. _PYXAID: https://www.acsu.buffalo.edu/~alexeyak/pyxaid/overview.html
