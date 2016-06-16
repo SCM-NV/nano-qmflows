@@ -28,6 +28,14 @@ def schedule_transf_matrix(path_hdf5, atoms, basisName, project_name,
     calculate the transformation of the overlap matrix from both spherical
     to cartesian and from cartesian to spherical.
 
+    :param path_hdf5: Path to the HDF5 file.
+    :type: String
+    :param atoms: Atoms that made up the molecule.
+    :type atoms:  List of Strings
+    :param project_name: Name of the project.
+    :type project_name: String
+    :param packageName: Name of the ab initio simulation package.
+    :type packageName: String
     :returns: Numpy matrix containing the transformation matrix.
     """
     with h5py.File(path_hdf5) as f5:
