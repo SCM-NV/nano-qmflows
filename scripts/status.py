@@ -47,8 +47,7 @@ def main():
 
     with h5py.File(path_hdf5, 'r') as f5:
         dset = f5[project_name]
-
-    ks = list(dset.keys())
+        ks = list(dset.keys())
 
     print("The following Jobs have been completed:\n")
     print(ks)
