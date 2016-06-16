@@ -93,7 +93,7 @@ def generate_pyxaid_hamiltonians(package_name, project_name, all_geometries,
                                             all_geometries,
                                             mo_paths_hdf5, hdf5_trans_mtx,
                                             enumerate_from,
-                                            output_folder=work_dir)
+                                            output_folder=project_name)
                          for i in range(nPoints)]
     path_couplings = gather(*promise_couplings)
 
