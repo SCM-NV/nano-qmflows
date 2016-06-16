@@ -23,7 +23,7 @@ JobFiles = namedtuple("JobFiles", ("get_xyz", "get_inp", "get_out", "get_MO"))
 # ==============================> Tasks <=====================================
 
 
-def calculate_mos(package_name, all_geometries, work_dir, path_hdf5, folders,
+def calculate_mos(package_name, all_geometries, project_name, path_hdf5, folders,
                   package_args, guess_args=None,
                   calc_new_wf_guess_on_points=[0], enumerate_from=0,
                   nHOMOS=100, nLUMOS=100, package_config=None):
@@ -36,8 +36,9 @@ def calculate_mos(package_name, all_geometries, work_dir, path_hdf5, folders,
 
     :param all_geometries: list of molecular geometries
     :type all_geometries: String list
-    :param work_dir: Path to the work directory
-    :type work_dir: String
+    :param project_name: Name of the project used as root path for storing
+    data in HDF5.
+    :type project_name: String
     :param path_hdf5: Path to the HDF5 file that contains the
     numerical results.
     :type path_hdf5: String
@@ -57,7 +58,7 @@ def calculate_mos(package_name, all_geometries, work_dir, path_hdf5, folders,
         """
         Path inside HDF5 where the data is stored
         """
-        rs = join(work_dir, 'point_{}'.format(i), package_name, 'mo')
+        rs = join(project_name, 'point_{}'.format(i), package_name, 'mo')
         return [join(rs, 'eigenvalues'), join(rs, 'coefficients')]
 
     def search_data_in_hdf5(i):
@@ -95,13 +96,16 @@ def calculate_mos(package_name, all_geometries, work_dir, path_hdf5, folders,
             if k in calc_new_wf_guess_on_points:
                 guess_job = call_schedule_qm(package_name, guess_args, path_hdf5,
                                              point_dir, job_files, k, gs,
-                                             nHOMOS, nLUMOS, guess_job=guess_job,
+                                             nHOMOS, nLUMOS,
+                                             project_name=project_name,
+                                             guess_job=guess_job,
                                              store_in_hdf5=False,
                                              package_config=package_config)
 
             promise_qm = call_schedule_qm(package_name, package_args,
                                           path_hdf5, point_dir, job_files,
                                           k, gs, nHOMOS, nLUMOS,
+                                          project_name=project_name,
                                           guess_job=guess_job,
                                           package_config=package_config)
             path_to_orbitals.append(promise_qm.orbitals)
@@ -111,7 +115,8 @@ def calculate_mos(package_name, all_geometries, work_dir, path_hdf5, folders,
 
 
 def call_schedule_qm(packageName, package_args, path_hdf5, point_dir,
-                     job_files, k, geometry, nHOMOS, nLUMOS, guess_job=None,
+                     job_files, k, geometry, nHOMOS, nLUMOS,
+                     project_name=None, guess_job=None,
                      store_in_hdf5=True, package_config=None):
     """
     Call an external computational chemistry software to do some calculations
@@ -142,7 +147,9 @@ def call_schedule_qm(packageName, package_args, path_hdf5, point_dir,
     prepare_and_schedule = {'cp2k': prepare_job_cp2k}
 
     job = prepare_and_schedule[packageName](geometry, job_files, package_args,
-                                            k, point_dir, hdf5_file=path_hdf5,
+                                            k, point_dir,
+                                            project_name=project_name,
+                                            hdf5_file=path_hdf5,
                                             wfn_restart_job=guess_job,
                                             store_in_hdf5=store_in_hdf5,
                                             nHOMOS=nHOMOS, nLUMOS=nLUMOS,

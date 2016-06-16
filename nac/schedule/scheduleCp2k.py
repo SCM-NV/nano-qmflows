@@ -72,9 +72,10 @@ def prepare_cp2k_settings(geometry, files, cp2k_args, k, work_dir,
 
 
 @schedule
-def prepare_job_cp2k(geometry, files, dict_input, k, work_dir, hdf5_file=None,
-                     wfn_restart_job=None, store_in_hdf5=True, nHOMOS=100,
-                     nLUMOS=100, package_config=None):
+def prepare_job_cp2k(geometry, files, dict_input, k, work_dir,
+                     project_name=None, hdf5_file=None, wfn_restart_job=None,
+                     store_in_hdf5=True, nHOMOS=100, nLUMOS=100,
+                     package_config=None):
     """
     Fills in the parameters for running a single job in CP2K.
 
@@ -105,9 +106,11 @@ def prepare_job_cp2k(geometry, files, dict_input, k, work_dir, hdf5_file=None,
     job_settings = prepare_cp2k_settings(geometry, files, dict_input, k, work_dir,
                                          wfn_restart_job, store_in_hdf5,
                                          package_config)
+    project_name = project_name if project_name is not None else work_dir
 
     return cp2k(job_settings, plams.Molecule(files.get_xyz), work_dir=work_dir,
-                hdf5_file=hdf5_file, input_file_name=files.get_inp,
+                project_name=project_name, hdf5_file=hdf5_file,
+                input_file_name=files.get_inp,
                 out_file_name=files.get_out, store_in_hdf5=store_in_hdf5,
                 nHOMOS=nHOMOS, nLUMOS=nLUMOS)
 
