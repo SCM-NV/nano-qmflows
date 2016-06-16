@@ -7,13 +7,13 @@ import os
 import plams
 import shutil
 
-# ==================> Internal modules <==========
-from components import (calculate_mos, create_dict_CGFs, create_point_folder,
-                        split_file_geometries)
+# =========================> Internal modules <================================
 from noodles import gather, schedule
 
 from qmworks import run, Settings
 from qmworks.parsers import parse_string_xyz
+from nac.schedule.components import (calculate_mos, create_dict_CGFs,
+                                     create_point_folder, split_file_geometries)
 from nac.schedule.scheduleCoupling import (lazy_schedule_couplings,
                                            schedule_transf_matrix,
                                            write_hamiltonians)
