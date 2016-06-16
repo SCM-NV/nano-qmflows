@@ -2,6 +2,7 @@ __author__ = "Felipe Zapata"
 
 # ================> Python Standard  and third-party <==========
 from os.path import join
+import getpass
 import os
 import plams
 import shutil
@@ -80,7 +81,7 @@ def generate_pyxaid_hamiltonians(package_name, project_name, all_geometries,
 
     # prepare Cp2k Jobs
     # Point calculations Using CP2K
-    mo_paths_hdf5 = calculate_mos(package_name, all_geometries, work_dir,
+    mo_paths_hdf5 = calculate_mos(package_name, all_geometries, project_name,
                                   path_hdf5, traj_folders, cp2k_args,
                                   guess_args, calc_new_wf_guess_on_points,
                                   enumerate_from, package_config=package_config)
@@ -185,14 +186,15 @@ def main():
     # Path to the MD geometries
     path_traj_xyz = "./trajectory_4000-5000.xyz"
 
+    # User variables
+    home = os.path.expanduser('~')  # HOME Path
+    username = getpass.getuser()
+    
     # Work_dir
     scratch = "/scratch-shared"
-    scratch_path = join(scratch, project_name)
+    scratch_path = join(scratch, username, project_name)
     if not os.path.exists(scratch_path):
         os.makedirs(scratch_path)
-
-    # HOME Path
-    home = os.path.expanduser('~')
 
     # Cp2k configuration files
     basiscp2k = join(home, "Cp2k/cp2k_basis/BASIS_MOLOPT")
