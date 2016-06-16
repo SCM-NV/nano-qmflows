@@ -12,7 +12,7 @@ setup(
     author_email='',
     keywords='chemistry Photochemistry Simulation',
     packages=["nac", "nac.basisSet", "nac.formats", "nac.integrals", "nac.schedule",
-              "nac.templates"],
+              "nac.templates", "scripts"],
     package_data={"nac": ['templates/*json']},
     classifiers=[
         'Intended Audience :: Science/Research',
