@@ -18,11 +18,12 @@ from qmworks.parsers import parse_string_xyz
 angs2au = 1 / 0.529177249  # Angstrom to a.u
 femtosec2au = 1 / 2.41888432e-2  # from femtoseconds to au
 
-# ==============================> Schedule Tasks <=========================
+# ==============================> Schedule Tasks <=============================
 
 
 @schedule
-def schedule_transf_matrix(path_hdf5, atoms, basisName, work_dir, packageName):
+def schedule_transf_matrix(path_hdf5, atoms, basisName, project_name,
+                           packageName):
     """
     calculate the transformation of the overlap matrix from both spherical
     to cartesian and from cartesian to spherical.
@@ -32,7 +33,7 @@ def schedule_transf_matrix(path_hdf5, atoms, basisName, work_dir, packageName):
     with h5py.File(path_hdf5) as f5:
         mtx = calc_transf_matrix(f5, atoms, basisName, packageName)
         store = StoreasHDF5(f5, packageName)
-        path = os.path.join(work_dir, 'trans_mtx')
+        path = os.path.join(project_name, 'trans_mtx')
         store.funHDF5(path, mtx)
     return path
 

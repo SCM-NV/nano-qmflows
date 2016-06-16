@@ -72,7 +72,7 @@ def generate_pyxaid_hamiltonians(package_name, project_name, all_geometries,
     # Calculcate the matrix to transform from cartesian to spherical
     # representation of the overlap matrix
     hdf5_trans_mtx = schedule_transf_matrix(path_hdf5, atoms,
-                                            basisName, work_dir,
+                                            basisName, project_name,
                                             packageName=package_name)
 
     # Create a folder for each point the the dynamics
