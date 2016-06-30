@@ -106,12 +106,10 @@ def lazy_schedule_couplings(i, path_hdf5, dictCGFs, geometries, mo_paths, dt=1,
 
     output_path = join(output_folder, 'coupling_{}'.format(i + enumerate_from))
 
-    try:
-        with h5py.File(path_hdf5, 'r') as f5:
-            f5[output_path]
-    except KeyError:
-        # If the coupling is not store in the HDF5 calculate it
-        calc_coupling(output_path, dt)
+    with h5py.File(path_hdf5, 'r') as f5:
+        if output_path not in f5:
+            # If the coupling is not store in the HDF5 calculate it
+            calc_coupling(output_path, dt)
 
     return output_path
 
