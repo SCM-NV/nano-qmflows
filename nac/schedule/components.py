@@ -200,9 +200,7 @@ def create_dict_CGFs(path_hdf5, basisname, xyz, package_config=None):
     """
     # Try to read the basis otherwise read it from a file
     with h5py.File(path_hdf5, chunks=True) as f5:
-        try:
-            f5["cp2k/basis"]
-        except KeyError:
+        if "cp2k/basis" not in f5:
             # Search Path to the file containing the basis set
             # pathBasis = search_environ_var('BASISCP2K')
             pathBasis = package_config["basis"]
