@@ -25,7 +25,7 @@ def generate_pyxaid_hamiltonians(package_name, project_name, all_geometries,
                                  cp2k_args, guess_args=None,
                                  calc_new_wf_guess_on_points=[0],
                                  path_hdf5=None, enumerate_from=0,
-                                 package_config=None):
+                                 package_config=None, dt=1):
     """
     Use a md trajectory to generate the hamiltonian components to tun PYXAID
     nmad.
@@ -93,7 +93,7 @@ def generate_pyxaid_hamiltonians(package_name, project_name, all_geometries,
                                             all_geometries,
                                             mo_paths_hdf5, hdf5_trans_mtx,
                                             enumerate_from,
-                                            output_folder=project_name)
+                                            output_folder=project_name, dt=dt)
                          for i in range(nPoints)]
     path_couplings = gather(*promise_couplings)
 
@@ -118,7 +118,8 @@ def generate_pyxaid_hamiltonians(package_name, project_name, all_geometries,
 
 
 def calculate_coupling(i, path_hdf5, dictCGFs, all_geometries, mo_paths,
-                       hdf5_trans_mtx, enumerate_from, output_folder=None):
+                       hdf5_trans_mtx, enumerate_from, output_folder=None,
+                       dt=1):
     """
     Calculate the non-adiabatic coupling using 3 consecutive set of MOs in
     a dynamics. Explicitly declares that each Coupling Depends in
@@ -149,7 +150,7 @@ def calculate_coupling(i, path_hdf5, dictCGFs, all_geometries, mo_paths,
     geometries = all_geometries[i], all_geometries[j], all_geometries[k]
 
     return lazy_schedule_couplings(i, path_hdf5, dictCGFs, geometries, mo_paths,
-                                   dt=1, hdf5_trans_mtx=hdf5_trans_mtx,
+                                   dt=dt, hdf5_trans_mtx=hdf5_trans_mtx,
                                    output_folder=output_folder,
                                    enumerate_from=enumerate_from)
 # ============<>===============
@@ -213,13 +214,16 @@ def main():
     # Calculate new Guess in each Geometry
     pointsGuess = [enumerate_from + i for i in range(len(geometries))]
 
+    # Dynamics time step in Femtoseconds
+    dt = 1
+    
     # Hamiltonian computation
     generate_pyxaid_hamiltonians('cp2k', project_name, geometries, cp2k_args,
                                  guess_args=cp2k_OT,
                                  calc_new_wf_guess_on_points=pointsGuess,
                                  path_hdf5=path_hdf5,
                                  enumerate_from=enumerate_from,
-                                 package_config=cp2k_config)
+                                 package_config=cp2k_config, dt=dt)
 
     print("PATH TO HDF5:{}\n".format(path_hdf5))
     plams.finish()
