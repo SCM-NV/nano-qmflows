@@ -28,7 +28,7 @@ def mergeHDF5(inp, out):
     """
     Merge Recursively two hdf5 Files
     """
-    with h5py.File(inp, 'r') as f5, h5py.File(inp, 'r+') as g5:
+    with h5py.File(inp, 'r') as f5, h5py.File(out, 'r+') as g5:
         keys = f5.keys()
         for k in keys:
             if k not in g5:
