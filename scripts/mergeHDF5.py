@@ -1,7 +1,8 @@
 
+from os.path import join
+
 import argparse
 import h5py
-
 # ====================================<>=======================================
 msg = " script -i <Path/to/source/hdf5> -o <path/to/destiny/hdf5>"
 
@@ -36,7 +37,9 @@ def mergeHDF5(inp, out):
             keys2 = f5[k].keys()
             for l in keys2:
                 if l not in g5[k]:
-                    f5.copy(l, g5[k])
+                    path = join(k, l)
+                    print("Copying pAth: ", path)
+                    f5.copy(path, g5[k])
 
 
 def main():
