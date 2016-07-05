@@ -11,6 +11,8 @@ import os
 msg = " script -p ProjectName -f5 <path/to/hdf5> -r <path/to/results/files"
 
 parser = argparse.ArgumentParser(description=msg)
+parser.add_argument('-p', required=True,
+                    help='Project Name')
 parser.add_argument('-f5', required=True,
                     help='Path to the HDF5')
 parser.add_argument('-r', required=True,
@@ -40,7 +42,7 @@ def readNonConvergedData(path):
     cmd = "grep -ir 'NOT converged' --include \*.out {}".format(path)
 
     p = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, shell=True)
-    xs, errors = p.communicate
+    xs, errors = p.communicate()
     p.terminate()
 
     lines = xs.splitlines()
@@ -58,8 +60,9 @@ def readFailedPoints(path):
     """
     ls = os.listdir(path)
     xs = filter(lambda x: fnmatch(x, "*.wfn"), ls)
-
-    return list(xs)[0]
+    head = list(xs)[0]
+    
+    return head.split('-')[0]
 
 
 def deletePointsfromHDF5(pathHDF5, points, projectName):
@@ -76,7 +79,8 @@ def deletePointsfromHDF5(pathHDF5, points, projectName):
 
 def main():
     projectName, pathHDF5, pathOutput = read_cmd_line()
-    failPoints = map(readFailedPoints, readNonConvergedData(pathOutput))
+    xs = map(readFailedPoints, readNonConvergedData(pathOutput))
+    failPoints = list(set(xs)) # unique
     deletePointsfromHDF5(pathHDF5, failPoints, projectName)
     
 
