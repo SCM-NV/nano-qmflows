@@ -47,7 +47,7 @@ def main():
     paths_out_es, paths_out_pop = [[join(out_dir, x) for x in xs]
                                    for xs in [names_out_es, names_out_pop]]
 
-    ess = map(parse_energies, paths_out_es)
+    ess = list(map(parse_energies, paths_out_es))
     pss = map(parse_population, paths_out_pop)
 
     # Make a 3D stack of arrays the calculate the mean value
@@ -124,18 +124,25 @@ def main():
         plt.xlabel('Time [fs]')
         pp.savefig()
         plt.figure(4)
-        plt.title('Intraband relaxation of electron energy')
-        p = plt.pcolormesh(grid_time, grid_es, grid_pop, cmap=plt.cm.bwr)
+        plt.title('State Energies')
+        plt.plot(ts, average_es)
         plt.ylabel('Energy [eV]')
         plt.xlabel('Time [fs]')
-        plt.colorbar(p)
-        plt.savefig('ElectronEnergyDist.png')
+        plt.legend(loc='best')
         pp.savefig()
-
-    es_energy = np.stack([ts, sh_ess - lumo_1], axis=1)
-    es_hole = np.stack([ts, sh_ess - homos], axis=1)
-    np.savetxt("electron_energy.out", es_energy, fmt='%.7e')
-    np.savetxt("hole_energy.out", es_hole, fmt='%.7e')
+        # plt.figure(5)
+        # plt.title('Intraband relaxation of electron energy')
+        # p = plt.pcolormesh(grid_time, grid_es, grid_pop, cmap=plt.cm.bwr)
+        # plt.ylabel('Energy [eV]')
+        # plt.xlabel('Time [fs]')
+        # plt.colorbar(p)
+        # plt.savefig('ElectronEnergyDist.png')
+        # pp.savefig()
+        
+    # es_energy = np.stack([ts, sh_ess - lumo_1], axis=1)
+    # es_hole = np.stack([ts, sh_ess - homos], axis=1)
+    # np.savetxt("electron_energy.out", es_energy, fmt='%.7e')
+    # np.savetxt("hole_energy.out", es_hole, fmt='%.7e')
 
     
 def parse_energies(filePath):
