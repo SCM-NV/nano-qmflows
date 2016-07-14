@@ -16,8 +16,10 @@ parser.add_argument('-p', required=True,
                     help='Project Name')
 parser.add_argument('-f5', required=True,
                     help='Path to the HDF5')
-parser.add_argument('-nh', help='Number of HOMOS to plot (default 10)')
-parser.add_argument('-nl', help='Number of LUMOS to plot (default 10)')
+parser.add_argument('-nh', help='Number of HOMOS to plot (default 10)',
+                    type=int)
+parser.add_argument('-nl', help='Number of LUMOS to plot (default 10)',
+                    type=int)
 
 
 def read_cmd_line():
@@ -27,8 +29,8 @@ def read_cmd_line():
     args = parser.parse_args()
     project = args.p
     f5 = args.f5
-    nh = args.nh if int(args.nh) is not None else 10
-    nl = args.nl if int(args.nl) is not None else 10
+    nh = args.nh if args.nh is not None else 10
+    nl = args.nl if args.nl is not None else 10
 
     return project, f5, nh, nl
 
