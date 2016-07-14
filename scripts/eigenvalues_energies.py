@@ -7,7 +7,6 @@ import argparse
 import h5py
 import matplotlib.pyplot as plt
 import numpy as np
-import os
 
 #  ======================================<>====================================
 msg = " script -p ProjectName -f5 <path/to/hdf5>"
@@ -28,8 +27,8 @@ def read_cmd_line():
     args = parser.parse_args()
     project = args.p
     f5 = args.f5
-    nh = args.nh if args.nh is not None else 10
-    nl = args.nl if args.nl is not None else 10
+    nh = args.nh if int(args.nh) is not None else 10
+    nl = args.nl if int(args.nl) is not None else 10
 
     return project, f5, nh, nl
 
@@ -83,8 +82,6 @@ def main():
     project, f5, nh, nl = read_cmd_line()
     plot_data(project, f5, nh, nl)
 
-        
-        
 # =================<>================================
 
 if __name__ == "__main__":
