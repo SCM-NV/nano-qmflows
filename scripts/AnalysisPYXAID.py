@@ -39,7 +39,7 @@ def read_cmd_line():
     return out_dir, macro_dir, homo, n
 
 #  ======================================<>====================================
-
+ry2ev =  13.60569172
 
 def parse_energies(filePath):
     """
@@ -112,13 +112,14 @@ def read_energies_and_pops_from_macro(macro_dir):
     """
     files_macro = os.listdir(macro_dir)
     se_sh_es_files = [fnmatch.filter(files_macro, x)[0]
-                      for x in ["se_*_grace", "sh_*_grace"]]
+                      for x in ["se_en_*[!_]", "sh_en_*[!_]"]]
+    
     se_sh_pop_files = [fnmatch.filter(files_macro, x)[0]
                        for x in ["se_pop*", "sh_pop*"]]
     se_sh_es_paths = [join(macro_dir, xs) for xs in se_sh_es_files]
     se_sh_pop_paths = [join(macro_dir, xs) for xs in se_sh_pop_files]
 
-    se_ess, sh_ess = [np.loadtxt(f, usecols=(1,)) for f in se_sh_es_paths]
+    se_ess, sh_ess = [np.loadtxt(f, usecols=(3,)) for f in se_sh_es_paths]
     se_pop, sh_pop = [np.loadtxt(f, usecols=(3,)) for f in se_sh_pop_paths]
 
     return se_ess, sh_ess, se_pop, sh_pop
@@ -163,6 +164,7 @@ def calculate_band_gap_histo(homos, bins= 50):
         rs[i] = (ys[i] + ys[i + 1]) * 0.5
     return xs / sh  , rs
 
+
 def main():
     out_dir, macro_dir, homo_number, lumo_number = read_cmd_line()
 
@@ -180,10 +182,13 @@ def main():
 
     # HOMO Energies
     homos = average_es[:, homo_number]
-
+    
     # Read Macro files
     se_ess, sh_ess, se_pop, sh_pop = read_energies_and_pops_from_macro(macro_dir)
 
+    xss = se_ess - homos
+    print(xss[:10] * ry2ev)
+    
     mean_values, gap_distribution  = calculate_band_gap_histo(homos)
 
     
@@ -205,8 +210,8 @@ def main():
         plt.figure(3)
         plt.title('Band Gap')
         plt.plot(gap_distribution, mean_values, 'b-')
-        plt.ylabel('Energy [eV]')
-        plt.xlabel('Time [fs]')
+        plt.xlabel('Energy [eV]')
+        plt.ylabel('Probability')
         pp.savefig()
 
         # plt.figure(5)
