@@ -1,14 +1,15 @@
 __author__ = "Felipe Zapata"
 
 # ================> Python Standard  and third-party <==========
-from collections import namedtuple
 from os.path import join
 
 import fnmatch
+import getpass
 import h5py
 import numpy as np
 import os
 import plams
+import shutil
 
 # ==============================> Internal modules <===========================
 from .components import (calculate_mos, create_dict_CGFs, create_point_folder,
@@ -17,22 +18,11 @@ from nac.common import retrieve_hdf5_data
 from nac.schedule.scheduleCoupling import schedule_transf_matrix
 from nac.integrals.electronTransfer import photoExcitationRate
 from noodles import gather
-from qmworks import run, Settings
+from qmworks import run
 from qmworks.parsers import parse_string_xyz
 from qmworks.utils import flatten
 
 # ==============================> Main <==================================
-
-
-def generate_hdf5_file(project_name, scratch_folder):
-    """
-    Generates a unique path to store temporal data as HDF5
-    """
-    scratch = join(scratch_folder, project_name)
-    if not os.path.exists(scratch):
-        os.makedirs(scratch)
-
-    return join(scratch, 'quantum.hdf5')
 
 
 def search_data_in_hdf5(path_hdf5, path_to_prop):
@@ -50,7 +40,8 @@ def search_data_in_hdf5(path_hdf5, path_to_prop):
 
 def calculate_ETR(package_name, project_name, all_geometries, cp2k_args,
                   pathTimeCoeffs=None, initial_conditions=[0],
-                  path_hdf5=None, enumerate_from=0):
+                  path_hdf5=None, enumerate_from=0, package_config=None,
+                  calc_new_wf_guess_on_points=[0], guess_args=None):
     """
     Use a md trajectory to calculate the Electron transfer rate
     nmad.
@@ -71,15 +62,16 @@ def calculate_ETR(package_name, project_name, all_geometries, cp2k_args,
     :param enumerate_from: Number from where to start enumerating the folders
     create for each point in the MD
     :type enumerate_from: Int
+    :param package_config: Parameters required by the Package.
+    :type package_config: Dict
     :returns: None
     """
-    #  Environmental Variables
+    # Create Work_dir if it does not exist
     cwd = os.path.realpath(".")
-    
-    basisName = cp2k_args.basis
     work_dir = os.path.join(cwd, project_name)
-    if path_hdf5 is None:
-        path_hdf5 = os.path.join(work_dir, "quantum.hdf5")
+    if os.path.exists(work_dir):
+        shutil.rmtree(work_dir)
+        os.makedirs(work_dir)
 
     # Create Work_dir if it does not exist
     if not os.path.exists(work_dir):
@@ -88,15 +80,16 @@ def calculate_ETR(package_name, project_name, all_geometries, cp2k_args,
     # Generate a list of tuples containing the atomic label
     # and the coordinates to generate
     # the primitive CGFs
+    basisName = cp2k_args.basis
     atoms = parse_string_xyz(all_geometries[0])
-    dictCGFs = create_dict_CGFs(path_hdf5, basisName, atoms)
+    dictCGFs = create_dict_CGFs(path_hdf5, basisName, atoms, package_config)
 
     # Calculcate the matrix to transform from cartesian to spherical
     # representation of the overlap matrix
     hdf5_trans_mtx = schedule_transf_matrix(path_hdf5, atoms,
-                                            basisName, work_dir,
+                                            basisName, project_name,
                                             packageName=package_name)
-
+    
     # Create a folder for each point the the dynamics
     traj_folders = create_point_folder(work_dir, len(all_geometries),
                                        enumerate_from)
@@ -106,11 +99,10 @@ def calculate_ETR(package_name, project_name, all_geometries, cp2k_args,
     
     # prepare Cp2k Job
     # Point calculations Using CP2K
-    use_wf_guess_each = 1  # Use previous restart
-    enumerate_from = 0  # starts naming from 0
-    mo_paths_hdf5 = calculate_mos(package_name, all_geometries, work_dir,
+    mo_paths_hdf5 = calculate_mos(package_name, all_geometries, project_name,
                                   path_hdf5, traj_folders, cp2k_args,
-                                  use_wf_guess_each, enumerate_from)
+                                  guess_args, calc_new_wf_guess_on_points,
+                                  enumerate_from, package_config=package_config)
 
     # Number of ETR points calculated with the MD trajectory
     nPoints = len(all_geometries) - 2
@@ -221,7 +213,8 @@ def read_time_dependent_coeffs(path_hdf5, pathProperty, path_pyxaid_out):
     # average_pop = np.mean(np.stack(pss), axis=0)
     data = np.stack(pss)
 
-    with open(path_hdf5) as f5:
+    # Save Data in the HDF5 file
+    with h5py.File(path_hdf5) as f5:
         f5.require_dataset(pathProperty, shape=np.shape(data),
                            data=data, dtype=np.float32)
     
@@ -230,26 +223,21 @@ def read_time_dependent_coeffs(path_hdf5, pathProperty, path_pyxaid_out):
 
 def main():
     plams.init()
+
+    # User variables
+    username = getpass.getuser()
+
+    # Project
     project_name = 'NAC'
 
     # Path to the MD geometries
     path_traj_xyz = "./data/traj_3_points.xyz"
 
-    # CP2k Configuration
-
-    # create Settings for the Cp2K Jobs
-    cp2k_args = Settings()
-    cp2k_args.basis = "DZVP-MOLOPT-SR-GTH"
-    cp2k_args.potential = "GTH-PBE"
-    cp2k_args.cell_parameters = [28.0] * 3
-    cp2k_args.specific.cp2k.force_eval.dft.scf.eps_scf = 3e-5
-    cp2k_args.specific.cp2k.force_eval.dft.scf.added_mos = 100
-
     # Work_dir
     scratch = "/scratch-shared"
-    scratch_path = join(scratch, project_name)
+    scratch_path = join(scratch, username, project_name)
     if not os.path.exists(scratch_path):
-        os.makedirs(scratch)
+        os.makedirs(scratch_path)
 
     # HDF5 path
     path_hdf5 = join(scratch_path, 'quantum.hdf5')
@@ -257,9 +245,10 @@ def main():
     # PYXAID Results
     pyxaid_out_dir = "./step3/out"
 
-    # Process PYXAID results
+    # Process PYXAID results and store them in HDF5
     pathProperty = join(project_name, "pyxaid/timeCoeffs")
-    read_time_dependent_coeffs(path_hdf5, pathProperty, pyxaid_out_dir)
+    if search_data_in_hdf5(path_hdf5, pathProperty):
+        read_time_dependent_coeffs(path_hdf5, pathProperty, pyxaid_out_dir)
 
     # Named the points of the MD starting from this number
     enumerate_from = 0
@@ -271,6 +260,7 @@ def main():
     pyxaid_initial_cond = [0, 24, 49]
     
     # Electron transfer rate computation computation
+    cp2k_args = None
     calculate_ETR('cp2k', project_name, geometries, cp2k_args,
                   pathTimeCoeffs=pathProperty,
                   initial_conditions=pyxaid_initial_cond,
