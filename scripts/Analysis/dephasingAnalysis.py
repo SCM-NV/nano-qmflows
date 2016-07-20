@@ -6,60 +6,12 @@ import fnmatch
 import numpy as np
 import os
 import sys
+from interactive import ask_question
 
 
 msg = ('This is a program that plots the decorense for a certain'
 'pair of states. Usage: Make sure that you are in the out folder containing the'
 'icond-files and fill in the prompted questions.')
-
-
-def ask_question(q_str, special=None, default=None):
-    """
-    function that ask the question, and parses the answer to prefered format
-    q_str = string containing the question to be asked
-    returns string, bool (spec='bool'), int (spec='int') or float (spec='float')
-    """
-    done = False
-    while True:
-        if sys.version_info[0] == 3:
-            question = str(input(q_str))
-        elif sys.version_info[0] == 2:
-            question = str(raw_input(q_str))
-        if special is None:
-            return question
-        elif special == 'bool':
-            if question == 'y' or question == 'yes':
-                return True
-            elif question == 'n' or question == 'no':
-                return False
-            else:
-                return default
-        elif special == 'float':
-            done = True
-            a = 0.
-            try:
-                a = float(question)
-            except ValueError:
-                if default == None:
-                    print("This is not a float/integer? Please try again.")
-                    done = False
-                else:
-                    a = default
-            if done:
-                return a
-        elif special == 'int':
-            done = True
-            a = 0
-            try:
-                a = int(question)
-            except ValueError:
-                if default is None:
-                    print("This is not an integer? Please try again.")
-                    done = False
-                else:
-                    a = default
-            if done:
-                return a
 
 
 def ask_for_states():
@@ -134,40 +86,43 @@ def plot_stuff(t, d, fd, naf, uaf, sc, m1, m2, save_plot=False):
 
     # 1
     cm2inch = 0.393700787
-    f, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(16.5*cm2inch, 12.3*cm2inch), dpi=300, sharex=False, sharey=False)
+    f, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(16.5*cm2inch, 12.3*cm2inch), sharex=False, sharey=False)
+    colorlist = ['r','b','g','y','k','m']
 
     # 2.1
     for i in range(len(d)):
-        ax1.plot(t[i], d[i],color='k', label='D_{:d}'.format(i))
+        ax1.plot(t[i], d[i],color=colorlist[i], label='D_{:d}'.format(i))
         ax1.plot(t[i],fd[i],color='#999999', label='fitD_{:d}'.format(i))
         ax1.set_ylabel('D [arb. units]')
         ax1.set_xlabel('time [fs]')
         ax1.set_xlim(0,200)
-        # ax1.set_xscale('log')
-        # ax1.set_yscale('log')
 
     # 2.2
-    for i in range(len(d)):
-        ax2.plot(t[i], naf[i], label='norm_autocorr_{:d}'.format(i))
-        ax2.set_ylabel('NAF [arb. units]')
-        ax2.set_xlabel('time [fs]')
+    ax2.plot(t[0], naf[0], color=colorlist[0], label='norm_autocorr_{:d}'.format(i))
+    ax2.set_ylabel('NAF [arb. units]')
+    ax2.set_xlabel('time [fs]')
+    ax5 = ax2.twinx()
+    ax5.set_ylabel('UAF [arb. units]')
+    for i in range(1,len(d)):
+        ax5.plot(t[i], uaf[i], color=colorlist[i], label='icond{:d}'.format(i))
 
     # 2.3
     for i in range(len(d)):
-        ax3.plot(t[i], sc[i], label='scnd_cumul_{:d}'.format(i))
-        ax3.set_xlabel('time [fs]')
-        ax3.set_ylabel('SC [arb. units]')
+        ax3.plot(t[i], sc[i], color=colorlist[i], label='scnd_cumul_{:d}'.format(i))
+    ax3.set_xlabel('time [fs]')
+    ax3.set_ylabel('SC [arb. units]')
 
     # 2.4
     for i in range(len(d)):
-        ax4.plot(t[i], uaf[i], label='icond{:d}'.format(i))
-        ax4.set_xlabel('time [fs]')
-        ax4.set_ylabel('UAF [arb. units]')
+        ax4.plot(t[i], uaf[i], color=colorlist[i], label='icond{:d}'.format(i))
+    ax4.set_xlabel('time [fs]')
+    ax4.set_ylabel('UAF [arb. units]')
+    plt.tight_layout()
 
     # 3
     if save_plot:
         filename = "Dec_{:d}_{:d}.pdf".format(m1, m2)
-        plt.savefig(filename)
+        plt.savefig(filename, dpi=300, format='pdf')
 
     # 4
     plt.show()
@@ -178,7 +133,7 @@ def main():
     i1, i2 = ask_for_states()
     question = "Do you want to save the plot as Dec_{}_{}.pdf (y/n)? \
     [Default: n] ".format(i1, i2)
-    save_fig = ask_question(question, special='bool', default=False)
+    save_fig = ask_question(question, special='bool', default='n')
     t, d, fd, naf, uaf, sc = read_files(i1, i2)
     plot_stuff(t, d, fd, naf, uaf, sc, i1, i2, save_plot=save_fig)
 
