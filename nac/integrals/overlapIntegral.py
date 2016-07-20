@@ -9,7 +9,7 @@ import numpy as np
 from qmworks.utils import concatMap
 
 # ==================> Internal modules <====================
-from obaraSaika import sab
+from multipoleObaraSaika import sab
 
 # ==================================<>======================================
 
