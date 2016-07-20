@@ -8,60 +8,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 import sys
+from interactive import ask_question
 
 
 msg = ('This is a program that plots the spectral density for a certain'
 'pair of states. Usage: Make sure that you are in the out folder containing the'
 'icond-files and fill in the prompted questions.')
-
-
-def ask_question(q_str, special=None, default=None):
-    """
-    function that ask the question, and parses the answer to prefered format
-    q_str = string containing the question to be asked
-    returns string, bool (spec='bool'), int (spec='int') or float (spec='float')
-    """
-    done = False
-    while True:
-        if sys.version_info[0] == 3:
-            question = str(input(q_str))
-        elif sys.version_info[0] == 2:
-            question = str(raw_input(q_str))
-        if special is None:
-            return question
-        elif special == 'bool':
-            if question == 'y' or question == 'yes':
-                return True
-            elif question == 'n' or question == 'no':
-                return False
-            else:
-                return default
-        elif special == 'float':
-            done = True
-            a = 0.
-            try:
-                a = float(question)
-            except ValueError:
-                if default == None:
-                    print("This is not a float/integer? Please try again.")
-                    done = False
-                else:
-                    a = default
-            if done:
-                return a
-        elif special == 'int':
-            done = True
-            a = 0
-            try:
-                a = int(question)
-            except ValueError:
-                if default is None:
-                    print("This is not an integer? Please try again.")
-                    done = False
-                else:
-                    a = default
-            if done:
-                return a
 
 
 def ask_for_states():
