@@ -9,6 +9,7 @@ import numpy as np
 from qmworks.utils import concatMap
 
 # ==================> Internal modules <====================
+# from multipoleObaraSaika import sab
 from multipoleObaraSaika import sab
 
 # ==================================<>======================================
@@ -58,7 +59,7 @@ def build_primitives_gaussian(t):
     r, cgf = t
     cs, es = cgf.primitives
     l = cgf.orbType
-    return map(lambda rs: (r, l, rs), zip(cs, es))
+    return list(map(lambda rs: (r, l, rs), zip(cs, es)))
 
 
 def sijContracted(t1, t2):

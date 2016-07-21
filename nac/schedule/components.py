@@ -194,6 +194,10 @@ def split_file_geometries(pathXYZ):
 
 def create_dict_CGFs(path_hdf5, basisname, xyz, package_config=None):
     """
+    :param path_hdf5: Path to the HDF5 file that contains the
+    numerical results.
+    type path_hdf5: String
+
     FIXME: Extended to other QM packages
     If the Cp2k Basis are already stored in the hdf5 file continue,
     otherwise read and store them in the hdf5 file.

@@ -59,7 +59,7 @@ def calcuate_Sij(cgfsN, r0, r1, css0, css1, trans_mtx):
 
 def calcOverlapMtxPar(cgfsN, r0, r1):
     """
-    Parallel calculation of the the overlap matrix using the atomic
+    Parallel calculation of the overlap matrix using the atomic
     basis at two different geometries: R0 and R1. The rows of the
     matrix are calculated in
     using a pool of processes.
