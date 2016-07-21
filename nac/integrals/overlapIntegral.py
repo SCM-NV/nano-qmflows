@@ -13,78 +13,6 @@ from qmworks.utils import concatMap
 from multipoleObaraSaika import sab
 
 # ==================================<>======================================
-
-
-def calcMtxOverlapP(atoms, cgfsN):
-    """
-    Overlap matrix entry calculation between two Contracted Gaussian functions
-    :param atoms: Atomic label and cartesian coordinates
-    type atoms: List of namedTuples
-    :param cgfsN: Contracted gauss functions normalized, represented as a list
-    of tuples of coefficients and Exponents.
-    type cgfsN: [(Coeff, Expo)]
-    :returns: Numpy Array
-    """
-    xyz_cgfs = concatMap(lambda rs: createTupleXYZ_CGF(*rs), zip(atoms, cgfsN))
-    nOrbs = len(xyz_cgfs)
-    # Number of non-zero entries of a triangular mtx
-    indexes = calcIndexTriang(nOrbs)
-    pool = Pool()
-    rss = pool.map(partial(calcMatrixEntry, xyz_cgfs), indexes)
-    pool.close()
-
-    return np.array(list(rss))
-
-
-def calcMatrixEntry(xyz_cgfs, ixs):
-    """
-    Computed each matrix element using an index a tuple containing the
-    cartesian coordinates and the primitives gauss functions.
-    :param xyz_cgfs: List of tuples containing the cartesian coordinates and
-    the primitive gauss functions
-    :type xyz_cgfs: [(xyz, (Coeff, Expo))]
-    """
-    i, j = ixs
-    t1 = xyz_cgfs[i]
-    t2 = xyz_cgfs[j]
-    return sijContracted(t1, t2)
-
-
-def build_primitives_gaussian(t):
-    """
-    Creates a primitve Gaussian function represented by a tuple containing
-    the Cartesian coordinates where it is centered, the spin momentum label
-    (S, Px, Py, Pz, etc.) and the Coefficients and exponent of it.
-    """
-    r, cgf = t
-    cs, es = cgf.primitives
-    l = cgf.orbType
-    return list(map(lambda rs: (r, l, rs), zip(cs, es)))
-
-
-def sijContracted(t1, t2):
-    """
-    Matrix entry calculation between two Contracted Gaussian functions.
-    Equivalent to < t1| t2 >
-    :param t1: tuple containing the cartesian coordinates and primitve gauss
-    function of the bra.
-    :type t1: (xyz, (Coeff, Expo))
-    :param t2: tuple containing the cartesian coordinates and primitve gauss
-    function of the ket.
-    :type t2: (xyz, (Coeff, Expo))
-    """
-    gs1 = build_primitives_gaussian(t1)
-    gs2 = build_primitives_gaussian(t2)
-
-    return sum(sab(g1, g2) for g1 in gs1 for g2 in gs2)
-
-
-def calcOrbType_Components(l, x):
-    """
-    Functions related to the orbital momenta indexes
-    """
-    return orbitalIndexes[l, x]
-
 orbitalIndexes = {
     ("S", 0): 0, ("S", 1): 0, ("S", 2): 0,
     ("Px", 0): 1, ("Px", 1): 0, ("Px", 2): 0,
@@ -109,8 +37,112 @@ orbitalIndexes = {
 }
 
 
-def vecNorm(rs):
-    return np.linalg.norm(rs)
+def build_primitives_gaussian(t):
+    """
+    Creates a primitve Gaussian function represented by a tuple containing
+    the Cartesian coordinates where it is centered, the spin momentum label
+    (S, Px, Py, Pz, etc.) and the Coefficients and exponent of it.
+    """
+    r, cgf = t
+    cs, es = cgf.primitives
+    l = cgf.orbType
+    return list(map(lambda rs: (r, l, rs), zip(cs, es)))
+
+
+def calcOrbType_Components(l, x):
+    """
+    Functions related to the orbital momenta indexes
+    :param l: Orbital momentum label
+    :type l: String
+    :param x: cartesian Component (x, y or z)
+    :param x: Int
+    :returns: integer representing orbital momentum l.
+    """
+    return orbitalIndexes[l, x]
+
+
+class CalcMultipoleMatrixP:
+    """
+    Generic class to calculate a matrix using a Gaussian basis set and
+    the molecular geometry.
+    """
+    def __init__(self, atoms, cgfsN):
+        """
+        :param atoms: Atomic label and cartesian coordinates
+        type atoms: List of namedTuples
+        :param cgfsN: Contracted gauss functions normalized, represented as a list
+        of tuples of coefficients and Exponents.
+        type cgfsN: [(Coeff, Expo)]
+        """
+        self.atoms = atoms
+        self.cgfsN = cgfsN
+
+    def __call__(self):
+        """
+        Build a matrix using a pool of worker and a function takes nuclear
+        corrdinates and a Contracted Gauss function and compute a number.
+        :returns: Numpy Array
+        """
+        def calcIndexTriang(n):
+            flatDim = (n ** 2 + n) // 2
+            xss = np.dstack(np.triu_indices(n))
+            return np.reshape(xss, (flatDim, 2))
+
+        xyz_cgfs = concatMap(lambda rs: createTupleXYZ_CGF(*rs),
+                             zip(self.atoms, self.cgfsN))
+        nOrbs = len(xyz_cgfs)
+        # Number of non-zero entries of a triangular mtx
+        indexes = calcIndexTriang(nOrbs)
+        pool = Pool()
+        rss = pool.map(partial(self.calcMatrixEntry, xyz_cgfs), indexes)
+        pool.close()
+
+        return np.array(list(rss))
+
+    def calcMatrixEntry(self):
+        """
+        Function to compute every element of the matrix.
+        """
+        raise NotImplementedError("The subclass must defined this method")
+
+
+class CalcOverlapMtx(CalcMultipoleMatrixP):
+    """
+    Overlap matrix entry calculation between two Contracted Gaussian functions
+    """
+
+    def __init__(atoms, cgfsN):
+        super.__init__(atoms, cgfsN)
+
+    def calcMatrixEntry(self, xyz_cgfs, ixs):
+        """
+        Computed each matrix element using an index a tuple containing the
+        cartesian coordinates and the primitives gauss functions.
+        :param xyz_cgfs: List of tuples containing the cartesian coordinates and
+        the primitive gauss functions
+        :type xyz_cgfs: [(xyz, (Coeff, Expo))]
+        """
+        i, j = ixs
+        t1 = xyz_cgfs[i]
+        t2 = xyz_cgfs[j]
+        return sijContracted(t1, t2)
+
+
+def sijContracted(t1, t2):
+    """
+    Matrix entry calculation between two Contracted Gaussian functions.
+    Equivalent to < t1| t2 >
+    :param t1: tuple containing the cartesian coordinates and primitve gauss
+    function of the bra.
+    :type t1: (xyz, (Coeff, Expo))
+    :param t2: tuple containing the cartesian coordinates and primitve gauss
+    function of the ket.
+    :type t2: (xyz, (Coeff, Expo))
+    """
+    gs1 = build_primitives_gaussian(t1)
+    gs2 = build_primitives_gaussian(t2)
+
+    return sum(sab(g1, g2) for g1 in gs1 for g2 in gs2)
 
 
 # ============================================

@@ -6,8 +6,8 @@ from qmworks.utils import concatMap
 
 import numpy as np
 # ==================> Internal modules <====================
+from multipoleObaraSaika import sab_efg  # compiled with cython
 from .overlapIntegral import build_primitives_gaussian
-from .multipoleObaraSaika import sab, sab_efg
 from .overlapIntegral import calcIndexTriang, createTupleXYZ_CGF
 
 # ==================================<>======================================
@@ -43,7 +43,7 @@ def calcMatrixEntry(xyz_cgfs, ixs):
     i, j = ixs
     t1 = xyz_cgfs[i]
     t2 = xyz_cgfs[j]
-    return sijContracted(t1, t2)
+    return dipoleContracted(t1, t2)
 
 
 def calculateDipoleIntegrals(atoms, cgfsN):
@@ -59,6 +59,20 @@ def calculateDipoleIntegrals(atoms, cgfsN):
     pool.close()
 
     return np.array(list(rss))
+
+
+def fromIndex(ixs, shape):
+    """
+    calculate the equivalent index from a two dimensional array to a flat array
+    containing the upper triangular elements of a matrix.
+    """
+    i, j = ixs
+    if j >= i:
+        k = sum(m * k for m, k in zip(shape[1:], ixs)) + ixs[-1]
+        r = (((i * i + i) // 2) if i else 0)
+        return k - r
+    else:
+        return fromIndex([j, i], shape)
 
 
 def triang2mtx(arr, dim):
