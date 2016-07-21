@@ -78,7 +78,7 @@ def plot_stuff(w, J, m1, m2, xl='w [cm^-1]', yl='J [arb. units]', save_plot=Fals
     question = "What is the maximal value of w (in cm^-1) that you want \
     to plot (float/int)? [Default: highest value] "
     
-    maxw = ask_question(question, special='float', default=w[-1])
+    maxw = ask_question(question, special='float', default=w[0][-1])
     filename = "SpecDens_{:d}_{:d}.pdf".format(m1, m2)
     with PdfPages(filename) as pdf:
         for i in range(len(J)):
@@ -103,7 +103,7 @@ def main():
     i1, i2 = ask_for_states()
     question = "Do you want to save the plot as SpecDens_{}_{}.pdf (y/n)? \
     [Default: n] ".format(i1, i2)
-    save_fig = ask_question(question, special='bool', default=False)
+    save_fig = ask_question(question, special='bool', default='n')
     w, J = read_files(i1, i2)
     plot_stuff(w, J, i1, i2, save_plot=save_fig)
 
