@@ -1,44 +1,26 @@
 #! /usr/bin/env python
 import ast
 import numpy as np
+import matplotlib.pyplot as plt
+
 def parse_file(f):
-	arr = []
-	first = True
-	for line in f:
-		line2 = line.split()
-		i = 3
-		while i<len(line2):
-			if first:
-				arr.append([])
-			arr[int((i-3)/2)].append(float(line2[i]))
-			i += 2
-		first = False
-	return arr
+	return np.genfromtxt(f)[:,3::2].transpose()
 
 def return_file(f3):
-	first = True
-	for line in f3:
-		if first:
-			first = False
-			return line
-		else:
-			first = False
+	return str(np.genfromtxt(f3, max_rows=1, dtype='str', delimiter='notinthere'))
 
+def make_plot(arr,labels):
+	plts = [plt.plot(arr[i],label=labels['states'][i][0]) for i in range(len(arr))]
+	plt.xlabel('time [fs]')
+	plt.legend()
+	plt.show()
 
-inp = './out/out0'
-arr = []
-with open(inp) as f:
-	arr = parse_file(f)
-inp2 = './pyx.out'
-x = {}
-with open(inp2) as f2:
-	x = ast.literal_eval(return_file(f2))
+def main():
+	inp = './out/out0'
+	arr = parse_file(inp)
+	inp2 = './pyx.out'
+	x = ast.literal_eval(return_file(inp2))
 
-import matplotlib.pyplot as plt
-i = 0
-for j in arr:
-	plt.plot(j,label=x['states'][i][0])
-	i += 1
+	make_plot(arr,x)
 
-plt.legend()
-plt.show()
+main()
