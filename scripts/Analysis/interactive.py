@@ -20,5 +20,4 @@ def ask_question(q_str, special='None', default=None):
                 return funcs[special][0](question)
             except ValueError:
                 pass
-        else:
-            print("Input not recognised. Please try again.")
+        print("Input not recognised. Please try again.")
