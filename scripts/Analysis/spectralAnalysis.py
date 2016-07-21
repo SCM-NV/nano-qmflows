@@ -7,13 +7,12 @@ import fnmatch
 import matplotlib.pyplot as plt
 import numpy as np
 import os
-import sys
 from interactive import ask_question
 
 
 msg = ('This is a program that plots the spectral density for a certain'
-'pair of states. Usage: Make sure that you are in the out folder containing the'
-'icond-files and fill in the prompted questions.')
+       'pair of states. Usage: Make sure that you are in the out folder containing the'
+       'icond-files and fill in the prompted questions.')
 
 
 def ask_for_states():
@@ -49,11 +48,11 @@ def read_files(i1, i2):
             j.append(arr[1])
         return w, j
     else:
-        name2 = name[0:4]+'0'+name[6:]
+        name2 = name[0:4] + '0' + name[6:]
         msg = ('File not found.\nAre you in the out folder? And are '
-        'you sure the ints are correct?\n'
-        'The program was looking for a file named: \'{}\' in your '
-        'current directory.'.format(name2))
+               'you sure the ints are correct?\n'
+               'The program was looking for a file named: \'{}\' in your '
+               'current directory.'.format(name2))
         raise FileNotFoundError(msg)
 
 
