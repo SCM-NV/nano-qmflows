@@ -1,8 +1,7 @@
 
-
 from qmworks.common import InputKey
 from qmworks.hdf5.quantumHDF5 import cp2k2hdf5
-from qmworks.integrals.overlapIntegral import calcMtxOverlapP
+from qmworks.integrals.overlapIntegral import CalcMtxOverlapP
 from qmworks.parsers.xyzParser import readXYZ
 
 from os.path import join
@@ -10,10 +9,10 @@ import h5py
 import numpy as np
 import os
 
-# ========================<>=======================
+# ======================================<>=====================================
 from utilsTest import  (create_dict_CGFs, dump_MOs_coeff,
                         offdiagonalTolerance, triang2mtx, try_to_remove)
-# ========================<>=======================
+# ======================================<>=====================================
 
 path_hdf5 = 'test_files/test.hdf5'
 path_xyz = 'test_files/ethylene.xyz'
@@ -48,7 +47,8 @@ def test_store_MO_h5():
 
     try_to_remove(path_hdf5)
     with h5py.File(path_hdf5, chunks=True) as f5:
-        pathEs, pathCs = dump_MOs_coeff(f5, cp2k2hdf5, path_MO, pathEs, pathCs, nOrbitals)
+        pathEs, pathCs = dump_MOs_coeff(f5, cp2k2hdf5, path_MO, pathEs, pathCs, 
+                                        nOrbitals)
         if f5[pathEs] and f5[pathCs]:
             try_to_remove(path_hdf5)
             assert True
@@ -83,7 +83,7 @@ def test_store_MO_h5():
 #     css = np.transpose(trr)
 #     cgfsN = [dictCGFs[l] for l in labels]
 #     dim = sum(len(xs) for xs in cgfsN)
-#     mtxP = triang2mtx(calcMtxOverlapP(mol, cgfsN), dim)
+#     mtxP = triang2mtx(CalcMtxOverlapP(mol, cgfsN), dim)
 #     rs = np.dot(trr, np.dot(mtxP, css))
 
 #     # xs = format_aomix(mtxP, dim)

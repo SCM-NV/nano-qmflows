@@ -9,13 +9,15 @@ from pymonad import curry
 
 import numpy as np
 
-# ==================> Internal modules <==========
+# =======================> Internal modules <==================================
 from .contractedGFs import createUniqueCGF, expandBasisOneCGF
 from nac.common import AtomData, CGF
-from nac.integrals.overlapIntegral import calcOrbType_Components, sijContracted
+from nac.integrals.overlapIntegral import sijContracted
+from nac.integrals.multipoleIntegrals import calcOrbType_Components
+
 from qmworks.utils import concatMap, fst, product, snd
 
-# ============> Basis set normalization <=============
+# =======================> Basis set normalization <===========================
 
 
 def normalizeCGFAtoms(atoms):
@@ -23,7 +25,8 @@ def normalizeCGFAtoms(atoms):
     The basis set is expanded in contracted gaussian function
     and the normalization.
     The norm of each contracted is given by the following equation
-    N = sqrt $ ((2l -1)!! (2m-1)!! (2n-1)!!)/(4*expo)^(l+m+n)  * (pi/(2*e))**1.5
+    N = sqrt $ ((2l -1)!! (2m-1)!! (2n-1)!!)/(4*expo)^(l+m+n)  *
+        (pi/(2*e))**1.5
     where expo is the exponential factor of the contracted
 
     let |fi> = sum ci* ni* x^lx * y^ly * z ^lz * exp(-ai * R^2)
@@ -127,7 +130,7 @@ def cp2kCoefftoMoldenFormat(es, css, formatB):
     return np.array(list(map(cgftoMoldenFormat, cgfs)))
 
 
-# =========================>Turbomole<==============================
+# ===========================>Turbomole<=======================================
 
 
 def turbomoleBasis2MoldenFormat(file_h5, pathBasis, basisName, softName, ls):
@@ -155,7 +158,8 @@ def getOneCoeff(cgfs):
     p = list(filter(pred('Px'), cgfs))
     d = list(filter(pred('Dxx'), cgfs))
     f = list(filter(pred('Fxxx'), cgfs))
-    return concatMap(lambda xs: [fst(x.primitives) for x in xs], [s, p, d, f])
+    return concatMap(lambda xs: [fst(x.primitives) for x in xs],
+                     [s, p, d, f])
 
 # ============================================
 # Auxiliar functions

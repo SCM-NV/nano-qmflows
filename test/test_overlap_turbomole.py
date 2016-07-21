@@ -8,14 +8,14 @@ import h5py
 import numpy as np
 import os
 
-# ========================<>=======================
+# ===============================<>============================================
 from nac.basisSet.basisNormalization import createNormalizedCGFs
 from nac.common import InputKey
-from nac.integrals.overlapIntegral import calcMtxOverlapP
+from nac.integrals.overlapIntegral import CalcMtxOverlapP
 
 from utilsTest import offdiagonalTolerance, triang2mtx, try_to_remove
 
-# ========================<>=======================
+# ===============================<>============================================
 path_hdf5 = 'test_files/test.hdf5'
 path_MO = 'test_files/aomix_ethylene.in'
 
@@ -138,7 +138,7 @@ def test_overlap():
     css = np.transpose(trr)
     cgfsN = [dictCGFs[l] for l in labels]
     dim = sum(len(xs) for xs in cgfsN)
-    mtxP = triang2mtx(calcMtxOverlapP(mol, cgfsN), dim)
+    mtxP = triang2mtx(CalcMtxOverlapP(mol, cgfsN), dim)
     rs = np.dot(trr, np.dot(mtxP, css))
 
     print(rs[0])

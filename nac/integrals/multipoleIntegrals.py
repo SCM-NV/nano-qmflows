@@ -7,12 +7,115 @@ from qmworks.utils import concatMap
 import numpy as np
 # ==================> Internal modules <====================
 from multipoleObaraSaika import sab_efg  # compiled with cython
-from .overlapIntegral import build_primitives_gaussian
-from .overlapIntegral import calcIndexTriang, createTupleXYZ_CGF
 
 # ==================================<>======================================
 
 
+class CalcMultipoleMatrixP:
+    """
+    Generic class to calculate a matrix using a Gaussian basis set and
+    the molecular geometry.
+    """
+    def __init__(self, atoms, cgfsN):
+        """
+        :param atoms: Atomic label and cartesian coordinates
+        type atoms: List of namedTuples
+        :param cgfsN: Contracted gauss functions normalized, represented as
+        a list of tuples of coefficients and Exponents.
+        type cgfsN: [(Coeff, Expo)]
+        """
+        self.atoms = atoms
+        self.cgfsN = cgfsN
+
+    def __call__(self):
+        """
+        Build a matrix using a pool of worker and a function takes nuclear
+        corrdinates and a Contracted Gauss function and compute a number.
+        :returns: Numpy Array
+        """
+        def calcIndexTriang(n):
+            flatDim = (n ** 2 + n) // 2
+            xss = np.dstack(np.triu_indices(n))
+            return np.reshape(xss, (flatDim, 2))
+
+        xyz_cgfs = concatMap(lambda rs: createTupleXYZ_CGF(*rs),
+                             zip(self.atoms, self.cgfsN))
+        nOrbs = len(xyz_cgfs)
+        # Number of non-zero entries of a triangular mtx
+        indexes = calcIndexTriang(nOrbs)
+        pool = Pool()
+        rss = pool.map(partial(self.calcMatrixEntry, xyz_cgfs), indexes)
+        pool.close()
+
+        return np.array(list(rss))
+
+    def calcMatrixEntry(self):
+        """
+        Function to compute every element of the matrix.
+        """
+        raise NotImplementedError("The subclass must defined this method")
+
+
+# ==================================<>======================================
+orbitalIndexes = {
+    ("S", 0): 0, ("S", 1): 0, ("S", 2): 0,
+    ("Px", 0): 1, ("Px", 1): 0, ("Px", 2): 0,
+    ("Py", 0): 0, ("Py", 1): 1, ("Py", 2): 0,
+    ("Pz", 0): 0, ("Pz", 1): 0, ("Pz", 2): 1,
+    ("Dxx", 0): 2, ("Dxx", 1): 0, ("Dxx", 2): 0,
+    ("Dxy", 0): 1, ("Dxy", 1): 1, ("Dxy", 2): 0,
+    ("Dxz", 0): 1, ("Dxz", 1): 0, ("Dxz", 2): 1,
+    ("Dyy", 0): 0, ("Dyy", 1): 2, ("Dyy", 2): 0,
+    ("Dyz", 0): 0, ("Dyz", 1): 1, ("Dyz", 2): 1,
+    ("Dzz", 0): 0, ("Dzz", 1): 0, ("Dzz", 2): 2,
+    ("Fxxx", 0): 3, ("Fxxx", 1): 0, ("Fxxx", 2): 0,
+    ("Fxxy", 0): 2, ("Fxxy", 1): 1, ("Fxxy", 2): 0,
+    ("Fxxz", 0): 2, ("Fxxz", 1): 0, ("Fxxz", 2): 1,
+    ("Fxyy", 0): 1, ("Fxyy", 1): 2, ("Fxyy", 2): 0,
+    ("Fxyz", 0): 1, ("Fxyz", 1): 1, ("Fxyz", 2): 1,
+    ("Fxzz", 0): 1, ("Fxzz", 1): 0, ("Fxzz", 2): 2,
+    ("Fyyy", 0): 0, ("Fyyy", 1): 3, ("Fyyy", 2): 0,
+    ("Fyyz", 0): 0, ("Fyyz", 1): 2, ("Fyyz", 2): 1,
+    ("Fyzz", 0): 0, ("Fyzz", 1): 1, ("Fyzz", 2): 2,
+    ("Fzzz", 0): 0, ("Fzzz", 1): 0, ("Fzzz", 2): 3
+}
+
+
+def calcOrbType_Components(l, x):
+    """
+    Functions related to the orbital momenta indexes
+    :param l: Orbital momentum label
+    :type l: String
+    :param x: cartesian Component (x, y or z)
+    :param x: Int
+    :returns: integer representing orbital momentum l.
+    """
+    return orbitalIndexes[l, x]
+
+
+def build_primitives_gaussian(t):
+    """
+    Creates a primitve Gaussian function represented by a tuple containing
+    the Cartesian coordinates where it is centered, the spin momentum label
+    (S, Px, Py, Pz, etc.) and the Coefficients and exponent of it.
+    """
+    r, cgf = t
+    cs, es = cgf.primitives
+    l = cgf.orbType
+    return list(map(lambda rs: (r, l, rs), zip(cs, es)))
+
+
+def calcIndexTriang(n):
+    flatDim = (n ** 2 + n) // 2
+    xss = np.dstack(np.triu_indices(n))
+    return np.reshape(xss, (flatDim, 2))
+
+
+def createTupleXYZ_CGF(atom, cgfs):
+    xyz = atom.xyz
+    return [(xyz, cs) for cs in cgfs]
+
+# ==================================<>======================================
 def dipoleContracted(t1, t2, rc, e=1, f=1, g=1):
     """
     Matrix entry calculation between two Contracted Gaussian functions.

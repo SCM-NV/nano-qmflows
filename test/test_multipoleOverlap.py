@@ -9,7 +9,7 @@ import os
 
 
 # =================================<>==========================================
-from nac.integrals.overlapIntegral import calcMtxOverlapP
+from nac.integrals.overlapIntegral import CalcMtxOverlapP
 
 from utilsTest import (change_mol_units, create_dict_CGFs, triang2mtx,
                        try_to_remove)
@@ -36,7 +36,7 @@ def test_overlapMultipoles():
                                     basis, 'cp2k', mol)
     cgfsN = [dictCGFs[l] for l in labels]
     print(cgfsN)
-    arr = calcMtxOverlapP(mol, cgfsN)
+    arr = CalcMtxOverlapP(mol, cgfsN)
 
     with h5py.File(path_hdf5) as f5:
         f5.require_dataset('overlap_multipole', shape=np.shape(arr), data=arr,

@@ -1,15 +1,14 @@
 
 
 from qmworks.hdf5.quantumHDF5 import cp2k2hdf5
-from nac.integrals.overlapIntegral import calcMtxOverlapP
+from nac.integrals.overlapIntegral import CalcMtxOverlapP
 from qmworks.parsers.xyzParser import readXYZ
 
 import h5py
-import numpy as np
 import os
 
 # ========================<>=======================
-from utilsTest import (change_mol_units, create_dict_CGFs, triang2mtx, try_to_remove)
+from utilsTest import (change_mol_units, create_dict_CGFs, try_to_remove)
 # ========================<>=======================
 
 path_hdf5 = 'test_files/test.hdf5'
@@ -38,8 +37,7 @@ def test_overlap():
 
     cgfsN = [dictCGFs[l] for l in labels]
     dim = sum(len(xs) for xs in cgfsN)
-    # mtx = triang2mtx(calcMtxOverlapP(mol, cgfsN), dim)
-    mtx = calcMtxOverlapP(mol, cgfsN)
+    mtx = CalcMtxOverlapP(mol, cgfsN)
     try_to_remove(path_hdf5)
     # print(mtx[0])
     

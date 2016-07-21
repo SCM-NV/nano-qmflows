@@ -7,13 +7,14 @@ import h5py
 import numpy as np
 import os
 
-# ========================<>=======================
+# ======================================<>=====================================
 from nac.common import InputKey
-from nac.integrals.overlapIntegral import calcMtxOverlapP
+from nac.integrals.overlapIntegral import CalcMtxOverlapP
 from nac.integrals.spherical_Cartesian_cgf import calc_transf_matrix
 
-from utilsTest import  (change_mol_units, create_dict_CGFs, triang2mtx, try_to_remove)
-# ========================<>=======================
+from utilsTest import  (change_mol_units, create_dict_CGFs, triang2mtx,
+                        try_to_remove)
+# ======================================<>=====================================
 
 path_hdf5 = 'test_files/test.hdf5'
 
@@ -62,7 +63,7 @@ def test_sphericals_ethylene():
 
     cgfsN = [dictCGFs[l] for l in labels]
     dim = sum(len(xs) for xs in cgfsN)
-    mtxP = triang2mtx(calcMtxOverlapP(mol, cgfsN), dim)
+    mtxP = triang2mtx(CalcMtxOverlapP(mol, cgfsN), dim)
     css_t = np.transpose(css)
 
     overlapS = np.dot(css, np.dot(mtxP, css_t))
@@ -101,7 +102,7 @@ def test_sphericals_Cd16Se13_6HCOO():
 
     cgfsN = [dictCGFs[l] for l in labels]
     dim = sum(len(xs) for xs in cgfsN)
-    mtxP = triang2mtx(calcMtxOverlapP(mol, cgfsN), dim)
+    mtxP = triang2mtx(CalcMtxOverlapP(mol, cgfsN), dim)
     css_t = np.transpose(css)
 
     overlapS = np.dot(css, np.dot(mtxP, css_t))
