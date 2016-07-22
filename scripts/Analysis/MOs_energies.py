@@ -71,7 +71,6 @@ def plot_data(project, pathHDF5, nHOMOS, nLUMOS, save_fig):
 
 def main():
     project, f5, nh, nl, save_fig = obtain_data()
-    print(f5)
     plot_data(project, f5, nh, nl, save_fig)
 
 # =================<>================================
