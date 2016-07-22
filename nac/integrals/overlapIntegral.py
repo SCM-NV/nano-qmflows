@@ -3,31 +3,9 @@ __author__ = "Felipe Zapata"
 # ==========> Standard libraries and third-party <===============
 
 from multipoleObaraSaika import sab
-from nac.integrals.multipoleIntegrals import (CalcMultipoleMatrixP,
+from nac.integrals.multipoleIntegrals import (calcMultipoleMatrixP,
                                               build_primitives_gaussian)
 # ====================================<>=======================================
-
-
-class CalcMtxOverlapP(CalcMultipoleMatrixP):
-    """
-    Overlap matrix entry calculation between two Contracted Gaussian functions
-    """
-
-    def __init__(atoms, cgfsN):
-        super.__init__(atoms, cgfsN)
-
-    def calcMatrixEntry(self, xyz_cgfs, ixs):
-        """
-        Computed each matrix element using an index a tuple containing the
-        cartesian coordinates and the primitives gauss functions.
-        :param xyz_cgfs: List of tuples containing the cartesian coordinates
-        and the primitive gauss functions.
-        :type xyz_cgfs: [(xyz, (Coeff, Expo))]
-        """
-        i, j = ixs
-        t1 = xyz_cgfs[i]
-        t2 = xyz_cgfs[j]
-        return sijContracted(t1, t2)
 
 
 def sijContracted(t1, t2):
@@ -45,3 +23,26 @@ def sijContracted(t1, t2):
     gs2 = build_primitives_gaussian(t2)
 
     return sum(sab(g1, g2) for g1 in gs1 for g2 in gs2)
+
+
+def calcMatrixEntry(xyz_cgfs, ixs):
+    """
+    Computed each matrix element using an index a tuple containing the
+    cartesian coordinates and the primitives gauss functions.
+    :param xyz_cgfs: List of tuples containing the cartesian coordinates
+    and the primitive gauss functions.
+    :type xyz_cgfs: [(xyz, (Coeff, Expo))]
+    """
+    i, j = ixs
+    t1 = xyz_cgfs[i]
+    t2 = xyz_cgfs[j]
+    return sijContracted(t1, t2)
+
+
+def calcMtxOverlapP(atoms, cgfsN):
+    """
+    Overlap matrix entry calculation between two Contracted Gaussian functions
+    """
+
+    return calcMultipoleMatrixP(atoms, cgfsN, calcMatrixEntry=calcMatrixEntry)
+

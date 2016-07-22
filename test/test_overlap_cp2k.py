@@ -1,7 +1,7 @@
 
 from qmworks.common import InputKey
 from qmworks.hdf5.quantumHDF5 import cp2k2hdf5
-from qmworks.integrals.overlapIntegral import CalcMtxOverlapP
+from qmworks.integrals.overlapIntegral import calcMtxOverlapP
 from qmworks.parsers.xyzParser import readXYZ
 
 from os.path import join
@@ -83,7 +83,7 @@ def test_store_MO_h5():
 #     css = np.transpose(trr)
 #     cgfsN = [dictCGFs[l] for l in labels]
 #     dim = sum(len(xs) for xs in cgfsN)
-#     mtxP = triang2mtx(CalcMtxOverlapP(mol, cgfsN), dim)
+#     mtxP = triang2mtx(calcMtxOverlapP(mol, cgfsN), dim)
 #     rs = np.dot(trr, np.dot(mtxP, css))
 
 #     # xs = format_aomix(mtxP, dim)

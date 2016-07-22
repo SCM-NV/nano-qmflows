@@ -7,7 +7,7 @@ from multiprocessing import Pool
 import numpy as np
 import sys
 # ==================> Internal modules <==========
-from nac.integrals.overlapIntegral import CalcMtxOverlapP
+from nac.integrals.overlapIntegral import calcMtxOverlapP
 
 # ==================================<>=========================================
 au_time = 2.41888432e-2  # 1 au of time is  2.41888432e-2 femtoseconds
@@ -113,7 +113,7 @@ def overlap_molecular(cgfsN, trans_mtx, geometry, mos):
     :param mos: Molecular orbitals coefficients
     :type mos: Numpy Martrix
     """
-    atomic_overlap = CalcMtxOverlapP(geometry, cgfsN)
+    atomic_overlap = calcMtxOverlapP(geometry, cgfsN)
     mosT = np.transpose(mos)
     if trans_mtx is not None:
         transpose = np.transpose(trans_mtx)

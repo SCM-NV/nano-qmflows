@@ -11,27 +11,23 @@ from multipoleObaraSaika import sab_efg  # compiled with cython
 # ==================================<>======================================
 
 
-class CalcMultipoleMatrixP:
+def calcMultipoleMatrixP(atoms, cgfsN, calcMatrixEntry=None):
     """
-    Generic class to calculate a matrix using a Gaussian basis set and
+    Generic function to calculate a matrix using a Gaussian basis set and
     the molecular geometry.
+    :param atoms: Atomic label and cartesian coordinates
+    type atoms: List of namedTuples
+    :param cgfsN: Contracted gauss functions normalized, represented as
+    a list of tuples of coefficients and Exponents.
+    type cgfsN: [(Coeff, Expo)]
+    :param calcMatrixEntry: Function to compute the matrix elements.
+    :type calcMatrixEntry: Function
+    :returns: Numpy Array
     """
-    def __init__(self, atoms, cgfsN):
-        """
-        :param atoms: Atomic label and cartesian coordinates
-        type atoms: List of namedTuples
-        :param cgfsN: Contracted gauss functions normalized, represented as
-        a list of tuples of coefficients and Exponents.
-        type cgfsN: [(Coeff, Expo)]
-        """
-        self.atoms = atoms
-        self.cgfsN = cgfsN
-
-    def __call__(self):
+    def run(fun_calc_entry):
         """
         Build a matrix using a pool of worker and a function takes nuclear
         corrdinates and a Contracted Gauss function and compute a number.
-        :returns: Numpy Array
         """
         def calcIndexTriang(n):
             flatDim = (n ** 2 + n) // 2
@@ -39,21 +35,17 @@ class CalcMultipoleMatrixP:
             return np.reshape(xss, (flatDim, 2))
 
         xyz_cgfs = concatMap(lambda rs: createTupleXYZ_CGF(*rs),
-                             zip(self.atoms, self.cgfsN))
+                             zip(atoms, cgfsN))
         nOrbs = len(xyz_cgfs)
         # Number of non-zero entries of a triangular mtx
         indexes = calcIndexTriang(nOrbs)
         pool = Pool()
-        rss = pool.map(partial(self.calcMatrixEntry, xyz_cgfs), indexes)
+        rss = pool.map(partial(fun_calc_entry, xyz_cgfs), indexes)
         pool.close()
 
         return np.array(list(rss))
 
-    def calcMatrixEntry(self):
-        """
-        Function to compute every element of the matrix.
-        """
-        raise NotImplementedError("The subclass must defined this method")
+    return run(calcMatrixEntry)
 
 
 # ==================================<>======================================
@@ -116,6 +108,8 @@ def createTupleXYZ_CGF(atom, cgfs):
     return [(xyz, cs) for cs in cgfs]
 
 # ==================================<>======================================
+
+
 def dipoleContracted(t1, t2, rc, e=1, f=1, g=1):
     """
     Matrix entry calculation between two Contracted Gaussian functions.
@@ -187,8 +181,8 @@ def triang2mtx(arr, dim):
     return rss
 
 
-def calculateDipoleCenter(atoms, cgfsN):
-    """
-    """
-    overlap = calcMtxOverlapP(atoms, cgfsN)
+# def calculateDipoleCenter(atoms, cgfsN):
+#     """
+#     """
+#     overlap = calcMtxOverlapP(atoms, cgfsN)
     
