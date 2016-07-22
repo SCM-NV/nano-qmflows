@@ -1,38 +1,18 @@
-import matplotlib
-matplotlib.use('Agg')
-from matplotlib.backends.backend_pdf import PdfPages
 from os.path import join
+from interactive import ask_question
 
-import argparse
 import h5py
 import matplotlib.pyplot as plt
 import numpy as np
 
 #  ======================================<>====================================
-msg = " script -p ProjectName -f5 <path/to/hdf5>"
-
-parser = argparse.ArgumentParser(description=msg)
-parser.add_argument('-p', required=True,
-                    help='Project Name')
-parser.add_argument('-f5', required=True,
-                    help='Path to the HDF5')
-parser.add_argument('-nh', help='Number of HOMOS to plot (default 10)',
-                    type=int)
-parser.add_argument('-nl', help='Number of LUMOS to plot (default 10)',
-                    type=int)
-
-
-def read_cmd_line():
-    """
-    Parse Command line options.
-    """
-    args = parser.parse_args()
-    project = args.p
-    f5 = args.f5
-    nh = args.nh if args.nh is not None else 10
-    nl = args.nl if args.nl is not None else 10
-
-    return project, f5, nh, nl
+def obtain_data():
+    project = ask_question('What is the project name? ')
+    f5 = ask_question('What is the path of the hdf5-file? ')
+    nh = ask_question('What is the number of HOMOs to plot? [Default: 10] ', special='int', default='10')
+    nl = ask_question('What is the number of LUMOs to plot? [Default: 10] ', special='int', default='10')
+    save_fig = ask_question('Do you want to save the plot (y/n)? [Default: n] ', special='bool', default='n')
+    return project, f5, nh, nl, save_fig
 
 
 #  ======================================<>====================================
@@ -60,7 +40,7 @@ def fetch_data(project, path_HDF5):
     return list(map(lambda x: x.dot(h2ev), ess))
 
 
-def plot_data(project, pathHDF5, nHOMOS=None, nLUMOS=None):
+def plot_data(project, pathHDF5, nHOMOS, nLUMOS, save_fig):
     """
     Generates a PDF containing the representantion of the eigenvalues for
     a molecular system called `project` and stored in `pathHDF5`.
@@ -68,21 +48,31 @@ def plot_data(project, pathHDF5, nHOMOS=None, nLUMOS=None):
     ess = fetch_data(project, pathHDF5)
     rs = np.transpose(np.stack(ess))
     ts = np.arange(len(ess))
-    with PdfPages('Eigenvalues.pdf') as pp:
-        plt.figure(1)
-        plt.title('EigenValues')
-        plt.ylabel('Energy [ev]')
-        plt.xlabel('Time [fs]')
-        for i in range(nHOMOS):
-            plt.plot(ts, rs[99 - i], 'b')
-        for i in range(nLUMOS):
-            plt.plot(ts, rs[100 + i], 'g')
-        pp.savefig()
+
+
+    magnifying_factor = 1
+    cm2inch = 0.393700787
+    plt.figure(figsize=(8.25*cm2inch*magnifying_factor, 6*cm2inch*magnifying_factor), dpi= 300/magnifying_factor )
+    plt.title('EigenValues')
+    plt.ylabel('Energy [ev]')
+    plt.xlabel('Time [fs]')
+    for i in range(nHOMOS):
+        plt.plot(ts, rs[99 - i], 'b')
+    for i in range(nLUMOS):
+        plt.plot(ts, rs[100 + i], 'g')
+
+        plt.tight_layout()
+
+    if save_fig:
+        plt.savefig('Eigenvalues.pdf', dpi=300 / magnifying_factor, format='pdf')
+
+    plt.show()
 
 
 def main():
-    project, f5, nh, nl = read_cmd_line()
-    plot_data(project, f5, nh, nl)
+    project, f5, nh, nl, save_fig = obtain_data()
+    print(f5)
+    plot_data(project, f5, nh, nl, save_fig)
 
 # =================<>================================
 
