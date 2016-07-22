@@ -47,7 +47,7 @@ def calculateDipoleCenter(atoms, cgfsN, css, overlap):
     return tuple(map(lambda x: - x / overlap), xs_sum)
 
 
-def  oscillator_strength(atoms, cgfsN, coeffs, energy):
+def  oscillator_strength(atoms, cgfsN, css, energy):
     """
     :param atoms: Atomic label and cartesian coordinates
     type atoms: List of namedTuples
@@ -55,13 +55,10 @@ def  oscillator_strength(atoms, cgfsN, coeffs, energy):
     a list of tuples of coefficients and Exponents.
     type cgfsN: [(Coeff, Expo)]
     :param coeffs: MO coefficients.
-    :type coeffs: Numpy array
+    :type coeffs: Numpy Matrix.
     :param energy: MO energy.
     :type energy: Double
     """
-    sh, = coeffs.shape
-    css = np.tile(coeffs, sh)
-
     overlap = calcMtxOverlapP(atoms, cgfsN)
     overlap_sum = computeIntegralSum(overlap, css)
     rc = calculateDipoleCenter(atoms, cgfsN, css, overlap_sum)
