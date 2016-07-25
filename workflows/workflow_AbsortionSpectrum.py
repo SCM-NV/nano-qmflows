@@ -21,6 +21,132 @@ from nac.schedule.scheduleCoupling import  schedule_transf_matrix
 # ==============================> Main <==================================
 
 
+def simulate_absoprtion_spectrum(package_name, project_name, geometry,
+                                 package_args, guess_args=None,
+                                 initial_states=None, final_states=None,
+                                 calc_new_wf_guess_on_points=[0],
+                                 path_hdf5=None, package_config=None):
+    """
+    Compute the oscillator strength
+
+    :param package_name: Name of the package to run the QM simulations.
+    :type  package_name: String
+    :param project_name: Folder name where the computations
+    are going to be stored.
+    :type project_name: String
+    :param all_geometries:string containing the molecular geometries
+    numerical results.
+    :type path_traj_xyz: String
+    :param package_args: Specific settings for the package
+    :type package_args: dict
+    :param package_args: Specific settings for guess calculate with `package`.
+    :type package_args: dict
+    :param initial_states: List of the initial Electronic states.
+    :type initial_states: [Int]
+    :param final_states: List containing the sets of possible electronic states.
+    :type final_states: [[Int]]
+    :param calc_new_wf_guess_on_points: Points where the guess wave functions
+    are calculated.
+    :type use_wf_guess_each: [Int]
+    :param package_config: Parameters required by the Package.
+    :type package_config: Dict
+    :returns: None
+    """
+    #  Environmental Variables
+    cwd = os.path.realpath(".")
+    
+    basisName = package_args.basis
+    work_dir = os.path.join(cwd, project_name)
+    if path_hdf5 is None:
+        path_hdf5 = os.path.join(work_dir, "quantum.hdf5")
+
+    # Create Work_dir if it does not exist
+    if os.path.exists(work_dir):
+        shutil.rmtree(work_dir)
+        os.makedirs(work_dir)
+
+    # Generate a list of tuples containing the atomic label
+    # and the coordinates to generate
+    # the primitive CGFs
+    atoms = parse_string_xyz(geometry[0])
+    dictCGFs = create_dict_CGFs(path_hdf5, basisName, atoms, package_config)
+
+    # Calculcate the matrix to transform from cartesian to spherical
+    # representation of the overlap matrix
+    hdf5_trans_mtx = schedule_transf_matrix(path_hdf5, atoms,
+                                            basisName, project_name,
+                                            packageName=package_name)
+
+    # Create a folder for each point the the dynamics
+    traj_folders = create_point_folder(work_dir, 1, 0)
+
+    # prepare Cp2k Jobs
+    # Point calculations Using CP2K
+    mo_paths_hdf5 = calculate_mos(package_name, geometry, project_name,
+                                  path_hdf5, traj_folders, package_args,
+                                  guess_args, calc_new_wf_guess_on_points=[0],
+                                  enumerate_from=0,
+                                  package_config=package_config)
+    
+    oscillators = calcOscillatorStrenghts(project_name, mo_paths_hdf5, dictCGFs,
+                                          geometry, path_hdf5, mo_paths_hdf5[0],
+                                          hdf5_trans_mtx=hdf5_trans_mtx,
+                                          initial_states=initial_states,
+                                          final_states=final_states)
+    rs = run(oscillators)
+    print(rs)
+
+
+def calcOscillatorStrenghts(project_name, mo_paths_hdf5, dictCGFs, geometry,
+                            path_hdf5, mo_path_hdf5, hdf5_trans_mtx=None,
+                            initial_states=None, final_states=None):
+    """
+    Use the Molecular orbital Energies and Coefficients to compute the
+    oscillator_strength.
+    """
+    cgfsN = [dictCGFs[x.symbol] for x in geometry]
+
+    es, coeffs = retrieve_hdf5_data(path_hdf5, mo_path_hdf5[0])
+
+    # If the MO orbitals are given in Spherical Coordinates transform then to
+    # Cartesian Coordinates.
+    trans_mtx = retrieve_hdf5_data(path_hdf5, hdf5_trans_mtx) if hdf5_trans_mtx else None
+
+    oscillators = []
+    for initialS, fs in zip(initial_states, final_states):
+        css_i = coeffs[:, initialS]
+        energy_i = es[initialS]
+        for finalS in fs:
+            css_j = coeffs[:, initialS]
+            energy_j = es[finalS]
+            deltaE = energy_j - energy_i
+            fij = callScheduleOsc(geometry, cgfsN, css_i, css_j, deltaE,
+                                  trans_mtx=trans_mtx)
+            oscillators.append(fij)
+
+    return oscillators
+
+
+def callScheduleOsc(geometry, cgfsN, css, energy, hdf5_trans_mtx=None):
+    """
+    """
+    scheduleOscillatorStrength = schedule(oscillator_strength)
+    sh, = coeffs.shape
+    css = np.tile(coeffs, sh)
+    
+    if hdf5_trans_mtx is not None:
+        transpose = np.transpose(trans_mtx)
+        css = np.dot(trans_mtx, np.dot(css, transpose))  # Overlap in Sphericals
+    
+
+  
+        
+        
+        fij = scheduleOscillatorStrength(geometry, cgfsN, css, energy)
+        
+# ===================================<>========================================
+
+
 def main():
     """
     Initialize the arguments to compute the nonadiabatic coupling matrix for
@@ -92,94 +218,6 @@ def main():
                                  package_config=cp2k_config)
 
 
-def simulate_absoprtion_spectrum(package_name, project_name, geometry,
-                                 package_args, guess_args=None,
-                                 initial_states=None, final_states=None,
-                                 calc_new_wf_guess_on_points=[0],
-                                 path_hdf5=None, package_config=None):
-    """
-    Compute the oscillator strength
-
-    :param package_name: Name of the package to run the QM simulations.
-    :type  package_name: String
-    :param project_name: Folder name where the computations
-    are going to be stored.
-    :type project_name: String
-    :param all_geometries:string containing the molecular geometries
-    numerical results.
-    :type path_traj_xyz: String
-    :param package_args: Specific settings for the package
-    :type package_args: dict
-    :param package_args: Specific settings for guess calculate with `package`.
-    :type package_args: dict
-    :param initial_states: List of the initial Electronic states.
-    :type initial_states: [Int]
-    :param final_states: List containing the sets of possible electronic states.
-    :type final_states: [[Int]]
-    :param calc_new_wf_guess_on_points: Points where the guess wave functions
-    are calculated.
-    :type use_wf_guess_each: [Int]
-    :param package_config: Parameters required by the Package.
-    :type package_config: Dict
-    :returns: None
-    """
-    #  Environmental Variables
-    cwd = os.path.realpath(".")
-    
-    basisName = package_args.basis
-    work_dir = os.path.join(cwd, project_name)
-    if path_hdf5 is None:
-        path_hdf5 = os.path.join(work_dir, "quantum.hdf5")
-
-    # Create Work_dir if it does not exist
-    if os.path.exists(work_dir):
-        shutil.rmtree(work_dir)
-        os.makedirs(work_dir)
-
-    # Generate a list of tuples containing the atomic label
-    # and the coordinates to generate
-    # the primitive CGFs
-    atoms = parse_string_xyz(geometry[0])
-    dictCGFs = create_dict_CGFs(path_hdf5, basisName, atoms, package_config)
-
-    # Calculcate the matrix to transform from cartesian to spherical
-    # representation of the overlap matrix
-    hdf5_trans_mtx = schedule_transf_matrix(path_hdf5, atoms,
-                                            basisName, project_name,
-                                            packageName=package_name)
-
-    # Create a folder for each point the the dynamics
-    traj_folders = create_point_folder(work_dir, 1, 0)
-
-    # prepare Cp2k Jobs
-    # Point calculations Using CP2K
-    mo_paths_hdf5 = calculate_mos(package_name, geometry, project_name,
-                                  path_hdf5, traj_folders, package_args,
-                                  guess_args, calc_new_wf_guess_on_points=[0],
-                                  enumerate_from=0, package_config=package_config)
-
-    computeIntegrals(mo_paths_hdf5, dictCGFs, geometry, path_hdf5,
-                     mo_paths_hdf5[0], hdf5_trans_mtx=hdf5_trans_mtx,
-                     initial_states=initial_states, final_states=final_states)
-
-
-def computeIntegrals(mo_paths_hdf5, dictCGFs, geometry, path_hdf5, mo_path_hdf5,
-                     hdf5_trans_mtx=None, initial_states=None,
-                     final_states=None):
-    """
-    """
-    coeffs = retrieve_hdf5_data(path_hdf5, mo_path_hdf5)
-    sh, = coeffs.shape
-    css = np.tile(coeffs, sh)
-    if hdf5_trans_mtx is not None:
-        trans_mtx = retrieve_hdf5_data(path_hdf5, hdf5_trans_mtx)
-        transpose = np.transpose(trans_mtx)
-        css = np.dot(trans_mtx, np.dot(css, transpose))  # Overlap in Sphericals
-
-
-
-
-    
 # ===================================<>========================================
 if __name__ == "__main__":
     main()
