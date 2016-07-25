@@ -6,7 +6,6 @@ import matplotlib.pyplot as plt
 import glob
 
 from interactive import ask_question
-from matplotlib.backends.backend_pdf import PdfPages
 
 
 def read_value(fname, mo1=101, mo2=100):
@@ -78,7 +77,7 @@ def main():
 
 
     if files:
-        list_coupling = [compute_values('Ham_{}_im'.format(i), m1, m2, r2meV) for i in range(len(files))]#list(map(lambda fn: compute_values(fn, m1, m2, r2meV), files))
+        list_coupling = [compute_values('Ham_{}_im'.format(i), m1, m2, r2meV) for i in range(len(files))]
         plot_stuff(list_coupling, m1, m2, plot_mean=q3, save_plot=q4)
     else:
         print('ERROR: No files found. Please make sure that you are in the '
