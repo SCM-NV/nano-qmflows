@@ -127,23 +127,20 @@ def calcOscillatorStrenghts(project_name, mo_paths_hdf5, dictCGFs, geometry,
     return oscillators
 
 
-def callScheduleOsc(geometry, cgfsN, css, energy, hdf5_trans_mtx=None):
+def callScheduleOsc(geometry, cgfsN, css_i, css_j energy,
+                    hdf5_trans_mtx=None):
     """
     """
     scheduleOscillatorStrength = schedule(oscillator_strength)
     sh, = coeffs.shape
     css = np.tile(coeffs, sh)
-    
+
     if hdf5_trans_mtx is not None:
         transpose = np.transpose(trans_mtx)
         css = np.dot(trans_mtx, np.dot(css, transpose))  # Overlap in Sphericals
-    
 
-  
-        
-        
-        fij = scheduleOscillatorStrength(geometry, cgfsN, css, energy)
-        
+    return scheduleOscillatorStrength(geometry, cgfsN, css, energy)
+
 # ===================================<>========================================
 
 
