@@ -15,8 +15,9 @@ import shutil
 from nac.common import retrieve_hdf5_data
 from nac.integrals.absorptionSpectrum import oscillator_strength
 from nac.schedule.components import (calculate_mos, create_dict_CGFs,
-                                     create_point_folder, split_file_geometries)
-from nac.schedule.scheduleCoupling import  schedule_transf_matrix
+                                     create_point_folder,
+                                     split_file_geometries)
+from nac.schedule.scheduleCoupling import schedule_transf_matrix
 
 # ==============================> Main <==================================
 
@@ -43,7 +44,8 @@ def simulate_absoprtion_spectrum(package_name, project_name, geometry,
     :type package_args: dict
     :param initial_states: List of the initial Electronic states.
     :type initial_states: [Int]
-    :param final_states: List containing the sets of possible electronic states.
+    :param final_states: List containing the sets of possible electronic
+    states.
     :type final_states: [[Int]]
     :param calc_new_wf_guess_on_points: Points where the guess wave functions
     are calculated.
@@ -88,8 +90,9 @@ def simulate_absoprtion_spectrum(package_name, project_name, geometry,
                                   enumerate_from=0,
                                   package_config=package_config)
     
-    oscillators = calcOscillatorStrenghts(project_name, mo_paths_hdf5, dictCGFs,
-                                          geometry, path_hdf5, mo_paths_hdf5[0],
+    oscillators = calcOscillatorStrenghts(project_name, mo_paths_hdf5,
+                                          dictCGFs, geometry,
+                                          path_hdf5, mo_paths_hdf5[0],
                                           hdf5_trans_mtx=hdf5_trans_mtx,
                                           initial_states=initial_states,
                                           final_states=final_states)
@@ -103,6 +106,23 @@ def calcOscillatorStrenghts(project_name, mo_paths_hdf5, dictCGFs, geometry,
     """
     Use the Molecular orbital Energies and Coefficients to compute the
     oscillator_strength.
+
+    :param project_name: Folder name where the computations
+    are going to be stored.
+    :type project_name: String
+    :param mo_paths: Path to the MO coefficients and energies in the
+    HDF5 file.
+    :type mo_paths: [String]
+    :param path_hdf5: Path to the HDF5 file that contains the
+    numerical results.
+    :type path_hdf5: String
+    :param hdf5_trans_mtx: path to the transformation matrix in the HDF5 file.
+    :type hdf5_trans_mtx: String
+    :param initial_states: List of the initial Electronic states.
+    :type initial_states: [Int]
+    :param final_states: List containing the sets of possible electronic
+    states.
+    :type final_states: [[Int]]
     """
     cgfsN = [dictCGFs[x.symbol] for x in geometry]
 
@@ -127,9 +147,20 @@ def calcOscillatorStrenghts(project_name, mo_paths_hdf5, dictCGFs, geometry,
     return oscillators
 
 
-def callScheduleOsc(geometry, cgfsN, css_i, css_j energy,
+def callScheduleOsc(geometry, cgfsN, css_i, css_j, deltaE,
                     hdf5_trans_mtx=None):
     """
+    :param geometry: molecular geometry.
+    :type geometry: [namedtuple("AtomXYZ", ("symbol", "xyz"))]
+    :paramter dictCGFS: Dictionary from Atomic Label to basis set.
+    :type     dictCGFS: Dict String [CGF],
+              CGF = ([Primitives], AngularMomentum),
+              Primitive = (Coefficient, Exponent)
+    :param css_i: Array containing the coefficient of the ith Energy state.
+    :type css_i: Numpy Vector
+    :param css_j: Array containing the coefficient of the jth Energy state.
+    :type css_i: Numpy Vector
+    :param deltaE: energy difference i -> j
     """
     scheduleOscillatorStrength = schedule(oscillator_strength)
     sh, = coeffs.shape
@@ -137,9 +168,10 @@ def callScheduleOsc(geometry, cgfsN, css_i, css_j energy,
 
     if hdf5_trans_mtx is not None:
         transpose = np.transpose(trans_mtx)
-        css = np.dot(trans_mtx, np.dot(css, transpose))  # Overlap in Sphericals
+        # Overlap in Sphericals
+        css = np.dot(trans_mtx, np.dot(css, transpose))
 
-    return scheduleOscillatorStrength(geometry, cgfsN, css, energy)
+    return scheduleOscillatorStrength(geometry, cgfsN, css, deltaE)
 
 # ===================================<>========================================
 
