@@ -49,7 +49,7 @@ def plot_stuff(arr, mo1, mo2, xl='time [fs]', yl='n.a. coupling [meV]',
     
     if save_plot:
         fileName  = "coupling_{:d}_{:d}.pdf".format(mo1, mo2)
-        plt.savefig(fileName, format='pdf', dpi=600/magnifying_factor)
+        plt.savefig(fileName, format='pdf', dpi=300/magnifying_factor)
     plt.show()
 
             
