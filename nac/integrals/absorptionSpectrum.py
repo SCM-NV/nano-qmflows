@@ -15,6 +15,16 @@ exponents = [{'e': 1, 'f': 0, 'g': 0}, {'e': 0, 'f': 1, 'g': 0},
              {'e': 0, 'f': 0, 'g': 1}]
 
 
+def transform2Spherical(mtx, trans_mtx):
+    """
+    Transform a matrix containing integrals in cartesian coordinates to a matrix
+    in spherical coordinates.
+    """
+    trr = np.transpose(trans_mtx)
+
+    return np.dot(trans_mtx, np.dot(mtx, trr))
+
+
 def computeIntegralSum(arrT, arr, mtx):
     """
     Calculate the operation sum(arr^t mtx arr)
@@ -22,7 +32,7 @@ def computeIntegralSum(arrT, arr, mtx):
     return np.sum(np.dot(arrT, np.dot(mtx, arr)))
 
 
-def calculateDipoleCenter(atoms, cgfsN, css, overlap):
+def calculateDipoleCenter(atoms, cgfsN, css, overlap, trans_mtx):
     """
     Calculate the point where the dipole is centered.
     :param atoms: Atomic label and cartesian coordinates
@@ -38,16 +48,19 @@ def calculateDipoleCenter(atoms, cgfsN, css, overlap):
                        - \braket{\Psi_i \mid \hat{x} \mid \Psi_i}
     """
     rc = (0, 0, 0)
-    mtx_integrals = [calcMtxMultipoleP(atoms, cgfsN, rc, **kw)
-                     for kw in exponents]
-
+    mtx_integrals_cart = [calcMtxMultipoleP(atoms, cgfsN, rc, **kw)
+                          for kw in exponents]
+    mtx_integrals_spher = [transform2Spherical(x, trans_mtx) for x
+                           in mtx_integrals_cart]
+    
     cssT = np.transpose(css)
-    xs_sum = list(map(partial(computeIntegralSum, cssT, css), mtx_integrals))
+    xs_sum = list(map(partial(computeIntegralSum, cssT, css),
+                      mtx_integrals_spher))
 
     return tuple(map(lambda x: - x / overlap), xs_sum)
 
 
-def  oscillator_strength(atoms, cgfsN, css_i, css_j, energy):
+def  oscillator_strength(atoms, cgfsN, css_i, css_j, energy, trans_mtx):
     """
     :param atoms: Atomic label and cartesian coordinates
     type atoms: List of namedTuples
@@ -60,8 +73,13 @@ def  oscillator_strength(atoms, cgfsN, css_i, css_j, energy):
     :type coeffs: Numpy Matrix.
     :param energy: MO energy.
     :type energy: Double
+    :param trans_mtx: Transformation matrix to translate from Cartesian
+    to Sphericals.
+    :type trans_mtx: Numpy Matrix
+    :returns: Oscillator strength (float)
     """
-    overlap = calcMtxOverlapP(atoms, cgfsN)
+    overlap_cart = calcMtxOverlapP(atoms, cgfsN)
+    overlap = transform2Spherical(overlap_cart, trans_mtx)
     css_i_T = np.transpose(css_i)
     overlap_sum = computeIntegralSum(css_i_T, css_i, overlap)
     rc = calculateDipoleCenter(atoms, cgfsN, css_i, overlap_sum)
