@@ -53,7 +53,7 @@ def calculateDipoleCenter(atoms, cgfsN, css, overlap, trans_mtx):
     
     mtx_triang_cart = [calcMtxMultipoleP(atoms, cgfsN, rc, **kw)
                        for kw in exponents]
-    mtx_integrals_cart = [triang2mtx(xs, dimSpher)
+    mtx_integrals_cart = [triang2mtx(xs, dimCart)
                           for xs in mtx_triang_cart]
     mtx_integrals_spher = [transform2Spherical(x, trans_mtx) for x
                            in mtx_integrals_cart]
