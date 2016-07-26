@@ -82,7 +82,7 @@ def calcMtxMultipoleP(atoms, cgfsN, rc, e=0, f=0, g=0):
     It uses a partial applied function to pass the center of the multipole `rc`
     and the coefficients of the operator x^e y^f z^g
     """
-    curriedFun = partial(calcMatrixEntry(rc, e, f, g))
+    curriedFun = partial(calcMatrixEntry, rc, e, f, g)
 
     return calcMultipoleMatrixP(atoms, cgfsN, calcMatrixEntry=curriedFun)
 
