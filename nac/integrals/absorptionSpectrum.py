@@ -62,7 +62,7 @@ def calculateDipoleCenter(atoms, cgfsN, css, overlap, trans_mtx):
     xs_sum = list(map(partial(computeIntegralSum, cssT, css),
                       mtx_integrals_spher))
 
-    return tuple(map(lambda x: - x / overlap), xs_sum)
+    return tuple(map(lambda x: - x / overlap, xs_sum))
 
 
 def  oscillator_strength(atoms, cgfsN, css_i, css_j, energy, trans_mtx):
@@ -94,6 +94,7 @@ def  oscillator_strength(atoms, cgfsN, css_i, css_j, energy, trans_mtx):
     overlap_sum = computeIntegralSum(css_i_T, css_i, overlap)
     rc = calculateDipoleCenter(atoms, cgfsN, css_i, overlap_sum, trans_mtx)
 
+    print("Dipole center is: ", rc)
     mtx_integrals = [calcMtxMultipoleP(atoms, cgfsN, rc, **kw)
                      for kw in exponents]
 
