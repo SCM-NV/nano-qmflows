@@ -95,14 +95,14 @@ def  oscillator_strength(atoms, cgfsN, css_i, css_j, energy, trans_mtx):
     rc = calculateDipoleCenter(atoms, cgfsN, css_i, overlap_sum, trans_mtx)
 
     print("Dipole center is: ", rc)
-    mtx_integrals_triang = [calcMtxMultipoleP(atoms, cgfsN, rc, **kw)
-                            for kw in exponents]
-    mtx_integrals_cart = [triang2mtx(xs, dimCart)
-                          for xs in mtx_integrals_triang]
-    mtx_integrals_spher = [transform2Spherical(x, trans_mtx) for x
-                           in mtx_integrals_cart]
-    sum_integrals = sum(lambda x: x ** 2,
-                        map(lambda mtx: computeIntegralSum(css_i_T, css_j, mtx),
+    mtx_integrals_triang = tuple(calcMtxMultipoleP(atoms, cgfsN, rc, **kw)
+                            for kw in exponents)
+    mtx_integrals_cart = tuple(triang2mtx(xs, dimCart)
+                          for xs in mtx_integrals_triang)
+    mtx_integrals_spher = tuple(transform2Spherical(x, trans_mtx) for x
+                           in mtx_integrals_cart)
+    sum_integrals = sum(x ** 2 for x in
+                        map(partial(computeIntegralSum, css_i_T, css_j),
                             mtx_integrals_spher))
 
     return (2 / 3) * energy * sum_integrals
