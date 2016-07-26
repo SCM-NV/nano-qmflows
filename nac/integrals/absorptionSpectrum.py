@@ -107,9 +107,9 @@ def  oscillator_strength(atoms, cgfsN, css_i, css_j, energy, trans_mtx):
     print("Dipole center is: ", rc)
     mtx_integrals_spher = flattenCartesian2MtxSpherical(atoms, cgfsN, rc,
                                                         trans_mtx)
-    css_i_T = np.transpose(css_i)
+    css_j_T = np.transpose(css_j)
     sum_integrals = sum(x ** 2 for x in
-                        map(partial(computeIntegralSum, css_i_T, css_j),
+                        map(partial(computeIntegralSum, css_j_T, css_i),
                             mtx_integrals_spher))
 
     return (2 / 3) * energy * sum_integrals
