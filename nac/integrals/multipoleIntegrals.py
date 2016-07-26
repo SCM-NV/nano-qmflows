@@ -62,7 +62,7 @@ def dipoleContracted(t1, t2, rc, e=1, f=1, g=1):
     return sum(sab_efg(g1, g2, rc, e, f, g) for g1 in gs1 for g2 in gs2)
 
 
-def calcMatrixEntry(xyz_cgfs, ixs):
+def calcMatrixEntry(xyz_cgfs, ixs, rc, e=1, f=1, g=1):
     """
     Computed each matrix element using an index a tuple containing the
     cartesian coordinates and the primitives gauss functions.
@@ -81,7 +81,9 @@ def calcMtxMultipoleP(atoms, cgfsN, rc, e=1, f=1, g=1):
     Overlap matrix entry calculation between two Contracted Gaussian functions
     """
 
-    return calcMultipoleMatrixP(atoms, cgfsN, calcMatrixEntry=calcMatrixEntry)
+    curriedFun = lambda ts, ixs: calcMatrixEntry(ts, ixs, rc, e, f, g)
+    
+    return calcMultipoleMatrixP(atoms, cgfsN, calcMatrixEntry=curriedFun)
 
 
 # ==================================<>=========================================
