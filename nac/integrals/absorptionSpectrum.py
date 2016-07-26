@@ -1,4 +1,5 @@
 
+__all__ = ['oscillator_strength', 'calculateDipoleCenter']
 
 # ==========> Standard libraries and third-party <===============
 from functools import partial
