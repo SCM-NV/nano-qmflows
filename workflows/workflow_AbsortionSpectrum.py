@@ -35,9 +35,8 @@ def simulate_absoprtion_spectrum(package_name, project_name, geometry,
     :param project_name: Folder name where the computations
     are going to be stored.
     :type project_name: String
-    :param all_geometries:string containing the molecular geometries
-    numerical results.
-    :type path_traj_xyz: String
+    :param geometry:string containing the molecular geometry.
+    :type geometry: String
     :param package_args: Specific settings for the package
     :type package_args: dict
     :param package_args: Specific settings for guess calculate with `package`.
@@ -89,19 +88,19 @@ def simulate_absoprtion_spectrum(package_name, project_name, geometry,
                                   guess_args, calc_new_wf_guess_on_points=[0],
                                   enumerate_from=0,
                                   package_config=package_config)
+
+    scheduleOscillator = schedule(calcOscillatorStrenghts)
     
-    oscillators = calcOscillatorStrenghts(project_name, mo_paths_hdf5,
-                                          dictCGFs, geometry,
-                                          path_hdf5, mo_paths_hdf5[0],
-                                          hdf5_trans_mtx=hdf5_trans_mtx,
-                                          initial_states=initial_states,
-                                          final_states=final_states)
+    oscillators = scheduleOscillator(project_name, mo_paths_hdf5, dictCGFs,
+                                     atoms, path_hdf5, 
+                                     hdf5_trans_mtx=hdf5_trans_mtx,
+                                     initial_states=initial_states,
+                                     final_states=final_states)
     rs = run(oscillators)
-    print(rs)
+    print("Calculation Done")
 
-
-def calcOscillatorStrenghts(project_name, mo_paths_hdf5, dictCGFs, geometry,
-                            path_hdf5, mo_path_hdf5, hdf5_trans_mtx=None,
+def calcOscillatorStrenghts(project_name, mo_paths_hdf5, dictCGFs, atoms,
+                            path_hdf5, hdf5_trans_mtx=None,
                             initial_states=None, final_states=None):
     """
     Use the Molecular orbital Energies and Coefficients to compute the
@@ -110,9 +109,15 @@ def calcOscillatorStrenghts(project_name, mo_paths_hdf5, dictCGFs, geometry,
     :param project_name: Folder name where the computations
     are going to be stored.
     :type project_name: String
-    :param mo_paths: Path to the MO coefficients and energies in the
+    :param mo_paths_hdf5: Path to the MO coefficients and energies in the
     HDF5 file.
+    :paramter dictCGFS: Dictionary from Atomic Label to basis set.
+    :type     dictCGFS: Dict String [CGF],
+              CGF = ([Primitives], AngularMomentum),
+              Primitive = (Coefficient, Exponent)
     :type mo_paths: [String]
+    :param atoms: Molecular geometry.
+    :type atoms: [namedtuple("AtomXYZ", ("symbol", "xyz"))]
     :param path_hdf5: Path to the HDF5 file that contains the
     numerical results.
     :type path_hdf5: String
@@ -124,9 +129,9 @@ def calcOscillatorStrenghts(project_name, mo_paths_hdf5, dictCGFs, geometry,
     states.
     :type final_states: [[Int]]
     """
-    cgfsN = [dictCGFs[x.symbol] for x in geometry]
+    cgfsN = [dictCGFs[x.symbol] for x in atoms]
 
-    es, coeffs = retrieve_hdf5_data(path_hdf5, mo_path_hdf5[0])
+    es, coeffs = retrieve_hdf5_data(path_hdf5, mo_paths_hdf5[0])
 
     # If the MO orbitals are given in Spherical Coordinates transform then to
     # Cartesian Coordinates.
@@ -140,15 +145,18 @@ def calcOscillatorStrenghts(project_name, mo_paths_hdf5, dictCGFs, geometry,
             css_j = coeffs[:, initialS]
             energy_j = es[finalS]
             deltaE = energy_j - energy_i
-            fij = callScheduleOsc(geometry, cgfsN, css_i, css_j, deltaE,
+            print("Calculating Fij between ", initialS, " and ", finalS)
+            fij = callScheduleOsc(atoms, cgfsN, css_i, css_j, deltaE,
                                   trans_mtx=trans_mtx)
             oscillators.append(fij)
+            with open("oscillator_strengths.out", 'a') as f:
+                x = '{:f}\n'.format(fij)
+                f.write(x)
 
     return oscillators
 
 
-def callScheduleOsc(geometry, cgfsN, css_i, css_j, deltaE,
-                    trans_mtx=None):
+def callScheduleOsc(geometry, cgfsN, css_i, css_j, deltaE, trans_mtx):
     """
     :param geometry: molecular geometry.
     :type geometry: [namedtuple("AtomXYZ", ("symbol", "xyz"))]
@@ -162,21 +170,15 @@ def callScheduleOsc(geometry, cgfsN, css_i, css_j, deltaE,
     :type css_i: Numpy Vector
     :param deltaE: energy difference i -> j
     """
-    scheduleOscillatorStrength = schedule(oscillator_strength)
     sh, = css_i.shape
 
     # Repeat the vector sh times to form a matrix
-    mtx_css_i = np.tile(css_i, sh)
-    mtx_css_j = np.tile(css_j, sh)
+    mtx_css_i = np.tile(css_i, sh).reshape(sh, sh)
+    mtx_css_j = np.tile(css_j, sh).reshape(sh, sh)
 
-    if trans_mtx is not None:
-        transpose = np.transpose(trans_mtx)
-        # Overlap in Sphericals
-        mtx_css_i = np.dot(trans_mtx, np.dot(mtx_css_i, transpose))
-        mtx_css_j = np.dot(trans_mtx, np.dot(mtx_css_j, transpose))
-
-    return scheduleOscillatorStrength(geometry, cgfsN, mtx_css_i, mtx_css_j,
-                                      deltaE)
+    print("Calling schedule Oscillator strength calculator")
+    return oscillator_strength(geometry, cgfsN, mtx_css_i, mtx_css_j,
+                               deltaE, trans_mtx)
 
 # ===================================<>========================================
 
@@ -186,8 +188,8 @@ def main():
     Initialize the arguments to compute the nonadiabatic coupling matrix for
     a given MD trajectory.
     """
-    initial_states = []
-    final_states = [[]]
+    initial_states = [99] # HOMO 
+    final_states = [[100, 101]] # LUMO, LUMO+1
     
     plams.init()
     project_name = 'spectrum_pentacene'
@@ -216,7 +218,7 @@ def main():
     cp2k_OT.specific.cp2k.force_eval.dft.scf.eps_scf = 5e-06
 
     # Path to the MD geometries
-    path_traj_xyz = "trajectory.xyz"
+    path_traj_xyz = "./pentanceOpt.xyz"
 
     # User variables
     home = os.path.expanduser('~')  # HOME Path
@@ -239,15 +241,12 @@ def main():
     # all_geometries type :: [String]
     geometry = split_file_geometries(path_traj_xyz)
 
-    # Calculate new Guess in each Geometry
-    pointsGuess = [0]
-
     # Hamiltonian computation
     simulate_absoprtion_spectrum('cp2k', project_name, geometry, cp2k_args,
                                  guess_args=cp2k_OT,
                                  initial_states=initial_states,
                                  final_states=final_states,
-                                 calc_new_wf_guess_on_points=pointsGuess,
+                                 calc_new_wf_guess_on_points=[0],
                                  path_hdf5=path_hdf5,
                                  package_config=cp2k_config)
 
