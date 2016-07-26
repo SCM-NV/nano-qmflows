@@ -29,11 +29,6 @@ def calcMultipoleMatrixP(atoms, cgfsN, calcMatrixEntry=None):
         Build a matrix using a pool of worker and a function takes nuclear
         corrdinates and a Contracted Gauss function and compute a number.
         """
-        def calcIndexTriang(n):
-            flatDim = (n ** 2 + n) // 2
-            xss = np.dstack(np.triu_indices(n))
-            return np.reshape(xss, (flatDim, 2))
-
         xyz_cgfs = concatMap(lambda rs: createTupleXYZ_CGF(*rs),
                              zip(atoms, cgfsN))
         nOrbs = len(xyz_cgfs)
@@ -147,27 +142,4 @@ def calcIndexTriang(n):
 def createTupleXYZ_CGF(atom, cgfs):
     xyz = atom.xyz
     return [(xyz, cs) for cs in cgfs]
-
-
-def fromIndex(ixs, shape):
-    """
-    calculate the equivalent index from a two dimensional array to a flat array
-    containing the upper triangular elements of a matrix.
-    """
-    i, j = ixs
-    if j >= i:
-        k = sum(m * k for m, k in zip(shape[1:], ixs)) + ixs[-1]
-        r = (((i * i + i) // 2) if i else 0)
-        return k - r
-    else:
-        return fromIndex([j, i], shape)
-
-
-def triang2mtx(arr, dim):
-    rss = np.empty((dim, dim))
-    for i in range(dim):
-        for j in range(dim):
-            k = fromIndex([i, j], [dim, dim])
-            rss[i, j] = arr[k]
-    return rss
     

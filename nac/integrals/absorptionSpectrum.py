@@ -8,7 +8,7 @@ import numpy as np
 # ==================> Internal modules <====================
 from .overlapIntegral import calcMtxOverlapP
 from .multipoleIntegrals import calcMtxMultipoleP
-
+from nac.common import triang2mtx
 # ==================================<>=========================================
 # x,y,z exponents value for the dipole
 exponents = [{'e': 1, 'f': 0, 'g': 0}, {'e': 0, 'f': 1, 'g': 0},
@@ -48,8 +48,13 @@ def calculateDipoleCenter(atoms, cgfsN, css, overlap, trans_mtx):
                        - \braket{\Psi_i \mid \hat{x} \mid \Psi_i}
     """
     rc = (0, 0, 0)
-    mtx_integrals_cart = [calcMtxMultipoleP(atoms, cgfsN, rc, **kw)
-                          for kw in exponents]
+
+    dimSpher, dimCart = trans_mtx.shape
+    
+    mtx_triang_cart = [calcMtxMultipoleP(atoms, cgfsN, rc, **kw)
+                       for kw in exponents]
+    mtx_integrals_cart = [triang2mtx(xs, dimSpher)
+                          for xs in mtx_triang_cart]
     mtx_integrals_spher = [transform2Spherical(x, trans_mtx) for x
                            in mtx_integrals_cart]
     
@@ -78,7 +83,12 @@ def  oscillator_strength(atoms, cgfsN, css_i, css_j, energy, trans_mtx):
     :type trans_mtx: Numpy Matrix
     :returns: Oscillator strength (float)
     """
-    overlap_cart = calcMtxOverlapP(atoms, cgfsN)
+    dimSpher, dimCart = trans_mtx.shape
+    # Overlap matrix calculated as a flatten triangular matrix
+    overlap_triang = calcMtxOverlapP(atoms, cgfsN)
+    # Expand the flatten triangular array to a matrix
+    overlap_cart = triang2mtx(overlap_triang, dimCart)
+    # transform from Cartesian coordinates to Spherical
     overlap = transform2Spherical(overlap_cart, trans_mtx)
     css_i_T = np.transpose(css_i)
     overlap_sum = computeIntegralSum(css_i_T, css_i, overlap)

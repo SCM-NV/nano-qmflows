@@ -4,6 +4,7 @@ __author__ = "Felipe Zapata"
 # ================> Python Standard  and third-party <==========
 from collections import namedtuple
 import h5py
+import numpy as np
 
 # ======================================================================
 # Named Tuples
@@ -18,7 +19,14 @@ MO             = namedtuple("MO", ("coordinates", "cgfs", "coefficients"))
 
 
 def getmass(s):
-    d = {'h':1,'he': 2, 'li': 3, 'be': 4, 'b': 5, 'c': 6, 'n': 7, 'o': 8, 'f': 9, 'ne': 10, 'na': 11, 'mg': 12, 'al': 13, 'si': 14, 'p': 15, 's': 16, 'cl': 17, 'ar': 18, 'k': 19, 'ca': 20, 'sc': 21, 'ti': 22, 'v': 23, 'cr': 24, 'mn': 25, 'fe': 26, 'co': 27, 'ni': 28, 'cu': 29, 'zn': 30, 'ga': 31, 'ge': 32, 'as': 33, 'se': 34, 'br': 35, 'kr': 36, 'rb' : 37, 'sr' : 38 , 'Y' : 39, 'zr' : 40, 'nb' : 41, 'mo' : 42, 'tc' : 43, 'ru' : 44, 'rh' : 45, 'pd' : 46, 'ag' : 47, 'cd' : 48 , 'in' : 49, 'sn' : 50, 'sb' : 51, 'te' : 52, 'i' : 53, 'xe' : 54, 'cs' : 55}
+    d = {'h': 1, 'he': 2, 'li': 3, 'be': 4, 'b': 5, 'c': 6, 'n': 7, 'o': 8,
+         'f': 9, 'ne': 10, 'na': 11, 'mg': 12, 'al': 13, 'si': 14, 'p': 15,
+         's': 16, 'cl': 17, 'ar': 18, 'k': 19, 'ca': 20, 'sc': 21, 'ti': 22,
+         'v': 23, 'cr': 24, 'mn': 25, 'fe': 26, 'co': 27, 'ni': 28, 'cu': 29,
+         'zn': 30, 'ga': 31, 'ge': 32, 'as': 33, 'se': 34, 'br': 35, 'kr': 36,
+         'rb': 37, 'sr': 38, 'Y': 39, 'zr': 40, 'nb': 41, 'mo': 42,
+         'tc': 43, 'ru': 44, 'rh': 45, 'pd': 46, 'ag': 47, 'cd': 48,
+         'in': 49, 'sn': 50, 'sb': 51, 'te': 52, 'i': 53, 'xe': 54, 'cs': 55}
 
     return d[s]
 
@@ -45,3 +53,26 @@ def retrieve_hdf5_data(path_hdf5, paths_to_prop):
     except FileNotFoundError:
         msg = "there is not HDF5 file containing the numerical results"
         raise RuntimeError(msg)
+
+
+def fromIndex(ixs, shape):
+    """
+    calculate the equivalent index from a two dimensional array to a flat array
+    containing the upper triangular elements of a matrix.
+    """
+    i, j = ixs
+    if j >= i:
+        k = sum(m * k for m, k in zip(shape[1:], ixs)) + ixs[-1]
+        r = (((i * i + i) // 2) if i else 0)
+        return k - r
+    else:
+        return fromIndex([j, i], shape)
+
+
+def triang2mtx(arr, dim):
+    rss = np.empty((dim, dim))
+    for i in range(dim):
+        for j in range(dim):
+            k = fromIndex([i, j], [dim, dim])
+            rss[i, j] = arr[k]
+    return rss
