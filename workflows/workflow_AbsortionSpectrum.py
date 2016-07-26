@@ -1,6 +1,6 @@
 
 # ================> Python Standard  and third-party <==========
-from noodles import gather, schedule
+from noodles import schedule
 from qmworks import run, Settings
 from qmworks.parsers import parse_string_xyz
 from os.path import join
@@ -148,7 +148,7 @@ def calcOscillatorStrenghts(project_name, mo_paths_hdf5, dictCGFs, geometry,
 
 
 def callScheduleOsc(geometry, cgfsN, css_i, css_j, deltaE,
-                    hdf5_trans_mtx=None):
+                    trans_mtx=None):
     """
     :param geometry: molecular geometry.
     :type geometry: [namedtuple("AtomXYZ", ("symbol", "xyz"))]
@@ -163,15 +163,20 @@ def callScheduleOsc(geometry, cgfsN, css_i, css_j, deltaE,
     :param deltaE: energy difference i -> j
     """
     scheduleOscillatorStrength = schedule(oscillator_strength)
-    sh, = coeffs.shape
-    css = np.tile(coeffs, sh)
+    sh, = css_i.shape
 
-    if hdf5_trans_mtx is not None:
+    # Repeat the vector sh times to form a matrix
+    mtx_css_i = np.tile(css_i, sh)
+    mtx_css_j = np.tile(css_j, sh)
+
+    if trans_mtx is not None:
         transpose = np.transpose(trans_mtx)
         # Overlap in Sphericals
-        css = np.dot(trans_mtx, np.dot(css, transpose))
+        mtx_css_i = np.dot(trans_mtx, np.dot(mtx_css_i, transpose))
+        mtx_css_j = np.dot(trans_mtx, np.dot(mtx_css_j, transpose))
 
-    return scheduleOscillatorStrength(geometry, cgfsN, css, deltaE)
+    return scheduleOscillatorStrength(geometry, cgfsN, mtx_css_i, mtx_css_j,
+                                      deltaE)
 
 # ===================================<>========================================
 

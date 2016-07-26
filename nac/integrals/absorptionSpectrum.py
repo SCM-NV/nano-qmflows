@@ -68,11 +68,8 @@ def  oscillator_strength(atoms, cgfsN, css_i, css_j, energy):
     mtx_integrals = [calcMtxMultipoleP(atoms, cgfsN, rc, **kw)
                      for kw in exponents]
 
-    raise NotImplementedError("FIXME css")
-    
-    css_T = np.transpose(css)
     sum_integrals = sum(lambda x: x ** 2,
-                        map(partial(computeIntegralSum, css_T, css),
+                        map(partial(computeIntegralSum, css_i_T, css_j),
                             mtx_integrals))
 
     return (2 / 3) * energy * sum_integrals
