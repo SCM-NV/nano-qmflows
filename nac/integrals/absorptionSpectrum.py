@@ -92,7 +92,7 @@ def  oscillator_strength(atoms, cgfsN, css_i, css_j, energy, trans_mtx):
     overlap = transform2Spherical(overlap_cart, trans_mtx)
     css_i_T = np.transpose(css_i)
     overlap_sum = computeIntegralSum(css_i_T, css_i, overlap)
-    rc = calculateDipoleCenter(atoms, cgfsN, css_i, overlap_sum)
+    rc = calculateDipoleCenter(atoms, cgfsN, css_i, overlap_sum, trans_mtx)
 
     mtx_integrals = [calcMtxMultipoleP(atoms, cgfsN, rc, **kw)
                      for kw in exponents]
