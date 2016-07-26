@@ -102,7 +102,7 @@ def  oscillator_strength(atoms, cgfsN, css_i, css_j, energy, trans_mtx):
     mtx_integrals_spher = [transform2Spherical(x, trans_mtx) for x
                            in mtx_integrals_cart]
     sum_integrals = sum(lambda x: x ** 2,
-                        map(partial(computeIntegralSum, css_i_T, css_j),
+                        map(lambda mtx: computeIntegralSum(css_i_T, css_j, mtx),
                             mtx_integrals_spher))
 
     return (2 / 3) * energy * sum_integrals
