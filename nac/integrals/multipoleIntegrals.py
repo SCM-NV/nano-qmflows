@@ -43,7 +43,7 @@ def calcMultipoleMatrixP(atoms, cgfsN, calcMatrixEntry=None):
     return run(calcMatrixEntry)
 
 
-def dipoleContracted(t1, t2, rc, e=1, f=1, g=1):
+def dipoleContracted(t1, t2, rc, e, f, g):
     """
     Matrix entry calculation between two Contracted Gaussian functions.
     Equivalent to < t1| t2 >
@@ -62,7 +62,7 @@ def dipoleContracted(t1, t2, rc, e=1, f=1, g=1):
     return sum(sab_efg(g1, g2, rc, e, f, g) for g1 in gs1 for g2 in gs2)
 
 
-def calcMatrixEntry(xyz_cgfs, ixs, rc, e=1, f=1, g=1):
+def calcMatrixEntry(xyz_cgfs, ixs, rc, e, f, g):
     """
     Computed each matrix element using an index a tuple containing the
     cartesian coordinates and the primitives gauss functions.
@@ -73,14 +73,15 @@ def calcMatrixEntry(xyz_cgfs, ixs, rc, e=1, f=1, g=1):
     i, j = ixs
     t1 = xyz_cgfs[i]
     t2 = xyz_cgfs[j]
-    return dipoleContracted(t1, t2)
+    return dipoleContracted(t1, t2, rc, e, f, g)
 
 
-def calcMtxMultipoleP(atoms, cgfsN, rc, e=1, f=1, g=1):
+def calcMtxMultipoleP(atoms, cgfsN, rc, e=0, f=0, g=0):
     """
-    Overlap matrix entry calculation between two Contracted Gaussian functions
+    Multipole matrix entry calculation between two Contracted Gaussian functions.
+    It uses a partial applied function to pass the center of the multipole `rc`
+    and the coefficients of the operator x^e y^f z^g
     """
-
     curriedFun = lambda ts, ixs: calcMatrixEntry(ts, ixs, rc, e, f, g)
     
     return calcMultipoleMatrixP(atoms, cgfsN, calcMatrixEntry=curriedFun)
