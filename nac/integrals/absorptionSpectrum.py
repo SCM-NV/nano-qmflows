@@ -32,7 +32,21 @@ def computeIntegralSum(arrT, arr, mtx):
     return np.sum(np.dot(arrT, np.dot(mtx, arr)))
 
 
-def calculateDipoleCenter(atoms, cgfsN, css, overlap, trans_mtx):
+def flattenCartesian2MtxSpherical(atoms, cgfsN, rc, trans_mtx):
+    """
+    Compute the Multipole matrix in cartesian coordinates and
+    expand it to a matrix and finally convert it to spherical coordinates.
+    """
+    dimSpher, dimCart = trans_mtx.shape
+    mtx_integrals_triang = tuple(calcMtxMultipoleP(atoms, cgfsN, rc, **kw)
+                                 for kw in exponents)
+    mtx_integrals_cart = tuple(triang2mtx(xs, dimCart)
+                               for xs in mtx_integrals_triang)
+    return tuple(transform2Spherical(x, trans_mtx) for x
+                 in mtx_integrals_cart)
+    
+
+def calculateDipoleCenter(atoms, cgfsN, css, trans_mtx):
     """
     Calculate the point where the dipole is centered.
     :param atoms: Atomic label and cartesian coordinates
@@ -50,14 +64,17 @@ def calculateDipoleCenter(atoms, cgfsN, css, overlap, trans_mtx):
     rc = (0, 0, 0)
 
     dimSpher, dimCart = trans_mtx.shape
-    
-    mtx_triang_cart = [calcMtxMultipoleP(atoms, cgfsN, rc, **kw)
-                       for kw in exponents]
-    mtx_integrals_cart = [triang2mtx(xs, dimCart)
-                          for xs in mtx_triang_cart]
-    mtx_integrals_spher = [transform2Spherical(x, trans_mtx) for x
-                           in mtx_integrals_cart]
-    
+    # Overlap matrix calculated as a flatten triangular matrix
+    overlap_triang = calcMtxOverlapP(atoms, cgfsN)
+    # Expand the flatten triangular array to a matrix
+    overlap_cart = triang2mtx(overlap_triang, dimCart)
+    # transform from Cartesian coordinates to Spherical
+    overlap_spher = transform2Spherical(overlap_cart, trans_mtx)
+    css_T = np.transpose(css)
+    overlap = computeIntegralSum(css_T, css, overlap_spher)
+
+    mtx_integrals_spher = flattenCartesian2MtxSpherical(atoms, cgfsN, rc,
+                                                        trans_mtx)
     cssT = np.transpose(css)
     xs_sum = list(map(partial(computeIntegralSum, cssT, css),
                       mtx_integrals_spher))
@@ -84,23 +101,13 @@ def  oscillator_strength(atoms, cgfsN, css_i, css_j, energy, trans_mtx):
     :returns: Oscillator strength (float)
     """
     dimSpher, dimCart = trans_mtx.shape
-    # Overlap matrix calculated as a flatten triangular matrix
-    overlap_triang = calcMtxOverlapP(atoms, cgfsN)
-    # Expand the flatten triangular array to a matrix
-    overlap_cart = triang2mtx(overlap_triang, dimCart)
-    # transform from Cartesian coordinates to Spherical
-    overlap = transform2Spherical(overlap_cart, trans_mtx)
-    css_i_T = np.transpose(css_i)
-    overlap_sum = computeIntegralSum(css_i_T, css_i, overlap)
-    rc = calculateDipoleCenter(atoms, cgfsN, css_i, overlap_sum, trans_mtx)
+    # Dipole center
+    rc = calculateDipoleCenter(atoms, cgfsN, css_i, trans_mtx)
 
     print("Dipole center is: ", rc)
-    mtx_integrals_triang = tuple(calcMtxMultipoleP(atoms, cgfsN, rc, **kw)
-                            for kw in exponents)
-    mtx_integrals_cart = tuple(triang2mtx(xs, dimCart)
-                          for xs in mtx_integrals_triang)
-    mtx_integrals_spher = tuple(transform2Spherical(x, trans_mtx) for x
-                           in mtx_integrals_cart)
+    mtx_integrals_spher = flattenCartesian2MtxSpherical(atoms, cgfsN, rc,
+                                                        trans_mtx)
+    css_i_T = np.transpose(css_i)
     sum_integrals = sum(x ** 2 for x in
                         map(partial(computeIntegralSum, css_i_T, css_j),
                             mtx_integrals_spher))
