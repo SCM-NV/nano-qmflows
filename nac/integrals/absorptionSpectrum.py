@@ -98,7 +98,7 @@ def  oscillator_strength(atoms, cgfsN, css_i, css_j, energy, trans_mtx):
     mtx_integrals_triang = [calcMtxMultipoleP(atoms, cgfsN, rc, **kw)
                             for kw in exponents]
     mtx_integrals_cart = [triang2mtx(xs, dimCart)
-                          for xs in mtx_triang_cart]
+                          for xs in mtx_integrals_triang]
     mtx_integrals_spher = [transform2Spherical(x, trans_mtx) for x
                            in mtx_integrals_cart]
     sum_integrals = sum(lambda x: x ** 2,
