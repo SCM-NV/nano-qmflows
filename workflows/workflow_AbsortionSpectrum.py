@@ -12,7 +12,7 @@ import plams
 import shutil
 
 # =========================> Internal modules <================================
-from nac.common import retrieve_hdf5_data
+from nac.common import (change_mol_units, retrieve_hdf5_data)
 from nac.integrals.absorptionSpectrum import oscillator_strength
 from nac.schedule.components import (calculate_mos, create_dict_CGFs,
                                      create_point_folder,
@@ -26,7 +26,8 @@ def simulate_absoprtion_spectrum(package_name, project_name, geometry,
                                  package_args, guess_args=None,
                                  initial_states=None, final_states=None,
                                  calc_new_wf_guess_on_points=[0],
-                                 path_hdf5=None, package_config=None):
+                                 path_hdf5=None, package_config=None,
+                                 geometry_units='angstrom'):
     """
     Compute the oscillator strength
 
@@ -70,6 +71,9 @@ def simulate_absoprtion_spectrum(package_name, project_name, geometry,
     # and the coordinates to generate
     # the primitive CGFs
     atoms = parse_string_xyz(geometry[0])
+    if 'angstrom' in geometry_units.lower():
+        atoms = change_mol_units(atoms)
+
     dictCGFs = create_dict_CGFs(path_hdf5, basisName, atoms, package_config)
 
     # Calculcate the matrix to transform from cartesian to spherical
@@ -90,18 +94,20 @@ def simulate_absoprtion_spectrum(package_name, project_name, geometry,
                                   package_config=package_config)
 
     scheduleOscillator = schedule(calcOscillatorStrenghts)
-    
+
     oscillators = scheduleOscillator(project_name, mo_paths_hdf5, dictCGFs,
-                                     atoms, path_hdf5, 
+                                     atoms, path_hdf5,
                                      hdf5_trans_mtx=hdf5_trans_mtx,
                                      initial_states=initial_states,
                                      final_states=final_states)
     rs = run(oscillators)
-    print("Calculation Done")
+    print(rs, "Calculation Done")
+
 
 def calcOscillatorStrenghts(project_name, mo_paths_hdf5, dictCGFs, atoms,
                             path_hdf5, hdf5_trans_mtx=None,
                             initial_states=None, final_states=None):
+
     """
     Use the Molecular orbital Energies and Coefficients to compute the
     oscillator_strength.
@@ -147,7 +153,7 @@ def calcOscillatorStrenghts(project_name, mo_paths_hdf5, dictCGFs, atoms,
             deltaE = energy_j - energy_i
             print("Calculating Fij between ", initialS, " and ", finalS)
             fij = oscillator_strength(atoms, cgfsN, css_i, css_j,
-                               deltaE, trans_mtx)
+                                      deltaE, trans_mtx)
             oscillators.append(fij)
             with open("oscillator_strengths.out", 'a') as f:
                 x = '{:f}\n'.format(fij)
@@ -164,8 +170,8 @@ def main():
     Initialize the arguments to compute the nonadiabatic coupling matrix for
     a given MD trajectory.
     """
-    initial_states = [99] # HOMO 
-    final_states = [[100, 101]] # LUMO, LUMO+1
+    initial_states = [99]  # HOMO
+    final_states = [[100, 101]]  # LUMO, LUMO+1
     
     plams.init()
     project_name = 'spectrum_pentacene'

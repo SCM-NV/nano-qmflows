@@ -17,6 +17,10 @@ InfoMO         = namedtuple("InfoMO", ("eigenVals", "coeffs"))
 InputKey       = namedtuple("InpuKey", ("name", "args"))
 MO             = namedtuple("MO", ("coordinates", "cgfs", "coefficients"))
 
+# ================> Constants <================
+angs2au = 1 / 0.529177249  # Angstrom to a.u
+femtosec2au = 1 / 2.41888432e-2  # from femtoseconds to au
+
 
 def getmass(s):
     d = {'h': 1, 'he': 2, 'li': 3, 'be': 4, 'b': 5, 'c': 6, 'n': 7, 'o': 8,
@@ -76,3 +80,15 @@ def triang2mtx(arr, dim):
             k = fromIndex([i, j], [dim, dim])
             rss[i, j] = arr[k]
     return rss
+
+
+def change_mol_units(mol, factor=angs2au):
+    """
+    change the units of the molecular coordinates
+    :returns: New XYZ namedtuple
+    """
+    newMol = []
+    for atom in mol:
+        coord = list(map(lambda x: x * factor, atom.xyz))
+        newMol.append(AtomXYZ(atom.symbol, coord))
+    return newMol
