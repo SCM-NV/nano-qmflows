@@ -1,9 +1,10 @@
 
 # ================> Python Standard  and third-party <==========
+from functools import partial
 from noodles import schedule
+from os.path import join
 from qmworks import run, Settings
 from qmworks.parsers import parse_string_xyz
-from os.path import join
 
 import getpass
 import numpy as np
@@ -12,8 +13,9 @@ import plams
 import shutil
 
 # =========================> Internal modules <================================
-from nac.common import (change_mol_units, retrieve_hdf5_data)
-from nac.integrals.absorptionSpectrum import oscillator_strength
+from nac.common import (change_mol_units, retrieve_hdf5_data, triang2mtx)
+from nac.integrals.multipoleIntegrals import calcMtxMultipoleP
+from nac.integrals.overlapIntegral import calcMtxOverlapP
 from nac.schedule.components import (calculate_mos, create_dict_CGFs,
                                      create_point_folder,
                                      split_file_geometries)
@@ -143,17 +145,23 @@ def calcOscillatorStrenghts(project_name, mo_paths_hdf5, dictCGFs, atoms,
     # Cartesian Coordinates.
     trans_mtx = retrieve_hdf5_data(path_hdf5, hdf5_trans_mtx) if hdf5_trans_mtx else None
 
+    overlap_CGFS = calcOverlapCGFS(atoms, cgfsN, trans_mtx)
+
     oscillators = []
     for initialS, fs in zip(initial_states, final_states):
         css_i = coeffs[:, initialS]
         energy_i = es[initialS]
+        sum_overlap = np.dot(css_i, np.dot(overlap_CGFS, css_i))
+        rc = calculateDipoleCenter(atoms, cgfsN, css_i, trans_mtx, sum_overlap)
+        print("Dipole center is: ", rc)
         for finalS in fs:
-            css_j = coeffs[:, initialS]
+            mtx_integrals_spher = calcDipoleCGFS(atoms, cgfsN, rc, trans_mtx)
+            css_j = coeffs[:, finalS]
             energy_j = es[finalS]
             deltaE = energy_j - energy_i
             print("Calculating Fij between ", initialS, " and ", finalS)
-            fij = oscillator_strength(atoms, cgfsN, css_i, css_j,
-                                      deltaE, trans_mtx)
+            fij = oscillator_strength(css_i, css_j, deltaE, trans_mtx,
+                                      mtx_integrals_spher)
             oscillators.append(fij)
             with open("oscillator_strengths.out", 'a') as f:
                 x = '{:f}\n'.format(fij)
@@ -161,6 +169,119 @@ def calcOscillatorStrenghts(project_name, mo_paths_hdf5, dictCGFs, atoms,
 
     return oscillators
 
+
+def transform2Spherical(trans_mtx, matrix):
+    """ Transform from spherical to cartesians"""
+    return np.dot(trans_mtx, np.dot(matrix,
+                                    np.transpose(trans_mtx)))
+
+
+def computeIntegralSum(v1, v2, mtx):
+    """
+    Calculate the operation sum(arr^t mtx arr)
+    """
+    return np.dot(v1, np.dot(mtx, v2))
+
+
+def calcOverlapCGFS(atoms, cgfsN, trans_mtx):
+    """
+    Calculate the Matrix containining the overlap integrals bewtween
+    contracted Gauss functions and transform it to spherical coordinates.
+
+    :param atoms: Atomic label and cartesian coordinates in au.
+    type atoms: List of namedTuples
+    :param cgfsN: Contracted gauss functions normalized, represented as
+    a list of tuples of coefficients and Exponents.
+    type cgfsN: [(Coeff, Expo)]
+    :param trans_mtx: Transformation matrix to translate from Cartesian
+    to Sphericals.
+    :type trans_mtx: Numpy Matrix
+    """
+    dimSpher, dimCart = trans_mtx.shape
+    # Overlap matrix calculated as a flatten triangular matrix
+    overlap_triang = calcMtxOverlapP(atoms, cgfsN)
+    # Expand the flatten triangular array to a matrix
+    overlap_cart = triang2mtx(overlap_triang, dimCart)
+
+    return transform2Spherical(trans_mtx, overlap_cart)
+
+
+def calcDipoleCGFS(atoms, cgfsN, rc, trans_mtx):
+    """
+    Compute the Multipole matrix in cartesian coordinates and
+    expand it to a matrix and finally convert it to spherical coordinates.
+
+    :param atoms: Atomic label and cartesian coordinates in au.
+    type atoms: List of namedTuples
+    :param cgfsN: Contracted gauss functions normalized, represented as
+    a list of tuples of coefficients and Exponents.
+    type cgfsN: [(Coeff, Expo)]
+    :param trans_mtx: Transformation matrix to translate from Cartesian
+    to Sphericals.
+    :type trans_mtx: Numpy Matrix
+    :returns: tuple(<\Psi_i | x | \Psi_j>, <\Psi_i | y | \Psi_j>,
+              <\Psi_i | z | \Psi_j>)
+    """
+    # x,y,z exponents value for the dipole
+    exponents = [{'e': 1, 'f': 0, 'g': 0}, {'e': 0, 'f': 1, 'g': 0},
+                 {'e': 0, 'f': 0, 'g': 1}]
+    dimSpher, dimCart = trans_mtx.shape
+    mtx_integrals_triang = tuple(calcMtxMultipoleP(atoms, cgfsN, rc, **kw)
+                                 for kw in exponents)
+    mtx_integrals_cart = tuple(triang2mtx(xs, dimCart)
+                               for xs in mtx_integrals_triang)
+    return tuple(transform2Spherical(x, trans_mtx) for x
+                 in mtx_integrals_cart)
+
+
+def calculateDipoleCenter(atoms, cgfsN, css, trans_mtx, overlap):
+    """
+    Calculate the point where the dipole is centered.
+
+    :param atoms: Atomic label and cartesian coordinates
+    type atoms: List of namedTuples
+    :param cgfsN: Contracted gauss functions normalized, represented as
+    a list of tuples of coefficients and Exponents.
+    type cgfsN: [(Coeff, Expo)]
+    :param overlap: Integral < \Psi_i | \Psi_i >.
+    :type overlap: Float
+    To calculate the origin of the dipole we use the following property,
+
+    ..math::
+    \braket{\Psi_i \mid \hat{x_0} \mid \Psi_i} =
+                       - \braket{\Psi_i \mid \hat{x} \mid \Psi_i}
+    """
+    rc = (0, 0, 0)
+
+    mtx_integrals_spher = calcDipoleCGFS(atoms, cgfsN, rc, trans_mtx)
+    xs_sum = list(map(partial(computeIntegralSum, css, css),
+                      mtx_integrals_spher))
+
+    return tuple(map(lambda x: - x / overlap, xs_sum))
+
+
+def  oscillator_strength(css_i, css_j, energy, trans_mtx,
+                         mtx_integrals_spher):
+    """
+    Calculate the oscillator strength between two state i and j using a
+    molecular geometry in atomic units, a set of contracted gauss functions
+    normalized, the coefficients for both states, the nergy difference between
+    the states and a matrix to transform from cartesian to spherical
+    coordinates in case the coefficients are given in cartesian coordinates.
+  
+    :param css_i: MO coefficients of initial state
+    :type coeffs: Numpy Matrix.
+    :param css_j: MO coefficients of final state
+    :type coeffs: Numpy Matrix.
+    :param energy: energy difference i -> j.
+    :type energy: Double
+    :returns: Oscillator strength (float)
+    """
+    sum_integrals = sum(x ** 2 for x in
+                        map(partial(computeIntegralSum, css_i, css_j),
+                            mtx_integrals_spher))
+
+    return (2 / 3) * energy * sum_integrals
 
 # ===================================<>========================================
 

@@ -1,4 +1,3 @@
-from .absorptionSpectrum import (oscillator_strength, calculateDipoleCenter)
 from .electronTransfer import photoExcitationRate
 from .nonAdiabaticCoupling import calculateCoupling3Points
 from .overlapIntegral import *

@@ -44,9 +44,9 @@ def flattenCartesian2MtxSpherical(atoms, cgfsN, rc, trans_mtx):
                                for xs in mtx_integrals_triang)
     return tuple(transform2Spherical(x, trans_mtx) for x
                  in mtx_integrals_cart)
-    
 
-def calculateDipoleCenter(atoms, cgfsN, css, trans_mtx):
+
+def calculateDipoleCenter(atoms, cgfsN, css, trans_mtx, overlap):
     """
     Calculate the point where the dipole is centered.
     :param atoms: Atomic label and cartesian coordinates
@@ -63,15 +63,6 @@ def calculateDipoleCenter(atoms, cgfsN, css, trans_mtx):
     """
     rc = (0, 0, 0)
 
-    dimSpher, dimCart = trans_mtx.shape
-    # Overlap matrix calculated as a flatten triangular matrix
-    overlap_triang = calcMtxOverlapP(atoms, cgfsN)
-    # Expand the flatten triangular array to a matrix
-    overlap_cart = triang2mtx(overlap_triang, dimCart)
-    # transform from Cartesian coordinates to Spherical
-    overlap_spher = transform2Spherical(overlap_cart, trans_mtx)
-
-    overlap = computeIntegralSum(css, css, overlap_spher)
     mtx_integrals_spher = flattenCartesian2MtxSpherical(atoms, cgfsN, rc,
                                                         trans_mtx)
     xs_sum = list(map(partial(computeIntegralSum, css, css),
@@ -80,7 +71,8 @@ def calculateDipoleCenter(atoms, cgfsN, css, trans_mtx):
     return tuple(map(lambda x: - x / overlap, xs_sum))
 
 
-def  oscillator_strength(atoms, cgfsN, css_i, css_j, energy, trans_mtx):
+def  oscillator_strength(atoms, cgfsN, css_i, css_j, energy, trans_mtx,
+                         overlap):
     """
     Calculate the oscillator strength between two state i and j using a
     molecular geometry in atomic units, a set of contracted gauss functions
@@ -106,7 +98,7 @@ def  oscillator_strength(atoms, cgfsN, css_i, css_j, energy, trans_mtx):
     """
     dimSpher, dimCart = trans_mtx.shape
     # Dipole center
-    rc = calculateDipoleCenter(atoms, cgfsN, css_i, trans_mtx)
+    rc = calculateDipoleCenter(atoms, cgfsN, css_i, trans_mtx, overlap)
 
     print("Dipole center is: ", rc)
     mtx_integrals_spher = flattenCartesian2MtxSpherical(atoms, cgfsN, rc,
