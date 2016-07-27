@@ -146,8 +146,8 @@ def calcOscillatorStrenghts(project_name, mo_paths_hdf5, dictCGFs, atoms,
             energy_j = es[finalS]
             deltaE = energy_j - energy_i
             print("Calculating Fij between ", initialS, " and ", finalS)
-            fij = callScheduleOsc(atoms, cgfsN, css_i, css_j, deltaE,
-                                  trans_mtx=trans_mtx)
+            fij = oscillator_strength(atoms, cgfsN, css_i, css_j,
+                               deltaE, trans_mtx)
             oscillators.append(fij)
             with open("oscillator_strengths.out", 'a') as f:
                 x = '{:f}\n'.format(fij)
@@ -155,30 +155,6 @@ def calcOscillatorStrenghts(project_name, mo_paths_hdf5, dictCGFs, atoms,
 
     return oscillators
 
-
-def callScheduleOsc(geometry, cgfsN, css_i, css_j, deltaE, trans_mtx):
-    """
-    :param geometry: molecular geometry.
-    :type geometry: [namedtuple("AtomXYZ", ("symbol", "xyz"))]
-    :paramter dictCGFS: Dictionary from Atomic Label to basis set.
-    :type     dictCGFS: Dict String [CGF],
-              CGF = ([Primitives], AngularMomentum),
-              Primitive = (Coefficient, Exponent)
-    :param css_i: Array containing the coefficient of the ith Energy state.
-    :type css_i: Numpy Vector
-    :param css_j: Array containing the coefficient of the jth Energy state.
-    :type css_i: Numpy Vector
-    :param deltaE: energy difference i -> j
-    """
-    sh, = css_i.shape
-
-    # Repeat the vector sh times to form a matrix
-    mtx_css_i = np.tile(css_i, sh).reshape(sh, sh)
-    mtx_css_j = np.tile(css_j, sh).reshape(sh, sh)
-
-    print("Calling schedule Oscillator strength calculator")
-    return oscillator_strength(geometry, cgfsN, mtx_css_i, mtx_css_j,
-                               deltaE, trans_mtx)
 
 # ===================================<>========================================
 
