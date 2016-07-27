@@ -25,11 +25,11 @@ def transform2Spherical(mtx, trans_mtx):
     return np.dot(trans_mtx, np.dot(mtx, trr))
 
 
-def computeIntegralSum(arrT, arr, mtx):
+def computeIntegralSum(v1, v2, mtx):
     """
     Calculate the operation sum(arr^t mtx arr)
     """
-    return np.sum(np.dot(arrT, np.dot(mtx, arr)))
+    return np.dot(v1, np.dot(mtx, v2))
 
 
 def flattenCartesian2MtxSpherical(atoms, cgfsN, rc, trans_mtx):
@@ -70,13 +70,11 @@ def calculateDipoleCenter(atoms, cgfsN, css, trans_mtx):
     overlap_cart = triang2mtx(overlap_triang, dimCart)
     # transform from Cartesian coordinates to Spherical
     overlap_spher = transform2Spherical(overlap_cart, trans_mtx)
-    css_T = np.transpose(css)
-    overlap = computeIntegralSum(css_T, css, overlap_spher)
 
+    overlap = computeIntegralSum(css, css, overlap_spher)
     mtx_integrals_spher = flattenCartesian2MtxSpherical(atoms, cgfsN, rc,
                                                         trans_mtx)
-    cssT = np.transpose(css)
-    xs_sum = list(map(partial(computeIntegralSum, cssT, css),
+    xs_sum = list(map(partial(computeIntegralSum, css, css),
                       mtx_integrals_spher))
 
     return tuple(map(lambda x: - x / overlap, xs_sum))
@@ -93,7 +91,7 @@ def  oscillator_strength(atoms, cgfsN, css_i, css_j, energy, trans_mtx):
     :type coeffs: Numpy Matrix.
     :param css_j: MO coefficients of final state
     :type coeffs: Numpy Matrix.
-    :param energy: MO energy.
+    :param energy: energy difference i -> j.
     :type energy: Double
     :param trans_mtx: Transformation matrix to translate from Cartesian
     to Sphericals.
@@ -107,9 +105,8 @@ def  oscillator_strength(atoms, cgfsN, css_i, css_j, energy, trans_mtx):
     print("Dipole center is: ", rc)
     mtx_integrals_spher = flattenCartesian2MtxSpherical(atoms, cgfsN, rc,
                                                         trans_mtx)
-    css_i_T = np.transpose(css_i)
     sum_integrals = sum(x ** 2 for x in
-                        map(partial(computeIntegralSum, css_i_T, css_j),
+                        map(partial(computeIntegralSum, css_i, css_j),
                             mtx_integrals_spher))
 
     return (2 / 3) * energy * sum_integrals
