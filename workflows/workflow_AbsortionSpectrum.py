@@ -1,12 +1,14 @@
 
 # ================> Python Standard  and third-party <==========
 from functools import partial
+from itertools import tee
 from noodles import schedule
 from os.path import join
-from qmworks import run, Settings
+from qmworks import (run, Settings)
 from qmworks.parsers import parse_string_xyz
 
 import getpass
+import matplotlib.pyplot as plt
 import numpy as np
 import os
 import plams
@@ -22,6 +24,7 @@ from nac.schedule.components import (calculate_mos, create_dict_CGFs,
 from nac.schedule.scheduleCoupling import schedule_transf_matrix
 
 # ==============================> Main <==================================
+h2ev = 27.2114  # hartrees to electronvolts
 
 
 def simulate_absoprtion_spectrum(package_name, project_name, geometry,
@@ -102,8 +105,58 @@ def simulate_absoprtion_spectrum(package_name, project_name, geometry,
                                      hdf5_trans_mtx=hdf5_trans_mtx,
                                      initial_states=initial_states,
                                      final_states=final_states)
-    rs = run(oscillators)
-    print(rs, "Calculation Done")
+
+    scheduleGraphs = schedule(graphicResult)
+    
+    run(scheduleGraphs(oscillators, project_name, path_hdf5, mo_paths_hdf5,
+                       initial_states=initial_states, final_states=final_states))
+    print("Calculation Done")
+
+
+def graphicResult(rs, project_name, path_hdf5, mo_paths_hdf5,
+                  initial_states=None, final_states=None, deviation=0.1):
+    """
+    """
+    def distribution(x, mu=0, sigma=1):
+        """
+        Normal Gaussian distribution
+        """
+        return 1 / (sigma * np.sqrt(2 * np.pi)) * \
+            np.exp(-(x - mu) ** 2 / (2 * sigma ** 2))
+
+    def calcDistribution(x, npoints, mu=0, sigma=1):
+        """
+        """
+        xs = np.linespace(x - 2, x + 2, num=npoints)
+        ys = np.apply_apply_along_axis(lambda x: distribution(x, mu, sigma), xs)
+
+        return xs, ys
+
+    xs = map(lambda : x * h2ev, rs)
+    es = retrieve_hdf5_data(path_hdf5, mo_paths_hdf5[0][0])
+
+    initialEs = es[initial_states]
+    finalEs = [es[v] for v in final_states]
+
+    deltas = map(lambda e_i, es_f: [h2ev * (x - e_i) for x in es_f],
+                 zip(initialEs, finalEs))
+
+    magnifying_factor = 1
+    cm2inch = 0.393700787
+    dim1 = 8.25 * cm2inch * magnifying_factor
+    dim2 = 6 * cm2inch * magnifying_factor
+    plt.figure(figsize=(dim1, dim2), dpi=300 / magnifying_factor)
+    plt.title('Absorption Spectrum')
+    plt.ylabel('Intensity [au]')
+    plt.xlabel('Energy [ev]')
+    colors = ['g-' ,'r-', 'b-', 'y-']
+    for k, es in enumerate(deltas):
+        
+        xs, ys = calcDistribution(e_i, 1000, mu=)
+        plt.plot(xs, ys, colors[k])
+        
+    plt.savefig('spectrum.pdf', dpi=300 / magnifying_factor, format='pdf')
+    plt.show()
 
 
 def calcOscillatorStrenghts(project_name, mo_paths_hdf5, dictCGFs, atoms,
@@ -154,6 +207,7 @@ def calcOscillatorStrenghts(project_name, mo_paths_hdf5, dictCGFs, atoms,
         sum_overlap = np.dot(css_i, np.dot(overlap_CGFS, css_i))
         rc = calculateDipoleCenter(atoms, cgfsN, css_i, trans_mtx, sum_overlap)
         print("Dipole center is: ", rc)
+        xs = []
         for finalS in fs:
             mtx_integrals_spher = calcDipoleCGFS(atoms, cgfsN, rc, trans_mtx)
             css_j = coeffs[:, finalS]
@@ -162,11 +216,12 @@ def calcOscillatorStrenghts(project_name, mo_paths_hdf5, dictCGFs, atoms,
             print("Calculating Fij between ", initialS, " and ", finalS)
             fij = oscillator_strength(css_i, css_j, deltaE, trans_mtx,
                                       mtx_integrals_spher)
-            oscillators.append(fij)
+            xs.append(fij)
             with open("oscillator_strengths.out", 'a') as f:
-                x = '{:f}\n'.format(fij)
+                x = 'transition {:d} -> {:d} f_ij = {:f}\n'.format(initialS, finalS, fij)
                 f.write(x)
-
+        oscillators.append(xs)
+                
     return oscillators
 
 
@@ -291,8 +346,8 @@ def main():
     Initialize the arguments to compute the nonadiabatic coupling matrix for
     a given MD trajectory.
     """
-    initial_states = [99]  # HOMO
-    final_states = [[100, 101]]  # LUMO, LUMO+1
+    initial_states = [98, 99]  # HOMO
+    final_states = tee(range(100, 104), 2)
     
     plams.init()
     project_name = 'spectrum_pentacene'
