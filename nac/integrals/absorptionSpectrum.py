@@ -82,6 +82,12 @@ def calculateDipoleCenter(atoms, cgfsN, css, trans_mtx):
 
 def  oscillator_strength(atoms, cgfsN, css_i, css_j, energy, trans_mtx):
     """
+    Calculate the oscillator strength between two state i and j using a
+    molecular geometry in atomic units, a set of contracted gauss functions
+    normalized, the coefficients for both states, the nergy difference between
+    the states and a matrix to transform from cartesian to spherical
+    coordinates in case the coefficients are given in cartesian coordinates.
+  
     :param atoms: Atomic label and cartesian coordinates
     type atoms: List of namedTuples
     :param cgfsN: Contracted gauss functions normalized, represented as

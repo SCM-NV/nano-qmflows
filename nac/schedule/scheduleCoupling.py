@@ -9,7 +9,8 @@ import os
 import numpy as np
 # ==================> Internal modules <==========
 from nac.integrals import (calc_transf_matrix, calculateCoupling3Points)
-from nac.common import (change_mol_units, femtosec2au, retrieve_hdf5_data)
+from nac.common import (angs2au, change_mol_units, femtosec2au,
+                        retrieve_hdf5_data)
 from qmworks.common import AtomXYZ
 from qmworks.hdf5.quantumHDF5 import StoreasHDF5
 from qmworks.parsers import parse_string_xyz
