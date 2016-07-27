@@ -106,10 +106,12 @@ def simulate_absoprtion_spectrum(package_name, project_name, geometry,
                                      initial_states=initial_states,
                                      final_states=final_states)
 
+    # run(oscillators)
     scheduleGraphs = schedule(graphicResult)
-    
+
     run(scheduleGraphs(oscillators, project_name, path_hdf5, mo_paths_hdf5,
-                       initial_states=initial_states, final_states=final_states))
+                       initial_states=initial_states,
+                       final_states=final_states))
     print("Calculation Done")
 
 
@@ -124,23 +126,24 @@ def graphicResult(rs, project_name, path_hdf5, mo_paths_hdf5,
         return 1 / (sigma * np.sqrt(2 * np.pi)) * \
             np.exp(-(x - mu) ** 2 / (2 * sigma ** 2))
 
-    def calcDistribution(x, npoints, mu=0, sigma=1):
+    def calcDistribution(npoints, mu=0, sigma=1):
         """
         """
-        xs = np.linespace(x - 2, x + 2, num=npoints)
-        ys = np.apply_apply_along_axis(lambda x: distribution(x, mu, sigma), xs)
-
+        xs = np.linspace(mu - 2, mu + 2, num=npoints)
+        ys = np.apply_along_axis(lambda x:
+                                 distribution(x, mu, sigma), 0, xs)
         return xs, ys
 
-    xs = map(lambda : x * h2ev, rs)
+    oscillators = [[x * h2ev for x in ys] for ys in rs]
     es = retrieve_hdf5_data(path_hdf5, mo_paths_hdf5[0][0])
 
     initialEs = es[initial_states]
     finalEs = [es[v] for v in final_states]
+    deltas = [[h2ev * (x - e_i) for x in es_f] for (e_i, es_f) in
+              zip(initialEs, finalEs)]
 
-    deltas = map(lambda e_i, es_f: [h2ev * (x - e_i) for x in es_f],
-                 zip(initialEs, finalEs))
-
+    print('oscillators: ', oscillators)
+    print('Energies: ', deltas)
     magnifying_factor = 1
     cm2inch = 0.393700787
     dim1 = 8.25 * cm2inch * magnifying_factor
@@ -149,12 +152,11 @@ def graphicResult(rs, project_name, path_hdf5, mo_paths_hdf5,
     plt.title('Absorption Spectrum')
     plt.ylabel('Intensity [au]')
     plt.xlabel('Energy [ev]')
-    colors = ['g-' ,'r-', 'b-', 'y-']
-    for k, es in enumerate(deltas):
-        
-        xs, ys = calcDistribution(e_i, 1000, mu=)
-        plt.plot(xs, ys, colors[k])
-        
+    colors = ['g-', 'r-', 'b-', 'y-']
+    for k, (es, fs) in enumerate(zip(deltas, oscillators)):
+        for e, f in zip(es, fs):
+            xs, ys = calcDistribution(1000, mu=e, sigma=f)
+            plt.plot(xs, ys, colors[k])
     plt.savefig('spectrum.pdf', dpi=300 / magnifying_factor, format='pdf')
     plt.show()
 
@@ -196,7 +198,10 @@ def calcOscillatorStrenghts(project_name, mo_paths_hdf5, dictCGFs, atoms,
 
     # If the MO orbitals are given in Spherical Coordinates transform then to
     # Cartesian Coordinates.
-    trans_mtx = retrieve_hdf5_data(path_hdf5, hdf5_trans_mtx) if hdf5_trans_mtx else None
+    if hdf5_trans_mtx is not None:
+        trans_mtx = retrieve_hdf5_data(path_hdf5, hdf5_trans_mtx)
+    else:
+        trans_mtx = None
 
     overlap_CGFS = calcOverlapCGFS(atoms, cgfsN, trans_mtx)
 
@@ -206,10 +211,10 @@ def calcOscillatorStrenghts(project_name, mo_paths_hdf5, dictCGFs, atoms,
         energy_i = es[initialS]
         sum_overlap = np.dot(css_i, np.dot(overlap_CGFS, css_i))
         rc = calculateDipoleCenter(atoms, cgfsN, css_i, trans_mtx, sum_overlap)
+        mtx_integrals_spher = calcDipoleCGFS(atoms, cgfsN, rc, trans_mtx)
         print("Dipole center is: ", rc)
         xs = []
         for finalS in fs:
-            mtx_integrals_spher = calcDipoleCGFS(atoms, cgfsN, rc, trans_mtx)
             css_j = coeffs[:, finalS]
             energy_j = es[finalS]
             deltaE = energy_j - energy_i
@@ -221,7 +226,7 @@ def calcOscillatorStrenghts(project_name, mo_paths_hdf5, dictCGFs, atoms,
                 x = 'transition {:d} -> {:d} f_ij = {:f}\n'.format(initialS, finalS, fij)
                 f.write(x)
         oscillators.append(xs)
-                
+
     return oscillators
 
 
@@ -315,8 +320,8 @@ def calculateDipoleCenter(atoms, cgfsN, css, trans_mtx, overlap):
     return tuple(map(lambda x: - x / overlap, xs_sum))
 
 
-def  oscillator_strength(css_i, css_j, energy, trans_mtx,
-                         mtx_integrals_spher):
+def oscillator_strength(css_i, css_j, energy, trans_mtx,
+                        mtx_integrals_spher):
     """
     Calculate the oscillator strength between two state i and j using a
     molecular geometry in atomic units, a set of contracted gauss functions
@@ -347,7 +352,8 @@ def main():
     a given MD trajectory.
     """
     initial_states = [98, 99]  # HOMO
-    final_states = tee(range(100, 104), 2)
+    ls = list(range(100, 104))
+    final_states = [ls] * 2
     
     plams.init()
     project_name = 'spectrum_pentacene'
@@ -382,11 +388,11 @@ def main():
     home = os.path.expanduser('~')  # HOME Path
     username = getpass.getuser()
     
-    # Work_dir
-    scratch = "/scratch-shared"
-    scratch_path = join(scratch, username, project_name)
-    if not os.path.exists(scratch_path):
-        os.makedirs(scratch_path)
+    # # Work_dir
+    # scratch = "/scratch-shared"
+    # scratch_path = join(scratch, username, project_name)
+    # if not os.path.exists(scratch_path):
+    #     os.makedirs(scratch_path)
 
     # Cp2k configuration files
     basiscp2k = join(home, "Cp2k/cp2k_basis/BASIS_MOLOPT")
@@ -394,7 +400,8 @@ def main():
     cp2k_config = {"basis": basiscp2k, "potential": potcp2k}
 
     # HDF5 path
-    path_hdf5 = join(scratch_path, 'quantum.hdf5')
+    # path_hdf5 = join(scratch_path, 'quantum.hdf5')
+    path_hdf5 = './spectrum_pentacene.hdf5'
 
     # all_geometries type :: [String]
     geometry = split_file_geometries(path_traj_xyz)
