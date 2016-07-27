@@ -230,7 +230,7 @@ def calcDipoleCGFS(atoms, cgfsN, rc, trans_mtx):
                                  for kw in exponents)
     mtx_integrals_cart = tuple(triang2mtx(xs, dimCart)
                                for xs in mtx_integrals_triang)
-    return tuple(transform2Spherical(x, trans_mtx) for x
+    return tuple(transform2Spherical(trans_mtx, x) for x
                  in mtx_integrals_cart)
 
 
