@@ -88,7 +88,7 @@ def  oscillator_strength(atoms, cgfsN, css_i, css_j, energy, trans_mtx):
     the states and a matrix to transform from cartesian to spherical
     coordinates in case the coefficients are given in cartesian coordinates.
   
-    :param atoms: Atomic label and cartesian coordinates
+    :param atoms: Atomic label and cartesian coordinates in au.
     type atoms: List of namedTuples
     :param cgfsN: Contracted gauss functions normalized, represented as
     a list of tuples of coefficients and Exponents.
