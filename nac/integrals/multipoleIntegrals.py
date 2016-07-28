@@ -15,6 +15,7 @@ def calcMultipoleMatrixP(atoms, cgfsN, calcMatrixEntry=None):
     """
     Generic function to calculate a matrix using a Gaussian basis set and
     the molecular geometry.
+
     :param atoms: Atomic label and cartesian coordinates
     type atoms: List of namedTuples
     :param cgfsN: Contracted gauss functions normalized, represented as
@@ -22,7 +23,7 @@ def calcMultipoleMatrixP(atoms, cgfsN, calcMatrixEntry=None):
     type cgfsN: [(Coeff, Expo)]
     :param calcMatrixEntry: Function to compute the matrix elements.
     :type calcMatrixEntry: Function
-    :returns: Numpy Array
+    :returns: Numpy Array representing a flatten triangular matrix.
     """
     def run(fun_calc_entry):
         """
@@ -46,7 +47,8 @@ def calcMultipoleMatrixP(atoms, cgfsN, calcMatrixEntry=None):
 def dipoleContracted(t1, t2, rc, e, f, g):
     """
     Matrix entry calculation between two Contracted Gaussian functions.
-    Equivalent to < t1| t2 >
+    Equivalent to < t1| t2 >.
+
     :param t1: tuple containing the cartesian coordinates and primitve gauss
     function of the bra.
     :type t1: (xyz, (Coeff, Expo))
@@ -55,6 +57,7 @@ def dipoleContracted(t1, t2, rc, e, f, g):
     :type t2: (xyz, (Coeff, Expo))
     :param rc: Cartesian Coordinates where the multipole is centered
     :type rc: Tuple
+    :returns: Float
     """
     gs1 = build_primitives_gaussian(t1)
     gs2 = build_primitives_gaussian(t2)
@@ -66,9 +69,15 @@ def calcMatrixEntry(rc, e, f, g, xyz_cgfs, ixs):
     """
     Computed each matrix element using an index a tuple containing the
     cartesian coordinates and the primitives gauss functions.
+
+    :param rc: Multipole center
+    :type rc: (Float, Float, Float)
     :param xyz_cgfs: List of tuples containing the cartesian coordinates and
     the primitive gauss functions
     :type xyz_cgfs: [(xyz, (Coeff, Expo))]
+    :param ixs: Index of the matrix entry to calculate.
+    :type ixs: (Int, Int)
+    :returns: float
     """
     i, j = ixs
     t1 = xyz_cgfs[i]
@@ -80,7 +89,18 @@ def calcMtxMultipoleP(atoms, cgfsN, rc, e=0, f=0, g=0):
     """
     Multipole matrix entry calculation between two Contracted Gaussian functions.
     It uses a partial applied function to pass the center of the multipole `rc`
-    and the coefficients of the operator x^e y^f z^g
+    and the coefficients of the operator x^e y^f z^g.
+
+    :param atoms: Atomic label and cartesian coordinates
+    type atoms: List of namedTuples
+    :param cgfsN: Contracted gauss functions normalized, represented as
+    a list of tuples of coefficients and Exponents.
+    type cgfsN: [(Coeff, Expo)]
+    :param calcMatrixEntry: Function to compute the matrix elements.
+    :type calcMatrixEntry: Function
+    :param rc: Multipole center
+    :type rc: (Float, Float, Float)
+    :returns: Numpy Array representing a flatten triangular matrix.
     """
     curriedFun = partial(calcMatrixEntry, rc, e, f, g)
 
@@ -114,7 +134,8 @@ orbitalIndexes = {
 
 def calcOrbType_Components(l, x):
     """
-    Functions related to the orbital momenta indexes
+    Functions related to the orbital momenta indexes.
+
     :param l: Orbital momentum label
     :type l: String
     :param x: cartesian Component (x, y or z)
@@ -137,6 +158,9 @@ def build_primitives_gaussian(t):
 
 
 def calcIndexTriang(n):
+    """
+    Calculate the indexes of the matrix that is represented as a flatten array.  
+    """
     flatDim = (n ** 2 + n) // 2
     xss = np.dstack(np.triu_indices(n))
     return np.reshape(xss, (flatDim, 2))

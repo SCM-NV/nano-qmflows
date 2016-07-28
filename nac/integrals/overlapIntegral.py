@@ -11,7 +11,8 @@ from nac.integrals.multipoleIntegrals import (calcMultipoleMatrixP,
 def sijContracted(t1, t2):
     """
     Matrix entry calculation between two Contracted Gaussian functions.
-    Equivalent to < t1| t2 >
+    Equivalent to < t1| t2 >.
+
     :param t1: tuple containing the cartesian coordinates and primitve gauss
     function of the bra.
     :type t1: (xyz, (Coeff, Expo))
@@ -29,9 +30,13 @@ def calcMatrixEntry(xyz_cgfs, ixs):
     """
     Computed each matrix element using an index a tuple containing the
     cartesian coordinates and the primitives gauss functions.
+
     :param xyz_cgfs: List of tuples containing the cartesian coordinates
     and the primitive gauss functions.
     :type xyz_cgfs: [(xyz, (Coeff, Expo))]
+    :param ixs: Index of the matrix entry to calculate.
+    :type ixs: (Int, Int)
+    :returns: float
     """
     i, j = ixs
     t1 = xyz_cgfs[i]

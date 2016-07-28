@@ -15,9 +15,8 @@ cpdef double sab(tuple gs1, tuple gs2) except? -1:
     John Wiley & Sons. 2000, pages: 346-347. 
 
     .. math:: 
-        S^{e}_{i+1,j} = X_PA * S^{e}_{ij} + 1/(2*p) * (i * S{e}_{i-1,j} + j * S^{e}_{i,j-1} + e * S^{e-1}_{i,j})
-        S^{e}_{i,j+1} = X_PB * S^{e}_{ij} + 1/(2*p) * (i * S{e}_{i-1,j} + j * S^{e}_{i,j-1} + e * S^{e-1}_{i,j}
-        S^{e+1}_{i,j} = X_PC * S^{e}_{ij} + 1/(2*p) * (i * S{e}_{i-1,j} + j * S^{e}_{i,j-1} + e * S^{e-1}_{i,j})
+        S_{i+1,j} = X_PA * S_{ij} + 1/(2*p) * (i * S_{i-1,j} + j * S_{i,j-1})
+        S_{i,j+1} = X_PB * S_{ij} + 1/(2*p) * (i * S_{i-1,j} + j * S_{i,j-1})
     """
     cdef double c1, c2, cte, e1, e2, p, u
     cdef double rab, rp, rpa, rpb, rpc, s00, prod = 1
