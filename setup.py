@@ -5,15 +5,14 @@ from setuptools import Extension, setup
 
 setup(
     name='NonAdiabaticCouling',
-    version='0.1.2',
+    version='0.1.3',
     description='Automation of computations in quantum chemistry',
     license='',
     url='',
     author_email='',
     keywords='chemistry Photochemistry Simulation',
     packages=["nac", "nac.basisSet", "nac.formats", "nac.integrals", "nac.schedule",
-              "nac.templates", "scripts"],
-    package_data={"nac": ['templates/*json']},
+              "scripts"],
     classifiers=[
         'Intended Audience :: Science/Research',
         'programming language :: python :: 3.5',
@@ -23,7 +22,6 @@ setup(
     ],
     install_requires=['cython', 'numpy', 'h5py', 'pymonad'],
     cmdclass={'build_ext': build_ext},
-    ext_modules=[Extension('obaraSaika', ['nac/integrals/obaraSaika.pyx']),
-                 Extension('multipoleObaraSaika', ['nac/integrals/multipoleObaraSaika.pyx'])]
+    ext_modules=[Extension('multipoleObaraSaika', ['nac/integrals/multipoleObaraSaika.pyx'])]
 )
 
