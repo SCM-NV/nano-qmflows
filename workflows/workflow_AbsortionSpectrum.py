@@ -1,3 +1,5 @@
+import matplotlib
+matplotlib.use('Agg')
 
 # ================> Python Standard  and third-party <==========
 from functools import partial
@@ -106,12 +108,12 @@ def simulate_absoprtion_spectrum(package_name, project_name, geometry,
                                      initial_states=initial_states,
                                      final_states=final_states)
 
-    # run(oscillators)
-    scheduleGraphs = schedule(graphicResult)
+    run(oscillators)
+    # scheduleGraphs = schedule(graphicResult)
 
-    run(scheduleGraphs(oscillators, project_name, path_hdf5, mo_paths_hdf5,
-                       initial_states=initial_states,
-                       final_states=final_states))
+    # run(scheduleGraphs(oscillators, project_name, path_hdf5, mo_paths_hdf5,
+    #                    initial_states=initial_states,
+    #                    final_states=final_states))
     print("Calculation Done")
 
 
@@ -144,20 +146,17 @@ def graphicResult(rs, project_name, path_hdf5, mo_paths_hdf5,
 
     print('oscillators: ', oscillators)
     print('Energies: ', deltas)
-    magnifying_factor = 1
-    cm2inch = 0.393700787
-    dim1 = 8.25 * cm2inch * magnifying_factor
-    dim2 = 6 * cm2inch * magnifying_factor
-    plt.figure(figsize=(dim1, dim2), dpi=300 / magnifying_factor)
     plt.title('Absorption Spectrum')
     plt.ylabel('Intensity [au]')
     plt.xlabel('Energy [ev]')
-    colors = ['g-', 'r-', 'b-', 'y-']
+    plt.xlim([1, 3.5])
+    plt.tick_params(axis='y', which='both', left='off', labelleft='off')
+    colors = ['g', 'r', 'b', 'y']
     for k, (es, fs) in enumerate(zip(deltas, oscillators)):
         for e, f in zip(es, fs):
-            xs, ys = calcDistribution(1000, mu=e, sigma=f)
-            plt.plot(xs, ys, colors[k])
-    plt.savefig('spectrum.pdf', dpi=300 / magnifying_factor, format='pdf')
+            xs, ys = calcDistribution(1000, mu=e, sigma=deviation)
+            plt.plot(xs, ys * f, colors[k])
+    plt.savefig('spectrum.pdf', format='pdf')
     plt.show()
 
 
