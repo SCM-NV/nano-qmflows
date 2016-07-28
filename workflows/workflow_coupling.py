@@ -237,7 +237,7 @@ def main():
                                  path_hdf5=path_hdf5,
                                  enumerate_from=enumerate_from,
                                  package_config=cp2k_config,
-                                 number_of_couplings=40,
+                                 nCouplings=40,
                                  dt=dt)
 
     print("PATH TO HDF5:{}\n".format(path_hdf5))
