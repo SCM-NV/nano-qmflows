@@ -8,15 +8,12 @@ import h5py
 import os
 import numpy as np
 # ==================> Internal modules <==========
-from nac.integrals import calc_transf_matrix, calculateCoupling3Points
-from nac.common import retrieve_hdf5_data
+from nac.integrals import (calc_transf_matrix, calculateCoupling3Points)
+from nac.common import (angs2au, change_mol_units, femtosec2au,
+                        retrieve_hdf5_data)
 from qmworks.common import AtomXYZ
 from qmworks.hdf5.quantumHDF5 import StoreasHDF5
 from qmworks.parsers import parse_string_xyz
-
-# ================> Constants <================
-angs2au = 1 / 0.529177249  # Angstrom to a.u
-femtosec2au = 1 / 2.41888432e-2  # from femtoseconds to au
 
 # ==============================> Schedule Tasks <=============================
 

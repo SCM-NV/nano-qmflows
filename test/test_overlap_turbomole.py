@@ -8,14 +8,14 @@ import h5py
 import numpy as np
 import os
 
-# ========================<>=======================
+# ===============================<>============================================
 from nac.basisSet.basisNormalization import createNormalizedCGFs
 from nac.common import InputKey
 from nac.integrals.overlapIntegral import calcMtxOverlapP
 
 from utilsTest import offdiagonalTolerance, triang2mtx, try_to_remove
 
-# ========================<>=======================
+# ===============================<>============================================
 path_hdf5 = 'test_files/test.hdf5'
 path_MO = 'test_files/aomix_ethylene.in'
 

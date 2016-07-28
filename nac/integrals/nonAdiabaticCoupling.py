@@ -5,13 +5,15 @@ from functools import partial
 from multiprocessing import Pool
 import numpy as np
 import sys
-# ==================> Internal modules <==========
-from nac.integrals.overlapIntegral import (createTupleXYZ_CGF, sijContracted)
+# =============================> Internal modules <============================
+from nac.integrals.overlapIntegral import sijContracted
+from nac.integrals.multipoleIntegrals import createTupleXYZ_CGF
 from qmworks.utils import concat, concatMap
-# ==============================<>=========================
+# =====================================<>======================================
 
 
-def calculateCoupling3Points(geometries, coefficients, dictCGFs, dt, trans_mtx=None):
+def calculateCoupling3Points(geometries, coefficients, dictCGFs, dt,
+                             trans_mtx=None):
     """
     Calculate the non-adiabatic interaction matrix using 3 geometries,
     the CGFs for the atoms and molecular orbitals coefficients read
@@ -26,9 +28,9 @@ def calculateCoupling3Points(geometries, coefficients, dictCGFs, dt, trans_mtx=N
     AngularMomentum), Primitive = (Coefficient, Exponent)
     :parameter dt: dynamic integration time
     :type      dt: Float (a.u)
-    :param trans_mtx: Transformation matrix to translate from Cartesian to Sphericals
+    :param trans_mtx: Transformation matrix to translate from Cartesian
+    to Sphericals.
     """
-
     r0, r1, r2 = geometries
     css0, css1, css2 = coefficients
     symbols = [x.symbol for x in r0]
@@ -59,7 +61,7 @@ def calcuate_Sij(cgfsN, r0, r1, css0, css1, trans_mtx):
 
 def calcOverlapMtxPar(cgfsN, r0, r1):
     """
-    Parallel calculation of the the overlap matrix using the atomic
+    Parallel calculation of the overlap matrix using the atomic
     basis at two different geometries: R0 and R1. The rows of the
     matrix are calculated in
     using a pool of processes.

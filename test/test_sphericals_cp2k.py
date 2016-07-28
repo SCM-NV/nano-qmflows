@@ -7,13 +7,14 @@ import h5py
 import numpy as np
 import os
 
-# ========================<>=======================
+# ======================================<>=====================================
 from nac.common import InputKey
 from nac.integrals.overlapIntegral import calcMtxOverlapP
 from nac.integrals.spherical_Cartesian_cgf import calc_transf_matrix
 
-from utilsTest import  (change_mol_units, create_dict_CGFs, triang2mtx, try_to_remove)
-# ========================<>=======================
+from utilsTest import  (change_mol_units, create_dict_CGFs, triang2mtx,
+                        try_to_remove)
+# ======================================<>=====================================
 
 path_hdf5 = 'test_files/test.hdf5'
 
