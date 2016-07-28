@@ -13,7 +13,6 @@ from nac.common import (angs2au, change_mol_units, femtosec2au,
                         retrieve_hdf5_data)
 from qmworks.common import AtomXYZ
 from qmworks.hdf5.quantumHDF5 import StoreasHDF5
-from qmworks.parsers import parse_string_xyz
 
 # ==============================> Schedule Tasks <=============================
 
@@ -45,11 +44,11 @@ def schedule_transf_matrix(path_hdf5, atoms, basisName, project_name,
 
 @schedule
 def lazy_schedule_couplings(i, path_hdf5, dictCGFs, geometries, mo_paths, dt=1,
-                            hdf5_trans_mtx=None, units='angstrom',
-                            output_folder=None, enumerate_from=0):
+                            hdf5_trans_mtx=None, output_folder=None,
+                            enumerate_from=0):
     """
     Calculate the non-adiabatic coupling using 3 consecutive set of MOs in
-    a dynamics.
+    a dynamics, using 3 consecutive geometries in atomic units.
 
     :param i: nth coupling calculation
     :type i: int
@@ -57,8 +56,9 @@ def lazy_schedule_couplings(i, path_hdf5, dictCGFs, geometries, mo_paths, dt=1,
     :type     dictCGFS: Dict String [CGF],
               CGF = ([Primitives], AngularMomentum),
               Primitive = (Coefficient, Exponent)
-    :parameter geometries: Tuple molecular geometries stored as strings
-    :type      geometries: str, str, str)
+    :parameter geometries: molecular geometries stored as list of
+                           namedtuples.
+    :type      geometries: ([AtomXYZ], [AtomXYZ], [AtomXYZ])
     :parameter coefficients: Tuple of Molecular Orbital coefficients.
     :type      coefficients: (Matrix, Matrix, Matrix)
     :parameter dt: dynamic integration time
@@ -80,18 +80,13 @@ def lazy_schedule_couplings(i, path_hdf5, dictCGFs, geometries, mo_paths, dt=1,
         else:
             trans_mtx = None
 
-        xss = tuple(map(parse_string_xyz, geometries))
-
-        if 'angstrom' in units.lower():
-            xss = tuple(map(change_mol_units, xss))
-
         dt_au = dt * femtosec2au
 
         mos = tuple(map(lambda j:
                         retrieve_hdf5_data(path_hdf5,
                                            mo_paths[i + j][1]), range(3)))
 
-        rs = calculateCoupling3Points(xss, mos, dictCGFs, dt_au, trans_mtx)
+        rs = calculateCoupling3Points(geometries, mos, dictCGFs, dt_au, trans_mtx)
 
         with h5py.File(path_hdf5) as f5:
             store = StoreasHDF5(f5, 'cp2k')

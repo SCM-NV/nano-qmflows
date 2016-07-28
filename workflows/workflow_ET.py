@@ -14,7 +14,7 @@ import shutil
 # ==============================> Internal modules <===========================
 from .components import (calculate_mos, create_dict_CGFs, create_point_folder,
                          split_file_geometries)
-from nac.common import retrieve_hdf5_data
+from nac.common import (change_mol_units, retrieve_hdf5_data)
 from nac.schedule.scheduleCoupling import schedule_transf_matrix
 from nac.integrals.electronTransfer import photoExcitationRate
 from noodles import gather
@@ -129,7 +129,7 @@ def calculate_ETR(package_name, project_name, all_geometries, cp2k_args,
 
 def schedule_photoexcitation(i, path_hdf5, dictCGFs, all_geometries,
                              time_depend_paths, mo_paths, trans_mtx=None,
-                             enumerate_from=0):
+                             enumerate_from=0, units='angstrom'):
     """
     :param i: nth coupling calculation.
     :type i: Int
@@ -158,7 +158,12 @@ def schedule_photoexcitation(i, path_hdf5, dictCGFs, all_geometries,
 
     """
     j, k = i + 1, i + 2
-    geometries = all_geometries[i], all_geometries[j], all_geometries[k]
+
+    xss = all_geometries[i], all_geometries[j], all_geometries[k]
+    geometries = tuple(map(parse_string_xyz, xss))
+    if 'angstrom' in units.lower():
+        geometries = tuple(map(change_mol_units, geometries))
+
     mos = tuple(map(lambda j:
                     retrieve_hdf5_data(path_hdf5,
                                        mo_paths[i + j][1]), range(3)))

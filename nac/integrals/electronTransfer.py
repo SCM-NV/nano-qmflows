@@ -3,9 +3,8 @@ __author__ = "Felipe Zapata"
 # ================> Python Standard  and third-party <==========
 from functools import partial
 from itertools import starmap
-from multiprocessing import Pool
 import numpy as np
-import sys
+
 # ==================> Internal modules <==========
 from nac.integrals.overlapIntegral import calcMtxOverlapP
 
@@ -21,9 +20,10 @@ def photoExcitationRate(geometries, dictCGFs, tuple_time_coefficients,
     J. AM. CHEM. SOC. 2005, 127, 7941-7951. Ab Initio Nonadiabatic Molecular
     Dynamics of the Ultrafast Electron Injection acrossthe Alizarin-TiO2
     Interface.
+    The derivatives are calculated numerically using 3 points.
 
-    :param geometry: Molecular geometry
-    :type geometry: List of Atom objects
+    :param geometry: Molecular geometries.
+    :type geometry: ([AtomXYZ], [AtomXYZ], [AtomXYZ])
     :paramter dictCGFS: Dictionary from Atomic Label to basis set.
     :type     dictCGFS: Dict String [CGF], CGF = ([Primitives],AngularMomentum),
     Primitive = (Coefficient, Exponent)
@@ -127,75 +127,3 @@ def threePointDerivative(arr, dt=1):
     """Calculate the numerical derivatives using a Two points formula"""
 
     return (arr[0] - arr[2]) / (2 * dt)
-
-# def calcuate_Sij(cgfsN, r0, r1, css0, css1, trans_mtx):
-#     """
-#     Calculate the Overlap Matrix between molecular orbitals at different times.
-#     """
-#     suv = calcOverlapMtxPar(cgfsN, r0, r1)
-#     css0T = np.transpose(css0)
-#     if trans_mtx is not None:
-#         transpose = np.transpose(trans_mtx)
-#         suv = np.dot(trans_mtx, np.dot(suv, transpose))  # Overlap in Sphericals
-
-#     return np.dot(css0T, np.dot(suv, css1))
-
-
-# def calcOverlapMtxPar(cgfsN, r0, r1):
-#     """
-#     Parallel calculation of the the overlap matrix using the atomic
-#     basis at two different geometries: R0 and R1. The rows of the
-#     matrix are calculated in
-#     using a pool of processes.
-#     """
-#     xyz_cgfs0 = concatMap(lambda rs: createTupleXYZ_CGF(*rs),
-#                           zip(r0, cgfsN))
-#     xyz_cgfs1 = concatMap(lambda rs: createTupleXYZ_CGF(*rs),
-#                           zip(r1, cgfsN))
-
-#     dim = len(xyz_cgfs0)
-#     iss = range(dim)
-
-#     pool = Pool()
-#     rss = pool.map(partial(chunkSij, xyz_cgfs0, xyz_cgfs1, dim), iss)
-#     pool.close()
-#     result = np.concatenate(rss)
-
-#     return result.reshape((dim, dim))
-
-
-# def chunkSij(xyz_cgfs0, xyz_cgfs1, dim, i):
-#     """
-#     Calculate the k-th row of the overlap integral using
-#     the 2 atomics basis at different geometries
-#     and the total dimension of the overlap matrix
-#     """
-#     xs = np.empty(dim)
-#     for j in range(dim):
-#         t1 = xyz_cgfs0[i]
-#         t2 = xyz_cgfs1[j]
-#         xs[j] = sijContracted(t1, t2)
-
-#     return xs
-
-
-# def calcOverlapMtxSeq(cgfsN, r0, r1):
-#     """
-#     calculate the overlap matrix using the atomic basis at two
-#     different geometries: R0 and R1.
-#     """
-#     xyz_cgfs0 = np.array(concat([createTupleXYZ_CGF(xs, cgss)
-#                                  for xs, cgss in zip(r0, cgfsN)]))
-#     xyz_cgfs1 = np.array(concat([createTupleXYZ_CGF(xs, cgss)
-#                                  for xs, cgss in zip(r1, cgfsN)]))
-#     dim = len(xyz_cgfs0)
-#     xs = np.empty((dim, dim))
-
-#     for i in range(dim):
-#         for j in range(dim):
-#             t1 = xyz_cgfs0[i]
-#             t2 = xyz_cgfs1[j]
-#             xs[i, j] = sijContracted(t1, t2)
-#             # print(i, j, xs[i, j])
-#     return xs
-

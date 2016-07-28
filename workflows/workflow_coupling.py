@@ -12,6 +12,7 @@ from noodles import gather, schedule
 
 from qmworks import run, Settings
 from qmworks.parsers import parse_string_xyz
+from nac.common import change_mol_units
 from nac.schedule.components import (calculate_mos, create_dict_CGFs,
                                      create_point_folder, split_file_geometries)
 from nac.schedule.scheduleCoupling import (lazy_schedule_couplings,
@@ -93,7 +94,8 @@ def generate_pyxaid_hamiltonians(package_name, project_name, all_geometries,
                                             all_geometries,
                                             mo_paths_hdf5, hdf5_trans_mtx,
                                             enumerate_from,
-                                            output_folder=project_name, dt=dt)
+                                            output_folder=project_name, dt=dt,
+                                            units='angstrom')
                          for i in range(nPoints)]
     path_couplings = gather(*promise_couplings)
 
@@ -119,7 +121,7 @@ def generate_pyxaid_hamiltonians(package_name, project_name, all_geometries,
 
 def calculate_coupling(i, path_hdf5, dictCGFs, all_geometries, mo_paths,
                        hdf5_trans_mtx, enumerate_from, output_folder=None,
-                       dt=1):
+                       dt=1, units='angstrom'):
     """
     Calculate the non-adiabatic coupling using 3 consecutive set of MOs in
     a dynamics. Explicitly declares that each Coupling Depends in
@@ -135,7 +137,7 @@ def calculate_coupling(i, path_hdf5, dictCGFs, all_geometries, mo_paths,
               CGF = ([Primitives], AngularMomentum),
               Primitive = (Coefficient, Exponent)
     :param all_geometries: list of molecular geometries
-    :type all_geometries: String list
+    :type all_geometries: [String]
     :param mo_paths: Path to the MO coefficients and energies in the
     HDF5 file.
     :type mo_paths: [String]
@@ -147,7 +149,12 @@ def calculate_coupling(i, path_hdf5, dictCGFs, all_geometries, mo_paths,
     :returns: promise to path to the Coupling inside the HDF5
     """
     j, k = i + 1, i + 2
-    geometries = all_geometries[i], all_geometries[j], all_geometries[k]
+    xss = all_geometries[i], all_geometries[j], all_geometries[k]
+
+    geometries = tuple(map(parse_string_xyz, xss))
+
+    if 'angstrom' in units.lower():
+        geometries = tuple(map(change_mol_units, geometries))
 
     return lazy_schedule_couplings(i, path_hdf5, dictCGFs, geometries, mo_paths,
                                    dt=dt, hdf5_trans_mtx=hdf5_trans_mtx,
