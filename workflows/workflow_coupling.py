@@ -26,7 +26,8 @@ def generate_pyxaid_hamiltonians(package_name, project_name, all_geometries,
                                  cp2k_args, guess_args=None,
                                  calc_new_wf_guess_on_points=[0],
                                  path_hdf5=None, enumerate_from=0,
-                                 package_config=None, dt=1):
+                                 package_config=None, nCouplings=None,
+                                 dt=1):
     """
     Use a md trajectory to generate the hamiltonian components to tun PYXAID
     nmad.
@@ -49,6 +50,8 @@ def generate_pyxaid_hamiltonians(package_name, project_name, all_geometries,
     :type enumerate_from: Int
     :param package_config: Parameters required by the Package.
     :type package_config: Dict
+    :param nCouplings: Number of coupling to calcute and store.
+    :param nCouplings: Int
     :returns: None
     """
     #  Environmental Variables
@@ -95,6 +98,7 @@ def generate_pyxaid_hamiltonians(package_name, project_name, all_geometries,
                                             mo_paths_hdf5, hdf5_trans_mtx,
                                             enumerate_from,
                                             output_folder=project_name, dt=dt,
+                                            nCouplings=nCouplings,
                                             units='angstrom')
                          for i in range(nPoints)]
     path_couplings = gather(*promise_couplings)
@@ -111,7 +115,8 @@ def generate_pyxaid_hamiltonians(package_name, project_name, all_geometries,
     promise_files = schedule_write_ham(path_hdf5, work_dir, mo_paths_hdf5,
                                        path_couplings, nPoints,
                                        path_dir_results=path_hamiltonians,
-                                       enumerate_from=enumerate_from)
+                                       enumerate_from=enumerate_from,
+                                       nCouplings=nCouplings)
 
     hams_files = run(promise_files)
 
@@ -121,7 +126,7 @@ def generate_pyxaid_hamiltonians(package_name, project_name, all_geometries,
 
 def calculate_coupling(i, path_hdf5, dictCGFs, all_geometries, mo_paths,
                        hdf5_trans_mtx, enumerate_from, output_folder=None,
-                       dt=1, units='angstrom'):
+                       nCouplings=None, dt=1, units='angstrom'):
     """
     Calculate the non-adiabatic coupling using 3 consecutive set of MOs in
     a dynamics. Explicitly declares that each Coupling Depends in
@@ -159,7 +164,8 @@ def calculate_coupling(i, path_hdf5, dictCGFs, all_geometries, mo_paths,
     return lazy_schedule_couplings(i, path_hdf5, dictCGFs, geometries, mo_paths,
                                    dt=dt, hdf5_trans_mtx=hdf5_trans_mtx,
                                    output_folder=output_folder,
-                                   enumerate_from=enumerate_from)
+                                   enumerate_from=enumerate_from,
+                                   nCouplings=nCouplings)
 # ============<>===============
 
 
@@ -230,7 +236,9 @@ def main():
                                  calc_new_wf_guess_on_points=pointsGuess,
                                  path_hdf5=path_hdf5,
                                  enumerate_from=enumerate_from,
-                                 package_config=cp2k_config, dt=dt)
+                                 package_config=cp2k_config,
+                                 number_of_couplings=40,
+                                 dt=dt)
 
     print("PATH TO HDF5:{}\n".format(path_hdf5))
     plams.finish()
