@@ -90,7 +90,7 @@ def lazy_schedule_couplings(i, path_hdf5, dictCGFs, geometries, mo_paths, dt=1,
             middle = nStates // 2
             lower, upper = middle - nCouplings, middle + nCouplings
             # Extrract a subset of nCouplings coefficients
-            mos = tuple(map(lambda xs: xs[:, lower: upper]), mos)
+            mos = tuple(map(lambda xs: xs[:, lower: upper], mos))
 
         rs = calculateCoupling3Points(geometries, mos, dictCGFs, dt_au, trans_mtx)
 
