@@ -87,14 +87,19 @@ def lazy_schedule_couplings(i, path_hdf5, dictCGFs, geometries, mo_paths, dt=1,
         # Calculate the coupling among nCouplings/2 HOMOs and  nCouplings/2 LUMOs.
         if nCouplings is not None:
             nOrb, nStates = mos[0].shape
+            print("nOrb, nStates: ", nOrb, nStates)
             middle = nStates // 2
-            lower, upper = middle - nCouplings, middle + nCouplings
+            ncs = nCouplings // 2
+            print("middle ", middle)
+            lower, upper = middle - ncs, middle + ncs
+            print("Lower, Upper ", lower, upper)
             # Extrract a subset of nCouplings coefficients
             mos = tuple(map(lambda xs: xs[:, lower: upper], mos))
 
         rs = calculateCoupling3Points(geometries, mos, dictCGFs, dt_au, trans_mtx)
 
         # Store the couplings
+        print("PATH HDF5: ", path_hdf5)
         with h5py.File(path_hdf5) as f5:
             store = StoreasHDF5(f5, 'cp2k')
             store.funHDF5(output_path, rs)
@@ -130,7 +135,8 @@ def write_hamiltonians(path_hdf5, work_dir, mo_paths, path_couplings, nPoints,
         else:
             dim, = xs.shape
             middle = dim // 2
-            return xs[middle - nCouplings: middle - nCouplings]
+            ncs = nCouplings // 2
+            return xs[middle - ncs: middle - ncs]
         
     ham_files = []
     for i in range(nPoints):
