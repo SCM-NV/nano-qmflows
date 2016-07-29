@@ -22,6 +22,7 @@ setup(
     ],
     install_requires=['cython', 'numpy', 'h5py', 'pymonad'],
     cmdclass={'build_ext': build_ext},
-    ext_modules=[Extension('multipoleObaraSaika', ['nac/integrals/multipoleObaraSaika.pyx'])]
+    ext_modules=[Extension('obaraSaika', ['nac/integrals/obaraSaika.pyx']),
+                 Extension('multipoleObaraSaika', ['nac/integrals/multipoleObaraSaika.pyx'])]
 )
 

@@ -96,7 +96,7 @@ def lazy_schedule_couplings(i, path_hdf5, dictCGFs, geometries, mo_paths, dt=1,
         rs = calculateCoupling3Points(geometries, mos, dictCGFs, dt_au, trans_mtx)
 
         # Store the couplings
-        with h5py.File(path_hdf5, 'r+') as f5:
+        with h5py.File(path_hdf5) as f5:
             store = StoreasHDF5(f5, 'cp2k')
             store.funHDF5(output_path, rs)
 
