@@ -37,6 +37,7 @@ def schedule_transf_matrix(path_hdf5, atoms, basisName, project_name,
         store = StoreasHDF5(f5, packageName)
         path = os.path.join(project_name, 'trans_mtx')
         store.funHDF5(path, mtx)
+        f5.close()
     return path
 
 
@@ -78,8 +79,6 @@ def lazy_schedule_couplings(i, path_hdf5, dictCGFs, geometries, mo_paths, dt=1,
         else:
             trans_mtx = None
 
-        dt_au = dt * femtosec2au
-
         mos = tuple(map(lambda j:
                         retrieve_hdf5_data(path_hdf5,
                                            mo_paths[i + j][1]), range(3)))
@@ -87,20 +86,17 @@ def lazy_schedule_couplings(i, path_hdf5, dictCGFs, geometries, mo_paths, dt=1,
         # Calculate the coupling among nCouplings/2 HOMOs and  nCouplings/2 LUMOs.
         if nCouplings is not None:
             nOrb, nStates = mos[0].shape
-            print("nOrb, nStates: ", nOrb, nStates)
-            middle = nStates // 2
-            ncs = nCouplings // 2
-            print("middle ", middle)
+            middle, ncs  = [n // 2 for n in  [nStates, nCouplings]]
             lower, upper = middle - ncs, middle + ncs
-            print("Lower, Upper ", lower, upper)
             # Extrract a subset of nCouplings coefficients
             mos = tuple(map(lambda xs: xs[:, lower: upper], mos))
 
+        # time in atomic units
+        dt_au = dt * femtosec2au
         rs = calculateCoupling3Points(geometries, mos, dictCGFs, dt_au, trans_mtx)
 
         # Store the couplings
-        print("PATH HDF5: ", path_hdf5)
-        with h5py.File(path_hdf5) as f5:
+        with h5py.File(path_hdf5, 'r+') as f5:
             store = StoreasHDF5(f5, 'cp2k')
             store.funHDF5(output_path, rs)
 
@@ -109,11 +105,12 @@ def lazy_schedule_couplings(i, path_hdf5, dictCGFs, geometries, mo_paths, dt=1,
         raise RuntimeError(msg)
 
     output_path = join(output_folder, 'coupling_{}'.format(i + enumerate_from))
-
+    print("Calculating Coupling: ", output_path)
+    # Test if the coupling is store in the HDF5 calculate it
     with h5py.File(path_hdf5, 'r') as f5:
-        if output_path not in f5:
-            # If the coupling is not store in the HDF5 calculate it
-            calc_coupling(output_path, dt)
+        is_done = output_path in f5
+    if not is_done:
+        calc_coupling(output_path, dt)
 
     return output_path
 
