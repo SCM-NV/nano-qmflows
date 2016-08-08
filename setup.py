@@ -5,7 +5,7 @@ from setuptools import Extension, setup
 
 setup(
     name='NonAdiabaticCouling',
-    version='0.1.3',
+    version='0.1.4',
     description='Automation of computations in quantum chemistry',
     license='',
     url='',
