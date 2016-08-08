@@ -1,7 +1,7 @@
 __author__ = "Felipe Zapata"
 
 # ================> Python Standard  and third-party <==========
-from noodles import gather, schedule  # Workflow Engine
+from noodles import schedule  # Workflow Engine
 from os.path import join
 
 import h5py
@@ -9,11 +9,8 @@ import os
 import numpy as np
 # ==================> Internal modules <==========
 from nac.integrals import (calc_transf_matrix, calculateCoupling3Points)
-from nac.common import (angs2au, change_mol_units, femtosec2au,
-                        retrieve_hdf5_data)
-from qmworks.common import AtomXYZ
+from nac.common import (femtosec2au, retrieve_hdf5_data)
 from qmworks.hdf5.quantumHDF5 import StoreasHDF5
-from qmworks.parsers import parse_string_xyz
 
 # ==============================> Schedule Tasks <=============================
 
@@ -40,16 +37,17 @@ def schedule_transf_matrix(path_hdf5, atoms, basisName, project_name,
         store = StoreasHDF5(f5, packageName)
         path = os.path.join(project_name, 'trans_mtx')
         store.funHDF5(path, mtx)
+        f5.close()
     return path
 
 
 @schedule
 def lazy_schedule_couplings(i, path_hdf5, dictCGFs, geometries, mo_paths, dt=1,
-                            hdf5_trans_mtx=None, units='angstrom',
-                            output_folder=None, enumerate_from=0):
+                            hdf5_trans_mtx=None, output_folder=None,
+                            enumerate_from=0, nCouplings=None):
     """
     Calculate the non-adiabatic coupling using 3 consecutive set of MOs in
-    a dynamics.
+    a dynamics, using 3 consecutive geometries in atomic units.
 
     :param i: nth coupling calculation
     :type i: int
@@ -57,8 +55,9 @@ def lazy_schedule_couplings(i, path_hdf5, dictCGFs, geometries, mo_paths, dt=1,
     :type     dictCGFS: Dict String [CGF],
               CGF = ([Primitives], AngularMomentum),
               Primitive = (Coefficient, Exponent)
-    :parameter geometries: Tuple molecular geometries stored as strings
-    :type      geometries: str, str, str)
+    :parameter geometries: molecular geometries stored as list of
+                           namedtuples.
+    :type      geometries: ([AtomXYZ], [AtomXYZ], [AtomXYZ])
     :parameter coefficients: Tuple of Molecular Orbital coefficients.
     :type      coefficients: (Matrix, Matrix, Matrix)
     :parameter dt: dynamic integration time
@@ -80,19 +79,23 @@ def lazy_schedule_couplings(i, path_hdf5, dictCGFs, geometries, mo_paths, dt=1,
         else:
             trans_mtx = None
 
-        xss = tuple(map(parse_string_xyz, geometries))
-
-        if 'angstrom' in units.lower():
-            xss = tuple(map(change_mol_units, xss))
-
-        dt_au = dt * femtosec2au
-
         mos = tuple(map(lambda j:
                         retrieve_hdf5_data(path_hdf5,
                                            mo_paths[i + j][1]), range(3)))
 
-        rs = calculateCoupling3Points(xss, mos, dictCGFs, dt_au, trans_mtx)
+        # Calculate the coupling among nCouplings/2 HOMOs and  nCouplings/2 LUMOs.
+        if nCouplings is not None:
+            nOrb, nStates = mos[0].shape
+            middle, ncs  = [n // 2 for n in  [nStates, nCouplings]]
+            lower, upper = middle - ncs, middle + ncs
+            # Extrract a subset of nCouplings coefficients
+            mos = tuple(map(lambda xs: xs[:, lower: upper], mos))
 
+        # time in atomic units
+        dt_au = dt * femtosec2au
+        rs = calculateCoupling3Points(geometries, mos, dictCGFs, dt_au, trans_mtx)
+
+        # Store the couplings
         with h5py.File(path_hdf5) as f5:
             store = StoreasHDF5(f5, 'cp2k')
             store.funHDF5(output_path, rs)
@@ -102,17 +105,18 @@ def lazy_schedule_couplings(i, path_hdf5, dictCGFs, geometries, mo_paths, dt=1,
         raise RuntimeError(msg)
 
     output_path = join(output_folder, 'coupling_{}'.format(i + enumerate_from))
-
+    print("Calculating Coupling: ", output_path)
+    # Test if the coupling is store in the HDF5 calculate it
     with h5py.File(path_hdf5, 'r') as f5:
-        if output_path not in f5:
-            # If the coupling is not store in the HDF5 calculate it
-            calc_coupling(output_path, dt)
+        is_done = output_path in f5
+    if not is_done:
+        calc_coupling(output_path, dt)
 
     return output_path
 
 
-def write_hamiltonians(path_hdf5, work_dir, mo_paths, path_couplings,
-                       nPoints, path_dir_results=None, enumerate_from=0):
+def write_hamiltonians(path_hdf5, work_dir, mo_paths, path_couplings, nPoints,
+                       path_dir_results=None, enumerate_from=0, nCouplings=None):
     """
     Write the real and imaginary components of the hamiltonian using both
     the orbitals energies and the derivative coupling accoring to:
@@ -122,29 +126,33 @@ def write_hamiltonians(path_hdf5, work_dir, mo_paths, path_couplings,
     def write_pyxaid_format(arr, fileName):
         np.savetxt(fileName, arr, fmt='%10.5e', delimiter='  ')
 
+    def energySubset(xs):
+        if nCouplings is None:
+            return xs
+        else:
+            dim, = xs.shape
+            middle = dim // 2
+            ncs = nCouplings // 2
+            return xs[middle - ncs: middle - ncs]
+        
     ham_files = []
     for i in range(nPoints):
         path_coupling = path_couplings[i]
         css = retrieve_hdf5_data(path_hdf5, path_coupling)
-        energies = retrieve_hdf5_data(path_hdf5, mo_paths[i][0])
-
+        energies = energySubset(retrieve_hdf5_data(path_hdf5, mo_paths[i][0]))
         j = i + enumerate_from
+
+        # FileNames
         file_ham_im = join(path_dir_results, 'Ham_{}_im'.format(j))
         file_ham_re = join(path_dir_results, 'Ham_{}_re'.format(j))
+
+        # convert to Rydbergs
         ham_im = 2.0 * css
-        ham_re = np.diag(2.0 * energies)  # convert to Rydbergs
+        ham_re = np.diag(2.0 * energies)
+
         write_pyxaid_format(ham_im, file_ham_im)
         write_pyxaid_format(ham_re, file_ham_re)
         ham_files.append((file_ham_im, file_ham_re))
 
     return ham_files
-
-
-def change_mol_units(mol, factor=angs2au):
-    """change the units of the molecular coordinates"""
-    newMol = []
-    for atom in mol:
-        coord = list(map(lambda x: x * factor, atom.xyz))
-        newMol.append(AtomXYZ(atom.symbol, coord))
-    return newMol
     

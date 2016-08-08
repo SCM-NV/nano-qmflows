@@ -35,9 +35,8 @@ def calcMultipoleMatrixP(atoms, cgfsN, calcMatrixEntry=None):
         nOrbs = len(xyz_cgfs)
         # Number of non-zero entries of a triangular mtx
         indexes = calcIndexTriang(nOrbs)
-        pool = Pool()
-        rss = pool.map(partial(fun_calc_entry, xyz_cgfs), indexes)
-        pool.close()
+        with Pool() as p:
+            rss = p.map(partial(fun_calc_entry, xyz_cgfs), indexes)
 
         return np.array(list(rss))
 
