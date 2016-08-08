@@ -74,9 +74,9 @@ def calcOverlapMtxPar(cgfsN, r0, r1):
     dim = len(xyz_cgfs0)
     iss = range(dim)
 
-    pool = Pool()
-    rss = pool.map(partial(chunkSij, xyz_cgfs0, xyz_cgfs1, dim), iss)
-    pool.close()
+    with Pool() as p:
+        rss = p.map(partial(chunkSij, xyz_cgfs0, xyz_cgfs1, dim), iss)
+
     result = np.concatenate(rss)
 
     return result.reshape((dim, dim))
