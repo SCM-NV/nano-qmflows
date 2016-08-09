@@ -30,7 +30,7 @@ def create_dict_CGFs(f5, pathBasis, basisname, packageName, xyz):
     return  createNormalizedCGFs(f5, basisname, packageName, xyz)
 
 
-def dump_MOs_coeff(handle_hdf5, pathEs, pathCs, nOrbitals):
+def dump_MOs_coeff(handle_hdf5, pathEs, pathCs, nOrbitals, nOrbFuns):
     """
     MO coefficients are stored in row-major order, they must be transposed
     to get the standard MO matrix.
@@ -39,31 +39,11 @@ def dump_MOs_coeff(handle_hdf5, pathEs, pathCs, nOrbitals):
     :param job: Output File
     :type  job: String
     """
-    key = InputKey('orbitals', [path_MO, nOrbitals, pathEs, pathCs])
+    key = InputKey('orbitals', [path_MO, nOrbitals, nOrbFuns, pathEs, pathCs])
 
     turbomole2hdf5(handle_hdf5, [key])
 
     return pathEs, pathCs
-
-
-def format_aomix(mtx, dim):
-    xs = "[overlap matrix]\n"
-    for i in range(1, dim + 1):
-        for j in range(1, dim + 1):
-            if j <= i:
-                v = mtx[i - 1, j - 1]
-                xs += '({:13}  ,{:13} ) = {:25.15e}\n'.format(i, j, v)
-    return xs
-
-
-def format_vector(mtx, dim):
-    xs = ""
-    for i in range(dim):
-        for j in range(dim):
-            if j <= i:
-                v = mtx[i, j]
-                xs += '{:25.15e}\n'.format(v)
-    return xs
 
 
 def test_store_basisSet():
@@ -94,10 +74,11 @@ def test_store_MO_h5():
     pathEs = join(path, 'eigenvalues')
     pathCs = join(path, 'coefficients')
     nOrbitals = 36
+    nOrbFuns = 38
 
     try_to_remove(path_hdf5)
     with h5py.File(path_hdf5, chunks=True) as f5:
-        pathEs, pathCs = dump_MOs_coeff(f5, pathEs, pathCs, nOrbitals)
+        pathEs, pathCs = dump_MOs_coeff(f5, pathEs, pathCs, nOrbitals, nOrbFuns)
         if f5[pathEs] and f5[pathCs]:
             try_to_remove(path_hdf5)
             assert True
@@ -106,13 +87,7 @@ def test_store_MO_h5():
             assert False
 
 
-# def test_compare_overlap():
-#     """
-#     compare if the matrix calculated in python is the same turbomole result
-#     """
-#     pass
-
-def test_overlap():
+def test_overlap2():
     """
     The overlap matrix must fulfill the following equation C^(+) S C = I
     where S is the overlap matrix, C is the MO matrix and
@@ -126,24 +101,20 @@ def test_overlap():
     pathEs = join(path, 'eigenvalues')
     pathCs = join(path, 'coefficients')
     pathBasis = 'test_files/basis_turbomole'
+
     nOrbitals = 36
+    nOrbFuns = 38
 
     with h5py.File(path_hdf5, chunks=True) as f5:
         dictCGFs = create_dict_CGFs(f5, pathBasis, basis, 'turbomole', mol)
-        _, pathCs = dump_MOs_coeff(f5, pathEs, pathCs, nOrbitals)
+        pathEs, pathCs = dump_MOs_coeff(f5, pathEs, pathCs, nOrbitals, nOrbFuns)
+        trr = f5[pathCs].value
         try_to_remove(path_hdf5)
-        dset = f5[pathCs]
-        trr = dset[...]
 
-    css = np.transpose(trr)
     cgfsN = [dictCGFs[l] for l in labels]
     dim = sum(len(xs) for xs in cgfsN)
-    mtxP = triang2mtx(calcMtxOverlapP(mol, cgfsN), dim)
-    rs = np.dot(trr, np.dot(mtxP, css))
-
-    print(rs[0])
-    xs = format_aomix(rs, 36)
-    with open("CtSC.out", 'w') as f:
-        f.write(xs)
+    css = np.transpose(trr)
+    mtx_overlap = triang2mtx(calcMtxOverlapP(mol, cgfsN), dim)
+    rs = np.dot(trr, np.dot(mtx_overlap, css))
 
     assert offdiagonalTolerance(rs)
