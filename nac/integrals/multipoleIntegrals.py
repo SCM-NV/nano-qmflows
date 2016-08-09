@@ -11,7 +11,7 @@ from multipoleObaraSaika import sab_efg  # compiled with cython
 # ==================================<>======================================
 
 
-def calcMultipoleMatrixP(atoms, cgfsN, calcMatrixEntry=None):
+def general_multipole_matrix(atoms, cgfsN, calcMatrixEntry=None):
     """
     Generic function to calculate a matrix using a Gaussian basis set and
     the molecular geometry.
@@ -103,7 +103,7 @@ def calcMtxMultipoleP(atoms, cgfsN, rc, e=0, f=0, g=0):
     """
     curriedFun = partial(calcMatrixEntry, rc, e, f, g)
 
-    return calcMultipoleMatrixP(atoms, cgfsN, calcMatrixEntry=curriedFun)
+    return general_multipole_matrix(atoms, cgfsN, calcMatrixEntry=curriedFun)
 
 
 # ==================================<>=========================================

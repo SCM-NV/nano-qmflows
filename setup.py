@@ -5,13 +5,13 @@ from setuptools import Extension, setup
 
 setup(
     name='NonAdiabaticCouling',
-    version='0.1.4',
+    version='0.1.5',
     description='Automation of computations in quantum chemistry',
     license='',
     url='',
     author_email='',
     keywords='chemistry Photochemistry Simulation',
-    packages=["nac", "nac.basisSet", "nac.formats", "nac.integrals", "nac.schedule",
+    packages=["nac", "nac.basisSet", "nac.integrals", "nac.schedule",
               "scripts"],
     classifiers=[
         'Intended Audience :: Science/Research',

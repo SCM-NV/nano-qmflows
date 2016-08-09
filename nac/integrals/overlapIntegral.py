@@ -3,7 +3,7 @@ __author__ = "Felipe Zapata"
 # ==========> Standard libraries and third-party <===============
 
 from multipoleObaraSaika import sab
-from nac.integrals.multipoleIntegrals import (calcMultipoleMatrixP,
+from nac.integrals.multipoleIntegrals import (general_multipole_matrix,
                                               build_primitives_gaussian)
 # ====================================<>=======================================
 
@@ -49,5 +49,5 @@ def calcMtxOverlapP(atoms, cgfsN):
     Overlap matrix entry calculation between two Contracted Gaussian functions
     """
 
-    return calcMultipoleMatrixP(atoms, cgfsN, calcMatrixEntry=calcMatrixEntry)
+    return general_multipole_matrix(atoms, cgfsN, calcMatrixEntry=calcMatrixEntry)
 

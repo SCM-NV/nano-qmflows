@@ -195,15 +195,14 @@ def facOdd(i):
         return fac(2 * k) / (2 ** k * fac(k))
 
 
-
-# Factorial function
-
-
 def fac(i):
+    """
+    Factorial function
+    """
     if i < 0:
         msg = 'Factorial functions takes natural numbers as argument'
         raise NameError(msg)
     elif i == 0:
         return 1
     else:
-        return product(list(range(1, i + 1)))
+        return product(range(1, i + 1))
