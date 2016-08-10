@@ -13,7 +13,7 @@ setup(
     author_email='tifonzafel_gmail.com',
     keywords='chemistry Photochemistry Simulation',
     packages=["nac", "nac.basisSet", "nac.integrals", "nac.schedule",
-              "scripts"],
+              "nac.workflows"],
     classifiers=[
         'License :: OSI Approved :: MIT License',
         'Intended Audience :: Science/Research',
