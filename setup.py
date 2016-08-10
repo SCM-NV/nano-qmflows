@@ -7,7 +7,7 @@ setup(
     name='NonAdiabaticCouling',
     version='0.1.6',
     description='Automation of computations in quantum chemistry',
-    license='MIT ',
+    license='MIT',
     url='https://github.com/felipeZ/nonAdiabaticCoupling',
     author='Felipe Zapata',
     author_email='tifonzafel_gmail.com',
@@ -22,8 +22,9 @@ setup(
         'intended audience :: science/research',
         'topic :: scientific/engineering :: chemistry'
     ],
-    install_requires=['cython', 'numpy', 'h5py', 'qmworks', 'pymonad'],
+    install_requires=['cython', 'numpy', 'h5py', 'noodles', 'qmworks', 'pymonad'],
     cmdclass={'build_ext': build_ext},
-    ext_modules=[Extension('multipoleObaraSaika', ['nac/integrals/multipoleObaraSaika.pyx'])]
+    ext_modules=[Extension('multipoleObaraSaika', ['nac/integrals/multipoleObaraSaika.pyx'])],
+    extras_require={'test': ['nose', 'coverage']}
 )
 

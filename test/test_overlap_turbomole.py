@@ -9,28 +9,27 @@ import numpy as np
 import os
 
 # ===============================<>============================================
-from nac.basisSet.basisNormalization import createNormalizedCGFs
+from nac.schedule.components import create_dict_CGFs
 from nac.common import InputKey
 from nac.integrals.overlapIntegral import calcMtxOverlapP
 
 from utilsTest import (offdiagonalTolerance, triang2mtx, try_to_remove)
 
 # ===============================<>============================================
-pathBasis = 'test/test_files/basis_turbomole'
+path_basis = 'test/test_files/basis_turbomole'
 path_hdf5 = 'test/test_files/test.hdf5'
 path_MO = 'test/test_files/aomix_ethylene.in'
 path_xyz = 'test/test_files/ethylene_au.xyz'
 
 
-def create_dict_CGFs(f5, basisname, packageName, xyz):
-    """
-    Store the basis set in HDF5 format
-    """
-    keyBasis = InputKey("basis", [pathBasis])
-    turbomole2hdf5(f5, [keyBasis])   # Store the basis sets
+# def create_dict_CGFs(f5, basisname, packageName, xyz):
+#     """
+#     Store the basis set in HDF5 format
+#     """
+#     keyBasis = InputKey("basis", [pathBasis])
+#     turbomole2hdf5(f5, [keyBasis])   # Store the basis sets
 
-    return  createNormalizedCGFs(f5, basisname, packageName, xyz)
-
+#     return  createNormalizedCGFs(f5, basisname, packageName, xyz)
 
 def dump_MOs_coeff(handle_hdf5, pathEs, pathCs, nOrbitals, nOrbFuns):
     """
@@ -53,7 +52,7 @@ def test_store_basisSet():
     Check if the turbomole basis set are read
     and store in HDF5 format.
     """
-    keyBasis = InputKey("basis", [pathBasis])
+    keyBasis = InputKey("basis", [path_basis])
     try_to_remove(path_hdf5)
     with h5py.File(path_hdf5, chunks=True) as f5:
         try:
@@ -105,13 +104,16 @@ def test_overlap():
     nOrbitals = 36
     nOrbFuns = 38
 
+    # Build the Conctracted Gauss Functions
+    dictCGFs = create_dict_CGFs(path_hdf5, basis, mol, package_name='turbomole',
+                                package_config={'basis': path_basis})
+    cgfsN = [dictCGFs[l] for l in labels]
+
     with h5py.File(path_hdf5, chunks=True) as f5:
-        dictCGFs = create_dict_CGFs(f5, basis, 'turbomole', mol)
         pathEs, pathCs = dump_MOs_coeff(f5, pathEs, pathCs, nOrbitals, nOrbFuns)
         trr = f5[pathCs].value
         try_to_remove(path_hdf5)
 
-    cgfsN = [dictCGFs[l] for l in labels]
     dim = sum(len(xs) for xs in cgfsN)
     css = np.transpose(trr)
     mtx_overlap = triang2mtx(calcMtxOverlapP(mol, cgfsN), dim)
