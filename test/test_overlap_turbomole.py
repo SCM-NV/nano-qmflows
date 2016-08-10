@@ -13,14 +13,16 @@ from nac.basisSet.basisNormalization import createNormalizedCGFs
 from nac.common import InputKey
 from nac.integrals.overlapIntegral import calcMtxOverlapP
 
-from utilsTest import offdiagonalTolerance, triang2mtx, try_to_remove
+from utilsTest import (offdiagonalTolerance, triang2mtx, try_to_remove)
 
 # ===============================<>============================================
-path_hdf5 = 'test_files/test.hdf5'
-path_MO = 'test_files/aomix_ethylene.in'
+pathBasis = 'test/test_files/basis_turbomole'
+path_hdf5 = 'test/test_files/test.hdf5'
+path_MO = 'test/test_files/aomix_ethylene.in'
+path_xyz = 'test/test_files/ethylene_au.xyz'
 
 
-def create_dict_CGFs(f5, pathBasis, basisname, packageName, xyz):
+def create_dict_CGFs(f5, basisname, packageName, xyz):
     """
     Store the basis set in HDF5 format
     """
@@ -51,7 +53,6 @@ def test_store_basisSet():
     Check if the turbomole basis set are read
     and store in HDF5 format.
     """
-    pathBasis = 'test_files/basis_turbomole'
     keyBasis = InputKey("basis", [pathBasis])
     try_to_remove(path_hdf5)
     with h5py.File(path_hdf5, chunks=True) as f5:
@@ -87,26 +88,25 @@ def test_store_MO_h5():
             assert False
 
 
-def test_overlap2():
+def test_overlap():
     """
     The overlap matrix must fulfill the following equation C^(+) S C = I
     where S is the overlap matrix, C is the MO matrix and
     C^(+) conjugated complex.
     """
     basis = 'def2-SV(P)'
-    mol = readXYZ('test_files/ethylene_au.xyz')
+    mol = readXYZ(path_xyz)
     labels = [at.symbol for at in mol]
 
     path = join('/turbomole', 'test', 'ethylene')
     pathEs = join(path, 'eigenvalues')
     pathCs = join(path, 'coefficients')
-    pathBasis = 'test_files/basis_turbomole'
 
     nOrbitals = 36
     nOrbFuns = 38
 
     with h5py.File(path_hdf5, chunks=True) as f5:
-        dictCGFs = create_dict_CGFs(f5, pathBasis, basis, 'turbomole', mol)
+        dictCGFs = create_dict_CGFs(f5, basis, 'turbomole', mol)
         pathEs, pathCs = dump_MOs_coeff(f5, pathEs, pathCs, nOrbitals, nOrbFuns)
         trr = f5[pathCs].value
         try_to_remove(path_hdf5)
