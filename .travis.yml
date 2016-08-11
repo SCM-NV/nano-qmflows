@@ -25,4 +25,6 @@ install:
   - pip install -U .
   - pip install -U ".[test]"
   
-script: nosetests --with-coverage --cover-erase --cover-package=nac --cover-xml
+script:
+  - source activate qmworks
+  - nosetests --with-coverage --cover-erase --cover-package=nac --cover-xml
