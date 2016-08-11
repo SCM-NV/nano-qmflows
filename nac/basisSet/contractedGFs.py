@@ -13,57 +13,59 @@ from qmworks.utils import calculateUniqueLabel, concat, concatMap, snd
 # ==========================<>=================================
 
 
-def createCGF(file_h5, pathBasis, basisName, softName, ls):
+def createCGF(file_h5, path_basis, basis_name, softName, ls):
     """
     """
     uniqLabels = calculateUniqueLabel(ls)
-    bss = [readBasisSet(file_h5, basisName, softName, l) for l in uniqLabels]
+    bss = [readBasisSet(file_h5, basis_name, softName, l) for l in uniqLabels]
     ds = dict(zip(uniqLabels, bss))
 
     return [ds[l] for l in ls]
 
 
-def createUniqueCGF(f5, basisName, packageName, ls):
+def createUniqueCGF(f5, basis_name, package_name, ls):
     """
     Using a HDF5 file Object, it reads the basis set and generates
     the set of unique CGFs for the given atoms
     :param f5:        HDF5 file
     :type  f5:        H5py handler
-    :param basisName: Name of the basis set
-    :type  basisName: String
-    :param packageName:  Name of the used software
-    :type  packageName:  String
+    :param basis_name: Name of the basis set
+    :type  basis_name: String
+    :param package_name:  Name of the used software
+    :type  package_name:  String
     :param ls:        List of Atomics labels
     :type  ls:        [Strings]
     """
     uniqLabels = calculateUniqueLabel(ls)
-    bss = [readBasisSet(f5, basisName, packageName, l) for l in uniqLabels]
+    bss = [readBasisSet(f5, basis_name, package_name, l) for l in uniqLabels]
 
     return (uniqLabels, bss)
 
 
-def readBasisSet(f5, basisName, packageName, l):
+def readBasisSet(f5, basis_name, package_name, l):
     """
     :param f5:        HDF5 file
     :type  f5:        H5py handler
-    :param basisName: Name of the basis set
-    :type  basisName: String
-    :param packageName:  Name of the used software
-    :type  packageName:  String
+    :param basis_name: Name of the basis set
+    :type  basis_name: String
+    :param package_name:  Name of the used software
+    :type  package_name:  String
     :param l:         List of Atomics labels
     :type  l:         Strings
     """
-    basisName = basisName.upper()
-    pathExpo = join('/', packageName, "basis", l.lower(), basisName, "exponents")
-    pathCoef = join('/', packageName, "basis", l.lower(), basisName, "coefficients")
+    basis_name = basis_name.upper()
+    path_expo = join('/', package_name, "basis", l.lower(), basis_name, "exponents")
+    path_coef = join('/', package_name, "basis", l.lower(), basis_name, "coefficients")
 
-    dsetExpo = f5[pathExpo]
-    ess = dsetExpo[...]
-    dsetCoef = f5[pathCoef]
-    css = dsetCoef[...]
+    if path_expo not in f5 or path_coef not in f5:
+        msg = 'The basis set named:{} is not stored in the HDF5 file'.format(basis_name)
+        raise RuntimeError(msg)
+    ess = f5[path_expo].value
+    dsetCoef = f5[path_coef]
+    css = dsetCoef.value
     formatB = dsetCoef.attrs["basisFormat"]
 
-    return generateCGF(ess, css, formatB, packageName)
+    return generateCGF(ess, css, formatB, package_name)
 
 
 def generateCGF(ess, css, formats, softName):
@@ -187,9 +189,9 @@ def expandBasisOneCGF(l, es, cs):
         return CGF(primitives, 'Fxxx')
 
 
-def saveBasis(f5, pathBasis, softName):
+def saveBasis(f5, path_basis, softName):
 
-    keyBasis = InputKey("basis", [pathBasis])
+    keyBasis = InputKey("basis", [path_basis])
 
     if softName == 'cp2k':
         cp2k2hdf5(f5, [keyBasis])

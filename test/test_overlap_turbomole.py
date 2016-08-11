@@ -22,16 +22,8 @@ path_MO = 'test/test_files/aomix_ethylene.in'
 path_xyz = 'test/test_files/ethylene_au.xyz'
 
 
-# def create_dict_CGFs(f5, basisname, packageName, xyz):
-#     """
-#     Store the basis set in HDF5 format
-#     """
-#     keyBasis = InputKey("basis", [pathBasis])
-#     turbomole2hdf5(f5, [keyBasis])   # Store the basis sets
-
-#     return  createNormalizedCGFs(f5, basisname, packageName, xyz)
-
-def dump_MOs_coeff(handle_hdf5, pathEs, pathCs, nOrbitals, nOrbFuns):
+def dump_MOs_coeff(handle_hdf5, path_es, path_css, number_of_orbs,
+                   number_of_orb_funs):
     """
     MO coefficients are stored in row-major order, they must be transposed
     to get the standard MO matrix.
@@ -40,11 +32,12 @@ def dump_MOs_coeff(handle_hdf5, pathEs, pathCs, nOrbitals, nOrbFuns):
     :param job: Output File
     :type  job: String
     """
-    key = InputKey('orbitals', [path_MO, nOrbitals, nOrbFuns, pathEs, pathCs])
+    key = InputKey('orbitals', [path_MO, number_of_orbs, number_of_orb_funs,
+                                path_es, path_css])
 
     turbomole2hdf5(handle_hdf5, [key])
 
-    return pathEs, pathCs
+    return path_es, path_css
 
 
 def test_store_basisSet():
@@ -71,15 +64,16 @@ def test_store_MO_h5():
     test if the MO are stored in the HDF5 format
     """
     path = join('/turbomole', 'test', 'ethylene')
-    pathEs = join(path, 'eigenvalues')
-    pathCs = join(path, 'coefficients')
-    nOrbitals = 36
-    nOrbFuns = 38
+    path_es = join(path, 'eigenvalues')
+    path_css = join(path, 'coefficients')
+    number_of_orbs = 36
+    number_of_orb_funs = 38
 
     try_to_remove(path_hdf5)
     with h5py.File(path_hdf5, chunks=True) as f5:
-        pathEs, pathCs = dump_MOs_coeff(f5, pathEs, pathCs, nOrbitals, nOrbFuns)
-        if f5[pathEs] and f5[pathCs]:
+        path_es, path_css = dump_MOs_coeff(f5, path_es, path_css,
+                                           number_of_orbs, number_of_orb_funs)
+        if f5[path_es] and f5[path_css]:
             try_to_remove(path_hdf5)
             assert True
         else:
@@ -98,11 +92,11 @@ def test_overlap():
     labels = [at.symbol for at in mol]
 
     path = join('/turbomole', 'test', 'ethylene')
-    pathEs = join(path, 'eigenvalues')
-    pathCs = join(path, 'coefficients')
+    path_es = join(path, 'eigenvalues')
+    path_css = join(path, 'coefficients')
 
-    nOrbitals = 36
-    nOrbFuns = 38
+    number_of_orbs = 36
+    number_of_orb_funs = 38
 
     # Build the Conctracted Gauss Functions
     dictCGFs = create_dict_CGFs(path_hdf5, basis, mol, package_name='turbomole',
@@ -110,8 +104,9 @@ def test_overlap():
     cgfsN = [dictCGFs[l] for l in labels]
 
     with h5py.File(path_hdf5, chunks=True) as f5:
-        pathEs, pathCs = dump_MOs_coeff(f5, pathEs, pathCs, nOrbitals, nOrbFuns)
-        trr = f5[pathCs].value
+        path_es, path_css = dump_MOs_coeff(f5, path_es, path_css,
+                                           number_of_orbs, number_of_orb_funs)
+        trr = f5[path_css].value
         try_to_remove(path_hdf5)
 
     dim = sum(len(xs) for xs in cgfsN)

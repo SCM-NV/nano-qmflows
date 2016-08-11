@@ -217,9 +217,8 @@ def create_dict_CGFs(path_hdf5, basisname, xyz, package_name='cp2k',
             keyBasis = InputKey("basis", [pathBasis])
             # Store the basis sets
             functions[package_name](f5, [keyBasis])
-        print("Sucess")
 
-    return createNormalizedCGFs(f5, basisname, package_name, xyz)
+        return createNormalizedCGFs(f5, basisname, package_name, xyz)
 
 
 def create_file_names(work_dir, i):
@@ -237,5 +236,4 @@ def create_file_names(work_dir, i):
     return JobFiles(file_xyz, file_inp, file_out, file_MO)
 
 # ============<>===============
-
 
