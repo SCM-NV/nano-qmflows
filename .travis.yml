@@ -1,0 +1,11 @@
+language: python
+sudo: false
+python:
+  - "3.5"
+install:
+  - pip install -e git://github.com/SCM-NV/plams.git@master#egg=Plams
+  - pip install -e git://github.com/NLeSC/noodles.git@devel#egg=Noodles
+  - pip install -e git://github.com/SCM-NV/qmworks.git@master#egg=qmworks
+  - pip install -U .
+  - pip install -U ".[test]"
+script: nosetests --with-coverage --cover-erase --cover-package=nac --cover-xml
