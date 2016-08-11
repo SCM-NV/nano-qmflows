@@ -47,6 +47,8 @@ def calculate_mos(package_name, all_geometries, project_name, path_hdf5, folders
     :type path_hdf5: String
     :param folders: path to the directories containing the MO outputs
     :type folders: String list
+    :param package_args: Settings for the job to run.
+    :type package_args: Settings
     :param calc_new_wf_guess_on_points: Calculate a new Wave function guess in
     each of the geometries indicated. By Default only an initial guess is
     computed.

@@ -4,7 +4,7 @@ __author__ = "Felipe Zapata"
 from functools import partial
 from multiprocessing import Pool
 import numpy as np
-import sys
+
 # =============================> Internal modules <============================
 from nac.integrals.overlapIntegral import sijContracted
 from nac.integrals.multipoleIntegrals import createTupleXYZ_CGF
