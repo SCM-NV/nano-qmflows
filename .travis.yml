@@ -17,8 +17,8 @@ install:
   - conda install -c anaconda hdf5
   - conda install -y -q -c https://conda.anaconda.org/rdkit rdkit
   - source activate qmworks
-  - python setup.py install
-  
+
+  - pip install cython h5py
   - pip install -e git://github.com/SCM-NV/plams.git@master#egg=Plams
   - pip install -e git://github.com/NLeSC/noodles.git@devel#egg=Noodles
   - pip install -e git://github.com/SCM-NV/qmworks.git@master#egg=qmworks
