@@ -1,4 +1,4 @@
-[![GitHub tag](https://img.shields.io/github/tag/strongloop/express.svg?maxAge=2592000)](https://github.com/felipeZ/nonAdiabaticCoupling)
+.. image:: https://img.shields.io/github/license/mashape/apistatus.svg?maxAge=2592000   :target: https://github.com/felipeZ/nonAdiabaticCoupling/blob/master/LICENSE
 
 ====================
 NonAdiabaticCoupling
