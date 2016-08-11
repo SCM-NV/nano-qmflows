@@ -25,5 +25,4 @@ install:
   - pip install .
   
 script:
-  - source activate qmworks
-  - $HOME/miniconda3/envs/qmworks/bin/nosetests --with-coverage --cover-erase --cover-package=nac
+  - source activate qmworks && nosetests --with-coverage --cover-erase --cover-package=nac
