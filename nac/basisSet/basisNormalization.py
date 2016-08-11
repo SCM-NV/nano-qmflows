@@ -87,7 +87,7 @@ def normCoeff(cgf):
     cs, es = cgf.primitives
     orbType = cgf.orbType
     indexes = [calcOrbType_Components(orbType, k) for k in range(3)]
-    prod = product([facOdd(2 * k - 1) for k in indexes])
+    prod = product(facOdd(2 * k - 1) for k in indexes)
     angFun = lambda x: prod / (4 * x) ** sum(indexes)
     fun = lambda c, e: c / (sqrt(angFun(e) *
                                  (pi / (2.0 * e)) ** 1.5))
