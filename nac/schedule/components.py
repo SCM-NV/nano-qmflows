@@ -15,8 +15,8 @@ import os
 from nac.basisSet.basisNormalization import createNormalizedCGFs
 from nac.schedule.scheduleCp2k import prepare_job_cp2k
 from qmworks.common import InputKey
-from qmworks.hdf5.quantumHDF5 import cp2k2hdf5
-from qmworks.utils import chunksOf, flatten
+from qmworks.hdf5.quantumHDF5 import (cp2k2hdf5, turbomole2hdf5)
+from qmworks.utils import (chunksOf, flatten)
 
 
 # ==============================<>=========================
@@ -47,6 +47,8 @@ def calculate_mos(package_name, all_geometries, project_name, path_hdf5, folders
     :type path_hdf5: String
     :param folders: path to the directories containing the MO outputs
     :type folders: String list
+    :param package_args: Settings for the job to run.
+    :type package_args: Settings
     :param calc_new_wf_guess_on_points: Calculate a new Wave function guess in
     each of the geometries indicated. By Default only an initial guess is
     computed.
@@ -192,28 +194,33 @@ def split_file_geometries(pathXYZ):
     return list(map(flatten, chunksOf(xss, numat + 2)))
 
 
-def create_dict_CGFs(path_hdf5, basisname, xyz, package_config=None):
+def create_dict_CGFs(path_hdf5, basisname, xyz, package_name='cp2k',
+                     package_config=None):
     """
+    Try to read the basis from the HDF5 otherwise read it from a file and store
+    it in the HDF5 file. Finally, it reads the basis Set from HDF5 and calculate
+    the CGF for each atom.
+
     :param path_hdf5: Path to the HDF5 file that contains the
     numerical results.
     type path_hdf5: String
-
-    FIXME: Extended to other QM packages
-    If the Cp2k Basis are already stored in the hdf5 file continue,
-    otherwise read and store them in the hdf5 file.
+    :param basisname: Name of the Gaussian basis set.
+    :type basisname: String
+    :param xyz: List of Atoms.
+    :type xyz: [nac.common.AtomXYZ]
     """
-    # Try to read the basis otherwise read it from a file
+    functions = {'cp2k': cp2k2hdf5, 'turbomole': turbomole2hdf5}
+
+    basis_location = join(package_name, 'basis')
     with h5py.File(path_hdf5, chunks=True) as f5:
-        if "cp2k/basis" not in f5:
+        if basis_location not in f5:
             # Search Path to the file containing the basis set
-            # pathBasis = search_environ_var('BASISCP2K')
             pathBasis = package_config["basis"]
             keyBasis = InputKey("basis", [pathBasis])
-            cp2k2hdf5(f5, [keyBasis])             # Store the basis sets
-        # Read the basis Set from HDF5 and calculate the CGF for each atom
-        dictCGFs = createNormalizedCGFs(f5, basisname, 'cp2k', xyz)
+            # Store the basis sets
+            functions[package_name](f5, [keyBasis])
 
-    return dictCGFs
+        return createNormalizedCGFs(f5, basisname, package_name, xyz)
 
 
 def create_file_names(work_dir, i):
@@ -231,5 +238,4 @@ def create_file_names(work_dir, i):
     return JobFiles(file_xyz, file_inp, file_out, file_MO)
 
 # ============<>===============
-
 
