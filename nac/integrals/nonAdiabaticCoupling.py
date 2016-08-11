@@ -4,7 +4,6 @@ __author__ = "Felipe Zapata"
 from functools import partial
 from multiprocessing import Pool
 import numpy as np
-
 # =============================> Internal modules <============================
 from nac.integrals.overlapIntegral import sijContracted
 from nac.integrals.multipoleIntegrals import createTupleXYZ_CGF
@@ -94,26 +93,5 @@ def chunkSij(xyz_cgfs0, xyz_cgfs1, dim, i):
         t2 = xyz_cgfs1[j]
         xs[j] = sijContracted(t1, t2)
 
-    return xs
-
-
-def calcOverlapMtxSeq(cgfsN, r0, r1):
-    """
-    calculate the overlap matrix using the atomic basis at two
-    different geometries: R0 and R1.
-    """
-    xyz_cgfs0 = np.array(concat([createTupleXYZ_CGF(xs, cgss)
-                                 for xs, cgss in zip(r0, cgfsN)]))
-    xyz_cgfs1 = np.array(concat([createTupleXYZ_CGF(xs, cgss)
-                                 for xs, cgss in zip(r1, cgfsN)]))
-    dim = len(xyz_cgfs0)
-    xs = np.empty((dim, dim))
-
-    for i in range(dim):
-        for j in range(dim):
-            t1 = xyz_cgfs0[i]
-            t2 = xyz_cgfs1[j]
-            xs[i, j] = sijContracted(t1, t2)
-            # print(i, j, xs[i, j])
     return xs
 

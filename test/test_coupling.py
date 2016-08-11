@@ -6,6 +6,7 @@ from nac.schedule.scheduleCoupling import lazy_schedule_couplings
 from pymonad import curry
 from qmworks import run
 from qmworks.parsers import parse_string_xyz
+from utilsTest import try_to_remove
 
 import h5py
 import numpy as np
@@ -63,4 +64,7 @@ def test_lazy_coupling():
         expected = f5[path_coupling].value
         arr = f6[path_coupling].value
 
+    # remove the hdf5 file used for testing
+    try_to_remove(path_hdf5_test)
+        
     assert is_antisymmetric(arr) and (np.sum(arr - expected) < 1.0e-8)
