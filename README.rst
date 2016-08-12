@@ -3,6 +3,8 @@
     :target: https://travis-ci.org/felipeZ/nonAdiabaticCoupling
 .. image:: https://img.shields.io/github/license/felipeZ/nonAdiabaticCoupling.svg?maxAge=2592000   :target: https://github.com/felipeZ/nonAdiabaticCoupling/blob/master/LICENSE
 .. image:: https://img.shields.io/github/release/felipeZ/nonAdiabaticCoupling.svg?maxAge=2592000   :target: https://github.com/felipeZ/nonAdiabaticCoupling/releases/tag/0.1.6
+.. image:: https://img.shields.io/badge/python-3.5-blue.svg
+
 ====================
 NonAdiabaticCoupling
 ====================
