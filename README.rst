@@ -1,5 +1,6 @@
 
-.. image:: https://travis-ci.org/felipeZ/nonAdiabaticCoupling.svg?branch=master :target: https://travis-ci.org/felipeZ/nonAdiabaticCoupling
+.. image:: https://travis-ci.org/felipeZ/nonAdiabaticCoupling.svg?branch=master
+    :target: https://travis-ci.org/felipeZ/nonAdiabaticCoupling
 ====================
 NonAdiabaticCoupling
 ====================
