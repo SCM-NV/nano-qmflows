@@ -181,13 +181,13 @@ def main():
 
     # HOMO Energies
     homos = average_es[:, homo_number]
-    
+
     # Read Macro files
     se_ess, sh_ess, se_pop, _ = read_energies_and_pops_from_macro(macro_dir)
 
     xss = se_ess - homos
     print(xss[:10] * ry2ev)
-    
+
     mean_values, gap_distribution  = calculate_band_gap_histo(homos)
 
     with PdfPages('Energies.pdf') as pp:
@@ -220,13 +220,12 @@ def main():
         # plt.colorbar(p)
         # plt.savefig('ElectronEnergyDist.png')
         # pp.savefig()
-        
+
     # es_energy = np.stack([ts, sh_ess - lumo_1], axis=1)
     # es_hole = np.stack([ts, sh_ess - homos], axis=1)
     # np.savetxt("electron_energy.out", es_energy, fmt='%.7e')
     # np.savetxt("hole_energy.out", es_hole, fmt='%.7e')
 
-    
 
 # =================<>================================
 if __name__ == "__main__":

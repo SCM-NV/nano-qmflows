@@ -62,7 +62,7 @@ def simulate_absoprtion_spectrum(package_name, project_name, geometry,
     """
     #  Environmental Variables
     cwd = os.path.realpath(".")
-    
+
     basisName = package_args.basis
     work_dir = os.path.join(cwd, project_name)
     if path_hdf5 is None:

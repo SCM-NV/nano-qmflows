@@ -73,7 +73,7 @@ def lazy_schedule_couplings(i, path_hdf5, dictCGFs, geometries, mo_paths, dt=1,
     :returns: path to the Coupling inside the HDF5
     """
     def calc_coupling(output_path, dt):
-    
+
         if hdf5_trans_mtx is not None:
             trans_mtx = retrieve_hdf5_data(path_hdf5, hdf5_trans_mtx)
         else:

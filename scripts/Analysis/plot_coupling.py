@@ -37,20 +37,20 @@ def plot_stuff(arr, mo1, mo2, xl='time [fs]', yl='n.a. coupling [meV]',
     plt.xlabel(xl)
     plt.ylabel(yl)
     mean_val = np.mean(np.absolute(arr))
-    
+
     print('The average of the absolute coupling is {0:.2f} meV'.format(mean_val))
-    
+
     if plot_mean:
         plt.plot([mean_val] * len(arr), color='#999999', label='Average absolute coupling')
     plt.legend()
     plt.tight_layout()
-    
+
     if save_plot:
         fileName  = "coupling_{:d}_{:d}.pdf".format(mo1, mo2)
         plt.savefig(fileName, format='pdf', dpi=300 / magnifying_factor)
     plt.show()
 
-            
+
 def compute_values(fn, m1, m2, r2meV):
     r = read_value(fn, mo1=m1, mo2=m2)
     return r * r2meV
@@ -70,17 +70,16 @@ def main():
     p4 = ("Do you want to save the graph as coupling_{:d}_{:d}.pdf (y/n) ? "
           "[Default: n]".format(m1, m2))
     q4 = ask_question(p4, special='bool', default='n')
-    
+
     files = glob.glob('Ham_*_im')
 
-
     if files:
-        list_coupling = [compute_values('Ham_{}_im'.format(i), m1, m2, r2meV) for i in range(len(files))]
+        list_coupling = [compute_values('Ham_{}_im'.format(i), m1, m2, r2meV)
+                         for i in range(len(files))]
         plot_stuff(list_coupling, m1, m2, plot_mean=q3, save_plot=q4)
     else:
         print('ERROR: No files found. Please make sure that you are in the '
               'hamiltonians directory.')
-
 
 
 # ============<>===============

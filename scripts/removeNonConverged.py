@@ -62,7 +62,7 @@ def readFailedPoints(path):
     ls = os.listdir(path)
     xs = filter(lambda x: fnmatch(x, "*.wfn"), ls)
     head = list(xs)[0]
-    
+
     return head.split('-')[0]
 
 
@@ -76,16 +76,13 @@ def deletePointsfromHDF5(pathHDF5, points, projectName):
             if node in f5:
                 print("deleting the node at: ", node)
                 del f5[node]
-        
+
 
 def main():
     projectName, pathHDF5, pathOutput = read_cmd_line()
     xs = map(readFailedPoints, readNonConvergedData(pathOutput))
-    failPoints = list(set(xs)) # unique
+    failPoints = list(set(xs))  # unique
     deletePointsfromHDF5(pathHDF5, failPoints, projectName)
-    
-
-# ====================================<>=======================================
 
 
 if __name__ == "__main__":

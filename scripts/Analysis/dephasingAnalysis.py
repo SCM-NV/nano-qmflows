@@ -52,7 +52,7 @@ def read_spec_files(i1, i2):
                'current directory.'.format(name2))
         raise FileNotFoundError(msg)
 
-    
+
 def read_files(i1, i2, name=False):
     """
     function that opens all the dephasing files of all the initial
@@ -132,7 +132,7 @@ def plot_stuff(t, d, fd, naf, uaf, sc, w, J, m1, m2, save_plot=False, plot_avg=T
     colorlist = ['r', 'b', 'g', 'y', 'k', 'm']
     question = "What is the maximal value of w (in cm^-1) that you want \
     to plot (x-axis spectral density plot) (type: float/int)? [Default: highest value] "
-    
+
     maxw = ask_question(question, special='float', default=w[0][-1])
     conv_fac = uaf[0][0] / naf[0][0]
     shape = len(d)

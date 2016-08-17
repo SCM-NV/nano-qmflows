@@ -128,7 +128,8 @@ def generateCGF(ess, css, formats, softName):
     if softName == "turbomole":
         return fun2(ess, css, formats)
     else:
-        msg = "Basis set expansion it is not available for the package: ".format(softName)
+        msg = ("Basis set expansion it is not available for the \
+        package: {}".format(softName))
         return NotImplementedError(msg)
 
 

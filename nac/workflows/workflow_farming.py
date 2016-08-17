@@ -36,7 +36,7 @@ JobFiles = namedtuple("JobFiles", ("get_xyz", "get_inp", "get_out", "get_MO"))
 def main():
     plams.init()
     project_name = 'NAC'
-    
+
     cp2k_args = Settings()
     cp2k_args.basis = "DZVP-MOLOPT-SR-GTH"
     cp2k_args.potential = "GTH-PBE"

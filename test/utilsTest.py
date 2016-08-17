@@ -70,7 +70,7 @@ def fromIndex(ixs, shape):
     else:
         return fromIndex([j, i], shape)
 
-    
+
 def triang2mtx(arr, dim):
     rss = np.empty((dim, dim))
     for i in range(dim):

@@ -85,7 +85,7 @@ def process_arguments(xs):
     scratch_path = join(scratch, project_name)
     if not os.path.exists(scratch_path):
         os.makedirs(scratch)
-    
+
     # HDF5 path
     path_hdf5 = join(scratch_path, 'quantum.hdf5')
 
@@ -94,7 +94,7 @@ def process_arguments(xs):
 
     # Path to the MD geometries
     path_traj_xyz = ds['Trajectory_path']
-    
+
     # Split the md xyz file into smaller folders
     nChunks, paths_xyz = split_trajectory(path_traj_xyz, nBlocks, scratch_path)
 

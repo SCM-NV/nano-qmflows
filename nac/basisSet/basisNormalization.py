@@ -52,7 +52,7 @@ def createNormalizedCGFs(f5, basisName, softName, mol):
     return {l: cgf for (l, cgf) in zip(uniqls, uniqCGFsN)}
 
 
-def normGlobal(cgf, r=[0.0] * 3):
+def normGlobal(cgf, r=[0, 0, 0]):
     l = cgf.orbType
     _, es = cgf.primitives
     csN = normCoeff(cgf)

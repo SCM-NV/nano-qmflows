@@ -38,8 +38,8 @@ def test_lazy_coupling():
     geometries = tuple(map(new_fun, split_file_geometries(path_xyz)))
 
     # The MOs were already computed an stored in ethylene.hdf5
-    root_css = lambda x: 'ethylene/point_{}/cp2k/mo/coefficients'.format(x)
-    root_es = lambda x: 'ethylene/point_{}/cp2k/mo/exponents'.format(x)
+    root_css = 'ethylene/point_{}/cp2k/mo/coefficients'.format
+    root_es = 'ethylene/point_{}/cp2k/mo/exponents'.format
     mo_paths = [[root_es(i), root_css(i)] for i in range(3)]
 
     with h5py.File(path_hdf5) as f5, h5py.File(path_hdf5_test, 'w') as f6:
@@ -66,5 +66,5 @@ def test_lazy_coupling():
 
     # remove the hdf5 file used for testing
     try_to_remove(path_hdf5_test)
-        
+
     assert is_antisymmetric(arr) and (np.sum(arr - expected) < 1.0e-8)
