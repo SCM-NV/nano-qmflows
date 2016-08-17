@@ -4,13 +4,9 @@ __author__ = "Felipe Zapata"
 from functools import reduce, partial
 from os.path import join
 
-import h5py
 import os
 import shutil
 import subprocess
-
-# ==================> Internal modules <==========
-
 
 # ==============================> Main <==================================
 

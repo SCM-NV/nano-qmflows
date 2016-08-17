@@ -173,8 +173,8 @@ def expandBasis_turbomole(l, es, cs):
                 CGF(primitives, 'Fxzz'), CGF(primitives, 'Fyzz'),
                 CGF(primitives, 'Fyyz'), CGF(primitives, 'Fxyz')]
     else:
-        msg = "The basis set expansion for this angular momentum"
-        " has not been implemented yet"
+        msg = ("The basis set expansion for this angular momentum has not been \
+        implemented yet")
         raise NotImplementedError(msg)
 
 

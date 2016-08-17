@@ -41,7 +41,7 @@ def read_files(i1, i2):
     name = 'icond*pair{:d}_{:d}Spectral_density.txt'.format(i1, i2)
     density_files = fnmatch.filter(files, name)
     if density_files:
-        for i, filename in enumerate(density_files):
+        for filename in density_files:
             arr = np.loadtxt(filename, usecols=(3, 5))
             arr = np.transpose(arr)
             w.append(arr[0])

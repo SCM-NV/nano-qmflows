@@ -1,6 +1,4 @@
 #! /usr/bin/env python
-import datetime
-import sys
 import numpy as np
 import matplotlib.pyplot as plt
 import glob
@@ -34,7 +32,7 @@ def plot_stuff(arr, mo1, mo2, xl='time [fs]', yl='n.a. coupling [meV]',
     cm2inch = 0.393700787
     label = 'Coupling_{:d}_{:d}'.format(mo1, mo2)
     plt.figure(figsize=(8.25 * cm2inch * magnifying_factor,
-                                6 * cm2inch * magnifying_factor))
+                        6 * cm2inch * magnifying_factor))
     plt.plot(arr, c='k', label=label)
     plt.xlabel(xl)
     plt.ylabel(yl)
@@ -49,7 +47,7 @@ def plot_stuff(arr, mo1, mo2, xl='time [fs]', yl='n.a. coupling [meV]',
     
     if save_plot:
         fileName  = "coupling_{:d}_{:d}.pdf".format(mo1, mo2)
-        plt.savefig(fileName, format='pdf', dpi=300/magnifying_factor)
+        plt.savefig(fileName, format='pdf', dpi=300 / magnifying_factor)
     plt.show()
 
             

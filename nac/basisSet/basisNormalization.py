@@ -54,7 +54,7 @@ def createNormalizedCGFs(f5, basisName, softName, mol):
 
 def normGlobal(cgf, r=[0.0] * 3):
     l = cgf.orbType
-    cs, es = cgf.primitives
+    _, es = cgf.primitives
     csN = normCoeff(cgf)
     cgfN = CGF((csN, es), l)
     sij = sijContracted((r, cgfN), (r, cgfN))

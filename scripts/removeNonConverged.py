@@ -43,6 +43,7 @@ def readNonConvergedData(path):
 
     p = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, shell=True)
     xs, errors = p.communicate()
+    print(xs, errors)
     p.terminate()
 
     lines = xs.splitlines()

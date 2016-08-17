@@ -206,8 +206,8 @@ def read_time_dependent_coeffs(path_hdf5, pathProperty, path_pyxaid_out):
     files_out = os.listdir(path_pyxaid_out)
     names_out_es, names_out_pop  = [fnmatch.filter(files_out, x) for x
                                     in ["*energies*", "out*"]]
-    paths_out_es, paths_out_pop = [[join(path_pyxaid_out, x) for x in xs]
-                                   for xs in [names_out_es, names_out_pop]]
+    _, paths_out_pop = [[join(path_pyxaid_out, x) for x in xs]
+                        for xs in [names_out_es, names_out_pop]]
 
     # ess = map(parse_energies, paths_out_es)
     pss = map(parse_population, paths_out_pop)

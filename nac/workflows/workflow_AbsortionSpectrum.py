@@ -3,13 +3,12 @@ matplotlib.use('Agg')
 
 # ================> Python Standard  and third-party <==========
 from functools import partial
-from itertools import tee
 from noodles import schedule
 from os.path import join
 from qmworks import (run, Settings)
 from qmworks.parsers import parse_string_xyz
 
-import getpass
+# import getpass
 import matplotlib.pyplot as plt
 import numpy as np
 import os
@@ -256,7 +255,7 @@ def calcOverlapCGFS(atoms, cgfsN, trans_mtx):
     to Sphericals.
     :type trans_mtx: Numpy Matrix
     """
-    dimSpher, dimCart = trans_mtx.shape
+    _, dimCart = trans_mtx.shape
     # Overlap matrix calculated as a flatten triangular matrix
     overlap_triang = calcMtxOverlapP(atoms, cgfsN)
     # Expand the flatten triangular array to a matrix
@@ -385,7 +384,7 @@ def main():
 
     # User variables
     home = os.path.expanduser('~')  # HOME Path
-    username = getpass.getuser()
+    # username = getpass.getuser()
     
     # # Work_dir
     # scratch = "/scratch-shared"

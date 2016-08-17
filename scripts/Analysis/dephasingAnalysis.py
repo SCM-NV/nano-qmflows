@@ -38,7 +38,7 @@ def read_spec_files(i1, i2):
     name = 'icond*pair{:d}_{:d}Spectral_density.txt'.format(i1, i2)
     density_files = fnmatch.filter(files, name)
     if density_files:
-        for i, filename in enumerate(density_files):
+        for filename in density_files:
             arr = np.loadtxt(filename, usecols=(3, 5))
             arr = np.transpose(arr)
             w.append(arr[0])
@@ -125,10 +125,10 @@ def plot_stuff(t, d, fd, naf, uaf, sc, w, J, m1, m2, save_plot=False, plot_avg=T
 
     # 1
     cm2inch = 0.393700787
-    f, ((ax1, ax2), (ax3, ax4)) = \
-    plt.subplots(2, 2, figsize=(16.5 * cm2inch * magnifying_factor,
-                                12.3 * cm2inch * magnifying_factor),
-                 sharex=False, sharey=False)
+    size_x = 16.5 * cm2inch * magnifying_factor
+    size_y = 12.3 * cm2inch * magnifying_factor
+    _, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(size_x, size_y),
+                                               sharex=False, sharey=False)
     colorlist = ['r', 'b', 'g', 'y', 'k', 'm']
     question = "What is the maximal value of w (in cm^-1) that you want \
     to plot (x-axis spectral density plot) (type: float/int)? [Default: highest value] "
