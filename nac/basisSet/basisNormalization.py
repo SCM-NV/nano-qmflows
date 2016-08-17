@@ -6,11 +6,9 @@ from math import pi, sqrt
 
 # =======================> Internal modules <==================================
 from .contractedGFs import createUniqueCGF
-from nac.common import CGF
+from nac.common import (CGF, product)
 from nac.integrals.overlapIntegral import sijContracted
 from nac.integrals.multipoleIntegrals import calcOrbType_Components
-
-from qmworks.utils import product
 
 # =======================> Basis set normalization <===========================
 

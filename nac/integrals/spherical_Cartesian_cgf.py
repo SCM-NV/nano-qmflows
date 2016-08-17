@@ -1,17 +1,13 @@
 __author__ = "Felipe Zapata"
 
 # ==========> Standard libraries and third-party <===============
-from math import isnan, sqrt
-from multiprocessing import Pool
+from math import  sqrt
 from os.path import join
 
+from nac.common import (binomial, calculateUniqueLabel, even, fac, odd, product)
+from qmworks.utils import (concat, concatMap)
 import numpy as np
-
-# ==================> Internal modules <====================
-from qmworks.utils import (binomial, calculateUniqueLabel, concat, concatMap,
-                           even, fac, odd, product)
-
-# ==================================<>======================================
+# ==================================<>==========================================
 
 
 def calc_transf_matrix(f5, mol, basisName, packageName):

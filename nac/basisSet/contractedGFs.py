@@ -7,9 +7,9 @@ from os.path import join
 from pymonad import curry
 
 # ==================> Internal modules <==========
-from nac.common import  CGF, InputKey
+from nac.common import  (calculateUniqueLabel, CGF, InputKey)
 from qmworks.hdf5.quantumHDF5 import cp2k2hdf5, turbomole2hdf5
-from qmworks.utils import calculateUniqueLabel, concat, concatMap, snd
+from qmworks.utils import (concat, concatMap)
 # ==========================<>=================================
 
 
@@ -71,6 +71,8 @@ def readBasisSet(f5, basis_name, package_name, l):
 def generateCGF(ess, css, formats, softName):
 
     orbLabels = ['s', 'p', 'd', 'f']
+
+    snd = lambda xs: xs[1]
 
     def fun1(es, css, fs):
         """
