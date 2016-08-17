@@ -7,7 +7,7 @@ from os.path import join
 from nac.common import (binomial, calculateUniqueLabel, even, fac, odd, product)
 from qmworks.utils import (concat, concatMap)
 import numpy as np
-# ==================================<>==========================================
+# ==================================<>=========================================
 
 
 def calc_transf_matrix(f5, mol, basisName, packageName):

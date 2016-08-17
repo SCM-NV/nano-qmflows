@@ -7,6 +7,7 @@ __all__ = ['AtomBasisData', 'AtomBasisKey', 'AtomData', 'AtomXYZ', 'CGF',
 
 # ================> Python Standard  and third-party <==========
 from collections import namedtuple
+from functools import reduce
 import h5py
 import numpy as np
 import operator as op
