@@ -16,14 +16,13 @@ def try_to_remove(path_file='test/test_files/test.hdf5'):
     Decorator to remove the intermediate data created during the testing.
     """
     def remove_test_files(fun):
-        @wraps
+        @wraps(fun)
         def wrapper(*args, **kwargs):
             try:
-                result = fun(*args, **kwargs)
+                return fun(*args, **kwargs)
             finally:
-                if os.path.exist(path_file):
+                if os.path.exists(path_file):
                     os.remove(path_file)
-            return result
         return wrapper
     return remove_test_files
 
@@ -35,10 +34,11 @@ def create_dict_CGFs(f5, packageHDF5, pathBasis, basisname, packageName, xyz):
     """
     keyBasis = InputKey("basis", [pathBasis])
     packageHDF5(f5, [keyBasis])   # Store the basis sets
-    return  createNormalizedCGFs(f5, basisname, packageName, xyz)
+    return createNormalizedCGFs(f5, basisname, packageName, xyz)
 
 
-def dump_MOs_coeff(handle_hdf5, packageHDF5, path_MO, pathEs, pathCs, nOrbitals):
+def dump_MOs_coeff(handle_hdf5, packageHDF5, path_MO, pathEs, pathCs,
+                   nOrbitals):
     """
     MO coefficients are stored in row-major order, they must be transposed
     to get the standard MO matrix.
@@ -95,13 +95,6 @@ def triang2mtx(arr, dim):
             k = fromIndex([i, j], [dim, dim])
             rss[i, j] = arr[k]
     return rss
-
-
-def try_to_remove(path):
-    try:
-        os.remove(path)
-    except OSError:
-        pass
 
 
 def format_aomix(mtx, dim):
