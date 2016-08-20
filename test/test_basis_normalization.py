@@ -19,7 +19,7 @@ def test_normalization():
     basis_name = "DZVP-MOLOPT-SR-GTH"
     package_name = "cp2k"
     mol = [AtomXYZ(symbol='cd', xyz=[])]
-    
+
     with h5py.File(path_hdf5) as f5:
         dict_cgfs = createNormalizedCGFs(f5, basis_name, package_name, mol)
 
@@ -30,9 +30,10 @@ def test_normalization():
     with Pool() as p:
         sii = p.starmap(sijContracted, [(t, t) for t in tuples])
 
-    # Expected a vector size which size is the number of CGFs with the integrals
+    # Expected a vector size which size is the number of CGFs with the
+    # integrals
     # [<cgfs_0| cgfs_0> , <cgfs_1 | cgfs_1>...] which is
     # [1,1,...]
     expected = np.ones(len(tuples))
-        
+
     assert np.sum(expected - sii) < 1.0e-8

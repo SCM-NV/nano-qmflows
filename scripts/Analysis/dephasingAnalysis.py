@@ -73,7 +73,7 @@ def read_files(i1, i2, name=False):
     name = 'icond*pair{:d}_{:d}Dephasing_function.txt'.format(i1, i2)
     density_files = fnmatch.filter(files, name)
     if density_files:
-        for i, filename in enumerate(density_files):
+        for filename in density_files:
             arr = np.loadtxt(filename, usecols=(0, 1, 2, 3, 4, 5), skiprows=1)
             arr = np.transpose(arr)
             t.append(arr[0])
@@ -92,10 +92,11 @@ def read_files(i1, i2, name=False):
         raise FileNotFoundError(msg)
 
 
-def plot_stuff(t, d, fd, naf, uaf, sc, w, J, m1, m2, save_plot=False, plot_avg=True):
+def plot_stuff(t, d, fd, naf, uaf, sc, w, J, m1, m2, save_plot=False,
+               plot_avg=True):
     """
     function to plot
-    
+
     takes:
     :param t: list of np-vectors containing x-values (time, usually(!) in fs).
     for each initial condition.
@@ -107,8 +108,8 @@ def plot_stuff(t, d, fd, naf, uaf, sc, w, J, m1, m2, save_plot=False, plot_avg=T
     (norm. autocorrelation function) for each initial condition
     :param uaf: list of np-vectors containing y-values
     (unnorm. autocorrelation function) for each initial condition.
-    :param sc: list of np-vectors containing y-values (second cumulant) for each
-    initial condition.
+    :param sc: list of np-vectors containing y-values (second cumulant) for
+    each initial condition.
     :param yl: string containing the label on the y-axis.
     :param save_plot: bool describing if plot should be saved as .pdf or not.
 
@@ -131,7 +132,8 @@ def plot_stuff(t, d, fd, naf, uaf, sc, w, J, m1, m2, save_plot=False, plot_avg=T
                                                sharex=False, sharey=False)
     colorlist = ['r', 'b', 'g', 'y', 'k', 'm']
     question = "What is the maximal value of w (in cm^-1) that you want \
-    to plot (x-axis spectral density plot) (type: float/int)? [Default: highest value] "
+    to plot (x-axis spectral density plot) (type: float/int)? \
+    [Default: highest value]"
 
     maxw = ask_question(question, special='float', default=w[0][-1])
     conv_fac = uaf[0][0] / naf[0][0]
@@ -146,9 +148,11 @@ def plot_stuff(t, d, fd, naf, uaf, sc, w, J, m1, m2, save_plot=False, plot_avg=T
 
     # 2.2
     for i in range(shape):
-        ax2.plot(t[i], naf[i], color=colorlist[i], label='norm_autocorr_{:d}'.format(i))
+        ax2.plot(t[i], naf[i], color=colorlist[i],
+                 label='norm_autocorr_{:d}'.format(i))
     if plot_avg:
-        ax2.plot(t[0], [np.mean(naf[0])] * len(naf[0]), color='#999999', label='average')
+        ax2.plot(t[0], [np.mean(naf[0])] * len(naf[0]), color='#999999',
+                 label='average')
     ax2.axhline(y=0, color='black')
     ax2.set_ylabel('NAF [arb. units]')
     ax2.set_xlabel('time [fs]')
@@ -163,9 +167,11 @@ def plot_stuff(t, d, fd, naf, uaf, sc, w, J, m1, m2, save_plot=False, plot_avg=T
 
     # 2.3
     for i in range(shape):
-        ax3.plot(t[i], sc[i], color=colorlist[i], label='scnd_cumul_{:d}'.format(i))
+        ax3.plot(t[i], sc[i], color=colorlist[i],
+                 label='scnd_cumul_{:d}'.format(i))
     # if plot_avg:
-    #     ax3.plot(t[0],[np.mean(sc)]*len(sc[0]),color='#999999', label='average')
+    #     ax3.plot(t[0],[np.mean(sc)]*len(sc[0]),color='#999999',
+    # label='average')
     ax3.set_xlabel('time [fs]')
     ax3.set_ylabel('SC [arb. units]')
 
@@ -173,7 +179,8 @@ def plot_stuff(t, d, fd, naf, uaf, sc, w, J, m1, m2, save_plot=False, plot_avg=T
     for i in range(len(d)):
         ax4.plot(w[i], J[i], color=colorlist[i], label='icond{:d}'.format(i))
     if plot_avg:
-        ax4.plot(w[0], [np.mean(J)] * len(J[0]), color='#999999', label='average')
+        ax4.plot(w[0], [np.mean(J)] * len(J[0]), color='#999999',
+                 label='average')
     ax4.set_xlabel('w [cm^-1]')
     ax4.set_ylabel('J [arb. units]')
     ax4.set_xlim(w[0][0], maxw)

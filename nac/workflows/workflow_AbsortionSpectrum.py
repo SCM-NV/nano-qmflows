@@ -221,7 +221,8 @@ def calcOscillatorStrenghts(project_name, mo_paths_hdf5, dictCGFs, atoms,
                                       mtx_integrals_spher)
             xs.append(fij)
             with open("oscillator_strengths.out", 'a') as f:
-                x = 'transition {:d} -> {:d} f_ij = {:f}\n'.format(initialS, finalS, fij)
+                x = 'transition {:d} -> {:d} f_ij = {:f}\n'.format(initialS,
+                                                                   finalS, fij)
                 f.write(x)
         oscillators.append(xs)
 
@@ -283,7 +284,8 @@ def calcDipoleCGFS(atoms, cgfsN, rc, trans_mtx):
     # x,y,z exponents value for the dipole
     exponents = [{'e': 1, 'f': 0, 'g': 0}, {'e': 0, 'f': 1, 'g': 0},
                  {'e': 0, 'f': 0, 'g': 1}]
-    dimSpher, dimCart = trans_mtx.shape
+
+    dimCart = trans_mtx.shape[1]
     mtx_integrals_triang = tuple(calcMtxMultipoleP(atoms, cgfsN, rc, **kw)
                                  for kw in exponents)
     mtx_integrals_cart = tuple(triang2mtx(xs, dimCart)
@@ -326,7 +328,7 @@ def oscillator_strength(css_i, css_j, energy, trans_mtx,
     normalized, the coefficients for both states, the nergy difference between
     the states and a matrix to transform from cartesian to spherical
     coordinates in case the coefficients are given in cartesian coordinates.
-  
+
     :param css_i: MO coefficients of initial state
     :type coeffs: Numpy Matrix.
     :param css_j: MO coefficients of final state

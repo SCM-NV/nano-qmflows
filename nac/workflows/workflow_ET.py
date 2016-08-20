@@ -89,20 +89,21 @@ def calculate_ETR(package_name, project_name, all_geometries, cp2k_args,
     hdf5_trans_mtx = schedule_transf_matrix(path_hdf5, atoms,
                                             basisName, project_name,
                                             packageName=package_name)
-    
+
     # Create a folder for each point the the dynamics
     traj_folders = create_point_folder(work_dir, len(all_geometries),
                                        enumerate_from)
 
     # Time-dependent coefficients
     time_depend_coeffs = retrieve_hdf5_data(path_hdf5, pathTimeCoeffs)
-    
+
     # prepare Cp2k Job
     # Point calculations Using CP2K
     mo_paths_hdf5 = calculate_mos(package_name, all_geometries, project_name,
                                   path_hdf5, traj_folders, cp2k_args,
                                   guess_args, calc_new_wf_guess_on_points,
-                                  enumerate_from, package_config=package_config)
+                                  enumerate_from,
+                                  package_config=package_config)
 
     # Number of ETR points calculated with the MD trajectory
     nPoints = len(all_geometries) - 2
@@ -124,7 +125,7 @@ def calculate_ETR(package_name, project_name, all_geometries, cp2k_args,
     with open("ElectronTranferRates", "w") as f:
         f.write(result)
 
-# ==============================> Tasks <=======================================
+# ==============================> Tasks <======================================
 
 
 def schedule_photoexcitation(i, path_hdf5, dictCGFs, all_geometries,

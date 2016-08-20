@@ -6,7 +6,6 @@ from qmworks.parsers.xyzParser import readXYZ
 from os.path import join
 import h5py
 import numpy as np
-import os
 
 # ===============================<>============================================
 from nac.schedule.components import create_dict_CGFs
