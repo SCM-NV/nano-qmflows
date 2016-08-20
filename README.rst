@@ -18,10 +18,10 @@ Package to calculate several properties related to the Nonadiabatic behaviour of
 Installation
 ============
 
-- type the following command in ther terminal: ::
+- type the following command in ther terminal:
     ``git clone git@github.com:felipeZ/nonAdiabaticCoupling.git``
 
-- Then move to the new folder called *nonAdibatic* and type: ::
+    - Then move to the new folder called *nonAdibatic* and type:
     ``pip install .`` 
 
 Overview
