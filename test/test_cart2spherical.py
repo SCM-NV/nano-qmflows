@@ -41,7 +41,7 @@ def test_cart2spherical():
     mtx_spher2cart[5, 6] = 1
     mtx_spher2cart[6, 7] = 1
     mtx_spher2cart[7, 5] = 1
-    
+
     # D-orbitals. Order in sphericals d_2, d_1, d0, d+1, d+2.
     # Order in cartesians Dxx, Dxy, Dxz, Dyy, Dyz, Dzz.
     mtx_spher2cart[8, 9] = 1   # m=-2 Dxy

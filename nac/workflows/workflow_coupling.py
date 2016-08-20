@@ -56,7 +56,7 @@ def generate_pyxaid_hamiltonians(package_name, project_name, all_geometries,
     """
     #  Environmental Variables
     cwd = os.path.realpath(".")
-    
+
     basisName = cp2k_args.basis
     work_dir = os.path.join(cwd, project_name)
     if path_hdf5 is None:
@@ -89,7 +89,7 @@ def generate_pyxaid_hamiltonians(package_name, project_name, all_geometries,
                                   path_hdf5, traj_folders, cp2k_args,
                                   guess_args, calc_new_wf_guess_on_points,
                                   enumerate_from, package_config=package_config)
-    
+
     # Calculate Non-Adiabatic Coupling
     # Number of Coupling points calculated with the MD trajectory
     nPoints = len(all_geometries) - 2
@@ -111,7 +111,7 @@ def generate_pyxaid_hamiltonians(package_name, project_name, all_geometries,
     # Inplace scheduling of write_hamiltonians function.
     # Equivalent to add @schedule on top of the function
     schedule_write_ham = schedule(write_hamiltonians)
-    
+
     promise_files = schedule_write_ham(path_hdf5, work_dir, mo_paths_hdf5,
                                        path_couplings, nPoints,
                                        path_dir_results=path_hamiltonians,
@@ -203,7 +203,7 @@ def main():
     # User variables
     home = os.path.expanduser('~')  # HOME Path
     username = getpass.getuser()
-    
+
     # Work_dir
     scratch = "/scratch-shared"
     scratch_path = join(scratch, username, project_name)
@@ -229,7 +229,7 @@ def main():
 
     # Dynamics time step in Femtoseconds
     dt = 1
-    
+
     # Hamiltonian computation
     generate_pyxaid_hamiltonians('cp2k', project_name, geometries, cp2k_args,
                                  guess_args=cp2k_OT,

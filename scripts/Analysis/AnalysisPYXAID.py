@@ -1,8 +1,6 @@
 import matplotlib
 matplotlib.use('Agg')
 
-from functools import partial
-from itertools import repeat
 from matplotlib.backends.backend_pdf import PdfPages
 from os.path import join
 
@@ -39,7 +37,8 @@ def read_cmd_line():
     return out_dir, macro_dir, homo, n
 
 #  ======================================<>====================================
-ry2ev =  13.60569172
+ry2ev = 13.60569172
+
 
 def parse_energies(filePath):
     """
@@ -152,7 +151,7 @@ def calc_grid_energies(average_pop, nsteps, lumos):
     return grid_es, grid_pop, grid_time
 
 
-def calculate_band_gap_histo(homos, bins= 50):
+def calculate_band_gap_histo(homos, bins=50):
     """
     Generate a distribution of the HOMO-LUMO gap during the MD
     simulation.
@@ -162,7 +161,7 @@ def calculate_band_gap_histo(homos, bins= 50):
     sh, = homos.shape
     for i in range(bins):
         rs[i] = (ys[i] + ys[i + 1]) * 0.5
-    return xs / sh  , rs
+    return xs / sh, rs
 
 
 def main():
@@ -174,7 +173,7 @@ def main():
     # Make a 3D stack of arrays then calculate the mean value
     # for the same time
     average_es = np.mean(np.stack(ess), axis=0)
-    average_pop = np.mean(np.stack(pss), axis=0)
+    # average_pop = np.mean(np.stack(pss), axis=0)
 
     # Create time steps array
     nsteps, _ = average_es.shape
@@ -182,16 +181,15 @@ def main():
 
     # HOMO Energies
     homos = average_es[:, homo_number]
-    
+
     # Read Macro files
-    se_ess, sh_ess, se_pop, sh_pop = read_energies_and_pops_from_macro(macro_dir)
+    se_ess, sh_ess, se_pop, _ = read_energies_and_pops_from_macro(macro_dir)
 
     xss = se_ess - homos
     print(xss[:10] * ry2ev)
-    
+
     mean_values, gap_distribution  = calculate_band_gap_histo(homos)
 
-    
     with PdfPages('Energies.pdf') as pp:
         plt.figure(1)
         plt.title('SE and SH Energy Evolution')
@@ -222,13 +220,12 @@ def main():
         # plt.colorbar(p)
         # plt.savefig('ElectronEnergyDist.png')
         # pp.savefig()
-        
+
     # es_energy = np.stack([ts, sh_ess - lumo_1], axis=1)
     # es_hole = np.stack([ts, sh_ess - homos], axis=1)
     # np.savetxt("electron_energy.out", es_energy, fmt='%.7e')
     # np.savetxt("hole_energy.out", es_hole, fmt='%.7e')
 
-    
 
 # =================<>================================
 if __name__ == "__main__":

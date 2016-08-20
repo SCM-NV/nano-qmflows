@@ -1,12 +1,16 @@
 
 __all__ = ['AtomBasisData', 'AtomBasisKey', 'AtomData', 'AtomXYZ', 'CGF',
-           'InfoMO', 'InputKey', 'MO', 'change_mol_units', 'getmass',
-           'retrieve_hdf5_data', 'triang2mtx']
+           'InfoMO', 'InputKey', 'MO',
+           'binomial', 'calculateUniqueLabel', 'change_mol_units', 'even',
+           'fac', 'getmass', 'odd', 'product', 'retrieve_hdf5_data',
+           'triang2mtx']
 
 # ================> Python Standard  and third-party <==========
 from collections import namedtuple
+from functools import reduce
 import h5py
 import numpy as np
+import operator as op
 
 # ======================================================================
 # Named Tuples
@@ -94,3 +98,42 @@ def change_mol_units(mol, factor=angs2au):
         coord = list(map(lambda x: x * factor, atom.xyz))
         newMol.append(AtomXYZ(atom.symbol, coord))
     return newMol
+
+
+def calculateUniqueLabel(xs):
+    """Return a list of unique tokens"""
+    rs = set()
+    for x in xs:
+        if x not in rs:
+            rs.add(x)
+    return rs
+
+# Utilities
+
+
+def product(xs):
+    return reduce(op.mul, xs)
+
+
+def odd(x):
+    return x % 2 != 0
+
+
+def even(x):
+    return not(odd(x))
+
+
+def fac(x):
+    if x == 0:
+        return 1
+    else:
+        return float(product(range(1, x + 1)))
+
+
+def binomial(n, k):
+    if k == n:
+        return 1.0
+    elif k >= 0 and k < n:
+        return fac(n) / (fac(k) * fac(n - k))
+    else:
+        return 0.0

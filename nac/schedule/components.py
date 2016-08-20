@@ -183,7 +183,7 @@ def split_file_geometries(pathXYZ):
     """
     Reads a set of molecular geometries in xyz format and returns
     a list of string, where is element a molecular geometry
-    
+
     :returns: String list containing the molecular geometries.
     """
     # Read Cartesian Coordinates
@@ -227,7 +227,7 @@ def create_file_names(work_dir, i):
     """
     Creates a namedTuple with the name of the 4 files used
     for each point in the trajectory
-    
+
     :returns: Namedtuple containing the IO files
     """
     file_xyz = join(work_dir, 'coordinates_{}.xyz'.format(i))
@@ -236,6 +236,3 @@ def create_file_names(work_dir, i):
     file_MO = join(work_dir, 'mo_coeff_{}.out'.format(i))
 
     return JobFiles(file_xyz, file_inp, file_out, file_MO)
-
-# ============<>===============
-

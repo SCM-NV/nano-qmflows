@@ -7,7 +7,7 @@ import numpy as np
 # =============================> Internal modules <============================
 from nac.integrals.overlapIntegral import sijContracted
 from nac.integrals.multipoleIntegrals import createTupleXYZ_CGF
-from qmworks.utils import concat, concatMap
+from qmworks.utils import concatMap
 # =====================================<>======================================
 
 

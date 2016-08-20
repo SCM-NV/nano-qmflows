@@ -1,7 +1,13 @@
-.. image:: https://img.shields.io/github/license/mashape/apistatus.svg?maxAge=2592000   :target: https://github.com/felipeZ/nonAdiabaticCoupling/blob/master/LICENSE
+
 .. image:: https://travis-ci.org/felipeZ/nonAdiabaticCoupling.svg?branch=master
     :target: https://travis-ci.org/felipeZ/nonAdiabaticCoupling
-
+.. image:: https://img.shields.io/github/license/felipeZ/nonAdiabaticCoupling.svg?maxAge=2592000
+    :target: https://github.com/felipeZ/nonAdiabaticCoupling/blob/master/LICENSE
+.. image:: https://img.shields.io/github/release/felipeZ/nonAdiabaticCoupling.svg
+    :target: https://github.com/felipeZ/nonAdiabaticCoupling/releases
+.. image:: https://img.shields.io/badge/python-3.5-blue.svg
+.. image:: https://img.shields.io/codacy/grade/e27821fb6289410b8f58338c7e0bc686.svg?maxAge=2592000
+    :target: https://www.codacy.com/app/tifonzafel/nonAdiabaticCoupling/dashboard
 ====================
 NonAdiabaticCoupling
 ====================

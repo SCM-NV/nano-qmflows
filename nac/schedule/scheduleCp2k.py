@@ -58,12 +58,12 @@ def prepare_cp2k_settings(geometry, files, cp2k_args, k, work_dir,
         wfn_file = list(filter(lambda x: fnmatch.fnmatch(x, '*wfn'), xs))[0]
         file_path = join(output_dir, wfn_file)
         cp2k_args.specific.cp2k.force_eval.dft.wfn_restart_file_name = file_path
-        
+
     with open(files.get_xyz, 'w') as f:
         f.write(geometry)
 
     input_args = templates.singlepoint.overlay(cp2k_args)
-    
+
     # Do not print the MO if they are not going to be stored in HDF5
     if not store_in_hdf5:
         del(input_args.specific.cp2k.force_eval.dft['print'])

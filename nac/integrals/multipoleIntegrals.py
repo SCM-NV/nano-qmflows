@@ -158,7 +158,7 @@ def build_primitives_gaussian(t):
 
 def calcIndexTriang(n):
     """
-    Calculate the indexes of the matrix that is represented as a flatten array.  
+    Calculate the indexes of the matrix that is represented as a flatten array.
     """
     flatDim = (n ** 2 + n) // 2
     xss = np.dstack(np.triu_indices(n))
@@ -168,4 +168,3 @@ def calcIndexTriang(n):
 def createTupleXYZ_CGF(atom, cgfs):
     xyz = atom.xyz
     return [(xyz, cs) for cs in cgfs]
-    

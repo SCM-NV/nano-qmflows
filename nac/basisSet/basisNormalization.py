@@ -6,11 +6,9 @@ from math import pi, sqrt
 
 # =======================> Internal modules <==================================
 from .contractedGFs import createUniqueCGF
-from nac.common import CGF
+from nac.common import (CGF, product)
 from nac.integrals.overlapIntegral import sijContracted
 from nac.integrals.multipoleIntegrals import calcOrbType_Components
-
-from qmworks.utils import product
 
 # =======================> Basis set normalization <===========================
 
@@ -54,9 +52,9 @@ def createNormalizedCGFs(f5, basisName, softName, mol):
     return {l: cgf for (l, cgf) in zip(uniqls, uniqCGFsN)}
 
 
-def normGlobal(cgf, r=[0.0] * 3):
+def normGlobal(cgf, r=[0, 0, 0]):
     l = cgf.orbType
-    cs, es = cgf.primitives
+    _, es = cgf.primitives
     csN = normCoeff(cgf)
     cgfN = CGF((csN, es), l)
     sij = sijContracted((r, cgfN), (r, cgfN))

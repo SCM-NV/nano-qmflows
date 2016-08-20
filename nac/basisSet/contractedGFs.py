@@ -7,9 +7,9 @@ from os.path import join
 from pymonad import curry
 
 # ==================> Internal modules <==========
-from nac.common import  CGF, InputKey
+from nac.common import  (calculateUniqueLabel, CGF, InputKey)
 from qmworks.hdf5.quantumHDF5 import cp2k2hdf5, turbomole2hdf5
-from qmworks.utils import calculateUniqueLabel, concat, concatMap, snd
+from qmworks.utils import (concat, concatMap)
 # ==========================<>=================================
 
 
@@ -72,6 +72,8 @@ def generateCGF(ess, css, formats, softName):
 
     orbLabels = ['s', 'p', 'd', 'f']
 
+    snd = lambda xs: xs[1]
+
     def fun1(es, css, fs):
         """
         For the Cp2K basis set there is only one set of exponents
@@ -126,7 +128,8 @@ def generateCGF(ess, css, formats, softName):
     if softName == "turbomole":
         return fun2(ess, css, formats)
     else:
-        msg = "Basis set expansion it is not available for the package: ".format(softName)
+        msg = ("Basis set expansion it is not available for the \
+        package: {}".format(softName))
         return NotImplementedError(msg)
 
 
@@ -171,8 +174,8 @@ def expandBasis_turbomole(l, es, cs):
                 CGF(primitives, 'Fxzz'), CGF(primitives, 'Fyzz'),
                 CGF(primitives, 'Fyyz'), CGF(primitives, 'Fxyz')]
     else:
-        msg = "The basis set expansion for this angular momentum"
-        " has not been implemented yet"
+        msg = ("The basis set expansion for this angular momentum has not been \
+        implemented yet")
         raise NotImplementedError(msg)
 
 
