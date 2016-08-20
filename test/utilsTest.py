@@ -1,14 +1,31 @@
 
-import numpy as np
-import os
-
+from functools import wraps
 from nac.basisSet.basisNormalization import createNormalizedCGFs
 from nac.common import InputKey
 from qmworks.parsers.xyzParser import AtomXYZ
 
+import numpy as np
+import os
 
 # ========================<>=======================
 angs2au = 1 / 0.529177249
+
+
+def try_to_remove(path_file='test/test_files/test.hdf5'):
+    """
+    Decorator to remove the intermediate data created during the testing.
+    """
+    def remove_test_files(fun):
+        @wraps
+        def wrapper(*args, **kwargs):
+            try:
+                result = fun(*args, **kwargs)
+            finally:
+                if os.path.exist(path_file):
+                    os.remove(path_file)
+            return result
+        return wrapper
+    return remove_test_files
 
 
 def create_dict_CGFs(f5, packageHDF5, pathBasis, basisname, packageName, xyz):

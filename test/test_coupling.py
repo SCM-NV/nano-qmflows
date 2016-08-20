@@ -24,6 +24,7 @@ def is_antisymmetric(arr):
     return np.sum(arr + np.transpose(arr)) < 1.0e-8
 
 
+@try_to_remove(path_hdf5_test)
 def test_lazy_coupling():
     """
     The matrix containing the derivative coupling must be antisymmetric and
@@ -65,6 +66,5 @@ def test_lazy_coupling():
         arr = f6[path_coupling].value
 
     # remove the hdf5 file used for testing
-    try_to_remove(path_hdf5_test)
-        
+
     assert is_antisymmetric(arr) and (np.sum(arr - expected) < 1.0e-8)
