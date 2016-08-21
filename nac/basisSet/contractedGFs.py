@@ -7,7 +7,7 @@ from os.path import join
 from pymonad import curry
 
 # ==================> Internal modules <==========
-from nac.common import  (calculateUniqueLabel, CGF, InputKey)
+from nac.common import (CGF, InputKey)
 from qmworks.hdf5.quantumHDF5 import cp2k2hdf5, turbomole2hdf5
 from qmworks.utils import (concat, concatMap)
 # ==========================<>=================================
@@ -16,7 +16,7 @@ from qmworks.utils import (concat, concatMap)
 def createCGF(file_h5, path_basis, basis_name, softName, ls):
     """
     """
-    uniqLabels = calculateUniqueLabel(ls)
+    uniqLabels = set(ls)
     bss = [readBasisSet(file_h5, basis_name, softName, l) for l in uniqLabels]
     ds = dict(zip(uniqLabels, bss))
 
@@ -36,7 +36,7 @@ def createUniqueCGF(f5, basis_name, package_name, ls):
     :param ls:        List of Atomics labels
     :type  ls:        [Strings]
     """
-    uniqLabels = calculateUniqueLabel(ls)
+    uniqLabels = set(ls)
     bss = [readBasisSet(f5, basis_name, package_name, l) for l in uniqLabels]
 
     return (uniqLabels, bss)
@@ -54,11 +54,14 @@ def readBasisSet(f5, basis_name, package_name, l):
     :type  l:         Strings
     """
     basis_name = basis_name.upper()
-    path_expo = join('/', package_name, "basis", l.lower(), basis_name, "exponents")
-    path_coef = join('/', package_name, "basis", l.lower(), basis_name, "coefficients")
+    path_expo = join('/', package_name, "basis", l.lower(), basis_name,
+                     "exponents")
+    path_coef = join('/', package_name, "basis", l.lower(), basis_name,
+                     "coefficients")
 
     if path_expo not in f5 or path_coef not in f5:
-        msg = 'The basis set named:{} is not stored in the HDF5 file'.format(basis_name)
+        msg = ('The basis set named:{} is not stored in the HDF5 \
+        file'.format(basis_name))
         raise RuntimeError(msg)
     ess = f5[path_expo].value
     dsetCoef = f5[path_coef]
@@ -120,8 +123,8 @@ def generateCGF(ess, css, formats, softName):
         fss = str2ListofList(fs)
         # snd . foldl' funAcc (0,[0]) (map sum fss)
         lens = snd(reduce(funAcc, list(map(sum, fss)), (0, [0])))
-        return concat([snd(accum(l, n, fs))
-                       for (l, n, fs) in zip(orbLabels, lens, fss)])
+        return concat([snd(accum(l, n, xs))
+                       for (l, n, xs) in zip(orbLabels, lens, fss)])
 
     if softName == "cp2k":
         return fun1(ess, css, formats)
@@ -174,8 +177,8 @@ def expandBasis_turbomole(l, es, cs):
                 CGF(primitives, 'Fxzz'), CGF(primitives, 'Fyzz'),
                 CGF(primitives, 'Fyyz'), CGF(primitives, 'Fxyz')]
     else:
-        msg = ("The basis set expansion for this angular momentum has not been \
-        implemented yet")
+        msg = ("The basis set expansion for this angular momentum has not \
+        been implemented yet")
         raise NotImplementedError(msg)
 
 
@@ -211,7 +214,7 @@ def str2ListofList(s):
         [[1,2,3],[4,5],[1]]
     """
     strs = s.replace('[', '').split('],')
-    return [list(map(int, s.replace(']', '').split(','))) for s in strs]
+    return [list(map(int, xs.replace(']', '').split(','))) for xs in strs]
 
 
 def str2list(xs):

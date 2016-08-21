@@ -1,7 +1,7 @@
 
 __all__ = ['AtomBasisData', 'AtomBasisKey', 'AtomData', 'AtomXYZ', 'CGF',
            'InfoMO', 'InputKey', 'MO',
-           'binomial', 'calculateUniqueLabel', 'change_mol_units', 'even',
+           'binomial', 'change_mol_units', 'even',
            'fac', 'getmass', 'odd', 'product', 'retrieve_hdf5_data',
            'triang2mtx']
 
@@ -14,14 +14,14 @@ import operator as op
 
 # ======================================================================
 # Named Tuples
-AtomData       = namedtuple("AtomData", ("label", "coordinates", "cgfs"))
-AtomBasisKey   = namedtuple("AtomBasisKey", ("atom", "basis", "basisFormat"))
-AtomBasisData  = namedtuple("AtomBasisData", ("exponents", "coefficients"))
-AtomXYZ        = namedtuple("AtomXYZ", ("symbol", "xyz"))
-CGF            = namedtuple("CGF", ("primitives", "orbType"))
-InfoMO         = namedtuple("InfoMO", ("eigenVals", "coeffs"))
-InputKey       = namedtuple("InpuKey", ("name", "args"))
-MO             = namedtuple("MO", ("coordinates", "cgfs", "coefficients"))
+AtomData = namedtuple("AtomData", ("label", "coordinates", "cgfs"))
+AtomBasisKey = namedtuple("AtomBasisKey", ("atom", "basis", "basisFormat"))
+AtomBasisData = namedtuple("AtomBasisData", ("exponents", "coefficients"))
+AtomXYZ = namedtuple("AtomXYZ", ("symbol", "xyz"))
+CGF = namedtuple("CGF", ("primitives", "orbType"))
+InfoMO = namedtuple("InfoMO", ("eigenVals", "coeffs"))
+InputKey = namedtuple("InpuKey", ("name", "args"))
+MO = namedtuple("MO", ("coordinates", "cgfs", "coefficients"))
 
 # ================> Constants <================
 angs2au = 1 / 0.529177249  # Angstrom to a.u
@@ -48,17 +48,16 @@ def retrieve_hdf5_data(path_hdf5, paths_to_prop):
     :params path_hdf5: Path to the hdf5 file
     :type path_hdf5: string
     :returns: numerical array
+
     """
     try:
         with h5py.File(path_hdf5, 'r') as f5:
             if isinstance(paths_to_prop, list):
-                return  [f5[path].value for path in paths_to_prop]
+                return [f5[path].value for path in paths_to_prop]
             else:
                 return f5[paths_to_prop].value
     except KeyError:
         msg = "There is not {} stored in the HDF5\n".format(paths_to_prop)
-        with open('cp2k_out', 'a') as f:
-            f.write(msg)
         raise KeyError(msg)
     except FileNotFoundError:
         msg = "there is not HDF5 file containing the numerical results"
@@ -80,6 +79,10 @@ def fromIndex(ixs, shape):
 
 
 def triang2mtx(arr, dim):
+    """
+    Transform a symmetric matrix represented as a flatten upper triangular
+    matrix to the correspoding 2-dimensional array.
+    """
     rss = np.empty((dim, dim))
     for i in range(dim):
         for j in range(dim):
@@ -98,15 +101,6 @@ def change_mol_units(mol, factor=angs2au):
         coord = list(map(lambda x: x * factor, atom.xyz))
         newMol.append(AtomXYZ(atom.symbol, coord))
     return newMol
-
-
-def calculateUniqueLabel(xs):
-    """Return a list of unique tokens"""
-    rs = set()
-    for x in xs:
-        if x not in rs:
-            rs.add(x)
-    return rs
 
 # Utilities
 

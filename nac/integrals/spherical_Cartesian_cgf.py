@@ -1,10 +1,10 @@
 __author__ = "Felipe Zapata"
 
 # ==========> Standard libraries and third-party <===============
-from math import  sqrt
+from math import sqrt
 from os.path import join
 
-from nac.common import (binomial, calculateUniqueLabel, even, fac, odd, product)
+from nac.common import (binomial, even, fac, odd, product)
 from qmworks.utils import (concat, concatMap)
 import numpy as np
 # ==================================<>=========================================
@@ -17,7 +17,7 @@ def calc_transf_matrix(f5, mol, basisName, packageName):
     **H. B. Schlegel, M. J. Frisch, Int. J. Quantum Chem. 54, 83 (1995)**
     """
     symbols = [at.symbol for at in mol]
-    uniqSymbols = calculateUniqueLabel(symbols)
+    uniqSymbols = set(symbols)
     formats = {}
     for elem in uniqSymbols:
         dset = f5[join(packageName, 'basis', elem,
@@ -74,7 +74,7 @@ def build_coeff_matrix(dict_basisFormat, symbols, uniqSymbols, packageName):
 
     css = np.zeros((nSphericals, nCartesians))
 
-    i, j  = 0, 0
+    i, j = 0, 0
     for (slabels, clabels) in zip(spherical_orbital_labels,
                                   cartesian_orbital_labels):
         len_s = len(slabels)

@@ -1,9 +1,9 @@
-from .basisSet import (createNormalizedCGFs, createUniqueCGF, expandBasisOneCGF,
-                       expandBasis_cp2k, expandBasis_turbomole)
+from .basisSet import (createNormalizedCGFs, createUniqueCGF,
+                       expandBasisOneCGF, expandBasis_cp2k,
+                       expandBasis_turbomole)
 
 from .common import (AtomBasisData, AtomBasisKey, AtomData, AtomXYZ,
-                     calculateUniqueLabel, CGF,
-                     InfoMO, InputKey, MO, change_mol_units, getmass,
+                     CGF, InfoMO, InputKey, MO, change_mol_units, getmass,
                      retrieve_hdf5_data, triang2mtx)
 
 from .integrals import (calcMtxMultipoleP, calcMtxOverlapP, calc_transf_matrix,
@@ -19,7 +19,7 @@ from .schedule import (calculate_mos, create_dict_CGFs, create_point_folder,
 __all__ = ['AtomBasisData', 'AtomBasisKey', 'AtomData', 'AtomXYZ', 'CGF',
            'InfoMO', 'InputKey', 'MO', 'calcMtxMultipoleP', 'calcMtxOverlapP',
            'calc_transf_matrix', 'calculateCoupling3Points',
-           'calculateUniqueLabel', 'calculate_mos',
+           'calculate_mos',
            'change_mol_units', 'createNormalizedCGFs', 'createUniqueCGF',
            'create_dict_CGFs', 'create_point_folder', 'expandBasisOneCGF',
            'expandBasis_cp2k', 'expandBasis_turbomole',
