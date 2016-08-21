@@ -11,17 +11,17 @@ from interactive import ask_question
 
 
 msg = ('This is a program that plots the spectral density for a certain'
-       'pair of states. Usage: Make sure that you are in the out folder containing the'
-       'icond-files and fill in the prompted questions.')
+       'pair of states. Usage: Make sure that you are in the out folder'
+       ' containing the icond-files and fill in the prompted questions.')
 
 
 def ask_for_states():
     print("""The states are labeled as in PYXAID; the first state being 0.
     You can look them up in the output.""")
-    i1 = ask_question("What is the integer representing the first state (int)? ",
-                      special='int')
-    i2 = ask_question("What is the integer representing the second state (int)? ",
-                      special='int')
+    q1 = "What is the integer representing the first state (int)? "
+    q2 = "What is the integer representing the second state (int)? "
+    i1 = ask_question(q1, special='int')
+    i2 = ask_question(q2, special='int')
     return i1, i2
 
 
@@ -56,10 +56,12 @@ def read_files(i1, i2):
         raise FileNotFoundError(msg)
 
 
-def plot_stuff(w, J, m1, m2, xl='w [cm^-1]', yl='J [arb. units]', save_plot=False):
+def plot_stuff(w, J, m1, m2, xl='w [cm^-1]', yl='J [arb. units]',
+               save_plot=False):
     """
     function to plot takes:
-    w - list of np-vectors containing x-values (energy, in cm-1) for each initial condition
+    w - list of np-vectors containing x-values (energy, in cm-1) for
+    each initial condition
     J - list of np-vectors containing y-values (J) for each initial condition
     xl - string containing the label on the x-axis
     yl - string containing the label on the y-axis
@@ -74,11 +76,11 @@ def plot_stuff(w, J, m1, m2, xl='w [cm^-1]', yl='J [arb. units]', save_plot=Fals
 
     question = "What is the maximal value of w (in cm^-1) that you want \
     to plot (float/int)? [Default: highest value] "
-    
+
     maxw = ask_question(question, special='float', default=w[0][-1])
     filename = "SpecDens_{:d}_{:d}.pdf".format(m1, m2)
     with PdfPages(filename) as pdf:
-        for i, j  in enumerate(J):
+        for i, j in enumerate(J):
             plt.plot(w[i], j, label='icond{:d}'.format(i))
             plt.xlabel(xl)
             plt.ylabel(yl)

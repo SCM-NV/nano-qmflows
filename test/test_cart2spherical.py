@@ -69,7 +69,7 @@ def test_cart2spherical():
     # m=2 Dx^2 - Dy^2
     mtx_spher2cart[17, 14] = cte1
     mtx_spher2cart[17, 17] = -cte1
-    
+
     # F-orbitals. Order in sphericals f_3, f_2, f_1, f0, f+1, f+2, f+3.
     # Order in cartesians
     # Fxxx, Fxxy, Fxxz, Fxyy, Fxyz, Fxzz, Fyyy, Fyyz, Fyzz, Fzzz
@@ -97,5 +97,5 @@ def test_cart2spherical():
     # m=+3 Fx(x^2 - 3y^2)
     mtx_spher2cart[24, 20] = 0.79056942
     mtx_spher2cart[24, 23] = -1.06066017
-    
+
     assert np.sum(mtx_test - mtx_spher2cart) < 1e-8

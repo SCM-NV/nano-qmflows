@@ -60,7 +60,7 @@ def parse_population(filePath):
         xss = f.readlines()
     rss = [[float(x) for i, x in enumerate(l.split())
             if i % 2 == 1 and i > 2] for l in xss]
-        
+
     return np.array(rss)
 
 
@@ -95,8 +95,8 @@ def read_energies_and_pops_from_out(out_dir):
     Read the energy and population created by PYXAID.
     """
     files_out = os.listdir(out_dir)
-    names_out_es, names_out_pop  = [fnmatch.filter(files_out, x) for x
-                                    in ["*energies*", "out*"]]
+    names_out_es, names_out_pop = [fnmatch.filter(files_out, x) for x
+                                   in ["*energies*", "out*"]]
     paths_out_es, paths_out_pop = [[join(out_dir, x) for x in xs]
                                    for xs in [names_out_es, names_out_pop]]
     ess = list(map(parse_energies, paths_out_es))
@@ -112,7 +112,7 @@ def read_energies_and_pops_from_macro(macro_dir):
     files_macro = os.listdir(macro_dir)
     se_sh_es_files = [fnmatch.filter(files_macro, x)[0]
                       for x in ["se_en_*[!_]", "sh_en_*[!_]"]]
-    
+
     se_sh_pop_files = [fnmatch.filter(files_macro, x)[0]
                        for x in ["se_pop*", "sh_pop*"]]
     se_sh_es_paths = [join(macro_dir, xs) for xs in se_sh_es_files]
@@ -188,7 +188,7 @@ def main():
     xss = se_ess - homos
     print(xss[:10] * ry2ev)
 
-    mean_values, gap_distribution  = calculate_band_gap_histo(homos)
+    mean_values, gap_distribution = calculate_band_gap_histo(homos)
 
     with PdfPages('Energies.pdf') as pp:
         plt.figure(1)

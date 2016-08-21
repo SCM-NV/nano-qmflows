@@ -221,7 +221,8 @@ def calcOscillatorStrenghts(project_name, mo_paths_hdf5, dictCGFs, atoms,
                                       mtx_integrals_spher)
             xs.append(fij)
             with open("oscillator_strengths.out", 'a') as f:
-                x = 'transition {:d} -> {:d} f_ij = {:f}\n'.format(initialS, finalS, fij)
+                x = 'transition {:d} -> {:d} f_ij = {:f}\n'.format(initialS,
+                                                                   finalS, fij)
                 f.write(x)
         oscillators.append(xs)
 
@@ -326,7 +327,7 @@ def oscillator_strength(css_i, css_j, energy, trans_mtx,
     normalized, the coefficients for both states, the nergy difference between
     the states and a matrix to transform from cartesian to spherical
     coordinates in case the coefficients are given in cartesian coordinates.
-  
+
     :param css_i: MO coefficients of initial state
     :type coeffs: Numpy Matrix.
     :param css_j: MO coefficients of final state
@@ -352,7 +353,7 @@ def main():
     initial_states = [98, 99]  # HOMO
     ls = list(range(100, 104))
     final_states = [ls] * 2
-    
+
     plams.init()
     project_name = 'spectrum_pentacene'
 
@@ -364,20 +365,23 @@ def main():
     cp2k_args.basis = "DZVP-MOLOPT-SR-GTH"
     cp2k_args.potential = "GTH-PBE"
     cp2k_args.cell_parameters = cell
-    cp2k_args.specific.cp2k.force_eval.dft.scf.added_mos = 100
-    cp2k_args.specific.cp2k.force_eval.dft.scf.diagonalization.jacobi_threshold = 1e-6
+
+    dft = cp2k_args.specific.cp2k.force_eval.dft
+    dft.scf.added_mos = 100
+    dft.scf.diagonalization.jacobi_threshold = 1e-6
 
     # Setting to calculate the WF use as guess
     cp2k_OT = Settings()
     cp2k_OT.basis = "DZVP-MOLOPT-SR-GTH"
     cp2k_OT.potential = "GTH-PBE"
     cp2k_OT.cell_parameters = cell
-    cp2k_OT.specific.cp2k.force_eval.dft.scf.scf_guess = 'atomic'
-    cp2k_OT.specific.cp2k.force_eval.dft.scf.ot.minimizer = 'DIIS'
-    cp2k_OT.specific.cp2k.force_eval.dft.scf.ot.n_diis = 7
-    cp2k_OT.specific.cp2k.force_eval.dft.scf.ot.preconditioner = 'FULL_SINGLE_INVERSE'
-    cp2k_OT.specific.cp2k.force_eval.dft.scf.added_mos = 0
-    cp2k_OT.specific.cp2k.force_eval.dft.scf.eps_scf = 5e-06
+    cp2k_OT_scf = cp2k_OT.specific.cp2k.force_eval.dft.scf
+    cp2k_OT_scf.scf_guess = 'atomic'
+    cp2k_OT_scf.ot.minimizer = 'DIIS'
+    cp2k_OT_scf.ot.n_diis = 7
+    cp2k_OT_scf.ot.preconditioner = 'FULL_SINGLE_INVERSE'
+    cp2k_OT_scf.added_mos = 0
+    cp2k_OT_scf.eps_scf = 5e-06
 
     # Path to the MD geometries
     path_traj_xyz = "./pentanceOpt.xyz"
@@ -385,7 +389,7 @@ def main():
     # User variables
     home = os.path.expanduser('~')  # HOME Path
     # username = getpass.getuser()
-    
+
     # # Work_dir
     # scratch = "/scratch-shared"
     # scratch_path = join(scratch, username, project_name)

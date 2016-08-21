@@ -101,7 +101,8 @@ def lazy_schedule_couplings(i, path_hdf5, dictCGFs, geometries, mo_paths, dt=1,
             store.funHDF5(output_path, rs)
 
     if output_folder is None:
-        msg = 'There was not specified a path in the HDF5 file to store the coupling\n'
+        msg = ('There was not specified a path in the HDF5 file to store \
+        the coupling\n')
         raise RuntimeError(msg)
 
     output_path = join(output_folder, 'coupling_{}'.format(i + enumerate_from))
@@ -116,7 +117,8 @@ def lazy_schedule_couplings(i, path_hdf5, dictCGFs, geometries, mo_paths, dt=1,
 
 
 def write_hamiltonians(path_hdf5, work_dir, mo_paths, path_couplings, nPoints,
-                       path_dir_results=None, enumerate_from=0, nCouplings=None):
+                       path_dir_results=None, enumerate_from=0,
+                       nCouplings=None):
     """
     Write the real and imaginary components of the hamiltonian using both
     the orbitals energies and the derivative coupling accoring to:
@@ -134,7 +136,7 @@ def write_hamiltonians(path_hdf5, work_dir, mo_paths, path_couplings, nPoints,
             middle = dim // 2
             ncs = nCouplings // 2
             return xs[middle - ncs: middle - ncs]
-        
+
     ham_files = []
     for i in range(nPoints):
         path_coupling = path_couplings[i]
@@ -155,4 +157,3 @@ def write_hamiltonians(path_hdf5, work_dir, mo_paths, path_couplings, nPoints,
         ham_files.append((file_ham_im, file_ham_re))
 
     return ham_files
-    
