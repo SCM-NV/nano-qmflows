@@ -2,7 +2,6 @@
 from functools import wraps
 from nac.basisSet.basisNormalization import createNormalizedCGFs
 from nac.common import InputKey
-from qmworks.parsers.xyzParser import AtomXYZ
 
 import numpy as np
 import os
@@ -79,15 +78,6 @@ def offdiagonalTolerance(arr, tolerance=1.0e-8):
             else:
                 r = abs(arr[i, j]) < tolerance
     return r
-
-
-def change_mol_units(mol, factor=angs2au):
-    """change the units of the molecular coordinates"""
-    newMol = []
-    for atom in mol:
-        coord = list(map(lambda x: x * factor, atom.xyz))
-        newMol.append(AtomXYZ(atom.symbol, coord))
-    return newMol
 
 
 def fromIndex(ixs, shape):

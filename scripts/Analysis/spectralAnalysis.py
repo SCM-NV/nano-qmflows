@@ -7,22 +7,11 @@ import fnmatch
 import matplotlib.pyplot as plt
 import numpy as np
 import os
-from interactive import ask_question
-
+from interactive import (ask_for_states, ask_question)
 
 msg = ('This is a program that plots the spectral density for a certain'
        'pair of states. Usage: Make sure that you are in the out folder containing the'
        'icond-files and fill in the prompted questions.')
-
-
-def ask_for_states():
-    print("""The states are labeled as in PYXAID; the first state being 0.
-    You can look them up in the output.""")
-    i1 = ask_question("What is the integer representing the first state (int)? ",
-                      special='int')
-    i2 = ask_question("What is the integer representing the second state (int)? ",
-                      special='int')
-    return i1, i2
 
 
 def read_files(i1, i2):
@@ -74,7 +63,7 @@ def plot_stuff(w, J, m1, m2, xl='w [cm^-1]', yl='J [arb. units]', save_plot=Fals
 
     question = "What is the maximal value of w (in cm^-1) that you want \
     to plot (float/int)? [Default: highest value] "
-    
+
     maxw = ask_question(question, special='float', default=w[0][-1])
     filename = "SpecDens_{:d}_{:d}.pdf".format(m1, m2)
     with PdfPages(filename) as pdf:

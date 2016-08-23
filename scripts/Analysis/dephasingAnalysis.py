@@ -4,53 +4,12 @@ import matplotlib.pyplot as plt
 import fnmatch
 import numpy as np
 import os
-from interactive import ask_question
+from interactive import (ask_for_states, ask_question, read_spec_files)
 
 
 msg = ('This is a program that plots the decorense for a certain'
        'pair of states. Usage: Make sure that you are in the out folder containing the'
        'icond-files and fill in the prompted questions.')
-
-
-def ask_for_states():
-    print("""The states are labeled as in PYXAID; the first state being 0.
-    You can look them up in the output.""")
-    i1 = ask_question("What is the integer representing the first state (int)? ",
-                      special='int')
-    i2 = ask_question("What is the integer representing the second state (int)? ",
-                      special='int')
-    return i1, i2
-
-
-def read_spec_files(i1, i2):
-    """
-    function that opens all the spectral density files of all the initial
-    conditions for states i1 and i2
-    and returns
-    w - which is a list containing the w-values, which should be the same
-    for all initial conditions
-    w - type: list of floats
-    J - containing lists of the J values for all initial conditions
-    J - type: list of lists of floats
-    """
-    w, j = [], []
-    files = os.listdir('.')
-    name = 'icond*pair{:d}_{:d}Spectral_density.txt'.format(i1, i2)
-    density_files = fnmatch.filter(files, name)
-    if density_files:
-        for filename in density_files:
-            arr = np.loadtxt(filename, usecols=(3, 5))
-            arr = np.transpose(arr)
-            w.append(arr[0])
-            j.append(arr[1])
-        return w, j
-    else:
-        name2 = name[0:4] + '0' + name[6:]
-        msg = ('File not found.\nAre you in the out folder? And are '
-               'you sure the ints are correct?\n'
-               'The program was looking for a file named: \'{}\' in your '
-               'current directory.'.format(name2))
-        raise FileNotFoundError(msg)
 
 
 def read_files(i1, i2, name=False):
