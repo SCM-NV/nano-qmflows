@@ -6,12 +6,25 @@ from qmworks.parsers.xyzParser import AtomXYZ
 
 import numpy as np
 import os
+import shutil
 
 # ========================<>=======================
 angs2au = 1 / 0.529177249
 
 
-def try_to_remove(path_file='test/test_files/test.hdf5'):
+def remove_file_directory(paths):
+    """
+    Remove both a file or a directory
+    """
+    for p in paths:
+        if os.path.exists(p):
+            if os.path.isfile(p):
+                os.remove(p)
+            else:
+                shutil.rmtree(p)
+
+
+def try_to_remove(path_files=['test/test_files/test.hdf5']):
     """
     Decorator to remove the intermediate data created during the testing.
     """
@@ -21,8 +34,7 @@ def try_to_remove(path_file='test/test_files/test.hdf5'):
             try:
                 return fun(*args, **kwargs)
             finally:
-                if os.path.exists(path_file):
-                    os.remove(path_file)
+                remove_file_directory(path_files)
         return wrapper
     return remove_test_files
 

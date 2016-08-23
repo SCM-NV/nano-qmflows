@@ -39,7 +39,7 @@ def dump_MOs_coeff(handle_hdf5, path_es, path_css, number_of_orbs,
     return path_es, path_css
 
 
-@try_to_remove(path_hdf5)
+@try_to_remove([path_hdf5])
 def test_store_basisSet():
     """
     Check if the turbomole basis set are read
@@ -52,7 +52,7 @@ def test_store_basisSet():
             assert False
 
 
-@try_to_remove(path_hdf5)
+@try_to_remove([path_hdf5])
 def test_store_MO_h5():
     """
     test if the MO are stored in the HDF5 format
@@ -70,7 +70,7 @@ def test_store_MO_h5():
             assert False
 
 
-@try_to_remove(path_hdf5)
+@try_to_remove([path_hdf5])
 def test_overlap():
     """
     The overlap matrix must fulfill the following equation C^(+) S C = I

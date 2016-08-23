@@ -17,6 +17,8 @@ from .schedule import (calculate_mos, create_dict_CGFs, create_point_folder,
 
 from .workflows.initialization import initialize
 
+from .workflows.workflow_coupling import generate_pyxaid_hamiltonians
+
 __all__ = ['AtomBasisData', 'AtomBasisKey', 'AtomData', 'AtomXYZ', 'CGF',
            'InfoMO', 'InputKey', 'MO', 'calcMtxMultipoleP', 'calcMtxOverlapP',
            'calc_transf_matrix', 'calculateCoupling3Points',
@@ -24,8 +26,8 @@ __all__ = ['AtomBasisData', 'AtomBasisKey', 'AtomData', 'AtomXYZ', 'CGF',
            'change_mol_units', 'createNormalizedCGFs', 'createUniqueCGF',
            'create_dict_CGFs', 'create_point_folder', 'expandBasisOneCGF',
            'expandBasis_cp2k', 'expandBasis_turbomole',
-           'general_multipole_matrix', 'getmass', 'initialize',
-           'lazy_schedule_couplings',
+           'general_multipole_matrix', 'generate_pyxaid_hamiltonians',
+           'getmass', 'initialize', 'lazy_schedule_couplings',
            'photoExcitationRate', 'prepare_cp2k_settings',
            'prepare_farming_cp2k_settings', 'prepare_job_cp2k',
            'retrieve_hdf5_data', 'split_file_geometries', 'triang2mtx',

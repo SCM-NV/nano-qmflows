@@ -1,5 +1,7 @@
 __author__ = "Felipe Zapata"
 
+__all__ = ['generate_pyxaid_hamiltonians']
+
 # ================> Python Standard  and third-party <==========
 from os.path import join
 

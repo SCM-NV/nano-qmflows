@@ -17,7 +17,7 @@ import shutil
 
 
 def initialize(project_name, path_traj_xyz, basisname, enumerate_from=0,
-               calculate_guesses='first',
+               calculate_guesses='first', path_hdf5=None,
                scratch="/scratch-shared", path_basis=None, path_potential=None,
                dt=1, geometry_units='angstrom'):
     """
@@ -29,7 +29,6 @@ def initialize(project_name, path_traj_xyz, basisname, enumerate_from=0,
     username = getpass.getuser()
 
     # Scratch
-    scratch = "/scratch-shared"
     scratch_path = join(scratch, username, project_name)
 
     # Create Work_dir if it does not exist
@@ -46,7 +45,8 @@ def initialize(project_name, path_traj_xyz, basisname, enumerate_from=0,
     cp2k_config = {"basis": path_basis, "potential": path_potential}
 
     # HDF5 path
-    path_hdf5 = join(scratch_path, 'quantum.hdf5')
+    if path_hdf5 is None:
+        path_hdf5 = join(scratch_path, 'quantum.hdf5')
 
     # all_geometries type :: [String]
     geometries = split_file_geometries(path_traj_xyz)
@@ -54,8 +54,9 @@ def initialize(project_name, path_traj_xyz, basisname, enumerate_from=0,
     # Create a folder for each point the the dynamics
     traj_folders = create_point_folder(work_dir, len(geometries),
                                        enumerate_from)
-
-    if calculate_guesses.lower() in 'first':
+    if calculate_guesses is None:
+        points_guess = []
+    elif calculate_guesses.lower() in 'first':
         # Calculate new Guess in the first geometry
         points_guess = [enumerate_from]
     else:
@@ -69,7 +70,9 @@ def initialize(project_name, path_traj_xyz, basisname, enumerate_from=0,
     if 'angstrom' in geometry_units.lower():
         atoms = change_mol_units(atoms)
 
-    dictCGFs = create_dict_CGFs(path_hdf5, basisname, atoms, cp2k_config)
+    print(path_hdf5)
+    dictCGFs = create_dict_CGFs(path_hdf5, basisname, atoms,
+                                package_config=cp2k_config)
 
     # Calculcate the matrix to transform from cartesian to spherical
     # representation of the overlap matrix
@@ -102,9 +105,11 @@ def store_transf_matrix(path_hdf5, atoms, basisName, project_name,
     :type packageName: String
     :returns: Numpy matrix containing the transformation matrix.
     """
+    path = os.path.join(project_name, 'trans_mtx')
     with h5py.File(path_hdf5) as f5:
-        mtx = calc_transf_matrix(f5, atoms, basisName, packageName)
-        store = StoreasHDF5(f5, packageName)
-        path = os.path.join(project_name, 'trans_mtx')
-        store.funHDF5(path, mtx)
+        if path not in f5:
+
+            mtx = calc_transf_matrix(f5, atoms, basisName, packageName)
+            store = StoreasHDF5(f5, packageName)
+            store.funHDF5(path, mtx)
     return path
