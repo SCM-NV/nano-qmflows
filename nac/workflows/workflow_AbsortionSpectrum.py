@@ -28,7 +28,7 @@ def simulate_absoprtion_spectrum(package_name, project_name, package_args,
                                  initial_states=None, final_states=None,
                                  calc_new_wf_guess_on_points=None,
                                  path_hdf5=None, package_config=None,
-                                 dictCGFs=None, first_geometry=None,
+                                 dictCGFs=None,
                                  basisname=None, traj_folders=None,
                                  hdf5_trans_mtx=None, geometry_units='angstrom'):
     """
@@ -67,6 +67,8 @@ def simulate_absoprtion_spectrum(package_name, project_name, package_args,
 
     scheduleOscillator = schedule(calcOscillatorStrenghts)
 
+    first_geometry = None
+    
     oscillators = scheduleOscillator(project_name, mo_paths_hdf5, dictCGFs,
                                      first_geometry, path_hdf5,
                                      hdf5_trans_mtx=hdf5_trans_mtx,

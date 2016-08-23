@@ -9,7 +9,7 @@ import os
 import plams
 
 # ==================> Internal modules <==========
-from qmworks import Settings, templates
+from qmworks import templates
 from qmworks.packages import cp2k
 
 # ==============================> Schedule Tasks <=========================
@@ -113,70 +113,3 @@ def prepare_job_cp2k(geometry, files, dict_input, k, work_dir,
                 input_file_name=files.get_inp,
                 out_file_name=files.get_out, store_in_hdf5=store_in_hdf5,
                 nHOMOS=nHOMOS, nLUMOS=nLUMOS)
-
-
-def prepare_farming_cp2k_settings(work_dirs, input_file_names, nGroups=1):
-    """
-    Create the input for a CP2K Farming Job, but let the Plams to take care
-    of the input generation.
-
-    :param work_dirs: List of directories containing the information to
-    run a single job (e.g. coordinates).
-    :type work_dirs: String List
-    :param input_file_names: Names of the input files to be included in the
-    farming job.
-    :type input_file_names: String List
-    :param nGroups: Number of Jobs to run in parallel inside the Farming.
-    :type nGroups: Int
-    :returns: String
-
-    The Input for a Farming CP2K job resemble the following structure,
-
-    &GLOBAL
-       PROJECT farming
-       PROGRAM FARMING
-       RUN_TYPE NONE
-    &END GLOBAL
-
-    &FARMING
-      GROUP_SIZE 1
-
-      &JOB
-        DIRECTORY dir-1
-        INPUT_FILE_NAME job1.inp
-        JOB_ID 1
-      &END JOB
-
-      &JOB
-        DEPENDENCIES 1
-        DIRECTORY dir-2
-        INPUT_FILE_NAME job2.inp
-        JOB_ID 2
-      &END JOB
-
-      ...........................
-      ...........................
-
-      &JOB
-        DEPENDENCIES 1
-        DIRECTORY dir-32
-        INPUT_FILE_NAME job32.inp
-        JOB_ID 32
-      &END JOB
-
-    &END FARMING
-    """
-    s = Settings()
-    s.specific.cp2k['global']['project'] = 'farming'
-    s.specific.cp2k['global']['program'] = 'FARMING'
-    s.specific.cp2k['global']['run_type'] = 'NONE'
-    s.specific.cp2k.farming.ngroups = nGroups
-    s.specific.cp2k.farming.master_slave = ''
-
-    jobs = []
-    for job_id, (path, job_folder) in enumerate(zip(input_file_names,
-                                                work_dirs)):
-        job_name = path.split('/')[-1]
-        jobs.append((job_id, job_name, job_folder))
-    s.farming_jobs = jobs
-    return s

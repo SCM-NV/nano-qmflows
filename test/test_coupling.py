@@ -13,6 +13,7 @@ from utilsTest import try_to_remove
 import h5py
 import numpy as np
 import os
+import plams
 # ===============================<>============================================
 path_hdf5 = 'test/test_files/ethylene.hdf5'
 path_hdf5_test = 'test/test_files/test.hdf5'
@@ -33,6 +34,7 @@ def test_workflow_coupling():
     """
     Call cp2k and calculated the coupling for an small molecule.
     """
+    plams.init()
     project_name = 'ethylene'
     home = os.path.expanduser('~')
     basiscp2k = join(home, "Cp2k/cp2k_basis/BASIS_MOLOPT")
@@ -50,12 +52,14 @@ def test_workflow_coupling():
     initial_config = initialize(project_name, path_xyz,
                                 basisname=cp2k_args.basis, path_basis=basiscp2k,
                                 path_potential=potcp2k, calculate_guesses=None,
-                                path_hdf5=path_hdf5_test)
+                                path_hdf5=path_hdf5_test,
+                                scratch='tmp')
 
     generate_pyxaid_hamiltonians('cp2k', project_name,
-                                 cp2k_args, geometries=None, dictCGFs=None,
-                                 nCouplings=40, **initial_config)
+                                 cp2k_args, nCouplings=40,
+                                 **initial_config)
 
+    plams.finish()
     with h5py.File(path_hdf5) as f5, h5py.File(path_hdf5_test) as f6:
         path_es = 'ethylene/point_1/cp2k/mo/eigenvalues'
         es_expected = f5[path_es].value

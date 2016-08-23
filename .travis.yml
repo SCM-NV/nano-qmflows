@@ -31,4 +31,4 @@ before_script:
   - ls $HOME/miniconda/envs/qmworks/lib/python3.5/site-packages/
 
 script:
-  - nosetests --with-coverage --cover-erase --cover-package=nac
+  - nosetests --with-coverage --cover-erase --cover-package=nac -a 'slow'
