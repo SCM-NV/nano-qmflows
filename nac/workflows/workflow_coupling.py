@@ -2,31 +2,32 @@ __author__ = "Felipe Zapata"
 
 # ================> Python Standard  and third-party <==========
 from os.path import join
-import getpass
+
 import os
 import plams
-import shutil
 
 # =========================> Internal modules <================================
 from noodles import gather, schedule
 
+from nac import initialize
+from nac.common import change_mol_units
+from nac.schedule.components import calculate_mos
+from nac.schedule.scheduleCoupling import (lazy_schedule_couplings,
+                                           write_hamiltonians)
 from qmworks import run, Settings
 from qmworks.parsers import parse_string_xyz
-from nac.common import change_mol_units
-from nac.schedule.components import (calculate_mos, create_dict_CGFs,
-                                     create_point_folder, split_file_geometries)
-from nac.schedule.scheduleCoupling import (lazy_schedule_couplings,
-                                           schedule_transf_matrix,
-                                           write_hamiltonians)
 
 # ==============================> Main <==================================
 
 
-def generate_pyxaid_hamiltonians(package_name, project_name, all_geometries,
+def generate_pyxaid_hamiltonians(package_name, project_name,
                                  cp2k_args, guess_args=None,
-                                 calc_new_wf_guess_on_points=[0],
+                                 geometries=None, dictCGFs=None,
+                                 calc_new_wf_guess_on_points=None,
                                  path_hdf5=None, enumerate_from=0,
                                  package_config=None, nCouplings=None,
+                                 traj_folders=None, work_dir=None,
+                                 basisname=None, hdf5_trans_mtx=None,
                                  dt=1):
     """
     Use a md trajectory to generate the hamiltonian components to tun PYXAID
@@ -37,7 +38,7 @@ def generate_pyxaid_hamiltonians(package_name, project_name, all_geometries,
     :param project_name: Folder name where the computations
     are going to be stored.
     :type project_name: String
-    :param all_geometries: List of string cotaining the molecular geometries
+    :param geometries: List of string cotaining the molecular geometries
     numerical results.
     :type path_traj_xyz: [String]
     :param package_args: Specific settings for the package
@@ -54,47 +55,18 @@ def generate_pyxaid_hamiltonians(package_name, project_name, all_geometries,
     :param nCouplings: Int
     :returns: None
     """
-    #  Environmental Variables
-    cwd = os.path.realpath(".")
-
-    basisName = cp2k_args.basis
-    work_dir = os.path.join(cwd, project_name)
-    if path_hdf5 is None:
-        path_hdf5 = os.path.join(work_dir, "quantum.hdf5")
-
-    # Create Work_dir if it does not exist
-    if os.path.exists(work_dir):
-        shutil.rmtree(work_dir)
-        os.makedirs(work_dir)
-
-    # Generate a list of tuples containing the atomic label
-    # and the coordinates to generate
-    # the primitive CGFs
-    atoms = parse_string_xyz(all_geometries[0])
-    dictCGFs = create_dict_CGFs(path_hdf5, basisName, atoms, package_config)
-
-    # Calculcate the matrix to transform from cartesian to spherical
-    # representation of the overlap matrix
-    hdf5_trans_mtx = schedule_transf_matrix(path_hdf5, atoms,
-                                            basisName, project_name,
-                                            packageName=package_name)
-
-    # Create a folder for each point the the dynamics
-    traj_folders = create_point_folder(work_dir, len(all_geometries),
-                                       enumerate_from)
-
     # prepare Cp2k Jobs
     # Point calculations Using CP2K
-    mo_paths_hdf5 = calculate_mos(package_name, all_geometries, project_name,
+    mo_paths_hdf5 = calculate_mos(package_name, geometries, project_name,
                                   path_hdf5, traj_folders, cp2k_args,
                                   guess_args, calc_new_wf_guess_on_points,
                                   enumerate_from, package_config=package_config)
 
     # Calculate Non-Adiabatic Coupling
     # Number of Coupling points calculated with the MD trajectory
-    nPoints = len(all_geometries) - 2
+    nPoints = len(geometries) - 2
     promise_couplings = [calculate_coupling(i, path_hdf5, dictCGFs,
-                                            all_geometries,
+                                            geometries,
                                             mo_paths_hdf5, hdf5_trans_mtx,
                                             enumerate_from,
                                             output_folder=project_name, dt=dt,
@@ -175,74 +147,49 @@ def main():
     a given MD trajectory.
     """
     plams.init()
-    project_name = 'ET_Pb79S44'
 
     # create Settings for the Cp2K Jobs
     cp2k_args = Settings()
     cp2k_args.basis = "DZVP-MOLOPT-SR-GTH"
     cp2k_args.potential = "GTH-PBE"
     cp2k_args.cell_parameters = [50.0] * 3
-    cp2k_args.specific.cp2k.force_eval.dft.scf.added_mos = 100
-    cp2k_args.specific.cp2k.force_eval.dft.scf.diagonalization.jacobi_threshold = 1e-6
+    main_dft = cp2k_args.specific.cp2k.force_eval.dft
+    main_dft.scf.added_mos = 100
+    main_dft.scf.diagonalization.jacobi_threshold = 1e-6
 
     # Setting to calculate the WF use as guess
     cp2k_OT = Settings()
     cp2k_OT.basis = "DZVP-MOLOPT-SR-GTH"
     cp2k_OT.potential = "GTH-PBE"
     cp2k_OT.cell_parameters = [50.0] * 3
-    cp2k_OT.specific.cp2k.force_eval.dft.scf.scf_guess = 'atomic'
-    cp2k_OT.specific.cp2k.force_eval.dft.scf.ot.minimizer = 'DIIS'
-    cp2k_OT.specific.cp2k.force_eval.dft.scf.ot.n_diis = 7
-    cp2k_OT.specific.cp2k.force_eval.dft.scf.ot.preconditioner = 'FULL_SINGLE_INVERSE'
-    cp2k_OT.specific.cp2k.force_eval.dft.scf.added_mos = 0
-    cp2k_OT.specific.cp2k.force_eval.dft.scf.eps_scf = 5e-06
+    ot_dft = cp2k_OT.specific.cp2k.force_eval.dft
+    ot_dft.scf.scf_guess = 'atomic'
+    ot_dft.scf.ot.minimizer = 'DIIS'
+    ot_dft.scf.ot.n_diis = 7
+    ot_dft.scf.ot.preconditioner = 'FULL_SINGLE_INVERSE'
+    ot_dft.scf.added_mos = 0
+    ot_dft.scf.eps_scf = 5e-06
 
-    # Path to the MD geometries
+    # project
+    project_name = 'ET_Pb79S44'
     path_traj_xyz = "./trajectory_4000-5000.xyz"
+    basisname = cp2k_args.basis
 
-    # User variables
-    home = os.path.expanduser('~')  # HOME Path
-    username = getpass.getuser()
-
-    # Work_dir
-    scratch = "/scratch-shared"
-    scratch_path = join(scratch, username, project_name)
-    if not os.path.exists(scratch_path):
-        os.makedirs(scratch_path)
-
-    # Cp2k configuration files
+    home = os.path.expanduser('~')
     basiscp2k = join(home, "Cp2k/cp2k_basis/BASIS_MOLOPT")
     potcp2k = join(home, "Cp2k/cp2k_basis/GTH_POTENTIALS")
-    cp2k_config = {"basis": basiscp2k, "potential": potcp2k}
 
-    # HDF5 path
-    path_hdf5 = join(scratch_path, 'quantum.hdf5')
-
-    # all_geometries type :: [String]
-    geometries = split_file_geometries(path_traj_xyz)
-
-    # Named the points of the MD starting from this number
-    enumerate_from = 0
-
-    # Calculate new Guess in each Geometry
-    pointsGuess = [enumerate_from + i for i in range(len(geometries))]
-
-    # Dynamics time step in Femtoseconds
-    dt = 1
+    initial_config = initialize(project_name, path_traj_xyz,
+                                basisname=basisname, path_basis=basiscp2k,
+                                path_potential=potcp2k,
+                                enumerate_from=0,
+                                calculate_guesses='first')
 
     # Hamiltonian computation
-    generate_pyxaid_hamiltonians('cp2k', project_name, geometries, cp2k_args,
-                                 guess_args=cp2k_OT,
-                                 calc_new_wf_guess_on_points=pointsGuess,
-                                 path_hdf5=path_hdf5,
-                                 enumerate_from=enumerate_from,
-                                 package_config=cp2k_config,
-                                 nCouplings=40,
-                                 dt=dt)
-
-    print("PATH TO HDF5:{}\n".format(path_hdf5))
+    generate_pyxaid_hamiltonians('cp2k', project_name, cp2k_args,
+                                 guess_args=cp2k_OT, nCouplings=40,
+                                 **initial_config)
     plams.finish()
 
 if __name__ == "__main__":
     main()
-
