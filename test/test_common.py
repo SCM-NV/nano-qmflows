@@ -1,5 +1,4 @@
 
-from functools import partial
 from nac.common import (binomial, fac, fromIndex, odd, product,
                         retrieve_hdf5_data, triang2mtx)
 from os.path import join
@@ -17,7 +16,7 @@ def test_product():
 
 def test_odd():
     """ test odd function """
-    assert all(map(odd,  [-3, -1, 3, 7, 11, 23]))
+    assert all(map(odd, [-3, -1, 3, 7, 11, 23]))
 
 
 def test_fac():

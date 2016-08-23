@@ -38,7 +38,7 @@ def search_data_in_hdf5(path_hdf5, path_to_prop):
 def calculate_ETR(package_name, project_name, cp2k_args, geometries=None,
                   pathTimeCoeffs=None, initial_conditions=[0],
                   path_hdf5=None, enumerate_from=0, package_config=None,
-                  calc_new_wf_guess_on_points=[0], guess_args=None,
+                  calc_new_wf_guess_on_points=None, guess_args=None,
                   work_dir=None, traj_folders=None, basisname=None,
                   dictCGFs=None, hdf5_trans_mtx=None):
     """

@@ -12,14 +12,14 @@ def ask_question(q_str, special='None', default=None):
     """
 
     import sys
-    
+
     while True:
-        question = str(input(q_str)) if sys.version_info[0] == 3 \
-                   else str(raw_input(q_str))
+        version = sys.version_info[0]
+        question = str(input(q_str)) if version == 3 else str(raw_input(q_str))
         funcs = {'None': [str, {}],
                  'bool': [bool, {'y': True, 'yes': True, 'n': False, 'no': False}],
                  'int': [int, {}], 'float': [float, {}]}
-        
+
         if not question and default:
             question = str(default)
         if question in funcs[special][1]:

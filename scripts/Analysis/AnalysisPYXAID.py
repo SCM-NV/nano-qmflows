@@ -60,7 +60,7 @@ def parse_population(filePath):
         xss = f.readlines()
     rss = [[float(x) for i, x in enumerate(l.split())
             if i % 2 == 1 and i > 2] for l in xss]
-        
+
     return np.array(rss)
 
 
