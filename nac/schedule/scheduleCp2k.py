@@ -95,8 +95,6 @@ def prepare_job_cp2k(geometry, files, dict_input, k, work_dir,
     :type hdf5_file: String
     :param wfn_restart_job: Path to *.wfn cp2k file use as restart file.
     :type wfn_restart_job: String
-    :param farming_use_guess: Use a guess for the WF using a previous job.
-    :type farming_use_guess: Bool
     :param nHOMOS: number of HOMOS to store in HDF5.
     :type nHOMOS: Int
     :param nLUMOS: number of HOMOS to store in HDF5.
