@@ -15,7 +15,7 @@ from .schedule import (calculate_mos, create_dict_CGFs, create_point_folder,
                        prepare_job_cp2k, split_file_geometries,
                        write_hamiltonians)
 
-from .workflows.initialization import initialize
+from .workflows.initialization import (initialize, store_transf_matrix)
 
 from .workflows.workflow_coupling import generate_pyxaid_hamiltonians
 
@@ -30,4 +30,4 @@ __all__ = ['AtomBasisData', 'AtomBasisKey', 'AtomData', 'AtomXYZ', 'CGF',
            'getmass', 'initialize', 'lazy_schedule_couplings',
            'photoExcitationRate', 'prepare_cp2k_settings',
            'prepare_job_cp2k', 'retrieve_hdf5_data', 'split_file_geometries',
-           'triang2mtx', 'write_hamiltonians']
+           'store_transf_matrix', 'triang2mtx', 'write_hamiltonians']
