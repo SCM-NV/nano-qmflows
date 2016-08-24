@@ -1,5 +1,5 @@
 
-__all__ = ['store_transf_matrix', 'initialize']
+__all__ = ['initialize', 'split_trajectory', 'store_transf_matrix']
 
 from os.path import join
 from nac.common import change_mol_units
@@ -8,11 +8,13 @@ from nac.schedule.components import (create_dict_CGFs, create_point_folder,
                                      split_file_geometries)
 from qmworks.hdf5.quantumHDF5 import StoreasHDF5
 from qmworks.parsers import parse_string_xyz
+from subprocess import (PIPE, Popen)
 
 import getpass
 import h5py
 import os
 import shutil
+import subprocess
 # ====================================<>=======================================
 
 
@@ -113,3 +115,39 @@ def store_transf_matrix(path_hdf5, atoms, basisName, project_name,
             store = StoreasHDF5(f5, packageName)
             store.funHDF5(path, mtx)
     return path
+
+
+def split_trajectory(path, nBlocks, pathOut):
+    """
+    Split an XYZ trajectory in n Block and write
+    them in a given path.
+    :Param path: Path to the XYZ file.
+    :type path: String
+    :param nBlocks: number of Block into which the xyz file is split.
+    :type nBlocks: Int
+    :param pathOut: Path were the block are written.
+    :type pathOut: String
+    :returns: tuple (Number of structures per block, path to blocks)
+    """
+    with open(path, 'r') as f:
+            l = f.readline()  # Read First line
+            numat = int(l.split()[0])
+
+    # Number of lines in the file
+    cmd = "wc -l {}".format(path)
+    l = subprocess.check_output(cmd.split()).decode()
+    lines = int(l.split()[0])
+    # Number of points in the xyz file
+    nPoints = lines // (numat + 2)
+    # Number of points for each chunk
+    nChunks = nPoints // nBlocks
+    # Number of lines per block
+    lines_per_block = nChunks * (numat + 2)
+    # Path where the splitted xyz files are written
+    prefix = join(pathOut, 'chunk_xyz_')
+    cmd = 'split -a 1 -l {} {} {}'.format(lines_per_block, path, prefix)
+    subprocess.run(cmd, shell=True)
+    p = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, shell=True)
+    rs, err = p.communicate()
+    print("Submission Output: ", rs)
+    print("Submission Errors: ", err)
