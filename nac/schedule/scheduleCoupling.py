@@ -5,40 +5,13 @@ from noodles import schedule  # Workflow Engine
 from os.path import join
 
 import h5py
-import os
 import numpy as np
 # ==================> Internal modules <==========
-from nac.integrals import (calc_transf_matrix, calculateCoupling3Points)
+from nac.integrals import calculateCoupling3Points
 from nac.common import (femtosec2au, retrieve_hdf5_data)
 from qmworks.hdf5.quantumHDF5 import StoreasHDF5
 
 # ==============================> Schedule Tasks <=============================
-
-
-@schedule
-def schedule_transf_matrix(path_hdf5, atoms, basisName, project_name,
-                           packageName):
-    """
-    calculate the transformation of the overlap matrix from both spherical
-    to cartesian and from cartesian to spherical.
-
-    :param path_hdf5: Path to the HDF5 file.
-    :type: String
-    :param atoms: Atoms that made up the molecule.
-    :type atoms:  List of Strings
-    :param project_name: Name of the project.
-    :type project_name: String
-    :param packageName: Name of the ab initio simulation package.
-    :type packageName: String
-    :returns: Numpy matrix containing the transformation matrix.
-    """
-    with h5py.File(path_hdf5) as f5:
-        mtx = calc_transf_matrix(f5, atoms, basisName, packageName)
-        store = StoreasHDF5(f5, packageName)
-        path = os.path.join(project_name, 'trans_mtx')
-        store.funHDF5(path, mtx)
-        f5.close()
-    return path
 
 
 @schedule

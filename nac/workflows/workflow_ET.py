@@ -4,19 +4,16 @@ __author__ = "Felipe Zapata"
 from os.path import join
 
 import fnmatch
-import getpass
 import h5py
 import numpy as np
 import os
 import plams
-import shutil
 
 # ==============================> Internal modules <===========================
-from .components import (calculate_mos, create_dict_CGFs, create_point_folder,
-                         split_file_geometries)
+from .components import calculate_mos
 from nac.common import (change_mol_units, retrieve_hdf5_data)
-from nac.schedule.scheduleCoupling import schedule_transf_matrix
 from nac.integrals.electronTransfer import photoExcitationRate
+from nac.workflows import initialize
 from noodles import gather
 from qmworks import run
 from qmworks.parsers import parse_string_xyz
@@ -38,10 +35,12 @@ def search_data_in_hdf5(path_hdf5, path_to_prop):
     return pred
 
 
-def calculate_ETR(package_name, project_name, all_geometries, cp2k_args,
+def calculate_ETR(package_name, project_name, cp2k_args, geometries=None,
                   pathTimeCoeffs=None, initial_conditions=[0],
                   path_hdf5=None, enumerate_from=0, package_config=None,
-                  calc_new_wf_guess_on_points=[0], guess_args=None):
+                  calc_new_wf_guess_on_points=None, guess_args=None,
+                  work_dir=None, traj_folders=None, basisname=None,
+                  dictCGFs=None, hdf5_trans_mtx=None):
     """
     Use a md trajectory to calculate the Electron transfer rate
     nmad.
@@ -51,7 +50,7 @@ def calculate_ETR(package_name, project_name, all_geometries, cp2k_args,
     :param project_name: Folder name where the computations
     are going to be stored.
     :type project_name: String
-    :param all_geometries: List of string cotaining the molecular geometries
+    :param geometries: List of string cotaining the molecular geometries
     numerical results.
     :type path_traj_xyz: [String]
     :param package_args: Specific settings for the package
@@ -66,52 +65,25 @@ def calculate_ETR(package_name, project_name, all_geometries, cp2k_args,
     :type package_config: Dict
     :returns: None
     """
-    # Create Work_dir if it does not exist
-    cwd = os.path.realpath(".")
-    work_dir = os.path.join(cwd, project_name)
-    if os.path.exists(work_dir):
-        shutil.rmtree(work_dir)
-        os.makedirs(work_dir)
-
-    # Create Work_dir if it does not exist
-    if not os.path.exists(work_dir):
-        os.makedirs(work_dir)
-
-    # Generate a list of tuples containing the atomic label
-    # and the coordinates to generate
-    # the primitive CGFs
-    basisName = cp2k_args.basis
-    atoms = parse_string_xyz(all_geometries[0])
-    dictCGFs = create_dict_CGFs(path_hdf5, basisName, atoms, package_config)
-
-    # Calculcate the matrix to transform from cartesian to spherical
-    # representation of the overlap matrix
-    hdf5_trans_mtx = schedule_transf_matrix(path_hdf5, atoms,
-                                            basisName, project_name,
-                                            packageName=package_name)
-    
-    # Create a folder for each point the the dynamics
-    traj_folders = create_point_folder(work_dir, len(all_geometries),
-                                       enumerate_from)
-
     # Time-dependent coefficients
     time_depend_coeffs = retrieve_hdf5_data(path_hdf5, pathTimeCoeffs)
-    
+
     # prepare Cp2k Job
     # Point calculations Using CP2K
-    mo_paths_hdf5 = calculate_mos(package_name, all_geometries, project_name,
+    mo_paths_hdf5 = calculate_mos(package_name, geometries, project_name,
                                   path_hdf5, traj_folders, cp2k_args,
                                   guess_args, calc_new_wf_guess_on_points,
-                                  enumerate_from, package_config=package_config)
+                                  enumerate_from,
+                                  package_config=package_config)
 
     # Number of ETR points calculated with the MD trajectory
-    nPoints = len(all_geometries) - 2
+    nPoints = len(geometries) - 2
 
     # List of tuples containing the electron transfer rates
     if hdf5_trans_mtx is not None:
             trans_mtx = retrieve_hdf5_data(path_hdf5, hdf5_trans_mtx)
 
-    etrs = [schedule_photoexcitation(i, path_hdf5, dictCGFs, all_geometries,
+    etrs = [schedule_photoexcitation(i, path_hdf5, dictCGFs, geometries,
                                      time_depend_coeffs, mo_paths_hdf5,
                                      trans_mtx=trans_mtx)
             for i in range(nPoints)]
@@ -124,7 +96,7 @@ def calculate_ETR(package_name, project_name, all_geometries, cp2k_args,
     with open("ElectronTranferRates", "w") as f:
         f.write(result)
 
-# ==============================> Tasks <=======================================
+# ==============================> Tasks <======================================
 
 
 def schedule_photoexcitation(i, path_hdf5, dictCGFs, all_geometries,
@@ -171,7 +143,7 @@ def schedule_photoexcitation(i, path_hdf5, dictCGFs, all_geometries,
                             retrieve_hdf5_data(path_hdf5,
                                                time_depend_paths[i + j]),
                             range(3)))
-    
+
     return photoExcitationRate(geometries, dictCGFs, time_coeffs, mos,
                                trans_mtx=trans_mtx)
 
@@ -184,13 +156,12 @@ def parse_population(filePath):
         xss = f.readlines()
     rss = [[float(x) for i, x in enumerate(l.split())
             if i % 2 == 1 and i > 2] for l in xss]
-        
+
     return np.array(rss)
 
 
 def read_time_dependent_coeffs(path_hdf5, pathProperty, path_pyxaid_out):
     """
-    
     :param path_hdf5: Path to the HDF5 file that contains the
     numerical results.
     :type path_hdf5: String
@@ -222,59 +193,43 @@ def read_time_dependent_coeffs(path_hdf5, pathProperty, path_pyxaid_out):
     with h5py.File(path_hdf5) as f5:
         f5.require_dataset(pathProperty, shape=np.shape(data),
                            data=data, dtype=np.float32)
-    
-# ==============================> Main <==================================
+
+# ================================> Main <=====================================
 
 
 def main():
     plams.init()
 
-    # User variables
-    username = getpass.getuser()
-
     # Project
     project_name = 'NAC'
-
-    # Path to the MD geometries
     path_traj_xyz = "./data/traj_3_points.xyz"
-
-    # Work_dir
-    scratch = "/scratch-shared"
-    scratch_path = join(scratch, username, project_name)
-    if not os.path.exists(scratch_path):
-        os.makedirs(scratch_path)
-
-    # HDF5 path
-    path_hdf5 = join(scratch_path, 'quantum.hdf5')
-
-    # PYXAID Results
     pyxaid_out_dir = "./step3/out"
+    basisname = "DZVP-MOLOPT-SR-GTH"
+    home = os.path.expanduser('~')
+    basiscp2k = join(home, "Cp2k/cp2k_basis/BASIS_MOLOPT")
+    potcp2k = join(home, "Cp2k/cp2k_basis/GTH_POTENTIALS")
+
+    initial_config = initialize(project_name, path_traj_xyz, basisname,
+                                path_basis=basiscp2k, path_potential=potcp2k,
+                                enumerate_from=0)
+    path_hdf5 = initial_config['path_hdf5']
 
     # Process PYXAID results and store them in HDF5
     pathProperty = join(project_name, "pyxaid/timeCoeffs")
     if search_data_in_hdf5(path_hdf5, pathProperty):
         read_time_dependent_coeffs(path_hdf5, pathProperty, pyxaid_out_dir)
 
-    # Named the points of the MD starting from this number
-    enumerate_from = 0
-
-    # all_geometries type :: [String]
-    geometries = split_file_geometries(path_traj_xyz)
-
     # Electron Transfer rate calculation
     pyxaid_initial_cond = [0, 24, 49]
-    
+
     # Electron transfer rate computation computation
     cp2k_args = None
-    calculate_ETR('cp2k', project_name, geometries, cp2k_args,
+    calculate_ETR('cp2k', project_name, cp2k_args,
                   pathTimeCoeffs=pathProperty,
                   initial_conditions=pyxaid_initial_cond,
-                  path_hdf5=path_hdf5, enumerate_from=enumerate_from)
-
-    print("PATH TO HDF5:{}\n".format(path_hdf5))
+                  **initial_config)
     plams.finish()
 
 # ==============<>=============
-    
 if __name__ == "__main__":
     main()

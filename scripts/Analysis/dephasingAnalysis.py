@@ -4,53 +4,12 @@ import matplotlib.pyplot as plt
 import fnmatch
 import numpy as np
 import os
-from interactive import ask_question
+from interactive import (ask_for_states, ask_question, read_spec_files)
 
 
 msg = ('This is a program that plots the decorense for a certain'
        'pair of states. Usage: Make sure that you are in the out folder '
        'containing the icond-files and fill in the prompted questions.')
-
-
-def ask_for_states():
-    print("""The states are labeled as in PYXAID; the first state being 0.
-    You can look them up in the output.""")
-    q1 = "What is the integer representing the first state (int)? "
-    q2 = "What is the integer representing the second state (int)? "
-    i1 = ask_question(q1, special='int')
-    i2 = ask_question(q2, special='int')
-    return i1, i2
-
-
-def read_spec_files(i1, i2):
-    """
-    function that opens all the spectral density files of all the initial
-    conditions for states i1 and i2
-    and returns
-    w - which is a list containing the w-values, which should be the same
-    for all initial conditions
-    w - type: list of floats
-    J - containing lists of the J values for all initial conditions
-    J - type: list of lists of floats
-    """
-    w, j = [], []
-    files = os.listdir('.')
-    name = 'icond*pair{:d}_{:d}Spectral_density.txt'.format(i1, i2)
-    density_files = fnmatch.filter(files, name)
-    if density_files:
-        for filename in density_files:
-            arr = np.loadtxt(filename, usecols=(3, 5))
-            arr = np.transpose(arr)
-            w.append(arr[0])
-            j.append(arr[1])
-        return w, j
-    else:
-        name2 = name[0:4] + '0' + name[6:]
-        msg = ('File not found.\nAre you in the out folder? And are '
-               'you sure the ints are correct?\n'
-               'The program was looking for a file named: \'{}\' in your '
-               'current directory.'.format(name2))
-        raise FileNotFoundError(msg)
 
 
 def read_files(i1, i2, name=False):
@@ -73,7 +32,7 @@ def read_files(i1, i2, name=False):
     name = 'icond*pair{:d}_{:d}Dephasing_function.txt'.format(i1, i2)
     density_files = fnmatch.filter(files, name)
     if density_files:
-        for i, filename in enumerate(density_files):
+        for filename in density_files:
             arr = np.loadtxt(filename, usecols=(0, 1, 2, 3, 4, 5), skiprows=1)
             arr = np.transpose(arr)
             t.append(arr[0])
@@ -132,8 +91,8 @@ def plot_stuff(t, d, fd, naf, uaf, sc, w, J, m1, m2, save_plot=False,
                                                sharex=False, sharey=False)
     colorlist = ['r', 'b', 'g', 'y', 'k', 'm']
     question = "What is the maximal value of w (in cm^-1) that you want \
-    to plot (x-axis spectral density plot) (type: float/int)? [Default: \
-    highest value] "
+    to plot (x-axis spectral density plot) (type: float/int)? \
+    [Default: highest value]"
 
     maxw = ask_question(question, special='float', default=w[0][-1])
     conv_fac = uaf[0][0] / naf[0][0]
@@ -171,7 +130,7 @@ def plot_stuff(t, d, fd, naf, uaf, sc, w, J, m1, m2, save_plot=False,
                  label='scnd_cumul_{:d}'.format(i))
     # if plot_avg:
     #     ax3.plot(t[0],[np.mean(sc)]*len(sc[0]),color='#999999',
-    #  label='average')
+    # label='average')
     ax3.set_xlabel('time [fs]')
     ax3.set_ylabel('SC [arb. units]')
 

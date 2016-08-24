@@ -28,7 +28,7 @@ JobFiles = namedtuple("JobFiles", ("get_xyz", "get_inp", "get_out", "get_MO"))
 
 def calculate_mos(package_name, all_geometries, project_name, path_hdf5, folders,
                   package_args, guess_args=None,
-                  calc_new_wf_guess_on_points=[0], enumerate_from=0,
+                  calc_new_wf_guess_on_points=None, enumerate_from=0,
                   nHOMOS=100, nLUMOS=100, package_config=None):
     """
     Look for the MO in the HDF5 file if they do not exists calculate them by

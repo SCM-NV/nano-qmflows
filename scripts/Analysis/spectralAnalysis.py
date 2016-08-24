@@ -7,22 +7,11 @@ import fnmatch
 import matplotlib.pyplot as plt
 import numpy as np
 import os
-from interactive import ask_question
-
+from interactive import (ask_for_states, ask_question)
 
 msg = ('This is a program that plots the spectral density for a certain'
        'pair of states. Usage: Make sure that you are in the out folder'
        ' containing the icond-files and fill in the prompted questions.')
-
-
-def ask_for_states():
-    print("""The states are labeled as in PYXAID; the first state being 0.
-    You can look them up in the output.""")
-    q1 = "What is the integer representing the first state (int)? "
-    q2 = "What is the integer representing the second state (int)? "
-    i1 = ask_question(q1, special='int')
-    i2 = ask_question(q2, special='int')
-    return i1, i2
 
 
 def read_files(i1, i2):

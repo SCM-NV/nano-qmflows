@@ -168,7 +168,7 @@ def main():
     out_dir, macro_dir, homo_number, lumo_number = read_cmd_line()
 
     # Read output files
-    ess, pss = read_energies_and_pops_from_out(out_dir)
+    ess = read_energies_and_pops_from_out(out_dir)[0]
 
     # Make a 3D stack of arrays then calculate the mean value
     # for the same time
@@ -183,7 +183,7 @@ def main():
     homos = average_es[:, homo_number]
 
     # Read Macro files
-    se_ess, sh_ess, se_pop, _ = read_energies_and_pops_from_macro(macro_dir)
+    se_ess, sh_ess = read_energies_and_pops_from_macro(macro_dir)[:2]
 
     xss = se_ess - homos
     print(xss[:10] * ry2ev)

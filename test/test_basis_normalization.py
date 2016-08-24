@@ -30,8 +30,8 @@ def test_normalization():
     with Pool() as p:
         sii = p.starmap(sijContracted, [(t, t) for t in tuples])
 
-    # Expected a vector size which size is the number of CGFs
-    # with the integrals
+    # Expected a vector size which size is the number of CGFs with the
+    # integrals
     # [<cgfs_0| cgfs_0> , <cgfs_1 | cgfs_1>...] which is
     # [1,1,...]
     expected = np.ones(len(tuples))
