@@ -68,7 +68,7 @@ def simulate_absoprtion_spectrum(package_name, project_name, package_args,
     scheduleOscillator = schedule(calcOscillatorStrenghts)
 
     first_geometry = None
-    
+
     oscillators = scheduleOscillator(project_name, mo_paths_hdf5, dictCGFs,
                                      first_geometry, path_hdf5,
                                      hdf5_trans_mtx=hdf5_trans_mtx,
@@ -329,6 +329,7 @@ def main():
     cp2k_args.basis = "DZVP-MOLOPT-SR-GTH"
     cp2k_args.potential = "GTH-PBE"
     cp2k_args.cell_parameters = cell
+
     main_dft = cp2k_args.specific.cp2k.force_eval.dft
     main_dft.scf.added_mos = 100
     main_dft.scf.diagonalization.jacobi_threshold = 1e-6
@@ -338,6 +339,7 @@ def main():
     cp2k_OT.basis = "DZVP-MOLOPT-SR-GTH"
     cp2k_OT.potential = "GTH-PBE"
     cp2k_OT.cell_parameters = cell
+
     ot_dft = cp2k_OT.specific.cp2k.force_eval.dft
     ot_dft.scf.scf_guess = 'atomic'
     ot_dft.scf.ot.minimizer = 'DIIS'
@@ -354,7 +356,6 @@ def main():
     initial_states = [23, 24]  # HOMO-1, HOMO
     ls = list(range(25, 29))
     final_states = [ls] * 2
-
     # Basis set
     home = os.path.expanduser('~')
     basiscp2k = join(home, "Cp2k/cp2k_basis/BASIS_MOLOPT")

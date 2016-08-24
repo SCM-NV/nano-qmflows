@@ -8,8 +8,8 @@ from interactive import (ask_for_states, ask_question, read_spec_files)
 
 
 msg = ('This is a program that plots the decorense for a certain'
-       'pair of states. Usage: Make sure that you are in the out folder containing the'
-       'icond-files and fill in the prompted questions.')
+       'pair of states. Usage: Make sure that you are in the out folder '
+       'containing the icond-files and fill in the prompted questions.')
 
 
 def read_files(i1, i2, name=False):

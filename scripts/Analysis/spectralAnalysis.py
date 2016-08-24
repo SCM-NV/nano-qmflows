@@ -10,8 +10,8 @@ import os
 from interactive import (ask_for_states, ask_question)
 
 msg = ('This is a program that plots the spectral density for a certain'
-       'pair of states. Usage: Make sure that you are in the out folder containing the'
-       'icond-files and fill in the prompted questions.')
+       'pair of states. Usage: Make sure that you are in the out folder'
+       ' containing the icond-files and fill in the prompted questions.')
 
 
 def read_files(i1, i2):
@@ -45,10 +45,12 @@ def read_files(i1, i2):
         raise FileNotFoundError(msg)
 
 
-def plot_stuff(w, J, m1, m2, xl='w [cm^-1]', yl='J [arb. units]', save_plot=False):
+def plot_stuff(w, J, m1, m2, xl='w [cm^-1]', yl='J [arb. units]',
+               save_plot=False):
     """
     function to plot takes:
-    w - list of np-vectors containing x-values (energy, in cm-1) for each initial condition
+    w - list of np-vectors containing x-values (energy, in cm-1) for
+    each initial condition
     J - list of np-vectors containing y-values (J) for each initial condition
     xl - string containing the label on the x-axis
     yl - string containing the label on the y-axis
@@ -67,7 +69,7 @@ def plot_stuff(w, J, m1, m2, xl='w [cm^-1]', yl='J [arb. units]', save_plot=Fals
     maxw = ask_question(question, special='float', default=w[0][-1])
     filename = "SpecDens_{:d}_{:d}.pdf".format(m1, m2)
     with PdfPages(filename) as pdf:
-        for i, j  in enumerate(J):
+        for i, j in enumerate(J):
             plt.plot(w[i], j, label='icond{:d}'.format(i))
             plt.xlabel(xl)
             plt.ylabel(yl)

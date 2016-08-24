@@ -74,7 +74,8 @@ def lazy_schedule_couplings(i, path_hdf5, dictCGFs, geometries, mo_paths, dt=1,
             store.funHDF5(output_path, rs)
 
     if output_folder is None:
-        msg = 'There was not specified a path in the HDF5 file to store the coupling\n'
+        msg = ('There was not specified a path in the HDF5 file to store \
+        the coupling\n')
         raise RuntimeError(msg)
 
     output_path = join(output_folder, 'coupling_{}'.format(i + enumerate_from))

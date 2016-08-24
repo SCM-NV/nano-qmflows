@@ -95,8 +95,8 @@ def read_energies_and_pops_from_out(out_dir):
     Read the energy and population created by PYXAID.
     """
     files_out = os.listdir(out_dir)
-    names_out_es, names_out_pop  = [fnmatch.filter(files_out, x) for x
-                                    in ["*energies*", "out*"]]
+    names_out_es, names_out_pop = [fnmatch.filter(files_out, x) for x
+                                   in ["*energies*", "out*"]]
     paths_out_es, paths_out_pop = [[join(out_dir, x) for x in xs]
                                    for xs in [names_out_es, names_out_pop]]
     ess = list(map(parse_energies, paths_out_es))
@@ -188,7 +188,7 @@ def main():
     xss = se_ess - homos
     print(xss[:10] * ry2ev)
 
-    mean_values, gap_distribution  = calculate_band_gap_histo(homos)
+    mean_values, gap_distribution = calculate_band_gap_histo(homos)
 
     with PdfPages('Energies.pdf') as pp:
         plt.figure(1)
