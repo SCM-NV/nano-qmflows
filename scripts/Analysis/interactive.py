@@ -24,6 +24,8 @@ def ask_question(q_str, special='None', default=None):
 
         if not question and default:
             question = str(default)
+        if not question and default is None:
+            return None
         if question in funcs[special][1]:
             return funcs[special][1][question]
         elif special is not 'bool':
