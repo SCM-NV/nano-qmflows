@@ -44,7 +44,7 @@ def ask_for_states():
     return i1, i2
 
 
-def read_files(i1, i2):
+def read_spec_files(i1, i2):
     """
     function that opens all the spectral density files of all the initial
     conditions for states i1 and i2
