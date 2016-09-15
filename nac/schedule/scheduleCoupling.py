@@ -101,20 +101,11 @@ def write_hamiltonians(path_hdf5, work_dir, mo_paths, path_couplings, nPoints,
     def write_pyxaid_format(arr, fileName):
         np.savetxt(fileName, arr, fmt='%10.5e', delimiter='  ')
 
-    def energySubset(xs):
-        if nCouplings is None:
-            return xs
-        else:
-            dim, = xs.shape
-            middle = dim // 2
-            ncs = nCouplings // 2
-            return xs[middle - ncs: middle - ncs]
-
     ham_files = []
     for i in range(nPoints):
         path_coupling = path_couplings[i]
         css = retrieve_hdf5_data(path_hdf5, path_coupling)
-        energies = energySubset(retrieve_hdf5_data(path_hdf5, mo_paths[i][0]))
+        energies = retrieve_hdf5_data(path_hdf5, mo_paths[i][0])
         j = i + enumerate_from
 
         # FileNames
