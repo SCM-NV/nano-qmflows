@@ -5,7 +5,6 @@ from os.path import join
 from qmworks.parsers import parse_string_xyz
 
 import numpy as np
-import os
 
 path_hdf5 = 'test/test_files/ethylene.hdf5'
 path_hdf5_test = 'test/test_files/test.hdf5'
@@ -22,6 +21,10 @@ def create_paths_mos(project_name, i):
 
 
 def test_obaraSaika():
+    """
+    Test the Obara-Saika scheme to compute overlap integrals and 
+    then cumputed the derivated coupling using them.
+    """
     project_name = 'ethylene'
     basisname = "DZVP-MOLOPT-SR-GTH"
     basiscp2k = "test/test_files/BASIS_MOLOPT"
