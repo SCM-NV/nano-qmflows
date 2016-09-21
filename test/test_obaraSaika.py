@@ -23,10 +23,9 @@ def create_paths_mos(project_name, i):
 
 def test_obaraSaika():
     project_name = 'ethylene'
-    home = os.path.expanduser('~')
     basisname = "DZVP-MOLOPT-SR-GTH"
-    basiscp2k = join(home, "test/test_files/BASIS_MOLOPT")
-    potcp2k = join(home, "test/test_files/GTH_POTENTIALS")
+    basiscp2k = "test/test_files/BASIS_MOLOPT"
+    potcp2k = "test/test_files/GTH_POTENTIALS"
 
     initial_config = initialize(project_name, path_traj_xyz,
                                 basisname=basisname, path_basis=basiscp2k,
