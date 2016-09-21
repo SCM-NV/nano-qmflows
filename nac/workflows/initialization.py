@@ -72,7 +72,6 @@ def initialize(project_name, path_traj_xyz, basisname, enumerate_from=0,
     if 'angstrom' in geometry_units.lower():
         atoms = change_mol_units(atoms)
 
-    print(path_hdf5)
     dictCGFs = create_dict_CGFs(path_hdf5, basisname, atoms,
                                 package_config=cp2k_config)
 

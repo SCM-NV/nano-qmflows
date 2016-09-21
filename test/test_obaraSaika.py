@@ -25,8 +25,8 @@ def test_obaraSaika():
     project_name = 'ethylene'
     home = os.path.expanduser('~')
     basisname = "DZVP-MOLOPT-SR-GTH"
-    basiscp2k = join(home, "Cp2k/cp2k_basis/BASIS_MOLOPT")
-    potcp2k = join(home, "Cp2k/cp2k_basis/GTH_POTENTIALS")
+    basiscp2k = join(home, "test/test_files/BASIS_MOLOPT")
+    potcp2k = join(home, "test/test_files/GTH_POTENTIALS")
 
     initial_config = initialize(project_name, path_traj_xyz,
                                 basisname=basisname, path_basis=basiscp2k,
@@ -51,10 +51,12 @@ def test_obaraSaika():
                                        mo_paths[j][1]), range(3)))
 
     mos = [xs[3:43, 3:43] for xs in mos]
-    print(mos[0].shape, trans_mtx.shape)
     rs = calculateCoupling3Points(geometries, mos, dictCGFs, dt_au,
                                   trans_mtx)
 
     expected = retrieve_hdf5_data(path_hdf5, join(project_name, 'coupling_0'))
 
     assert np.sum(rs - expected) < 1e-7
+
+if __name__ == "__main__":
+    test_obaraSaika()
