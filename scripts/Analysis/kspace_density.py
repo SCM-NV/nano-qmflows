@@ -16,11 +16,11 @@ def main():
     project_name, path_hdf5, path_xyz, basis_name = read_cmd_line()
     comm = MPI.COMM_WORLD
     rank = comm.Get_rank()
-
+    
     atoms = readXYZ(path_xyz)
     
     if rank == 0:
-        dictCGFs = create_dict_CGFs(path_hdf5, atoms, basis_name)
+        dictCGFs = create_dict_CGFs(path_hdf5, basis_name, atoms)
 
     trans_mtx = read_hdf5_mpi(path_hdf5, join(project_name, 'trans_mtx'))
 
@@ -39,7 +39,7 @@ def calculate_fourier_trasform_mo(k, atoms, dictCGFs):
     :type     dictCGFS: Dict String [CGF], CGF = ([Primitives],
     AngularMomentum), Primitive = (Coefficient, Exponent)
     """
-
+    pass
 
 def calculate_fourier_trasform_primitive(l, c, alpha, k):
     pik2 = (pi ** 2) * (k ** 2)
