@@ -46,7 +46,7 @@ def main():
     trans_mtx = read_hdf5_mpi(path_hdf5, join(project_name, 'trans_mtx'))
 
     # Compute the transformation in cartesian coordinates
-    fun_fourier = partial(calculate_fourier_trasform_cartesian, atoms,
+    fun_fourier = partial(calculate_fourier_trasform_cartesian, symbols,
                           dictCGFs)
 
     # Apply the fourier transform then covert it to spherical and
@@ -85,7 +85,8 @@ def calculate_fourier_trasform_cartesian(atomic_symbols, dictCGFs, ks):
     :type     dictCGFS: Dict String [CGF], CGF = ([Primitives],
     AngularMomentum), Primitive = (Coefficient, Exponent)
     """
-    dim_mo = None  # Fixme
+    dim_mo = np.sum(np.apply_along_axis(lambda s: len(dictCGFs[s]),
+                                        0, atomic_symbols))
     molecular_orbital_transformed = np.empty(dim_mo)
 
     acc = 0
@@ -159,7 +160,7 @@ def calculate_fourier_trasform_primitive(l, k, c, alpha):
         im = k * (pi / alpha) ** f
         return complex(0, im)
     elif l == 2:
-        return sqrt(pi / (alpha ** 5)) * (alpha / 2  - pik2) * f + 0j
+        return sqrt(pi / (alpha ** 5)) * (alpha / 2 - pik2) * f + 0j
     else:
         msg = ("there is not implementation for the primivite fourier "
                "transform of l: {}".format(l))
@@ -170,7 +171,7 @@ def read_hdf5_mpi(path_hdf5, comm, path_to_prop):
     """
     Read an array using the MPI interface of HDF5.
     """
-    with  h5py.File(path_hdf5, "r", driver="mpio", comm=comm) as f5:
+    with h5py.File(path_hdf5, "r", driver="mpio", comm=comm) as f5:
         return f5[path_to_prop].value
 
 
