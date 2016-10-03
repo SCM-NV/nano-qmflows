@@ -2,7 +2,7 @@
 from cmath import (exp, pi, sqrt)
 from functools import partial
 from mpi4py import MPI
-from nac.schedule.components import create_dict_CGFs
+from nac.basisSet.basisNormalization import createNormalizedCGFs
 from os.path import join
 from qmworks.parsers.xyzParser import readXYZ
 
@@ -13,13 +13,17 @@ import numpy as np
 import os
 
 
+comm = MPI.COMM_WORLD
+rank = comm.Get_rank()
+size = comm.Get_size()
+
 # Some Hint about the types
 from typing import Callable, Dict, NamedTuple
-Vector = np.ndarray
-Matrix = np.dnarray
+# Vector = np.ndarray
+# Matrix = np.ndarray
 
 
-def main():
+def main(parser):
     """
     These calculation is based on the paper:
     `Theoretical analysis of electronic band structure of
@@ -27,17 +31,17 @@ def main():
     PHYSICAL REVIEW B 87, 195420 (2013)
     """
     # Parse Command line
-    project_name, path_hdf5, path_xyz, basis_name, orbital = read_cmd_line()
-    comm = MPI.COMM_WORLD
-    rank = comm.Get_rank()
-    size = comm.Get_size()
-
+    project_name, path_hdf5, path_xyz, basis_name, orbital = read_cmd_line(parser)
+    print("cmd_line: ", project_name, path_hdf5, path_xyz, basis_name, orbital)
     # Use only the root process to initialize all the variables
     atoms = readXYZ(path_xyz)
     symbols = np.array([at.symbol for at in atoms])
     coords = np.concatenate([at.xyz for at in atoms])
     if rank == 0:
-        dictCGFs = create_dict_CGFs(path_hdf5, basis_name, atoms)
+        dictCGFs = create_dict_CGFs(comm, path_hdf5, basis_name, atoms)
+        with open("logger.out", "a") as f:
+            f.write("dictCGFs:\n")
+            f.write(str(dictCGFs))
     else:
         dictCGFs = None
     # Send the CGFs to all the process
@@ -51,6 +55,10 @@ def main():
 
     # Calculate what part of the grid is computed by each process
     indexes = point_number_to_compute(size, nPoints)
+    if rank == 0:
+        with open("logger.out", "a") as f:
+            f.write("indexes:\n")
+            f.write(str(indexes))
     start, end = indexes[rank]
 
     # Each process extract a subset of the grid
@@ -61,9 +69,10 @@ def main():
                           coords, dictCGFs)
 
     # Apply the fourier transform then covert it to spherical
-    fun_sphericals = lambda k: transform_to_spherical(fun_fourier, path_hdf5,
-                                                      project_name, orbital, k)
-
+    fun_sphericals = lambda k: transform_to_spherical(comm, fun_fourier,
+                                                      path_hdf5,
+                                                      project_name,
+                                                      orbital, k)
     # Compute the momentum density (an Scalar)
     momentum_density = lambda k: fun_density_real(fun_sphericals, k)
 
@@ -85,7 +94,7 @@ def main():
     np.save('grid.np', total_result)
 
 
-def transform_to_spherical(fun_fourier: Callable, path_hdf5: str,
+def transform_to_spherical(comm, fun_fourier: Callable, path_hdf5: str,
                            project_name: str, orbital: str,
                            k: Vector) -> Vector:
     """
@@ -93,9 +102,10 @@ def transform_to_spherical(fun_fourier: Callable, path_hdf5: str,
     multiplying by the `trans_mtx` and finally multiply the coefficients
     in Spherical coordinates.
     """
-    trans_mtx = read_hdf5_mpi(path_hdf5, join(project_name, 'trans_mtx'))
+    trans_mtx = read_hdf5_mpi(comm, path_hdf5,
+                              join(project_name, 'trans_mtx'))
     path_to_mo = join(project_name, 'point_0/cp2k/mo/coefficients')
-    mos_orbitals = read_hdf5_mpi(path_hdf5, path_to_mo)
+    mos_orbitals = read_hdf5_mpi(comm, path_hdf5, path_to_mo)
     molecular_orbital_i = np.transpose(mos_orbitals[orbital])
 
     return np.dot(molecular_orbital_i, np.dot(trans_mtx, fun_fourier(k)))
@@ -214,7 +224,7 @@ def calculate_fourier_trasform_primitive(l: int, x: float, k: float, c: float,
         raise NotImplementedError(msg)
 
 
-def read_hdf5_mpi(path_hdf5, comm, path_to_prop) -> np.ndarray:
+def read_hdf5_mpi(comm, path_hdf5, path_to_prop) -> np.ndarray:
     """
     Read an array using the MPI interface of HDF5.
     """
@@ -255,7 +265,7 @@ def grid_kspace(initial, final, points) -> Matrix:
     return np.transpose(mtx)
 
 
-def createCGFs(path_hdf5, atoms, basis_name) -> Dict:
+def createCGFs(comm, path_hdf5, atoms, basis_name) -> Dict:
     """
     Create a dictionary containing the primitives Gaussian functions for
     each atom involved in the calculation.
@@ -264,21 +274,30 @@ def createCGFs(path_hdf5, atoms, basis_name) -> Dict:
     basiscp2k = join(home, "Cp2k/cp2k_basis/BASIS_MOLOPT")
     potcp2k = join(home, "Cp2k/cp2k_basis/GTH_POTENTIALS")
     cp2k_config = {"basis": basiscp2k, "potential": potcp2k}
-    return create_dict_CGFs(path_hdf5, basis_name, atoms,
+    return create_dict_CGFs(comm, path_hdf5, basis_name, atoms,
                             package_config=cp2k_config)
 
-# Parser
-msg = " script -hdf5 <path/to/hdf5> -xyz <path/to/geometry/xyz -b basis_name"
 
-parser = argparse.ArgumentParser(description=msg)
-parser.add_argument('-p', required=True, help='Project name')
-parser.add_argument('-hdf5', required=True, help='path to the HDF5 file')
-parser.add_argument('-xyz', required=True, help='path to molecular gemetry')
-parser.add_argument('-basis', help='Basis Name')
-parser.add_argument('-orbital', help='orbital to compute band', type=int)
+def create_dict_CGFs(comm, path_hdf5, basisname, xyz, package_name='cp2k',
+                     package_config=None):
+    """
+    Try to read the basis from the HDF5 otherwise read it from a file and store
+    it in the HDF5 file. Finally, it reads the basis Set from HDF5 and calculate
+    the CGF for each atom.
+
+    :param path_hdf5: Path to the HDF5 file that contains the
+    numerical results.
+    type path_hdf5: String
+    :param basisname: Name of the Gaussian basis set.
+    :type basisname: String
+    :param xyz: List of Atoms.
+    :type xyz: [nac.common.AtomXYZ]
+    """
+    with h5py.File(path_hdf5, "r", driver="mpio", comm=comm) as f5:
+        return createNormalizedCGFs(f5, basisname, package_name, xyz)
 
 
-def read_cmd_line():
+def read_cmd_line(parser):
     """
     Parse Command line options.
     """
@@ -293,4 +312,12 @@ def read_cmd_line():
 
 
 if __name__ == "__main__":
-    main()
+    msg = " script -hdf5 <path/to/hdf5> -xyz <path/to/geometry/xyz -b basis_name"
+
+    parser = argparse.ArgumentParser(description=msg)
+    parser.add_argument('-p', required=True, help='Project name')
+    parser.add_argument('-hdf5', required=True, help='path to the HDF5 file')
+    parser.add_argument('-xyz', required=True, help='path to molecular gemetry')
+    parser.add_argument('-basis', help='Basis Name')
+    parser.add_argument('-orbital', help='orbital to compute band', type=int)
+    main(parser)
