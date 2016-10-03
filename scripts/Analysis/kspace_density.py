@@ -6,15 +6,28 @@ from nac.schedule.components import create_dict_CGFs
 from os.path import join
 from qmworks.parsers.xyzParser import readXYZ
 
+
 import argparse
 import h5py
 import numpy as np
 import os
 
 
+# Some Hint about the types
+from typing import Callable, Dict, NamedTuple
+Vector = np.ndarray
+Matrix = np.dnarray
+
+
 def main():
+    """
+    These calculation is based on the paper:
+    `Theoretical analysis of electronic band structure of
+    2- to 3-nm Si nanocrystals`
+    PHYSICAL REVIEW B 87, 195420 (2013)
+    """
     # Parse Command line
-    project_name, path_hdf5, path_xyz, basis_name = read_cmd_line()
+    project_name, path_hdf5, path_xyz, basis_name, orbital = read_cmd_line()
     comm = MPI.COMM_WORLD
     rank = comm.Get_rank()
     size = comm.Get_size()
@@ -22,6 +35,7 @@ def main():
     # Use only the root process to initialize all the variables
     atoms = readXYZ(path_xyz)
     symbols = np.array([at.symbol for at in atoms])
+    coords = np.concatenate([at.xyz for at in atoms])
     if rank == 0:
         dictCGFs = create_dict_CGFs(path_hdf5, basis_name, atoms)
     else:
@@ -42,20 +56,20 @@ def main():
     # Each process extract a subset of the grid
     k_vectors = grid_k_vectors[start:end]
 
-    # Fourier transform
-    trans_mtx = read_hdf5_mpi(path_hdf5, join(project_name, 'trans_mtx'))
-
-    # Compute the transformation in cartesian coordinates
+    # Compute the fourier transformation in cartesian coordinates
     fun_fourier = partial(calculate_fourier_trasform_cartesian, symbols,
-                          dictCGFs)
+                          coords, dictCGFs)
 
-    # Apply the fourier transform then covert it to spherical and
-    # sum all the transformations
-    fun_reduce = lambda k: np.sum(np.dot(trans_mtx, fun_fourier(k)))
+    # Apply the fourier transform then covert it to spherical
+    fun_sphericals = lambda k: transform_to_spherical(fun_fourier, path_hdf5,
+                                                      project_name, orbital, k)
+
+    # Compute the momentum density (an Scalar)
+    momentum_density = lambda k: fun_density_real(fun_sphericals, k)
 
     # Apply the whole fourier transform to the subset of the grid
     # correspoding to each process
-    partial_result = np.apply_along_axis(fun_reduce, 1, k_vectors)
+    partial_result = np.apply_along_axis(momentum_density, 1, k_vectors)
 
     # Gather the results
     total_result = np.empty(nPoints)  # Array containing the final results
@@ -68,49 +82,80 @@ def main():
     # Collective Gather using root
     comm.Gatherv(partial_result, total_result, sendcounts, displacements,
                  MPI.FLOAT, root=0)
-    np.savetxt('grid.out', total_result)
+    np.save('grid.np', total_result)
 
 
-def calculate_fourier_trasform_cartesian(atomic_symbols, dictCGFs, ks):
+def transform_to_spherical(fun_fourier: Callable, path_hdf5: str,
+                           project_name: str, orbital: str,
+                           k: Vector) -> Vector:
+    """
+    Calculate the Fourier transform in Cartesian, convert it to Spherical
+    multiplying by the `trans_mtx` and finally multiply the coefficients
+    in Spherical coordinates.
+    """
+    trans_mtx = read_hdf5_mpi(path_hdf5, join(project_name, 'trans_mtx'))
+    path_to_mo = join(project_name, 'point_0/cp2k/mo/coefficients')
+    mos_orbitals = read_hdf5_mpi(path_hdf5, path_to_mo)
+    molecular_orbital_i = np.transpose(mos_orbitals[orbital])
+
+    return np.dot(molecular_orbital_i, np.dot(trans_mtx, fun_fourier(k)))
+
+
+def fun_density_real(function: Callable, k: float) -> float:
+    """ Compute the momentum density"""
+    xs = function(k)
+    return np.dot(xs, np.conjugate(xs)).real
+
+
+def calculate_fourier_trasform_cartesian(atomic_symbols: Vector,
+                                         atomic_coords: Vector,
+                                         dictCGFs: Dict,
+                                         ks: Vector) -> Vector:
     """
     Calculate the Fourier transform projecting the MO in a set of plane waves
 
     mo_fourier(k) = < phi(r) | exp(i k . r)>
 
     :param atomic_symbols: Atomic symbols
-    :type atomic_symbols: String
+    :type atomic_symbols: Numpy Array [String]
     :param ks: The vector in k-space where the fourier transform is evaluated.
     :type ks: Numpy Array
     :paramter dictCGFS: Dictionary from Atomic Label to basis set.
     :type     dictCGFS: Dict String [CGF], CGF = ([Primitives],
     AngularMomentum), Primitive = (Coefficient, Exponent)
+
+    returns: Numpy array
     """
     dim_mo = np.sum(np.apply_along_axis(lambda s: len(dictCGFs[s]),
                                         0, atomic_symbols))
     molecular_orbital_transformed = np.empty(dim_mo)
 
     acc = 0
-    for symb in atomic_symbols:
+    for i, symb in atomic_symbols:
         num_CGFs = len(dictCGFs[symb])
-        arr = calculate_fourier_trasform_atom(dictCGFs[symb], ks)
+        i3, i3_1 = i * 3, 3 * (i + 1)
+        xyz = atomic_coords[i3: i3_1]
+        arr = calculate_fourier_trasform_atom(dictCGFs[symb], xyz, ks)
         molecular_orbital_transformed[acc: acc + num_CGFs] = arr
         acc += num_CGFs
 
     return molecular_orbital_transformed
 
 
-def calculate_fourier_trasform_atom(cgfs, ks):
+def calculate_fourier_trasform_atom(cgfs: Dict, xyz: Vector,
+                                    ks: Vector) -> Vector:
     """
     Calculate the Fourier transform for the set of CGFs in an Atom.
     """
     arr = np.empty(len(cgfs))
     for i, cgf in enumerate(cgfs):
-        arr[i] = calculate_fourier_trasform_contracted(cgf, ks)
+        arr[i] = calculate_fourier_trasform_contracted(cgf, xyz, ks)
 
     return arr
 
 
-def calculate_fourier_trasform_contracted(cgf, ks):
+def calculate_fourier_trasform_contracted(cgf: NamedTuple, xyz: Vector,
+                                          ks: Vector) -> float:
     """
     Compute the fourier transform for a given CGF.
     Implementation note: the function loops over the x,y and z coordinates
@@ -121,15 +166,15 @@ def calculate_fourier_trasform_contracted(cgf, ks):
     mtx_cs_es = np.stack((cs, es))
     angular_momenta = compute_angular_momenta(label)
     acc = np.ones(3)
-    for l, k in zip(angular_momenta, ks):
-        fun_primitive = partial(calculate_fourier_trasform_primitive, l, k)
+    for l, x, k in zip(angular_momenta, xyz, ks):
+        fun_primitive = partial(calculate_fourier_trasform_primitive, l, x, k)
         rs = np.apply_along_axis(fun_primitive, 0, mtx_cs_es)
         acc *= rs
 
     return np.sum(acc)
 
 
-def compute_angular_momenta(label):
+def compute_angular_momenta(label) -> Vector:
     """
     Compute the exponents l,m and n for the CGF: x^l y^m z^n exp(-a (r-R)^2)
     """
@@ -148,26 +193,28 @@ def compute_angular_momenta(label):
     return np.apply_along_axis(lookup, 1, np.arange(3))
 
 
-def calculate_fourier_trasform_primitive(l, k, c, alpha):
+def calculate_fourier_trasform_primitive(l: int, x: float, k: float, c: float,
+                                         alpha: float) -> complex:
     """
     Compute the fourier transform for primitive Gaussian Type Orbitals.
     """
-    pik2 = (pi ** 2) * (k ** 2)
-    f = c * exp(- pik2 / alpha)
+    pik = pi * k
+    f = c * exp(-alpha * x ** 2 + complex(alpha * x, - pik) ** 2 / alpha)
     if l == 0:
-        return sqrt(pi / alpha) * f + 0j
+        return sqrt(pi / alpha) * f
     elif l == 1:
-        im = k * (pi / alpha) ** f
-        return complex(0, im)
+        f = k * exp(-pik * complex(pik / alpha, 2 * x))
+        return (pi / alpha) ** 1.5  * f
     elif l == 2:
-        return sqrt(pi / (alpha ** 5)) * (alpha / 2 - pik2) * f + 0j
+        f = exp(-pik * complex(pik / alpha, 2 * x))
+        return sqrt(pi / (alpha ** 5)) * (alpha / 2 - pik ** 2) * f
     else:
         msg = ("there is not implementation for the primivite fourier "
                "transform of l: {}".format(l))
         raise NotImplementedError(msg)
 
 
-def read_hdf5_mpi(path_hdf5, comm, path_to_prop):
+def read_hdf5_mpi(path_hdf5, comm, path_to_prop) -> np.ndarray:
     """
     Read an array using the MPI interface of HDF5.
     """
@@ -175,7 +222,7 @@ def read_hdf5_mpi(path_hdf5, comm, path_to_prop):
         return f5[path_to_prop].value
 
 
-def point_number_to_compute(size, points):
+def point_number_to_compute(size, points) -> Vector:
     """ Compute how many grid points is computed in a given mpi worker """
     res = points % size
     n = points // size
@@ -198,7 +245,7 @@ def point_number_to_compute(size, points):
     return xs
 
 
-def grid_kspace(initial, final, points):
+def grid_kspace(initial, final, points) -> Matrix:
     """
     make a matrix of dimension Points x 3 containing the coordinates
     in the k-space to be sampled.
@@ -208,7 +255,7 @@ def grid_kspace(initial, final, points):
     return np.transpose(mtx)
 
 
-def createCGFs(path_hdf5, atoms, basis_name):
+def createCGFs(path_hdf5, atoms, basis_name) -> Dict:
     """
     Create a dictionary containing the primitives Gaussian functions for
     each atom involved in the calculation.
@@ -227,7 +274,8 @@ parser = argparse.ArgumentParser(description=msg)
 parser.add_argument('-p', required=True, help='Project name')
 parser.add_argument('-hdf5', required=True, help='path to the HDF5 file')
 parser.add_argument('-xyz', required=True, help='path to molecular gemetry')
-parser.add_argument('-basis', required=True, help='Basis Name')
+parser.add_argument('-basis', help='Basis Name')
+parser.add_argument('-orbital', help='orbital to compute band', type=int)
 
 
 def read_cmd_line():
@@ -238,9 +286,10 @@ def read_cmd_line():
     project_name = args.p
     path_hdf5 = args.hdf5
     path_xyz = args.xyz
-    basis_name = args.basis
+    basis_name = args.basis if args.basis is not None else "DZVP-MOLOPT-SR-GTH"
+    orbital = args.orbital if args.orbital is not None else 20
 
-    return project_name, path_hdf5, path_xyz, basis_name
+    return project_name, path_hdf5, path_xyz, basis_name, orbital
 
 
 if __name__ == "__main__":
