@@ -35,11 +35,10 @@ def main(parser):
     coords = au_to_angstrom * coords_angstrom
     
     dictCGFs = create_dict_CGFs(path_hdf5, basis_name, atoms)
-
     # K-space grid to calculate the fuzzy band
     initial = (0., 0., 0.)  # Gamma point
     final = (0., 1., 1.)    # X point
-    nPoints = 10
+    nPoints = 20
     grid_k_vectors = grid_kspace(initial, final, nPoints)
 
     # Calculate what part of the grid is computed by each process
@@ -66,6 +65,12 @@ def main(parser):
     result = np.apply_along_axis(momentum_density, 1, k_vectors)
     print("Results: ", result)
 
+def fun_density_real(function: Callable, k: float) -> float:
+    """ Compute the momentum density"""
+    xs = function(k)
+    print("Orbital transformation is: ", xs)
+    return np.dot(xs, np.conjugate(xs)).real
+
 
 def transform_to_spherical(fun_fourier: Callable, path_hdf5: str,
                            project_name: str, orbital: str,
@@ -80,14 +85,6 @@ def transform_to_spherical(fun_fourier: Callable, path_hdf5: str,
     molecular_orbital_i = read_hdf5(path_hdf5, path_to_mo)[:, orbital]
 
     return np.dot(molecular_orbital_i, np.dot(trans_mtx, fun_fourier(k)))
-
-
-def fun_density_real(function: Callable, k: float) -> float:
-    """ Compute the momentum density"""
-    print("K-vector is: ", k)
-    xs = function(k)
-    print("Orbital transformation is: ", xs)
-    return np.dot(xs, np.conjugate(xs)).real
 
 
 def calculate_fourier_trasform_cartesian(atomic_symbols: Vector,
@@ -109,6 +106,7 @@ def calculate_fourier_trasform_cartesian(atomic_symbols: Vector,
 
     returns: Numpy array
     """
+    print("K-vector: ", ks)
     fun = np.vectorize(lambda s: len(dictCGFs[s]))
     dim_mo = np.sum(np.apply_along_axis(fun,  0, atomic_symbols))
     molecular_orbital_transformed = np.empty(int(dim_mo), dtype=np.complex128)
@@ -282,7 +280,7 @@ def read_cmd_line(parser):
     path_hdf5 = args.hdf5
     path_xyz = args.xyz
     basis_name = args.basis if args.basis is not None else "DZVP-MOLOPT-SR-GTH"
-    orbital = args.orbital if args.orbital is not None else 20
+    orbital = args.orbital
 
     return project_name, path_hdf5, path_xyz, basis_name, orbital
 
