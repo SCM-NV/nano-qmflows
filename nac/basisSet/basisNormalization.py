@@ -9,7 +9,7 @@ from .contractedGFs import createUniqueCGF
 from nac.common import (CGF, product)
 from nac.integrals.overlapIntegral import sijContracted
 from nac.integrals.multipoleIntegrals import calcOrbType_Components
-
+import numpy as np
 # =======================> Basis set normalization <===========================
 
 
@@ -59,7 +59,8 @@ def normGlobal(cgf, r=[0, 0, 0]):
     cgfN = CGF((csN, es), l)
     sij = sijContracted((r, cgfN), (r, cgfN))
     n = sqrt(1.0 / sij)
-    newCs = [n * x for x in csN]
+    # newCs = [n * x for x in csN]
+    newCs = n * np.array(csN)
 
     return CGF((newCs, es), l)
 

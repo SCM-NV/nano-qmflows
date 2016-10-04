@@ -74,7 +74,7 @@ def prepare_cp2k_settings(geometry, files, cp2k_args, k, work_dir,
 @schedule
 def prepare_job_cp2k(geometry, files, dict_input, k, work_dir,
                      project_name=None, hdf5_file=None, wfn_restart_job=None,
-                     store_in_hdf5=True, nHOMOS=25, nLUMOS=25,
+                     store_in_hdf5=True, nHOMOS=None, nLUMOS=None,
                      package_config=None):
     """
     Fills in the parameters for running a single job in CP2K.
