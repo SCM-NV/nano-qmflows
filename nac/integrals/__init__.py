@@ -1,5 +1,5 @@
 from .electronTransfer import photoExcitationRate
-from .fourierTransfrom import (calculate_fourier_trasform_cartesian,
+from .fourierTransform import (calculate_fourier_trasform_cartesian,
                                fun_density_real, transform_to_spherical)
 from .multipoleIntegrals import (calcMtxMultipoleP, general_multipole_matrix)
 from .nonAdiabaticCoupling import calculateCoupling3Points
