@@ -1,7 +1,6 @@
 
 from functools import partial
 from multiprocessing import Pool
-from nac import retrieve_hdf5_data
 from nac.schedule.components import create_dict_CGFs
 from os.path import join
 from qmworks.parsers.xyzParser import readXYZ
@@ -13,12 +12,12 @@ import os
 
 
 # Some Hint about the types
-from typing import Callable, Dict
 Vector = np.ndarray
 Matrix = np.ndarray
 
 # Module containing the primitve computations
-from functionsKspace import calculate_fourier_trasform_atom
+from functionsKspace import  (calculate_fourier_trasform_cartesian,
+                              fun_density_real, transform_to_spherical)
 
 
 def main(parser):
@@ -44,7 +43,9 @@ def main(parser):
     cp2k_config = {"basis": basiscp2k, "potential": potcp2k}
     dictCGFs = create_dict_CGFs(path_hdf5, basis_name, atoms,
                                 package_config=cp2k_config)
-
+    count_cgfs = np.vectorize(lambda s: len(dictCGFs[s]))
+    number_of_basis = np.sum(np.apply_along_axis(count_cgfs,  0, symbols))
+    
     # K-space grid to calculate the fuzzy band
     initial = (0., 1., 1.)  # Gamma point
     final = (0., 0., 0.)  # X point
@@ -60,83 +61,21 @@ def main(parser):
 
     # Compute the fourier transformation in cartesian coordinates
     fun_fourier = partial(calculate_fourier_trasform_cartesian, symbols,
-                          coords, dictCGFs)
+                          coords, dictCGFs, number_of_basis)
 
     # Apply the fourier transform then covert it to spherical
-    fun_sphericals = lambda k: transform_to_spherical(fun_fourier,
-                                                      path_hdf5,
-                                                      project_name,
-                                                      orbital, k)
+    fun_sphericals = partial(transform_to_spherical, fun_fourier,
+                             path_hdf5, project_name, orbital)
     # Compute the momentum density (an Scalar)
-    momentum_density = lambda k: fun_density_real(fun_sphericals, k)
+    momentum_density = partial(fun_density_real, fun_sphericals)
 
     # Apply the whole fourier transform to the subset of the grid
     # correspoding to each process
-    result = np.apply_along_axis(momentum_density, 1, k_vectors)
-    print("Results: ", result)
-
-
-def fun_density_real(function: Callable, k: float) -> float:
-    """ Compute the momentum density"""
-    xs = function(k)
-    print("Orbital transformation is: ", xs)
-    return np.dot(xs, np.conjugate(xs)).real
-
-
-def transform_to_spherical(fun_fourier: Callable, path_hdf5: str,
-                           project_name: str, orbital: str,
-                           k: Vector) -> complex:
-    """
-    Calculate the Fourier transform in Cartesian, convert it to Spherical
-    multiplying by the `trans_mtx` and finally multiply the coefficients
-    in Spherical coordinates.
-    """
-    trans_mtx = retrieve_hdf5_data(path_hdf5, join(project_name, 'trans_mtx'))
-    path_to_mo = join(project_name, 'point_0/cp2k/mo/coefficients')
-    molecular_orbital_i = retrieve_hdf5_data(path_hdf5, path_to_mo)[:, orbital]
-
-    return np.dot(molecular_orbital_i, np.dot(trans_mtx, fun_fourier(k)))
-
-
-def calculate_fourier_trasform_cartesian(atomic_symbols: Vector,
-                                         atomic_coords: Vector,
-                                         dictCGFs: Dict,
-                                         ks: Vector) -> Vector:
-    """
-    Calculate the Fourier transform projecting the MO in a set of plane waves
-
-    mo_fourier(k) = < phi(r) | exp(i k . r)>
-
-    :param atomic_symbols: Atomic symbols
-    :type atomic_symbols: Numpy Array [String]
-    :param ks: The vector in k-space where the fourier transform is evaluated.
-    :type ks: Numpy Array
-    :paramter dictCGFS: Dictionary from Atomic Label to basis set.
-    :type     dictCGFS: Dict String [CGF], CGF = ([Primitives],
-    AngularMomentum), Primitive = (Coefficient, Exponent)
-
-    returns: Numpy array
-    """        
-    print("K-vector: ", ks)    
     with Pool() as p:
-        stream_coord = chunksOf(atomic_coords, 3)
-        stream_cgfs = yieldCGF(dictCGFs, atomic_symbols)
-        chunks = p.starmap(partial(calculate_fourier_trasform_atom, ks),
-                           zip(stream_cgfs, stream_coord))
-        molecular_orbital_transformed = np.concatenate(chunks)
-        
-    return molecular_orbital_transformed
+        rss = p.map(momentum_density, k_vectors)
 
-
-def chunksOf(xs, n):
-    """Yield successive n-sized chunks from xs"""
-    for i in range(0, len(xs), n):
-        yield xs[i:i + n]
-
-def yieldCGF(dictCGFs, symbols):
-    """ Stream of CGFs """
-    for symb in symbols:
-        yield dictCGFs[symb]
+    # result = np.apply_along_axis(momentum_density, 1, k_vectors)
+    print("Results: ", rss)
 
 
 def point_number_to_compute(size, points) -> Vector:

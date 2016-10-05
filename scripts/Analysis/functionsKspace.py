@@ -1,15 +1,89 @@
 
 from cmath import (exp, pi, sqrt)
 from functools import partial
+from nac import retrieve_hdf5_data
+from os.path import join
 
-import h5py
 import numpy as np
 
 
 # Some Hint about the types
-from typing import  List, NamedTuple
+from typing import  Callable, Dict, List, NamedTuple
 Vector = np.ndarray
 Matrix = np.ndarray
+
+
+def fun_density_real(function: Callable, k: float) -> float:
+    """ Compute the momentum density"""
+    xs = function(k)
+    print("Orbital transformation is: ", xs)
+    return np.dot(xs, np.conjugate(xs)).real
+
+
+def transform_to_spherical(fun_fourier: Callable, path_hdf5: str,
+                           project_name: str, orbital: str,
+                           k: Vector) -> complex:
+    """
+    Calculate the Fourier transform in Cartesian, convert it to Spherical
+    multiplying by the `trans_mtx` and finally multiply the coefficients
+    in Spherical coordinates.
+    """
+    trans_mtx = retrieve_hdf5_data(path_hdf5, join(project_name, 'trans_mtx'))
+    path_to_mo = join(project_name, 'point_0/cp2k/mo/coefficients')
+    molecular_orbital_i = retrieve_hdf5_data(path_hdf5, path_to_mo)[:, orbital]
+
+    return np.dot(molecular_orbital_i, np.dot(trans_mtx, fun_fourier(k)))
+
+
+def calculate_fourier_trasform_cartesian(atomic_symbols: Vector,
+                                         atomic_coords: Vector,
+                                         dictCGFs: Dict,
+                                         number_of_basis: int,
+                                         ks: Vector) -> Vector:
+    """
+    Calculate the Fourier transform projecting the MO in a set of plane waves
+
+    mo_fourier(k) = < phi(r) | exp(i k . r)>
+
+    :param atomic_symbols: Atomic symbols
+    :type atomic_symbols: Numpy Array [String]
+    :param ks: The vector in k-space where the fourier transform is evaluated.
+    :type ks: Numpy Array
+    :paramter dictCGFS: Dictionary from Atomic Label to basis set.
+    :type     dictCGFS: Dict String [CGF], CGF = ([Primitives],
+    AngularMomentum), Primitive = (Coefficient, Exponent)
+
+    returns: Numpy array
+    """        
+    print("K-vector: ", ks)    
+    # with Pool() as p:
+    #     stream_coord = chunksOf(atomic_coords, 3)
+    #     stream_cgfs = yieldCGF(dictCGFs, atomic_symbols)
+    #     chunks = p.starmap(partial(calculate_fourier_trasform_atom, ks),
+    #                        zip(stream_cgfs, stream_coord))
+    #     molecular_orbital_transformed = np.concatenate(chunks)
+    stream_coord = chunksOf(atomic_coords, 3)
+    stream_cgfs = yieldCGF(dictCGFs, atomic_symbols)
+    fun = partial(calculate_fourier_trasform_atom, ks)
+    molecular_orbital_transformed = np.empty(number_of_basis, dtype=np.complex128)
+    acc = 0 
+    for cgfs, xyz in zip(stream_cgfs, stream_coord):
+        dim_cgfs = len(cgfs)
+        molecular_orbital_transformed[acc: acc + dim_cgfs] = fun(cgfs, xyz)
+        acc += dim_cgfs
+        
+    return molecular_orbital_transformed
+
+
+def chunksOf(xs, n):
+    """Yield successive n-sized chunks from xs"""
+    for i in range(0, len(xs), n):
+        yield xs[i:i + n]
+
+def yieldCGF(dictCGFs, symbols):
+    """ Stream of CGFs """
+    for symb in symbols:
+        yield dictCGFs[symb]
 
 
 def calculate_fourier_trasform_atom(ks: Vector, cgfs: List,
