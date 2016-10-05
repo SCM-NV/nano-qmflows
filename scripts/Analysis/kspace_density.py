@@ -1,7 +1,7 @@
 
 from functools import partial
 from multiprocessing import Pool
-from nac.integrals.fourierTransfrom import (calculate_fourier_trasform_cartesian,
+from nac.integrals.fourierTransform import (calculate_fourier_trasform_cartesian,
                               fun_density_real, transform_to_spherical)
 from nac.schedule.components import create_dict_CGFs
 from os.path import join
