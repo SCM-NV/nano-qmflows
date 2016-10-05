@@ -1,23 +1,19 @@
 
 from functools import partial
 from multiprocessing import Pool
+from nac.integrals.fourierTransfrom import (calculate_fourier_trasform_cartesian,
+                              fun_density_real, transform_to_spherical)
 from nac.schedule.components import create_dict_CGFs
 from os.path import join
 from qmworks.parsers.xyzParser import readXYZ
-
 
 import argparse
 import numpy as np
 import os
 
-
 # Some Hint about the types
 Vector = np.ndarray
 Matrix = np.ndarray
-
-# Module containing the primitve computations
-from functionsKspace import  (calculate_fourier_trasform_cartesian,
-                              fun_density_real, transform_to_spherical)
 
 
 def main(parser):
@@ -44,8 +40,8 @@ def main(parser):
     dictCGFs = create_dict_CGFs(path_hdf5, basis_name, atoms,
                                 package_config=cp2k_config)
     count_cgfs = np.vectorize(lambda s: len(dictCGFs[s]))
-    number_of_basis = np.sum(np.apply_along_axis(count_cgfs,  0, symbols))
-    
+    number_of_basis = np.sum(np.apply_along_axis(count_cgfs, 0, symbols))
+
     # K-space grid to calculate the fuzzy band
     initial = (0., 1., 1.)  # Gamma point
     final = (0., 0., 0.)  # X point

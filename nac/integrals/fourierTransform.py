@@ -1,4 +1,7 @@
 
+__all__ = ["calculate_fourier_trasform_cartesian", "fun_density_real",
+           "transform_to_spherical"]
+
 from cmath import (exp, pi, sqrt)
 from functools import partial
 from nac import retrieve_hdf5_data
@@ -54,24 +57,18 @@ def calculate_fourier_trasform_cartesian(atomic_symbols: Vector,
     AngularMomentum), Primitive = (Coefficient, Exponent)
 
     returns: Numpy array
-    """        
-    print("K-vector: ", ks)    
-    # with Pool() as p:
-    #     stream_coord = chunksOf(atomic_coords, 3)
-    #     stream_cgfs = yieldCGF(dictCGFs, atomic_symbols)
-    #     chunks = p.starmap(partial(calculate_fourier_trasform_atom, ks),
-    #                        zip(stream_cgfs, stream_coord))
-    #     molecular_orbital_transformed = np.concatenate(chunks)
+    """
+    print("K-vector: ", ks)
     stream_coord = chunksOf(atomic_coords, 3)
     stream_cgfs = yieldCGF(dictCGFs, atomic_symbols)
     fun = partial(calculate_fourier_trasform_atom, ks)
     molecular_orbital_transformed = np.empty(number_of_basis, dtype=np.complex128)
-    acc = 0 
+    acc = 0
     for cgfs, xyz in zip(stream_cgfs, stream_coord):
         dim_cgfs = len(cgfs)
         molecular_orbital_transformed[acc: acc + dim_cgfs] = fun(cgfs, xyz)
         acc += dim_cgfs
-        
+
     return molecular_orbital_transformed
 
 
@@ -79,6 +76,7 @@ def chunksOf(xs, n):
     """Yield successive n-sized chunks from xs"""
     for i in range(0, len(xs), n):
         yield xs[i:i + n]
+
 
 def yieldCGF(dictCGFs, symbols):
     """ Stream of CGFs """
@@ -114,7 +112,7 @@ def calculate_fourier_trasform_contracted(cgf: NamedTuple, xyz: Vector,
     for l, x, k in zip(angular_momenta, xyz, ks):
         fun_primitive = partial(calculate_fourier_trasform_primitive, l, x, k)
         rs = np.apply_along_axis(np.vectorize(fun_primitive), 0, es)
-        acc *= rs 
+        acc *= rs
 
     # The result is the summation of the primitive multiplied by is corresponding
     # coefficients
