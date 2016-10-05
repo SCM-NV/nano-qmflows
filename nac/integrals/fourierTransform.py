@@ -1,6 +1,6 @@
 
 __all__ = ["calculate_fourier_trasform_cartesian", "fun_density_real",
-           "transform_to_spherical"]
+           "real_to_reciprocal_space", "transform_to_spherical"]
 
 from cmath import (exp, pi, sqrt)
 from functools import partial
@@ -11,7 +11,7 @@ import numpy as np
 
 
 # Some Hint about the types
-from typing import  Callable, Dict, List, NamedTuple
+from typing import  Callable, Dict, List, NamedTuple, Tuple
 Vector = np.ndarray
 Matrix = np.ndarray
 
@@ -157,3 +157,29 @@ def calculate_fourier_trasform_primitive(l: int, x: float, k: float,
         msg = ("there is not implementation for the primivite fourier "
                "transform of l: {}".format(l))
         raise NotImplementedError(msg)
+
+
+def real_to_reciprocal_space(tup: Tuple) -> tuple:
+    """
+    Transform a 3D point from real space to reciprocal space.
+    """
+    a1, a2, a3 = tup
+    cte = 2 * pi / np.dot(a1, cross(a2, a3))
+
+    b1 = cte * cross(a2, a3)
+    b2 = cte * cross(a3, a1)
+    b3 = cte * cross(a1, a2)
+
+    return b1, b2, b3
+
+
+def cross(a: Vector, b: Vector) -> Vector:
+    """ Cross product"""
+    x1, y1, z1 = a
+    x2, y2, z2 = b
+
+    x = y1 * z2 - y2 * z1
+    y = x2 * z1 - x1 * z2
+    z = x1 * y2 - x2 * y1
+
+    return np.array([x, y, z])
