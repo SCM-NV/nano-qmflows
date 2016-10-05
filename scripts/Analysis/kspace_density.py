@@ -1,21 +1,24 @@
 
-from cmath import (exp, pi, sqrt)
 from functools import partial
-from nac.basisSet.basisNormalization import createNormalizedCGFs
+from multiprocessing import Pool
+from nac import retrieve_hdf5_data
+from nac.schedule.components import create_dict_CGFs
 from os.path import join
 from qmworks.parsers.xyzParser import readXYZ
 
 
 import argparse
-import h5py
 import numpy as np
 import os
 
 
 # Some Hint about the types
-from typing import Callable, Dict, NamedTuple
+from typing import Callable, Dict
 Vector = np.ndarray
 Matrix = np.ndarray
+
+# Module containing the primitve computations
+from functionsKspace import calculate_fourier_trasform_atom
 
 
 def main(parser):
@@ -33,12 +36,19 @@ def main(parser):
     coords_angstrom = np.concatenate([at.xyz for at in atoms])
     au_to_angstrom = 1.889725989
     coords = au_to_angstrom * coords_angstrom
-    
-    dictCGFs = create_dict_CGFs(path_hdf5, basis_name, atoms)
+
+    # Dictionary containing as key the atomic symbols and as values the set of CGFs
+    home = os.path.expanduser('~')
+    basiscp2k = join(home, "Cp2k/cp2k_basis/BASIS_MOLOPT")
+    potcp2k = join(home, "Cp2k/cp2k_basis/GTH_POTENTIALS")
+    cp2k_config = {"basis": basiscp2k, "potential": potcp2k}
+    dictCGFs = create_dict_CGFs(path_hdf5, basis_name, atoms,
+                                package_config=cp2k_config)
+
     # K-space grid to calculate the fuzzy band
-    initial = (0., 0., 0.)  # Gamma point
-    final = (0., 1., 1.)    # X point
-    nPoints = 20
+    initial = (0., 1., 1.)  # Gamma point
+    final = (0., 0., 0.)  # X point
+    nPoints = 10
     grid_k_vectors = grid_kspace(initial, final, nPoints)
 
     # Calculate what part of the grid is computed by each process
@@ -65,6 +75,7 @@ def main(parser):
     result = np.apply_along_axis(momentum_density, 1, k_vectors)
     print("Results: ", result)
 
+
 def fun_density_real(function: Callable, k: float) -> float:
     """ Compute the momentum density"""
     xs = function(k)
@@ -80,9 +91,9 @@ def transform_to_spherical(fun_fourier: Callable, path_hdf5: str,
     multiplying by the `trans_mtx` and finally multiply the coefficients
     in Spherical coordinates.
     """
-    trans_mtx = read_hdf5(path_hdf5, join(project_name, 'trans_mtx'))
+    trans_mtx = retrieve_hdf5_data(path_hdf5, join(project_name, 'trans_mtx'))
     path_to_mo = join(project_name, 'point_0/cp2k/mo/coefficients')
-    molecular_orbital_i = read_hdf5(path_hdf5, path_to_mo)[:, orbital]
+    molecular_orbital_i = retrieve_hdf5_data(path_hdf5, path_to_mo)[:, orbital]
 
     return np.dot(molecular_orbital_i, np.dot(trans_mtx, fun_fourier(k)))
 
@@ -105,109 +116,31 @@ def calculate_fourier_trasform_cartesian(atomic_symbols: Vector,
     AngularMomentum), Primitive = (Coefficient, Exponent)
 
     returns: Numpy array
-    """
-    print("K-vector: ", ks)
-    fun = np.vectorize(lambda s: len(dictCGFs[s]))
-    dim_mo = np.sum(np.apply_along_axis(fun,  0, atomic_symbols))
-    molecular_orbital_transformed = np.empty(int(dim_mo), dtype=np.complex128)
-
-    acc = 0
-    for i, symb in enumerate(atomic_symbols):
-        num_CGFs = len(dictCGFs[symb])
-        i3, i3_1 = i * 3, 3 * (i + 1)
-        xyz = atomic_coords[i3: i3_1]
-        arr = calculate_fourier_trasform_atom(dictCGFs[symb], xyz, ks)
-        molecular_orbital_transformed[acc: acc + num_CGFs] = arr
-        acc += num_CGFs
-
+    """        
+    print("K-vector: ", ks)    
+    with Pool() as p:
+        stream_coord = chunksOf(atomic_coords, 3)
+        stream_cgfs = yieldCGF(dictCGFs, atomic_symbols)
+        chunks = p.starmap(partial(calculate_fourier_trasform_atom, ks),
+                           zip(stream_cgfs, stream_coord))
+        molecular_orbital_transformed = np.concatenate(chunks)
+        
     return molecular_orbital_transformed
 
 
-def calculate_fourier_trasform_atom(cgfs: Dict, xyz: Vector,
-                                    ks: Vector) -> Vector:
-    """
-    Calculate the Fourier transform for the set of CGFs in an Atom.
-    """
-    arr = np.empty(len(cgfs), dtype=np.complex128)
-    for i, cgf in enumerate(cgfs):
-        arr[i] = calculate_fourier_trasform_contracted(cgf, xyz, ks)
+def chunksOf(xs, n):
+    """Yield successive n-sized chunks from xs"""
+    for i in range(0, len(xs), n):
+        yield xs[i:i + n]
 
-    return arr
-
-
-def calculate_fourier_trasform_contracted(cgf: NamedTuple, xyz: Vector,
-                                          ks: Vector) -> complex:
-    """
-    Compute the fourier transform for a given CGF.
-    Implementation note: the function loops over the x,y and z coordinates
-    while operate in the whole set of Contracted Gaussian primitives.
-    """
-    cs, es = cgf.primitives
-    label = cgf.orbType
-    angular_momenta = compute_angular_momenta(label)
-    acc = np.ones(cs.shape, dtype=np.complex128)
-
-    # Accumlate x, y and z for each one of the primitves
-    for l, x, k in zip(angular_momenta, xyz, ks):
-        fun_primitive = partial(calculate_fourier_trasform_primitive, l, x, k)
-        rs = np.apply_along_axis(np.vectorize(fun_primitive), 0, es)
-        acc *= rs 
-
-    # The result is the summation of the primitive multiplied by is corresponding
-    # coefficients
-    return np.dot(acc, cs)
-
-
-def compute_angular_momenta(label) -> Vector:
-    """
-    Compute the exponents l,m and n for the CGF: x^l y^m z^n exp(-a (r-R)^2)
-    """
-    orbitalIndexes = {("S", 0): 0, ("S", 1): 0, ("S", 2): 0,
-                      ("Px", 0): 1, ("Px", 1): 0, ("Px", 2): 0,
-                      ("Py", 0): 0, ("Py", 1): 1, ("Py", 2): 0,
-                      ("Pz", 0): 0, ("Pz", 1): 0, ("Pz", 2): 1,
-                      ("Dxx", 0): 2, ("Dxx", 1): 0, ("Dxx", 2): 0,
-                      ("Dxy", 0): 1, ("Dxy", 1): 1, ("Dxy", 2): 0,
-                      ("Dxz", 0): 1, ("Dxz", 1): 0, ("Dxz", 2): 1,
-                      ("Dyy", 0): 0, ("Dyy", 1): 2, ("Dyy", 2): 0,
-                      ("Dyz", 0): 0, ("Dyz", 1): 1, ("Dyz", 2): 1,
-                      ("Dzz", 0): 0, ("Dzz", 1): 0, ("Dzz", 2): 2}
-    lookup = lambda i: orbitalIndexes[(label, i)]
-
-    return np.apply_along_axis(np.vectorize(lookup), 0, np.arange(3))
-
-
-def calculate_fourier_trasform_primitive(l: int, x: float, k: float,
-                                         alpha: float) -> complex:
-    """
-    Compute the fourier transform for primitive Gaussian Type Orbitals.
-    """
-    pik = pi * k
-    f = exp(-alpha * x ** 2 + complex(alpha * x, - pik) ** 2 / alpha)
-    if l == 0:
-        return sqrt(pi / alpha) * f
-    elif l == 1:
-        f = k * exp(-pik * complex(pik / alpha, 2 * x))
-        return (pi / alpha) ** 1.5  * f
-    elif l == 2:
-        f = exp(-pik * complex(pik / alpha, 2 * x))
-        return sqrt(pi / (alpha ** 5)) * (alpha / 2 - pik ** 2) * f
-    else:
-        msg = ("there is not implementation for the primivite fourier "
-               "transform of l: {}".format(l))
-        raise NotImplementedError(msg)
-
-
-def read_hdf5(path_hdf5, path_to_prop):
-    """
-    Read an array using the MPI interface of HDF5.
-    """
-    with h5py.File(path_hdf5, "r") as f5:
-        return f5[path_to_prop].value
+def yieldCGF(dictCGFs, symbols):
+    """ Stream of CGFs """
+    for symb in symbols:
+        yield dictCGFs[symb]
 
 
 def point_number_to_compute(size, points) -> Vector:
-    """ Compute how many grid points is computed in a given mpi worker """
+    """ Compute how many grid points is computed in a given worker """
     res = points % size
     n = points // size
 
@@ -237,38 +170,6 @@ def grid_kspace(initial, final, points) -> Matrix:
     mtx = np.stack([np.linspace(i, f, points) for i, f in zip(initial, final)])
 
     return np.transpose(mtx)
-
-
-def createCGFs(path_hdf5, atoms, basis_name) -> Dict:
-    """
-    Create a dictionary containing the primitives Gaussian functions for
-    each atom involved in the calculation.
-    """
-    home = os.path.expanduser('~')
-    basiscp2k = join(home, "Cp2k/cp2k_basis/BASIS_MOLOPT")
-    potcp2k = join(home, "Cp2k/cp2k_basis/GTH_POTENTIALS")
-    cp2k_config = {"basis": basiscp2k, "potential": potcp2k}
-    return create_dict_CGFs(path_hdf5, basis_name, atoms,
-                            package_config=cp2k_config)
-
-
-def create_dict_CGFs(path_hdf5, basisname, xyz, package_name='cp2k',
-                     package_config=None):
-    """
-    Try to read the basis from the HDF5 otherwise read it from a file and store
-    it in the HDF5 file. Finally, it reads the basis Set from HDF5 and calculate
-    the CGF for each atom.
-
-    :param path_hdf5: Path to the HDF5 file that contains the
-    numerical results.
-    type path_hdf5: String
-    :param basisname: Name of the Gaussian basis set.
-    :type basisname: String
-    :param xyz: List of Atoms.
-    :type xyz: [nac.common.AtomXYZ]
-    """
-    with h5py.File(path_hdf5, "r") as f5:
-        return createNormalizedCGFs(f5, basisname, package_name, xyz)
 
 
 def read_cmd_line(parser):
