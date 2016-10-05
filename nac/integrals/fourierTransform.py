@@ -4,7 +4,7 @@ __all__ = ["calculate_fourier_trasform_cartesian", "fun_density_real",
 
 from cmath import (exp, pi, sqrt)
 from functools import partial
-from nac import retrieve_hdf5_data
+from nac.common import retrieve_hdf5_data
 from os.path import join
 
 import numpy as np
