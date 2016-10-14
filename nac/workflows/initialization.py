@@ -10,6 +10,7 @@ from qmworks.hdf5.quantumHDF5 import StoreasHDF5
 from qmworks.parsers import parse_string_xyz
 from subprocess import (PIPE, Popen)
 
+import fnmatch
 import getpass
 import h5py
 import os
@@ -147,6 +148,9 @@ def split_trajectory(path, nBlocks, pathOut):
     cmd = 'split -a 1 -l {} {} {}'.format(lines_per_block, path, prefix)
     subprocess.run(cmd, shell=True)
     p = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, shell=True)
-    rs, err = p.communicate()
-    print("Submission Output: ", rs)
-    print("Submission Errors: ", err)
+    rs = p.communicate()
+    err = rs[1]
+    if not err:
+        raise RuntimeError("Submission Errors: ".format(err))
+    else:
+        return fnmatch.filter("chunk_xyz*", os.listdir())
