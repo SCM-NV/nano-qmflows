@@ -107,13 +107,14 @@ def main():
     mean_values, gap_distribution = calculate_band_gap_histo(arr)
     fig = plt.figure()
     ax = fig.add_subplot(111)
-    plt.plot(gap_distribution, mean_values, 'b-')
+    plt.plot(gap_distribution, mean_values, 'b-', linewidth=2.0)
     plt.tick_params('both', direction='out')
     plt.xlabel('Energy [eV]')
     plt.ylabel('Probability')
-    for tic in ax.xaxis.get_major_ticks():
-        tic.tick1On = tic.tick2On = False
+#    for tic in ax.xaxis.get_major_ticks():
+#        tic.tick1On = tic.tick2On = False
     plt.savefig('Histogram.png', dpi=300, format='png')
+    plt.show()
 
 # =================<>================================
 if __name__ == "__main__":
