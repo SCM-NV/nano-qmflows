@@ -97,9 +97,14 @@ def calculate_mos(package_name, all_geometries, project_name, path_hdf5, folders
         else:
             point_dir = folders[j]
             job_files = create_file_names(point_dir, k)
+            # A job  is a restart if guess_job is None and the list of
+            # wf guesses are not empty
+            is_restart = bool((guess_job is None) and
+                              calc_new_wf_guess_on_points)
             # Calculating initial guess
-            if k in calc_new_wf_guess_on_points:
-                guess_job = call_schedule_qm(package_name, guess_args, path_hdf5,
+            if k in calc_new_wf_guess_on_points or is_restart:
+                guess_job = call_schedule_qm(package_name, guess_args,
+                                             path_hdf5,
                                              point_dir, job_files, k, gs,
                                              nHOMOS, nLUMOS,
                                              project_name=project_name,

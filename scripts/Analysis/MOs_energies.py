@@ -1,34 +1,12 @@
+import argparse
 import matplotlib
 matplotlib.use('Agg')
 
 from os.path import join
-from interactive import ask_question
 
 import h5py
 import matplotlib.pyplot as plt
 import numpy as np
-
-#  ======================================<>====================================
-
-
-def obtain_data():
-    project = ask_question('What is the project name? ')
-    f5 = ask_question('What is the path of the hdf5-file? ')
-    nh = ask_question('What is the number of HOMOs to plot? [Default: 10] ',
-                      special='int', default='10')
-    nl = ask_question('What is the number of LUMOs to plot? [Default: 10] ',
-                      special='int', default='10')
-    save_fig = ask_question('Do you want to save the plot (y/n)? [Default: n] ',
-                            special='bool', default='n')
-    y_lower = ask_question('What is the lower limit for the y-axis? [Default: None] ',
-                           special='float')
-    y_upper = ask_question('What is the upper limit for the y-axis? [Default: None] ',
-                           special='float')
-
-    print(y_lower, y_upper, isinstance(y_lower, str))
-    
-    return project, f5, nh, nl, save_fig, y_lower, y_upper
-
 
 #  ======================================<>====================================
 h2ev = 27.2114  # hartrees to electronvolts
@@ -50,12 +28,12 @@ def fetch_data(project, path_HDF5):
         sh = len(xs)
         points = map(lambda x: join(project, 'point_{}'.format(x),
                                     'cp2k/mo/eigenvalues'), range(sh))
-        ess  = list(map(lambda x: f5[x].value, points))
+        ess = list(map(lambda x: f5[x].value, points))
 
     return list(map(lambda x: x.dot(h2ev), ess))
 
 
-def plot_data(project, pathHDF5, nHOMOS, nLUMOS, save_fig, y_lower, y_upper):
+def plot_data(project, pathHDF5, homo, nHOMOS, nLUMOS, y_lower, y_upper):
     """
     Generates a PDF containing the representantion of the eigenvalues for
     a molecular system called `project` and stored in `pathHDF5`.
@@ -76,26 +54,44 @@ def plot_data(project, pathHDF5, nHOMOS, nLUMOS, save_fig, y_lower, y_upper):
     if y_lower is not None and y_upper is not None:
         plt.ylim(y_lower, y_upper)
     for i in range(nHOMOS):
-        plt.plot(ts, rs[99 - i], 'b')
+        plt.plot(ts, rs[homo - i], 'b')
     for i in range(nLUMOS):
-        plt.plot(ts, rs[100 + i], 'g')
+        plt.plot(ts, rs[homo + 1 + i], 'g')
         plt.tight_layout()
     for tic in ax.xaxis.get_major_ticks():
         tic.tick1On = tic.tick2On = False
     for tic in ax.yaxis.get_major_ticks():
         tic.tick1On = tic.tick2On = False
 
-    if save_fig:
-        plt.savefig('Eigenvalues.png', dpi=300 / magnifying_factor, format='png')
+    plt.savefig('Eigenvalues.png', dpi=300 / magnifying_factor, format='png')
 
     plt.show()
 
 
-def main():
-    project, f5, nh, nl, save_fig, y_lower, y_upper = obtain_data()
-    plot_data(project, f5, nh, nl, save_fig, y_lower, y_upper)
+def read_cmd_line(parser):
+    """
+    Parse Command line options.
+    """
+    args = parser.parse_args()
 
-# =================<>================================
+    attributes = ['p', 'hdf5', 'homo', 'nh', 'nl', 'yl', 'yu']
+
+    return [getattr(args, p) for p in attributes]
+
 
 if __name__ == "__main__":
-    main()
+    optional = "[-homo n -nh nh -nl nl -yl float -yu float]"
+    msg = " script -p project_name -hdf5 <path/to/hdf5> " + optional
+
+    parser = argparse.ArgumentParser(description=msg)
+    parser.add_argument('-p', required=True, help='Project name')
+    parser.add_argument('-hdf5', required=True, help='path to the HDF5 file')
+    parser.add_argument('-homo', help='homo index', type=int, default=19)
+    parser.add_argument('-nh', help='Number of HOMOS', type=int, default=10)
+    parser.add_argument('-nl', help='Number of LUMOS', type=int, default=10)
+    parser.add_argument('-yl', help='Lower limit of y-axis (ev)', type=float,
+                        default=-6)
+    parser.add_argument('-yu', help='upper limit of y-axis (ev)', type=float,
+                        default=1)
+
+    plot_data(*read_cmd_line(parser))

@@ -22,7 +22,7 @@ def create_paths_mos(project_name, i):
 
 def test_obaraSaika():
     """
-    Test the Obara-Saika scheme to compute overlap integrals and 
+    Test the Obara-Saika scheme to compute overlap integrals and
     then cumputed the derivated coupling using them.
     """
     project_name = 'ethylene'
