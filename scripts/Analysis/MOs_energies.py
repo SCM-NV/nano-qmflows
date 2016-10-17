@@ -28,7 +28,7 @@ def fetch_data(project, path_HDF5):
         sh = len(xs)
         points = map(lambda x: join(project, 'point_{}'.format(x),
                                     'cp2k/mo/eigenvalues'), range(sh))
-        ess  = list(map(lambda x: f5[x].value, points))
+        ess = list(map(lambda x: f5[x].value, points))
 
     return list(map(lambda x: x.dot(h2ev), ess))
 
@@ -75,12 +75,13 @@ def read_cmd_line(parser):
     args = parser.parse_args()
 
     attributes = ['p', 'hdf5', 'homo', 'nh', 'nl', 'yl', 'yu']
-    
+
     return [getattr(args, p) for p in attributes]
 
 
 if __name__ == "__main__":
-    msg = " script -p project_name -hdf5 <path/to/hdf5> [-homo n -nh nh -nl nl -yl float -yu float]"
+    optional = "[-homo n -nh nh -nl nl -yl float -yu float]"
+    msg = " script -p project_name -hdf5 <path/to/hdf5> " + optional
 
     parser = argparse.ArgumentParser(description=msg)
     parser.add_argument('-p', required=True, help='Project name')
@@ -88,7 +89,9 @@ if __name__ == "__main__":
     parser.add_argument('-homo', help='homo index', type=int, default=19)
     parser.add_argument('-nh', help='Number of HOMOS', type=int, default=10)
     parser.add_argument('-nl', help='Number of LUMOS', type=int, default=10)
-    parser.add_argument('-yl', help='Lower limit of y-axis (ev)', type=float, default=-6)
-    parser.add_argument('-yu', help='upper limit of y-axis (ev)', type=float, default=1)
+    parser.add_argument('-yl', help='Lower limit of y-axis (ev)', type=float,
+                        default=-6)
+    parser.add_argument('-yu', help='upper limit of y-axis (ev)', type=float,
+                        default=1)
 
     plot_data(*read_cmd_line(parser))
