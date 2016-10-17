@@ -150,7 +150,7 @@ def split_trajectory(path, nBlocks, pathOut):
     p = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, shell=True)
     rs = p.communicate()
     err = rs[1]
-    if not err:
+    if err:
         raise RuntimeError("Submission Errors: ".format(err))
     else:
-        return fnmatch.filter("chunk_xyz*", os.listdir())
+        return fnmatch.filter(os.listdir(), "chunk_xyz*")
