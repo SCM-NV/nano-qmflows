@@ -151,6 +151,6 @@ def split_trajectory(path, nBlocks, pathOut):
     rs = p.communicate()
     err = rs[1]
     if err:
-        raise RuntimeError("Submission Errors: ".format(err))
+        raise RuntimeError("Submission Errors: {}".format(err))
     else:
         return fnmatch.filter(os.listdir(), "chunk_xyz*")
