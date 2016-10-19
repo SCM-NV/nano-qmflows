@@ -1,11 +1,13 @@
 
 from functools import partial
+from math import sqrt
 from multiprocessing import Pool
 from nac.integrals.fourierTransform import (calculate_fourier_trasform_cartesian,
                               fun_density_real, transform_to_spherical)
 from nac.schedule.components import create_dict_CGFs
 from os.path import join
 from qmworks.parsers.xyzParser import readXYZ
+from qmworks.utils import concat
 
 import argparse
 import numpy as np
@@ -15,6 +17,15 @@ import os
 Vector = np.ndarray
 Matrix = np.ndarray
 
+# Definition of Alpha, beta and Chi points in the reciprocal space
+gammas_alpha = [(0, 0, 2), (0, 0, -2), (0, 2, 0), (0, -2, 0), (2, 0, 0), (-2, 0, 0)]
+
+gammas_beta = [(1, 1, 1), (-1, 1, 1), (1, -1, 1), (1, 1, -1), (-1, -1, 1),
+               (1, -1, -1), (-1, 1, -1), (-1, -1, -1)]
+
+chis_bb = [(1, 1, 0), (-1, 1, 0), (1, -1, 0), (-1, -1, 0),
+           (1, 0, 1), (-1, 0, 1), (1, 0, -1), (-1, 0, -1),
+           (0, 1, 1), (0, -1, 1), (0, 1, -1), (0, -1, -1)]
 
 def main(parser):
     """
@@ -42,19 +53,6 @@ def main(parser):
     count_cgfs = np.vectorize(lambda s: len(dictCGFs[s]))
     number_of_basis = np.sum(np.apply_along_axis(count_cgfs, 0, symbols))
 
-    # K-space grid to calculate the fuzzy band
-    initial = (0., 1., 1.)  # Gamma point
-    final = (0., 0., 0.)  # X point
-    nPoints = 10
-    grid_k_vectors = grid_kspace(initial, final, nPoints)
-
-    # Calculate what part of the grid is computed by each process
-    indexes = point_number_to_compute(1, nPoints)
-    start, end = indexes[0]
-
-    # Each process extract a subset of the grid
-    k_vectors = grid_k_vectors[start:end]
-
     # Compute the fourier transformation in cartesian coordinates
     fun_fourier = partial(calculate_fourier_trasform_cartesian, symbols,
                           coords, dictCGFs, number_of_basis)
@@ -65,13 +63,29 @@ def main(parser):
     # Compute the momentum density (an Scalar)
     momentum_density = partial(fun_density_real, fun_sphericals)
 
+    # K-space grid to calculate the fuzzy band
+    initial = (2 , 0., 0.)  # Gamma point
+    final = (1., 1., 0.)  # X point
+    nPoints = 10
+    # grid_k_vectors = grid_kspace(initial, final, nPoints)
+    grids_alpha = concat([[grid_kspace(init, final, nPoints) for final in chis_bb]
+                          for init in gammas_alpha])
+    grids_beta = concat([[grid_kspace(init, final, nPoints) for final in chis_bb]
+                         for init in gammas_beta])
+    
     # Apply the whole fourier transform to the subset of the grid
     # correspoding to each process
     with Pool() as p:
-        rss = p.map(momentum_density, k_vectors)
+        alphas = [normalize(p.map(momentum_density, grid_k))
+                  for grid_k in grids_alpha]
+        betas =  [normalize(p.map(momentum_density, grid_k))
+                  for grid_k in grids_beta]
+        rs_alphas = normalize(np.stack(alphas).sum(axis=0))
+        rs_betas = normalize(np.stack(betas).sum(axis=0))
+        # rss = normalize(p.map(momentum_density, grid_k_vectors))
 
-    # result = np.apply_along_axis(momentum_density, 1, k_vectors)
-    print("Results: ", rss)
+    print("Result Alphas: ", rs_alphas)
+    print("Result Betas: ", rs_betas)
 
 
 def point_number_to_compute(size, points) -> Vector:
@@ -121,6 +135,11 @@ def read_cmd_line(parser):
     return project_name, path_hdf5, path_xyz, basis_name, orbital
 
 
+def normalize(xs):
+    norm = sqrt(np.dot(xs, xs))
+
+    return np.array(xs) / norm
+    
 if __name__ == "__main__":
     msg = " script -hdf5 <path/to/hdf5> -xyz <path/to/geometry/xyz -b basis_name"
 
