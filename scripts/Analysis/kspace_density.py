@@ -57,7 +57,7 @@ def main(parser):
     momentum_density = partial(fun_density_real, fun_sphericals)
 
     # K-space grid to calculate the fuzzy band
-    nPoints = 10
+    nPoints = 20
     # grid_k_vectors = grid_kspace(initial, final, nPoints)
     path_gamma_alpha_chi = create_alpha_paths()
     path_gamma_beta_chi = create_beta_paths()
@@ -79,8 +79,9 @@ def main(parser):
 
     print("Result Alphas: ", rs_alphas)
     print("Result Betas: ", rs_betas)
+    print("Result Mean: ", normalize(rs_alphas + rs_betas))
 
-
+    
 def create_alpha_paths():
     """
     Create all the initial and final paths between gamma alpha and Chi_bb
@@ -89,7 +90,7 @@ def create_alpha_paths():
         return concat([list(zip(itertools.repeat(init), fs))
                        for init, fs in zip(initials, finals)])
 
-    initial_alpha_pos  = [(2, 0, 0), (0, 2, 0), (0, 0, 2)]
+    initial_alpha_pos = [(2, 0, 0), (0, 2, 0), (0, 0, 2)]
 
     final_alpha_x = [(1, 1, 0), (1, -1, 0), (1, 0, 1), (1, 0, -1)]
     final_alpha_y = [swap(t, 0, 1) for t in final_alpha_x]
@@ -200,13 +201,9 @@ def read_cmd_line(parser):
     Parse Command line options.
     """
     args = parser.parse_args()
-    project_name = args.p
-    path_hdf5 = args.hdf5
-    path_xyz = args.xyz
-    basis_name = args.basis if args.basis is not None else "DZVP-MOLOPT-SR-GTH"
-    orbital = args.orbital
-
-    return project_name, path_hdf5, path_xyz, basis_name, orbital
+    attributes = ['p', 'hdf5', 'xyz', 'basis', 'orbitals']
+    
+    return [getattr(args, x) for x in attributes]
 
 
 def normalize(xs):
@@ -220,8 +217,10 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=msg)
     parser.add_argument('-p', required=True, help='Project name')
     parser.add_argument('-hdf5', required=True, help='path to the HDF5 file')
-    parser.add_argument('-xyz', required=True, help='path to molecular gemetry')
-    parser.add_argument('-basis', help='Basis Name')
-    parser.add_argument('-orbital', required=True,
-                        help='orbital to compute band', type=int)
+    parser.add_argument('-xyz', required=True,
+                        help='path to molecular gemetry')
+    parser.add_argument('-basis', help='Basis Name',
+                        default="DZVP-MOLOPT-SR-GTH")
+    parser.add_argument('-orbitals', required=True,
+                        help='orbitals range to compute band', type=int)
     main(parser)
