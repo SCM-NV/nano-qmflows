@@ -28,7 +28,8 @@ def main(parser):
     PHYSICAL REVIEW B 87, 195420 (2013)
     """
     # Parse Command line
-    project_name, path_hdf5, path_xyz, basis_name, orbital = read_cmd_line(parser)
+    project_name, path_hdf5, path_xyz, basis_name, lower, \
+        upper = read_cmd_line(parser)
     # Use only the root process to initialize all the variables
     atoms = readXYZ(path_xyz)
     symbols = np.array([at.symbol for at in atoms])
@@ -46,6 +47,46 @@ def main(parser):
     count_cgfs = np.vectorize(lambda s: len(dictCGFs[s]))
     number_of_basis = np.sum(np.apply_along_axis(count_cgfs, 0, symbols))
 
+    # K-space grid to calculate the fuzzy band
+    nPoints = 20
+    # grid_k_vectors = grid_kspace(initial, final, nPoints)
+    map_grid_kspace = lambda ps: [grid_kspace(i, f, nPoints) for i, f in ps]
+
+    grids_alpha = map_grid_kspace(create_alpha_paths())
+    grids_beta = map_grid_kspace(create_beta_paths())
+
+    # Apply the whole fourier transform to the subset of the grid
+    # correspoding to each process
+    momentum_density = partial(compute_momentum_density, project_name, symbols,
+                               coords, dictCGFs, number_of_basis, path_hdf5)
+
+    orbitals = list(range(lower, upper + 1))
+    dim_x = len(orbitals)
+    result = np.empty((dim_x, nPoints))
+    with Pool() as p:
+        for i, orb in enumerate(orbitals):
+            print("Orbital: ", orb)
+            density = momentum_density(orb)
+            alphas = [normalize(p.map(density, grid_k))
+                      for grid_k in grids_alpha]
+            betas = [normalize(p.map(density, grid_k))
+                     for grid_k in grids_beta]
+            rs_alphas = normalize(np.stack(alphas).sum(axis=0))
+            rs_betas = normalize(np.stack(betas).sum(axis=0))
+            rss = normalize(rs_alphas + rs_betas)
+            result[i] = rss
+            print("Orb: ", orb)
+            print(rss)
+
+    np.savetxt("Grids.out", result)
+
+
+def compute_momentum_density(project_name, symbols, coords, dictCGFs,
+                             number_of_basis, path_hdf5, orbital):
+    """
+    Compute the reciprocal space density for a given Molecular
+    Orbital.
+    """
     # Compute the fourier transformation in cartesian coordinates
     fun_fourier = partial(calculate_fourier_trasform_cartesian, symbols,
                           coords, dictCGFs, number_of_basis)
@@ -54,34 +95,9 @@ def main(parser):
     fun_sphericals = partial(transform_to_spherical, fun_fourier,
                              path_hdf5, project_name, orbital)
     # Compute the momentum density (an Scalar)
-    momentum_density = partial(fun_density_real, fun_sphericals)
+    return partial(fun_density_real, fun_sphericals)
 
-    # K-space grid to calculate the fuzzy band
-    nPoints = 20
-    # grid_k_vectors = grid_kspace(initial, final, nPoints)
-    path_gamma_alpha_chi = create_alpha_paths()
-    path_gamma_beta_chi = create_beta_paths()
-    grids_alpha = [grid_kspace(init, final, nPoints)
-                   for init, final in path_gamma_alpha_chi]
-    grids_beta = [grid_kspace(init, final, nPoints)
-                  for init, final in path_gamma_beta_chi]
 
-    # Apply the whole fourier transform to the subset of the grid
-    # correspoding to each process
-    with Pool() as p:
-        alphas = [normalize(p.map(momentum_density, grid_k))
-                  for grid_k in grids_alpha]
-        betas = [normalize(p.map(momentum_density, grid_k))
-                 for grid_k in grids_beta]
-        rs_alphas = normalize(np.stack(alphas).sum(axis=0))
-        rs_betas = normalize(np.stack(betas).sum(axis=0))
-        # rss = normalize(p.map(momentum_density, grid_k_vectors))
-
-    print("Result Alphas: ", rs_alphas)
-    print("Result Betas: ", rs_betas)
-    print("Result Mean: ", normalize(rs_alphas + rs_betas))
-
-    
 def create_alpha_paths():
     """
     Create all the initial and final paths between gamma alpha and Chi_bb
@@ -126,7 +142,6 @@ def mirror_cube(gamma: Tuple) -> List:
     Find the Chi neighbors of a gamma alpha point
     """
     reflexion_axis = [i for i, x in enumerate(gamma) if x < 0]
-
     chi_positives = [(1, 0, 1), (1, 1, 0), (0, 1, 1)]
 
     return [(gamma, apply_reflexion(chi, reflexion_axis))
@@ -151,7 +166,7 @@ def mirror_axis(t: Tuple, i: int) -> Tuple:
     xs[i] = -t[i]
 
     return tuple(xs)
-    
+
 
 def swap(t: Tuple, i: int, j: int) -> Tuple:
     """
@@ -162,7 +177,7 @@ def swap(t: Tuple, i: int, j: int) -> Tuple:
     xs[i], xs[j] = v2, v1
     return tuple(xs)
 
-    
+
 def point_number_to_compute(size, points) -> Vector:
     """ Compute how many grid points is computed in a given worker """
     res = points % size
@@ -201,8 +216,8 @@ def read_cmd_line(parser):
     Parse Command line options.
     """
     args = parser.parse_args()
-    attributes = ['p', 'hdf5', 'xyz', 'basis', 'orbitals']
-    
+    attributes = ['p', 'hdf5', 'xyz', 'basis', 'lower', 'upper']
+
     return [getattr(args, x) for x in attributes]
 
 
@@ -210,7 +225,7 @@ def normalize(xs):
     norm = sqrt(np.dot(xs, xs))
 
     return np.array(xs) / norm
-    
+
 if __name__ == "__main__":
     msg = " script -hdf5 <path/to/hdf5> -xyz <path/to/geometry/xyz -b basis_name"
 
@@ -221,6 +236,11 @@ if __name__ == "__main__":
                         help='path to molecular gemetry')
     parser.add_argument('-basis', help='Basis Name',
                         default="DZVP-MOLOPT-SR-GTH")
-    parser.add_argument('-orbitals', required=True,
-                        help='orbitals range to compute band', type=int)
+    parser.add_argument('-lower',
+                        help='lower orbitals to compute band', type=int,
+                        default=19)
+    parser.add_argument('-upper',
+                        help='upper orbitals to compute band', type=int,
+                        default=21)
+
     main(parser)
