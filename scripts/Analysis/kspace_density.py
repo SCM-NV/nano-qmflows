@@ -1,31 +1,24 @@
 
-from functools import partial
+from functools import (partial, reduce)
 from math import sqrt
 from multiprocessing import Pool
 from nac.integrals.fourierTransform import (calculate_fourier_trasform_cartesian,
-                              fun_density_real, transform_to_spherical)
+                                            fun_density_real, transform_to_spherical)
 from nac.schedule.components import create_dict_CGFs
 from os.path import join
 from qmworks.parsers.xyzParser import readXYZ
 from qmworks.utils import concat
 
 import argparse
+import itertools
 import numpy as np
 import os
 
 # Some Hint about the types
+from typing import (List, Tuple)
 Vector = np.ndarray
 Matrix = np.ndarray
 
-# Definition of Alpha, beta and Chi points in the reciprocal space
-gammas_alpha = [(0, 0, 2), (0, 0, -2), (0, 2, 0), (0, -2, 0), (2, 0, 0), (-2, 0, 0)]
-
-gammas_beta = [(1, 1, 1), (-1, 1, 1), (1, -1, 1), (1, 1, -1), (-1, -1, 1),
-               (1, -1, -1), (-1, 1, -1), (-1, -1, -1)]
-
-chis_bb = [(1, 1, 0), (-1, 1, 0), (1, -1, 0), (-1, -1, 0),
-           (1, 0, 1), (-1, 0, 1), (1, 0, -1), (-1, 0, -1),
-           (0, 1, 1), (0, -1, 1), (0, 1, -1), (0, -1, -1)]
 
 def main(parser):
     """
@@ -64,22 +57,22 @@ def main(parser):
     momentum_density = partial(fun_density_real, fun_sphericals)
 
     # K-space grid to calculate the fuzzy band
-    initial = (2 , 0., 0.)  # Gamma point
-    final = (1., 1., 0.)  # X point
     nPoints = 10
     # grid_k_vectors = grid_kspace(initial, final, nPoints)
-    grids_alpha = concat([[grid_kspace(init, final, nPoints) for final in chis_bb]
-                          for init in gammas_alpha])
-    grids_beta = concat([[grid_kspace(init, final, nPoints) for final in chis_bb]
-                         for init in gammas_beta])
-    
+    path_gamma_alpha_chi = create_alpha_paths()
+    path_gamma_beta_chi = create_beta_paths()
+    grids_alpha = [grid_kspace(init, final, nPoints)
+                   for init, final in path_gamma_alpha_chi]
+    grids_beta = [grid_kspace(init, final, nPoints)
+                  for init, final in path_gamma_beta_chi]
+
     # Apply the whole fourier transform to the subset of the grid
     # correspoding to each process
     with Pool() as p:
         alphas = [normalize(p.map(momentum_density, grid_k))
                   for grid_k in grids_alpha]
-        betas =  [normalize(p.map(momentum_density, grid_k))
-                  for grid_k in grids_beta]
+        betas = [normalize(p.map(momentum_density, grid_k))
+                 for grid_k in grids_beta]
         rs_alphas = normalize(np.stack(alphas).sum(axis=0))
         rs_betas = normalize(np.stack(betas).sum(axis=0))
         # rss = normalize(p.map(momentum_density, grid_k_vectors))
@@ -88,6 +81,87 @@ def main(parser):
     print("Result Betas: ", rs_betas)
 
 
+def create_alpha_paths():
+    """
+    Create all the initial and final paths between gamma alpha and Chi_bb
+    """
+    def zip_path_coord(initials, finals):
+        return concat([list(zip(itertools.repeat(init), fs))
+                       for init, fs in zip(initials, finals)])
+
+    initial_alpha_pos  = [(2, 0, 0), (0, 2, 0), (0, 0, 2)]
+
+    final_alpha_x = [(1, 1, 0), (1, -1, 0), (1, 0, 1), (1, 0, -1)]
+    final_alpha_y = [swap(t, 0, 1) for t in final_alpha_x]
+    final_alpha_z = [swap(t, 1, 2) for t in final_alpha_y]
+
+    final_positives = [final_alpha_x, final_alpha_y, final_alpha_z]
+
+    positives = zip_path_coord(initial_alpha_pos, final_positives)
+
+    initial_alpha_neg = [mirror_axis(t, i)
+                         for i, t in enumerate(initial_alpha_pos)]
+
+    final_negatives = [list(map(lambda xs: mirror_axis(xs, i), fs))
+                       for i, fs in enumerate(final_positives)]
+
+    negatives = zip_path_coord(initial_alpha_neg, final_negatives)
+
+    return concat([positives, negatives])
+
+
+def create_beta_paths():
+    """
+    Create all the initial and final paths between gamma alpha and Chi_bb
+    """
+    gammas_beta = [(1, 1, 1), (-1, 1, 1), (1, -1, 1), (1, 1, -1), (-1, -1, 1),
+                   (1, -1, -1), (-1, 1, -1), (-1, -1, -1)]
+
+    return concat([mirror_cube(gamma) for gamma in gammas_beta])
+
+
+def mirror_cube(gamma: Tuple) -> List:
+    """
+    Find the Chi neighbors of a gamma alpha point
+    """
+    reflexion_axis = [i for i, x in enumerate(gamma) if x < 0]
+
+    chi_positives = [(1, 0, 1), (1, 1, 0), (0, 1, 1)]
+
+    return [(gamma, apply_reflexion(chi, reflexion_axis))
+            for chi in chi_positives]
+
+
+def apply_reflexion(t: Tuple, xs: List) -> Tuple:
+    """
+    Apply reflexion operation on the coordinate ``t`` over axis ``xs``
+    """
+    if not xs:
+        return t
+    else:
+        return reduce(lambda acc, i: mirror_axis(acc, i), xs, t)
+
+
+def mirror_axis(t: Tuple, i: int) -> Tuple:
+    """
+    Reflect the coordinate ``i`` in tuple ``t``.
+    """
+    xs = list(t)
+    xs[i] = -t[i]
+
+    return tuple(xs)
+    
+
+def swap(t: Tuple, i: int, j: int) -> Tuple:
+    """
+    swap entries with indexes i and j in tuple t
+    """
+    xs = list(t)
+    v1, v2 = t[i], t[j]
+    xs[i], xs[j] = v2, v1
+    return tuple(xs)
+
+    
 def point_number_to_compute(size, points) -> Vector:
     """ Compute how many grid points is computed in a given worker """
     res = points % size

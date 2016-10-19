@@ -19,7 +19,6 @@ Matrix = np.ndarray
 def fun_density_real(function: Callable, k: float) -> float:
     """ Compute the momentum density"""
     xs = function(k)
-    print("Orbital transformation is: ", xs)
     return np.dot(xs, np.conjugate(xs)).real
 
 
@@ -58,7 +57,6 @@ def calculate_fourier_trasform_cartesian(atomic_symbols: Vector,
 
     returns: Numpy array
     """
-    print("K-vector: ", ks)
     stream_coord = chunksOf(atomic_coords, 3)
     stream_cgfs = yieldCGF(dictCGFs, atomic_symbols)
     fun = partial(calculate_fourier_trasform_atom, ks)
