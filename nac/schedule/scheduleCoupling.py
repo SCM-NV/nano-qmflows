@@ -56,7 +56,8 @@ def lazy_schedule_couplings(i, path_hdf5, dictCGFs, geometries, mo_paths, dt=1,
                         retrieve_hdf5_data(path_hdf5,
                                            mo_paths[i + j][1]), range(3)))
 
-        # Calculate the coupling among nCouplings/2 HOMOs and nCouplings/2 LUMOs.
+        #  Calculate the coupling among nCouplings/2 HOMOs
+        #  and nCouplings/2 LUMOs.
         if nCouplings is not None:
             _, nStates = mos[0].shape
             middle, ncs = [n // 2 for n in [nStates, nCouplings]]
