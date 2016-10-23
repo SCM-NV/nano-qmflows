@@ -86,7 +86,7 @@ def lazy_schedule_couplings(i, path_hdf5, dictCGFs, geometries, mo_paths, dt=1,
         is_done = output_path in f5
     if not is_done:
         calc_coupling(output_path, dt)
-    esle:
+    else:
         print(output_path, " Coupling is already in the HDF5")
     return output_path
 
