@@ -84,11 +84,10 @@ def lazy_schedule_couplings(i, path_hdf5, dictCGFs, geometries, mo_paths, dt=1,
     # Test if the coupling is store in the HDF5 calculate it
     with h5py.File(path_hdf5, 'r') as f5:
         is_done = output_path in f5
-        if not is_done:
-            calc_coupling(output_path, dt)
-        else:
-            print(output_folder, "is already present in the HDF5.")
-
+    if not is_done:
+        calc_coupling(output_path, dt)
+    esle:
+        print(output_path, " Coupling is already in the HDF5")
     return output_path
 
 
