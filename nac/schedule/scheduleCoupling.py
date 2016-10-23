@@ -56,17 +56,18 @@ def lazy_schedule_couplings(i, path_hdf5, dictCGFs, geometries, mo_paths, dt=1,
                         retrieve_hdf5_data(path_hdf5,
                                            mo_paths[i + j][1]), range(3)))
 
-        # Calculate the coupling among nCouplings/2 HOMOs and  nCouplings/2 LUMOs.
+        # Calculate the coupling among nCouplings/2 HOMOs and nCouplings/2 LUMOs.
         if nCouplings is not None:
             _, nStates = mos[0].shape
-            middle, ncs  = [n // 2 for n in  [nStates, nCouplings]]
+            middle, ncs = [n // 2 for n in [nStates, nCouplings]]
             lower, upper = middle - ncs, middle + ncs
             # Extrract a subset of nCouplings coefficients
             mos = tuple(map(lambda xs: xs[:, lower: upper], mos))
 
         # time in atomic units
         dt_au = dt * femtosec2au
-        rs = calculateCoupling3Points(geometries, mos, dictCGFs, dt_au, trans_mtx)
+        rs = calculateCoupling3Points(geometries, mos, dictCGFs, dt_au,
+                                      trans_mtx)
 
         # Store the couplings
         with h5py.File(path_hdf5) as f5:
@@ -83,8 +84,10 @@ def lazy_schedule_couplings(i, path_hdf5, dictCGFs, geometries, mo_paths, dt=1,
     # Test if the coupling is store in the HDF5 calculate it
     with h5py.File(path_hdf5, 'r') as f5:
         is_done = output_path in f5
-    if not is_done:
-        calc_coupling(output_path, dt)
+        if not is_done:
+            calc_coupling(output_path, dt)
+        else:
+            print(output_folder, "is already present in the HDF5.")
 
     return output_path
 
