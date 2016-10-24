@@ -16,7 +16,7 @@ from nac.basisSet.basisNormalization import createNormalizedCGFs
 from nac.schedule.scheduleCp2k import prepare_job_cp2k
 from qmworks.common import InputKey
 from qmworks.hdf5.quantumHDF5 import (cp2k2hdf5, turbomole2hdf5)
-from qmworks.utils import (chunksOf, flatten)
+from qmworks.utils import chunksOf
 
 
 # ==============================<>=========================
@@ -196,7 +196,7 @@ def split_file_geometries(pathXYZ):
         xss = f.readlines()
 
     numat = int(xss[0].split()[0])
-    return list(map(flatten, chunksOf(xss, numat + 2)))
+    return list(map(''.join, chunksOf(xss, numat + 2)))
 
 
 def create_dict_CGFs(path_hdf5, basisname, xyz, package_name='cp2k',

@@ -17,7 +17,6 @@ from nac.workflows import initialize
 from noodles import gather
 from qmworks import run
 from qmworks.parsers import parse_string_xyz
-from qmworks.utils import flatten
 
 # ==============================> Main <==================================
 
@@ -90,8 +89,9 @@ def calculate_ETR(package_name, project_name, cp2k_args, geometries=None,
 
     electronTransferRates = run(gather(*etrs))
 
-    result = flatten(map(lambda ts: '{:10.6f} {:10.6f}\n'.format(*ts),
-                         electronTransferRates))
+    rs = list(map(lambda ts: '{:10.6f} {:10.6f}\n'.format(*ts),
+                  electronTransferRates))
+    result = ''.join(rs)
 
     with open("ElectronTranferRates", "w") as f:
         f.write(result)
