@@ -331,7 +331,7 @@ def main():
     cp2k_args.cell_parameters = cell
 
     main_dft = cp2k_args.specific.cp2k.force_eval.dft
-    main_dft.scf.added_mos = 100
+    main_dft.scf.added_mos = 20
     main_dft.scf.diagonalization.jacobi_threshold = 1e-6
 
     # Setting to calculate the WF use as guess
