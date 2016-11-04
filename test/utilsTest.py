@@ -23,10 +23,13 @@ def remove_file_directory(paths):
                 shutil.rmtree(p)
 
 
-def try_to_remove(path_files=['test/test_files/test.hdf5']):
+def try_to_remove(path_files=None):
     """
     Decorator to remove the intermediate data created during the testing.
     """
+    if path_files is None:
+        path_files = ['test/test_files/test.hdf5']
+
     def remove_test_files(fun):
         @wraps(fun)
         def wrapper(*args, **kwargs):

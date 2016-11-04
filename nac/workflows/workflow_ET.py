@@ -34,8 +34,8 @@ def search_data_in_hdf5(path_hdf5, path_to_prop):
     return pred
 
 
-def calculate_ETR(package_name, project_name, cp2k_args, geometries=None,
-                  pathTimeCoeffs=None, initial_conditions=[0],
+def calculate_ETR(package_name, project_name, package_args, geometries=None,
+                  pathTimeCoeffs=None, initial_conditions=None,
                   path_hdf5=None, enumerate_from=0, package_config=None,
                   calc_new_wf_guess_on_points=None, guess_args=None,
                   work_dir=None, traj_folders=None, basisname=None,
@@ -49,28 +49,34 @@ def calculate_ETR(package_name, project_name, cp2k_args, geometries=None,
     :param project_name: Folder name where the computations
     are going to be stored.
     :type project_name: String
-    :param geometries: List of string cotaining the molecular geometries
-    numerical results.
-    :type path_traj_xyz: [String]
     :param package_args: Specific settings for the package
     :type package_args: dict
-    :param use_wf_guess_each: number of Computations that used a previous
-    calculation as guess for the wave function.
-    :type use_wf_guess_each: Int
+    :param geometries: List of string cotaining the molecular geometries
+                       numerical results.
+    :type path_traj_xyz: [String]
+    :param calc_new_wf_guess_on_points: number of Computations that used a
+                                        previous calculation as guess for the
+                                        wave function.
+    :type calc_new_wf_guess_on_points: Int
     :param enumerate_from: Number from where to start enumerating the folders
-    create for each point in the MD
+                           create for each point in the MD.
     :type enumerate_from: Int
     :param package_config: Parameters required by the Package.
     :type package_config: Dict
+
     :returns: None
     """
+    # Initial conditions
+    if initial_conditions is None:
+        initial_conditions = [0]
+
     # Time-dependent coefficients
     time_depend_coeffs = retrieve_hdf5_data(path_hdf5, pathTimeCoeffs)
 
     # prepare Cp2k Job
     # Point calculations Using CP2K
     mo_paths_hdf5 = calculate_mos(package_name, geometries, project_name,
-                                  path_hdf5, traj_folders, cp2k_args,
+                                  path_hdf5, traj_folders, package_args,
                                   guess_args, calc_new_wf_guess_on_points,
                                   enumerate_from,
                                   package_config=package_config)
