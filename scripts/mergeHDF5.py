@@ -4,11 +4,11 @@ from os.path import join
 import argparse
 import h5py
 # ====================================<>=======================================
-msg = " script -i <Path/to/source/hdf5> -o <path/to/destiny/hdf5>"
+msg = " script -i <Path(s)/to/source/hdf5> -o <path/to/destiny/hdf5>"
 
 parser = argparse.ArgumentParser(description=msg)
 parser.add_argument('-i', required=True,
-                    help='Path to the HDF5 to merge')
+                    help='Path(s) to the HDF5 to merge', nargs='+')
 parser.add_argument('-o', required=True,
                     help='Path to the HDF5 were the merge is going to be stored')
 
@@ -43,8 +43,9 @@ def mergeHDF5(inp, out):
 
 
 def main():
-    inp, out = read_cmd_line()
-    mergeHDF5(inp, out)
+    inps, out = read_cmd_line()
+    for i in inps:
+        mergeHDF5(i, out)
 
 
 # ====================================<>=======================================
