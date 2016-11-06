@@ -13,10 +13,11 @@ import os
 
 # ==================> Internal modules <==========
 from nac.basisSet.basisNormalization import createNormalizedCGFs
+from nac.common import retrieve_hdf5_data
 from nac.schedule.scheduleCp2k import prepare_job_cp2k
 from qmworks.common import InputKey
-from qmworks.hdf5.quantumHDF5 import (cp2k2hdf5, turbomole2hdf5)
 from qmworks.hdf5 import dump_to_hdf5
+from qmworks.hdf5.quantumHDF5 import (cp2k2hdf5, turbomole2hdf5)
 from qmworks.utils import chunksOf
 
 
@@ -72,27 +73,29 @@ def calculate_mos(package_name, all_geometries, project_name, path_hdf5,
         """
         Search if the node exists in the HDF5 file.
         """
-        with h5py.File(path_hdf5, 'r') as f5:
-            if isinstance(xs, list):
-                return all(path in f5 for path in xs)
-            else:
-                return xs in f5
+        if os.path.exists(path_hdf5):
+            with h5py.File(path_hdf5, 'r') as f5:
+                if isinstance(xs, list):
+                    return all(path in f5 for path in xs)
+                else:
+                    return xs in f5
+        else:
+            return False
 
     # First calculation has no initial guess
     guess_job = None
 
     # calculate the rest of the job using the previous point as initial guess
-    path_to_orbitals = []  # list to the nodes in the HDF5 containing the MOs
+    orbitals = []  # list to the nodes in the HDF5 containing the MOs
     for j, gs in enumerate(all_geometries):
-        print("Geometry J: ", j)
         k = j + enumerate_from
+        hdf5_orb_path = create_properties_path(k)
         # If the MOs are already store in the HDF5 format return the path
         # to them and skip the calculation
-        hdf5_orb_path = create_properties_path(k)
         if search_data_in_hdf5(hdf5_orb_path):
-            path_to_orbitals.append(hdf5_orb_path)
+            # mo_orb = retrieve_hdf5_data(path_hdf5, hdf5_orb_path)
+            orbitals.append(hdf5_orb_path)
         else:
-            print("Else statement")
             point_dir = folders[j]
             job_files = create_file_names(point_dir, k)
             # A job  is a restart if guess_job is None and the list of
@@ -100,7 +103,8 @@ def calculate_mos(package_name, all_geometries, project_name, path_hdf5,
             is_restart = bool((guess_job is None) and
                               calc_new_wf_guess_on_points)
             # Calculating initial guess
-            if k in calc_new_wf_guess_on_points or is_restart:
+            if (((calc_new_wf_guess_on_points is not None) and
+                 k in calc_new_wf_guess_on_points) or is_restart):
                 guess_job = call_schedule_qm(package_name, guess_args,
                                              point_dir, job_files, k, gs,
                                              project_name=project_name,
@@ -114,17 +118,16 @@ def calculate_mos(package_name, all_geometries, project_name, path_hdf5,
                                           project_name=project_name,
                                           guess_job=guess_job,
                                           package_config=package_config)
-
-            job_name = 'point_{}'.format(k)
-
-            with h5py.File(path_hdf5, 'a') as f5:
-                dump_to_hdf5(promise_qm.orbitals, 'cp2k', f5, project_name,
-                             job_name)
-
-            path_to_orbitals.append(hdf5_orb_path)
+            # New guess
             guess_job = promise_qm
+            # restuls
+            with h5py.File(path_hdf5, 'r+') as f5:
+                dump_to_hdf5(promise_qm.orbitals, 'cp2k', f5,
+                             project_name=project_name,
+                             job_name='point_{}'.format(k))
+            orbitals.append(promise_qm.orbitals)
 
-    return gather(*path_to_orbitals)
+    return gather(*orbitals)
 
 
 def call_schedule_qm(packageName, package_args, point_dir, job_files, k,

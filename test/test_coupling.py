@@ -1,5 +1,5 @@
 
-from nac import initialize
+from nac import (calculate_mos, initialize)
 from nac.common import change_mol_units
 from nac.schedule.scheduleCoupling import lazy_schedule_couplings
 from nac.workflows.workflow_coupling import generate_pyxaid_hamiltonians
@@ -52,7 +52,22 @@ def test_workflow_coupling():
                                     calculate_guesses=None,
                                     path_hdf5=path_hdf5_test,
                                     scratch=scratch_path)
-        fun_workflow_coupling(initial_config)
+        basis_pot = initial_config['package_config']
+        # create Settings for the Cp2K Jobs
+        cp2k_args = Settings()
+        cp2k_args.basis = "DZVP-MOLOPT-SR-GTH"
+        cp2k_args.potential = "GTH-PBE"
+        cp2k_args.cell_parameters = [12.74] * 3
+        dft = cp2k_args.specific.cp2k.force_eval.dft
+        dft.scf.added_mos = 20
+        dft.scf.diagonalization.jacobi_threshold = 1e-6
+
+        force = cp2k_args.specific.cp2k.force_eval
+        force.dft.basis_set_file_name = basis_pot['basis']
+        force.dft.potential_file_name = basis_pot['potential']
+
+        fun_calculte_mos(cp2k_args, initial_config)
+        # fun_workflow_coupling(initial_config)
         # fun_lazy_coupling(initial_config)
     finally:
         # remove tmp data and clean global config
@@ -60,7 +75,19 @@ def test_workflow_coupling():
 
 
 @try_to_remove([path_hdf5_test])
-def fun_workflow_coupling(initial_config):
+def fun_calculte_mos(cp2k_args, ds):
+    """
+    """
+    print("DS: ", ds)
+    paths = calculate_mos('cp2k', ds['geometries'], project_name,
+                          path_hdf5_test, ds['traj_folders'], cp2k_args,
+                          package_config=ds['package_config'])
+    rs = run(paths)
+    print(rs)
+
+
+@try_to_remove([path_hdf5_test])
+def fun_workflow_coupling(cp2k_args, initial_config):
     """
     Call cp2k and calculated the coupling for an small molecule.
     """

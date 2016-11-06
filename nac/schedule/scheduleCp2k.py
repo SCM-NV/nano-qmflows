@@ -39,7 +39,6 @@ def prepare_cp2k_settings(geometry, files, cp2k_args, k, work_dir,
     """
     # Search for the environmental variable BASISCP2K containing the path
     # to the Basis set folder
-
     basis_file = cp2k_config["basis"]
     potential_file = cp2k_config["potential"]
 
