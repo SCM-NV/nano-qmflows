@@ -1,18 +1,9 @@
-
-
-from qmworks.hdf5.quantumHDF5 import turbomole2hdf5
-from qmworks.parsers.xyzParser import readXYZ
-
-from os.path import join
-import h5py
-import numpy as np
-
-# ===============================<>============================================
-from nac.schedule.components import create_dict_CGFs
 from nac.common import InputKey
-from nac.integrals.overlapIntegral import calcMtxOverlapP
+from os.path import join
+from qmworks.hdf5.quantumHDF5 import turbomole2hdf5
+from utilsTest import try_to_remove
 
-from utilsTest import (offdiagonalTolerance, triang2mtx, try_to_remove)
+import h5py
 
 # ===============================<>============================================
 path_basis = 'test/test_files/basis_turbomole'
@@ -59,48 +50,3 @@ def test_store_basisSet():
         turbomole2hdf5(f5, [keyBasis])
         if not f5["turbomole/basis"]:
             assert False
-
-
-@try_to_remove([path_hdf5])
-def test_store_MO_h5():
-    """
-    test if the MO are stored in the HDF5 format
-    """
-
-    with h5py.File(path_hdf5, chunks=True) as f5:
-        path_eigenvals, path_coeffs = dump_MOs_coeff(f5, path_es, path_css,
-                                                     number_of_orbs,
-                                                     number_of_orb_funs)
-        if not(f5[path_eigenvals] and f5[path_coeffs]):
-            assert False
-
-
-@try_to_remove([path_hdf5])
-def test_overlap():
-    """
-    The overlap matrix must fulfill the following equation C^(+) S C = I
-    where S is the overlap matrix, C is the MO matrix and
-    C^(+) conjugated complex.
-    """
-    basis = 'def2-SV(P)'
-    mol = readXYZ(path_xyz)
-    labels = [at.symbol for at in mol]
-
-    # Build the Conctracted Gauss Functions
-    dictCGFs = create_dict_CGFs(path_hdf5, basis, mol,
-                                package_name='turbomole',
-                                package_config={'basis': path_basis})
-    cgfsN = [dictCGFs[l] for l in labels]
-
-    with h5py.File(path_hdf5, chunks=True) as f5:
-        path_eigenvals, path_coeffs = dump_MOs_coeff(f5, path_es, path_css,
-                                                     number_of_orbs,
-                                                     number_of_orb_funs)
-        trr = f5[path_css].value
-
-    dim = sum(len(xs) for xs in cgfsN)
-    css = np.transpose(trr)
-    mtx_overlap = triang2mtx(calcMtxOverlapP(mol, cgfsN), dim)
-    rs = np.dot(trr, np.dot(mtx_overlap, css))
-
-    assert offdiagonalTolerance(rs)

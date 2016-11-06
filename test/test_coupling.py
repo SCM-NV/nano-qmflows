@@ -13,11 +13,13 @@ from utilsTest import try_to_remove
 import h5py
 import numpy as np
 import os
-import plams
+import shutil
+
 # ===============================<>============================================
 path_hdf5 = 'test/test_files/ethylene.hdf5'
 path_hdf5_test = 'test/test_files/test.hdf5'
 path_xyz = 'test/test_files/threePoints.xyz'
+project_name = 'ethylene'
 
 
 def is_antisymmetric(arr):
@@ -29,37 +31,57 @@ def is_antisymmetric(arr):
 
 
 @attr('slow')
-@try_to_remove([path_hdf5_test])
 def test_workflow_coupling():
+    """
+    run a single point calculation using CP2K and store the MOs.
+    """
+    home = os.path.expanduser('~')  # HOME Path
+    scratch_path = join(home, '.test_qmworks')
+    if not os.path.exists(scratch_path):
+        os.makedirs(scratch_path)
+    try:
+        shutil.copy('test/test_files/BASIS_MOLOPT', scratch_path)
+        shutil.copy('test/test_files/GTH_POTENTIALS', scratch_path)
+        basiscp2k = join(scratch_path, 'BASIS_MOLOPT')
+        potcp2k = join(scratch_path, 'GTH_POTENTIALS')
+
+        initial_config = initialize(project_name, path_xyz,
+                                    "DZVP-MOLOPT-SR-GTH",
+                                    path_basis=basiscp2k,
+                                    path_potential=potcp2k,
+                                    calculate_guesses=None,
+                                    path_hdf5=path_hdf5_test,
+                                    scratch=scratch_path)
+        fun_workflow_coupling(initial_config)
+        # fun_lazy_coupling(initial_config)
+    finally:
+        # remove tmp data and clean global config
+        shutil.rmtree(scratch_path)
+
+
+@try_to_remove([path_hdf5_test])
+def fun_workflow_coupling(initial_config):
     """
     Call cp2k and calculated the coupling for an small molecule.
     """
-    plams.init()
-    project_name = 'ethylene'
-    home = os.path.expanduser('~')
-    basiscp2k = join(home, "Cp2k/cp2k_basis/BASIS_MOLOPT")
-    potcp2k = join(home, "Cp2k/cp2k_basis/GTH_POTENTIALS")
-
+    basis_pot = initial_config['package_config']
     # create Settings for the Cp2K Jobs
     cp2k_args = Settings()
     cp2k_args.basis = "DZVP-MOLOPT-SR-GTH"
     cp2k_args.potential = "GTH-PBE"
     cp2k_args.cell_parameters = [12.74] * 3
     dft = cp2k_args.specific.cp2k.force_eval.dft
-    dft.scf.added_mos = 50
+    dft.scf.added_mos = 20
     dft.scf.diagonalization.jacobi_threshold = 1e-6
 
-    initial_config = initialize(project_name, path_xyz,
-                                basisname=cp2k_args.basis, path_basis=basiscp2k,
-                                path_potential=potcp2k, calculate_guesses=None,
-                                path_hdf5=path_hdf5_test,
-                                scratch='tmp')
+    force = cp2k_args.specific.cp2k.force_eval
+    force.dft.basis_set_file_name = basis_pot['basis']
+    force.dft.potential_file_name = basis_pot['potential']
 
     generate_pyxaid_hamiltonians('cp2k', project_name,
                                  cp2k_args, nCouplings=40,
                                  **initial_config)
 
-    plams.finish()
     with h5py.File(path_hdf5) as f5, h5py.File(path_hdf5_test) as f6:
         path_es = 'ethylene/point_1/cp2k/mo/eigenvalues'
         es_expected = f5[path_es].value
@@ -75,26 +97,14 @@ def test_workflow_coupling():
 
 
 @try_to_remove([path_hdf5_test])
-def test_lazy_coupling():
+def fun_lazy_coupling(initial_config):
     """
     The matrix containing the derivative coupling must be antisymmetric and
     it should be equal to the already known value stored in the HDF5 file:
     `test/test_files/ethylene.hdf5`
     """
-    project_name = 'ethylene'
-    basisname = "DZVP-MOLOPT-SR-GTH"
-
-    home = os.path.expanduser('~')
-    basiscp2k = join(home, "Cp2k/cp2k_basis/BASIS_MOLOPT")
-    potcp2k = join(home, "Cp2k/cp2k_basis/GTH_POTENTIALS")
-
-    initial_config = initialize(project_name, path_xyz,
-                                path_hdf5=path_hdf5,
-                                basisname=basisname, path_basis=basiscp2k,
-                                path_potential=potcp2k,
-                                scratch='test/test_files')
-
     parser = curry(parse_string_xyz)
+
     # function composition
     new_fun = change_mol_units * parser
     geometries = tuple(map(new_fun, initial_config['geometries']))

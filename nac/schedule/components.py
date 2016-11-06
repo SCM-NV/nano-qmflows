@@ -5,7 +5,7 @@ __all__ = ["calculate_mos", "create_dict_CGFs", "create_point_folder",
 
 # ================> Python Standard  and third-party <==========
 from collections import namedtuple
-from noodles import gather
+from noodles import (gather, schedule)
 from os.path import join
 
 import h5py
@@ -16,6 +16,7 @@ from nac.basisSet.basisNormalization import createNormalizedCGFs
 from nac.schedule.scheduleCp2k import prepare_job_cp2k
 from qmworks.common import InputKey
 from qmworks.hdf5.quantumHDF5 import (cp2k2hdf5, turbomole2hdf5)
+from qmworks.hdf5 import dump_to_hdf5
 from qmworks.utils import chunksOf
 
 
@@ -26,10 +27,11 @@ JobFiles = namedtuple("JobFiles", ("get_xyz", "get_inp", "get_out", "get_MO"))
 # ==============================> Tasks <=====================================
 
 
-def calculate_mos(package_name, all_geometries, project_name, path_hdf5, folders,
-                  package_args, guess_args=None,
+@schedule
+def calculate_mos(package_name, all_geometries, project_name, path_hdf5,
+                  folders, package_args, guess_args=None,
                   calc_new_wf_guess_on_points=None, enumerate_from=0,
-                  nHOMOS=20, nLUMOS=20, package_config=None):
+                  package_config=None):
     """
     Look for the MO in the HDF5 file if they do not exists calculate them by
     splitting the jobs in batches given by the ``restart_chunk`` variables.
@@ -57,7 +59,7 @@ def calculate_mos(package_name, all_geometries, project_name, path_hdf5, folders
     create for each point in the MD
     :type enumerate_from: Int
     :returns: path to nodes in the HDF5 file to MO energies
-    and MO coefficients.
+              and MO coefficients.
     """
     def create_properties_path(i):
         """
@@ -66,35 +68,31 @@ def calculate_mos(package_name, all_geometries, project_name, path_hdf5, folders
         rs = join(project_name, 'point_{}'.format(i), package_name, 'mo')
         return [join(rs, 'eigenvalues'), join(rs, 'coefficients')]
 
-    def search_data_in_hdf5(i):
+    def search_data_in_hdf5(xs):
         """
         Search if the node exists in the HDF5 file.
         """
-        paths_to_prop = create_properties_path(i)
-
         with h5py.File(path_hdf5, 'r') as f5:
-            if isinstance(paths_to_prop, list):
-                pred = all(path in f5 for path in paths_to_prop)
+            if isinstance(xs, list):
+                return all(path in f5 for path in xs)
             else:
-                pred = paths_to_prop in f5
-
-        return paths_to_prop if pred else None
-
-    path_to_orbitals = []  # list to the nodes in the HDF5 containing the MOs
+                return xs in f5
 
     # First calculation has no initial guess
     guess_job = None
 
     # calculate the rest of the job using the previous point as initial guess
+    path_to_orbitals = []  # list to the nodes in the HDF5 containing the MOs
     for j, gs in enumerate(all_geometries):
+        print("Geometry J: ", j)
         k = j + enumerate_from
-        paths_to_prop = search_data_in_hdf5(k)
-
         # If the MOs are already store in the HDF5 format return the path
         # to them and skip the calculation
-        if paths_to_prop is not None:
-            path_to_orbitals.append(paths_to_prop)
+        hdf5_orb_path = create_properties_path(k)
+        if search_data_in_hdf5(hdf5_orb_path):
+            path_to_orbitals.append(hdf5_orb_path)
         else:
+            print("Else statement")
             point_dir = folders[j]
             job_files = create_file_names(point_dir, k)
             # A job  is a restart if guess_job is None and the list of
@@ -104,30 +102,34 @@ def calculate_mos(package_name, all_geometries, project_name, path_hdf5, folders
             # Calculating initial guess
             if k in calc_new_wf_guess_on_points or is_restart:
                 guess_job = call_schedule_qm(package_name, guess_args,
-                                             path_hdf5,
                                              point_dir, job_files, k, gs,
-                                             nHOMOS, nLUMOS,
                                              project_name=project_name,
                                              guess_job=guess_job,
-                                             store_in_hdf5=False,
                                              package_config=package_config)
 
+            print("Calling promise qm")
             promise_qm = call_schedule_qm(package_name, package_args,
-                                          path_hdf5, point_dir, job_files,
-                                          k, gs, nHOMOS, nLUMOS,
+                                          point_dir, job_files,
+                                          k, gs,
                                           project_name=project_name,
                                           guess_job=guess_job,
                                           package_config=package_config)
-            path_to_orbitals.append(promise_qm.orbitals)
+
+            job_name = 'point_{}'.format(k)
+
+            with h5py.File(path_hdf5, 'a') as f5:
+                dump_to_hdf5(promise_qm.orbitals, 'cp2k', f5, project_name,
+                             job_name)
+
+            path_to_orbitals.append(hdf5_orb_path)
             guess_job = promise_qm
 
     return gather(*path_to_orbitals)
 
 
-def call_schedule_qm(packageName, package_args, path_hdf5, point_dir,
-                     job_files, k, geometry, nHOMOS, nLUMOS,
-                     project_name=None, guess_job=None,
-                     store_in_hdf5=True, package_config=None):
+def call_schedule_qm(packageName, package_args, point_dir, job_files, k,
+                     geometry, project_name=None, guess_job=None,
+                     package_config=None):
     """
     Call an external computational chemistry software to do some calculations
 
@@ -135,9 +137,6 @@ def call_schedule_qm(packageName, package_args, path_hdf5, point_dir,
     :type  package_name: String
     :param package_args: Specific settings for the package
     :type package_args: Settings
-    :param path_hdf5: Path to the HDF5 file that contains the
-    numerical results.
-    type path_hdf5: String
     :param point_dir: path to the directory where the output is written.
     :type point_dir: String
     :param job_files: Tuple containing the absolute path to IO files.
@@ -146,10 +145,6 @@ def call_schedule_qm(packageName, package_args, path_hdf5, point_dir,
     :type k: Int
     :param geometry: Molecular geometry
     :type geometry: String
-    :param nHOMOS: number of HOMOS to store in HDF5.
-    :type nHOMOS: Int
-    :param nLUMOS: number of HOMOS to store in HDF5.
-    :type nLUMOS: Int
     :param package_config: Parameters required by the Package.
     :type package_config: Dict
     :returns: promise QMWORK
@@ -159,10 +154,7 @@ def call_schedule_qm(packageName, package_args, path_hdf5, point_dir,
     job = prepare_and_schedule[packageName](geometry, job_files, package_args,
                                             k, point_dir,
                                             project_name=project_name,
-                                            hdf5_file=path_hdf5,
                                             wfn_restart_job=guess_job,
-                                            store_in_hdf5=store_in_hdf5,
-                                            nHOMOS=nHOMOS, nLUMOS=nLUMOS,
                                             package_config=package_config)
 
     return job
@@ -203,8 +195,8 @@ def create_dict_CGFs(path_hdf5, basisname, xyz, package_name='cp2k',
                      package_config=None):
     """
     Try to read the basis from the HDF5 otherwise read it from a file and store
-    it in the HDF5 file. Finally, it reads the basis Set from HDF5 and calculate
-    the CGF for each atom.
+    it in the HDF5 file. Finally, it reads the basis Set from HDF5 and
+    calculate the CGF for each atom.
 
     :param path_hdf5: Path to the HDF5 file that contains the
     numerical results.
