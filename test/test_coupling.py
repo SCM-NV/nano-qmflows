@@ -66,9 +66,9 @@ def test_workflow_coupling():
         force.dft.basis_set_file_name = basis_pot['basis']
         force.dft.potential_file_name = basis_pot['potential']
 
-        fun_calculte_mos(cp2k_args, initial_config)
-        # fun_workflow_coupling(initial_config)
-        # fun_lazy_coupling(initial_config)
+        # fun_calculte_mos(cp2k_args, initial_config)
+        fun_workflow_coupling(cp2k_args, initial_config)
+        fun_lazy_coupling(initial_config)
     finally:
         # remove tmp data and clean global config
         shutil.rmtree(scratch_path)
@@ -78,7 +78,6 @@ def test_workflow_coupling():
 def fun_calculte_mos(cp2k_args, ds):
     """
     """
-    print("DS: ", ds)
     paths = calculate_mos('cp2k', ds['geometries'], project_name,
                           path_hdf5_test, ds['traj_folders'], cp2k_args,
                           package_config=ds['package_config'])
@@ -100,6 +99,7 @@ def fun_workflow_coupling(cp2k_args, initial_config):
     dft = cp2k_args.specific.cp2k.force_eval.dft
     dft.scf.added_mos = 20
     dft.scf.diagonalization.jacobi_threshold = 1e-6
+    dft["print"]["mo"]["mo_index_range"] = "7 46"
 
     force = cp2k_args.specific.cp2k.force_eval
     force.dft.basis_set_file_name = basis_pot['basis']
@@ -119,8 +119,11 @@ def fun_workflow_coupling(cp2k_args, initial_config):
         coupling_test = f6[path_coupling].value
 
         tolerance = 1e-8
-        assert ((np.sum(es_expected - es_test) < tolerance) and
-                (np.sum(coupling_expected - coupling_test) < tolerance))
+        print("Shapes: ", es_expected.shape, es_test.shape)
+        print("Coupling expected: ", coupling_expected[:10])
+        print("test: ", coupling_test[:10])
+        assert ((np.sum(es_expected[:40] - es_test) < tolerance) and
+                (np.sum(coupling_expected[:40, :40] - coupling_test) < tolerance))
 
 
 @try_to_remove([path_hdf5_test])

@@ -13,7 +13,6 @@ import os
 
 # ==================> Internal modules <==========
 from nac.basisSet.basisNormalization import createNormalizedCGFs
-from nac.common import retrieve_hdf5_data
 from nac.schedule.scheduleCp2k import prepare_job_cp2k
 from qmworks.common import InputKey
 from qmworks.hdf5 import dump_to_hdf5
@@ -28,7 +27,6 @@ JobFiles = namedtuple("JobFiles", ("get_xyz", "get_inp", "get_out", "get_MO"))
 # ==============================> Tasks <=====================================
 
 
-@schedule
 def calculate_mos(package_name, all_geometries, project_name, path_hdf5,
                   folders, package_args, guess_args=None,
                   calc_new_wf_guess_on_points=None, enumerate_from=0,
@@ -82,6 +80,17 @@ def calculate_mos(package_name, all_geometries, project_name, path_hdf5,
         else:
             return False
 
+    @schedule
+    def store_in_hdf5(arr, node_paths, job_name):
+        if arr is not None:
+            with h5py.File(path_hdf5, 'r+') as f5:
+                dump_to_hdf5(arr, 'cp2k', f5,
+                             project_name=project_name,
+                             job_name=job_name)
+            return node_paths
+        else:
+            return node_paths
+
     # First calculation has no initial guess
     guess_job = None
 
@@ -93,7 +102,10 @@ def calculate_mos(package_name, all_geometries, project_name, path_hdf5,
         # If the MOs are already store in the HDF5 format return the path
         # to them and skip the calculation
         if search_data_in_hdf5(hdf5_orb_path):
-            # mo_orb = retrieve_hdf5_data(path_hdf5, hdf5_orb_path)
+            # If orbitals is already store in the HDF5
+            # return just a promise string.
+            # This is roughly equivalent to Monad m => a -> m a
+            xs = store_in_hdf5(None, hdf5_orb_path, None)
             orbitals.append(hdf5_orb_path)
         else:
             point_dir = folders[j]
@@ -118,14 +130,9 @@ def calculate_mos(package_name, all_geometries, project_name, path_hdf5,
                                           project_name=project_name,
                                           guess_job=guess_job,
                                           package_config=package_config)
-            # New guess
-            guess_job = promise_qm
-            # restuls
-            with h5py.File(path_hdf5, 'r+') as f5:
-                dump_to_hdf5(promise_qm.orbitals, 'cp2k', f5,
-                             project_name=project_name,
-                             job_name='point_{}'.format(k))
-            orbitals.append(promise_qm.orbitals)
+            job_name = 'point_{}'.format(k)
+            xs = store_in_hdf5(promise_qm.orbitals, hdf5_orb_path, job_name)
+            orbitals.append(xs)
 
     return gather(*orbitals)
 
