@@ -30,7 +30,7 @@ def main(parser):
     # Parse Command line
     project_name, path_hdf5, path_xyz, basis_name, lower, \
         upper = read_cmd_line(parser)
-    # Use only the root process to initialize all the variables
+    # Coordinates transformation
     atoms = readXYZ(path_xyz)
     symbols = np.array([at.symbol for at in atoms])
     coords_angstrom = np.concatenate([at.xyz for at in atoms])
@@ -52,6 +52,7 @@ def main(parser):
     # grid_k_vectors = grid_kspace(initial, final, nPoints)
     map_grid_kspace = lambda ps: [grid_kspace(i, f, nPoints) for i, f in ps]
 
+    # Grid
     grids_alpha = map_grid_kspace(create_alpha_paths())
     grids_beta = map_grid_kspace(create_beta_paths())
 
