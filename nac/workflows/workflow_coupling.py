@@ -62,7 +62,8 @@ def generate_pyxaid_hamiltonians(package_name, project_name,
     mo_paths_hdf5 = calculate_mos(package_name, geometries, project_name,
                                   path_hdf5, traj_folders, cp2k_args,
                                   guess_args, calc_new_wf_guess_on_points,
-                                  enumerate_from, package_config=package_config)
+                                  enumerate_from,
+                                  package_config=package_config)
 
     # Calculate Non-Adiabatic Coupling
     # Number of Coupling points calculated with the MD trajectory
