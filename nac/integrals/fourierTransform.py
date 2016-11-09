@@ -1,5 +1,5 @@
 
-__all__ = ["calculate_fourier_trasform_cartesian", "fun_density_real",
+__all__ = ["calculate_fourier_trasform_cartesian",
            "real_to_reciprocal_space", "transform_to_spherical"]
 
 from cmath import (exp, pi, sqrt)
@@ -11,15 +11,9 @@ import numpy as np
 
 
 # Some Hint about the types
-from typing import  Callable, Dict, List, NamedTuple, Tuple
+from typing import  (Callable, Dict, List, NamedTuple, Tuple)
 Vector = np.ndarray
 Matrix = np.ndarray
-
-
-def fun_density_real(function: Callable, k: float) -> float:
-    """ Compute the momentum density"""
-    xs = function(k)
-    return np.dot(xs, np.conjugate(xs)).real
 
 
 def transform_to_spherical(fun_fourier: Callable, path_hdf5: str,

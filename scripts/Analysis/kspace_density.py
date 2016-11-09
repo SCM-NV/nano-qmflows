@@ -1,9 +1,9 @@
 
 from functools import (partial, reduce)
-from math import sqrt
+from math import (pi, sqrt)
 from multiprocessing import Pool
 from nac.integrals.fourierTransform import (calculate_fourier_trasform_cartesian,
-                                            fun_density_real, transform_to_spherical)
+                                            transform_to_spherical)
 from nac.schedule.components import create_dict_CGFs
 from os.path import join
 from qmworks.parsers.xyzParser import readXYZ
@@ -15,7 +15,7 @@ import numpy as np
 import os
 
 # Some Hint about the types
-from typing import (List, Tuple)
+from typing import (Callable, List, Tuple)
 Vector = np.ndarray
 Matrix = np.ndarray
 
@@ -28,14 +28,15 @@ def main(parser):
     PHYSICAL REVIEW B 87, 195420 (2013)
     """
     # Parse Command line
-    project_name, path_hdf5, path_xyz, basis_name, lower, \
+    project_name, path_hdf5, path_xyz, lattice_cte, basis_name, lower, \
         upper = read_cmd_line(parser)
     # Coordinates transformation
     atoms = readXYZ(path_xyz)
     symbols = np.array([at.symbol for at in atoms])
     coords_angstrom = np.concatenate([at.xyz for at in atoms])
-    au_to_angstrom = 1.889725989
-    coords = au_to_angstrom * coords_angstrom
+    angstroms_to_au = 1.889725989
+    coords = angstroms_to_au * coords_angstrom
+    lattice_cte = lattice_cte * angstroms_to_au
 
     # Dictionary containing as key the atomic symbols and as values the set of CGFs
     home = os.path.expanduser('~')
@@ -53,8 +54,8 @@ def main(parser):
     map_grid_kspace = lambda ps: [grid_kspace(i, f, nPoints) for i, f in ps]
 
     # Grid
-    grids_alpha = map_grid_kspace(create_alpha_paths())
-    grids_beta = map_grid_kspace(create_beta_paths())
+    grids_alpha = map_grid_kspace(create_alpha_paths(lattice_cte))
+    grids_beta = map_grid_kspace(create_beta_paths(lattice_cte))
 
     # Apply the whole fourier transform to the subset of the grid
     # correspoding to each process
@@ -79,8 +80,6 @@ def main(parser):
             print("Orb: ", orb)
             print(rss)
 
-    np.savetxt("Grids.out", result)
-
 
 def compute_momentum_density(project_name, symbols, coords, dictCGFs,
                              number_of_basis, path_hdf5, orbital):
@@ -99,7 +98,7 @@ def compute_momentum_density(project_name, symbols, coords, dictCGFs,
     return partial(fun_density_real, fun_sphericals)
 
 
-def create_alpha_paths():
+def create_alpha_paths(lattice_cte):
     """
     Create all the initial and final paths between gamma alpha and Chi_bb
     """
@@ -125,17 +124,21 @@ def create_alpha_paths():
 
     negatives = zip_path_coord(initial_alpha_neg, final_negatives)
 
-    return concat([positives, negatives])
+    paths = concat([positives, negatives])
+
+    return map_fun(lambda x: x * 2 * pi / lattice_cte, paths)
 
 
-def create_beta_paths():
+def create_beta_paths(lattice_cte):
     """
     Create all the initial and final paths between gamma alpha and Chi_bb
     """
     gammas_beta = [(1, 1, 1), (-1, 1, 1), (1, -1, 1), (1, 1, -1), (-1, -1, 1),
                    (1, -1, -1), (-1, 1, -1), (-1, -1, -1)]
 
-    return concat([mirror_cube(gamma) for gamma in gammas_beta])
+    paths = concat([mirror_cube(gamma) for gamma in gammas_beta])
+
+    return map_fun(lambda x: x * 2 * pi / lattice_cte, paths)
 
 
 def mirror_cube(gamma: Tuple) -> List:
@@ -179,6 +182,13 @@ def swap(t: Tuple, i: int, j: int) -> Tuple:
     return tuple(xs)
 
 
+def map_fun(f, xs):
+    mapTuple = lambda xs: tuple(map(f, xs))
+    rs = map(lambda t: (mapTuple(t[0]), mapTuple(t[1])), xs)
+
+    return list(rs)
+
+
 def point_number_to_compute(size, points) -> Vector:
     """ Compute how many grid points is computed in a given worker """
     res = points % size
@@ -217,7 +227,7 @@ def read_cmd_line(parser):
     Parse Command line options.
     """
     args = parser.parse_args()
-    attributes = ['p', 'hdf5', 'xyz', 'basis', 'lower', 'upper']
+    attributes = ['p', 'hdf5', 'xyz', 'alat', 'basis', 'lower', 'upper']
 
     return [getattr(args, x) for x in attributes]
 
@@ -227,14 +237,22 @@ def normalize(xs):
 
     return np.array(xs) / norm
 
+
+def fun_density_real(function: Callable, k: float) -> float:
+    """ Compute the momentum density"""
+    return np.absolute(function(k))
+
+
 if __name__ == "__main__":
-    msg = " script -hdf5 <path/to/hdf5> -xyz <path/to/geometry/xyz -b basis_name"
+    msg = " script -hdf5 <path/to/hdf5> -xyz <path/to/geometry/xyz -alat lattice_cte -b basis_name"
 
     parser = argparse.ArgumentParser(description=msg)
     parser.add_argument('-p', required=True, help='Project name')
     parser.add_argument('-hdf5', required=True, help='path to the HDF5 file')
     parser.add_argument('-xyz', required=True,
                         help='path to molecular gemetry')
+    parser.add_argument('-alat', required=True, help='Lattice Constant [Angstroms]',
+                        type=float)
     parser.add_argument('-basis', help='Basis Name',
                         default="DZVP-MOLOPT-SR-GTH")
     parser.add_argument('-lower',
