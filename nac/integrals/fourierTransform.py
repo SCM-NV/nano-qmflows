@@ -136,20 +136,21 @@ def compute_angular_momenta(label) -> Vector:
     return np.apply_along_axis(np.vectorize(lookup), 0, np.arange(3))
 
 
-def calculate_fourier_trasform_primitive(l: int, x: float, k: float,
+def calculate_fourier_trasform_primitive(l: int, A: float, k: float,
                                          alpha: float) -> complex:
     """
     Compute the fourier transform for primitive Gaussian Type Orbitals.
     """
     pik = pi * k
-    f = exp(-alpha * x ** 2 + complex(alpha * x, - pik) ** 2 / alpha)
+    f = exp(-alpha * A ** 2 + complex(alpha * A, - pik) ** 2 / alpha)
     if l == 0:
         return sqrt(pi / alpha) * f
     elif l == 1:
-        f = k * exp(-pik * complex(pik / alpha, 2 * x))
-        return (pi / alpha) ** 1.5  * f
+        f = k * exp(-pik * complex(pik / alpha, 2 * A))
+        r = (pi / alpha) ** 1.5  * f
+        return complex(0, -r)
     elif l == 2:
-        f = exp(-pik * complex(pik / alpha, 2 * x))
+        f = exp(-pik * complex(pik / alpha, 2 * A))
         return sqrt(pi / (alpha ** 5)) * (alpha / 2 - pik ** 2) * f
     else:
         msg = ("there is not implementation for the primivite fourier "
