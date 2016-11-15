@@ -80,6 +80,8 @@ def main(parser):
             print("Orb: ", orb)
             print(rss)
 
+    np.savetxt("Grids.out", result)
+
 
 def compute_momentum_density(project_name, symbols, coords, dictCGFs,
                              number_of_basis, path_hdf5, orbital):
