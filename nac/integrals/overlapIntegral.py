@@ -50,4 +50,3 @@ def calcMtxOverlapP(atoms, cgfsN):
     """
 
     return general_multipole_matrix(atoms, cgfsN, calcMatrixEntry=calcMatrixEntry)
-
