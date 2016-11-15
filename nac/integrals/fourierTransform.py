@@ -27,8 +27,7 @@ def transform_to_spherical(fun_fourier: Callable, path_hdf5: str,
     trans_mtx = retrieve_hdf5_data(path_hdf5, join(project_name, 'trans_mtx'))
     path_to_mo = join(project_name, 'point_0/cp2k/mo/coefficients')
     molecular_orbital_i = retrieve_hdf5_data(path_hdf5, path_to_mo)[:, orbital]
-    transpose = np.transpose(trans_mtx)
-    sphericals = np.dot(trans_mtx, np.dot(fun_fourier(k), transpose))
+    sphericals = np.dot(trans_mtx, fun_fourier(k))
     
     return np.dot(molecular_orbital_i, sphericals)
 
