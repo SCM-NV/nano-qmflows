@@ -1,6 +1,6 @@
 
 __all__ = ["calculate_fourier_trasform_cartesian",
-           "real_to_reciprocal_space", "transform_to_spherical"]
+           "real_to_reciprocal_space"]
 
 from cmath import (exp, pi, sqrt)
 from functools import partial
@@ -11,31 +11,18 @@ import numpy as np
 
 
 # Some Hint about the types
-from typing import  (Callable, Dict, List, NamedTuple, Tuple)
+from typing import (Dict, List, NamedTuple, Tuple)
 Vector = np.ndarray
 Matrix = np.ndarray
-
-
-def transform_to_spherical(fun_fourier: Callable, path_hdf5: str,
-                           project_name: str, orbital: str,
-                           k: Vector) -> complex:
-    """
-    Calculate the Fourier transform in Cartesian, convert it to Spherical
-    multiplying by the `trans_mtx` and finally multiply the coefficients
-    in Spherical coordinates.
-    """
-    trans_mtx = retrieve_hdf5_data(path_hdf5, join(project_name, 'trans_mtx'))
-    path_to_mo = join(project_name, 'point_0/cp2k/mo/coefficients')
-    molecular_orbital_i = retrieve_hdf5_data(path_hdf5, path_to_mo)[:, orbital]
-    sphericals = np.dot(trans_mtx, fun_fourier(k))
-    
-    return np.dot(molecular_orbital_i, sphericals)
 
 
 def calculate_fourier_trasform_cartesian(atomic_symbols: Vector,
                                          atomic_coords: Vector,
                                          dictCGFs: Dict,
                                          number_of_basis: int,
+                                         path_hdf5: str,
+                                         project_name: str,
+                                         orbital: int,
                                          ks: Vector) -> Vector:
     """
     Calculate the Fourier transform projecting the MO in a set of plane waves
@@ -57,12 +44,18 @@ def calculate_fourier_trasform_cartesian(atomic_symbols: Vector,
     fun = partial(calculate_fourier_trasform_atom, ks)
     molecular_orbital_transformed = np.empty(number_of_basis, dtype=np.complex128)
     acc = 0
+    # Fourier transform of the molecular orbitals in Cartesians
     for cgfs, xyz in zip(stream_cgfs, stream_coord):
         dim_cgfs = len(cgfs)
         molecular_orbital_transformed[acc: acc + dim_cgfs] = fun(cgfs, xyz)
         acc += dim_cgfs
 
-    return molecular_orbital_transformed
+    # read molecular orbital
+    path_to_mo = join(project_name, 'point_0/cp2k/mo/coefficients')
+    molecular_orbital_i = retrieve_hdf5_data(path_hdf5, path_to_mo)[:, orbital]
+
+    # dot product between the CGFs and the molecular orbitals
+    return np.dot(molecular_orbital_i, molecular_orbital_transformed)
 
 
 def chunksOf(xs, n):
@@ -101,7 +94,7 @@ def calculate_fourier_trasform_contracted(cgf: NamedTuple, xyz: Vector,
     angular_momenta = compute_angular_momenta(label)
     acc = np.ones(cs.shape, dtype=np.complex128)
 
-    # Accumlate x, y and z for each one of the primitves
+    # Accumlate x, y and z for each one of the primitives
     for l, x, k in zip(angular_momenta, xyz, ks):
         fun_primitive = partial(calculate_fourier_trasform_primitive, l, x, k)
         rs = np.apply_along_axis(np.vectorize(fun_primitive), 0, es)

@@ -2,8 +2,7 @@
 from functools import (partial, reduce)
 from math import (pi, sqrt)
 from multiprocessing import Pool
-from nac.integrals.fourierTransform import (calculate_fourier_trasform_cartesian,
-                                            transform_to_spherical)
+from nac.integrals.fourierTransform import calculate_fourier_trasform_cartesian
 from nac.schedule.components import create_dict_CGFs
 from os.path import join
 from qmworks.parsers.xyzParser import readXYZ
@@ -77,10 +76,10 @@ def main(parser):
             rs_betas = normalize(np.stack(betas).sum(axis=0))
             rss = normalize(rs_alphas + rs_betas)
             result[i] = rss
+            np.save('alphas', alphas)
+            np.save('betas', betas)
             print("Orb: ", orb)
             print(rss)
-
-    np.savetxt("Grids.out", result)
 
 
 def compute_momentum_density(project_name, symbols, coords, dictCGFs,
@@ -91,13 +90,11 @@ def compute_momentum_density(project_name, symbols, coords, dictCGFs,
     """
     # Compute the fourier transformation in cartesian coordinates
     fun_fourier = partial(calculate_fourier_trasform_cartesian, symbols,
-                          coords, dictCGFs, number_of_basis)
+                          coords, dictCGFs, number_of_basis, path_hdf5,
+                          project_name, orbital)
 
-    # Apply the fourier transform then covert it to spherical
-    fun_sphericals = partial(transform_to_spherical, fun_fourier,
-                             path_hdf5, project_name, orbital)
     # Compute the momentum density (an Scalar)
-    return partial(fun_density_real, fun_sphericals)
+    return partial(fun_density_real, fun_fourier)
 
 
 def create_alpha_paths(lattice_cte):
