@@ -129,7 +129,7 @@ def calculate_fourier_trasform_primitive(l: int, A: float, k: float,
     """
     Compute the fourier transform for primitive Gaussian Type Orbitals.
     """
-    shift = exp(-k * A)
+    shift = exp(- complex(0, 2 * k * A))
     pik = pi * k
     f0 = exp(- (pik ** 2) / alpha)
     if l == 0:
@@ -167,7 +167,7 @@ def calculate_fourier_trasform_primitive(l: int, A: float, k: float,
 #                "transform of l: {}".format(l))
 #         raise NotImplementedError(msg)
 
-    
+
 def real_to_reciprocal_space(tup: Tuple) -> tuple:
     """
     Transform a 3D point from real space to reciprocal space.
