@@ -52,10 +52,10 @@ def calculate_fourier_trasform_cartesian(atomic_symbols: Vector,
 
     # read molecular orbital
     path_to_mo = join(project_name, 'point_0/cp2k/mo/coefficients')
-    molecular_orbital_i = retrieve_hdf5_data(path_hdf5, path_to_mo)[:, orbital]
+    mo_i = retrieve_hdf5_data(path_hdf5, path_to_mo)[:, orbital]
 
     # dot product between the CGFs and the molecular orbitals
-    return np.dot(molecular_orbital_i, molecular_orbital_transformed)
+    return np.dot(mo_i, molecular_orbital_transformed)
 
 
 def chunksOf(xs, n):
@@ -129,23 +129,45 @@ def calculate_fourier_trasform_primitive(l: int, A: float, k: float,
     """
     Compute the fourier transform for primitive Gaussian Type Orbitals.
     """
+    shift = exp(-k * A)
     pik = pi * k
-    f = exp(-alpha * A ** 2 + complex(alpha * A, - pik) ** 2 / alpha)
+    f0 = exp(- (pik ** 2) / alpha)
     if l == 0:
-        return sqrt(pi / alpha) * f
+        return shift * sqrt(pi / alpha) * f0
     elif l == 1:
-        f = k * exp(-pik * complex(pik / alpha, 2 * A))
-        r = (pi / alpha) ** 1.5  * f
-        return complex(0, -r)
+        c = (pi / alpha) ** 1.5 * k * f0
+        return complex(0, shift * c)
     elif l == 2:
-        f = exp(-pik * complex(pik / alpha, 2 * A))
-        return sqrt(pi / (alpha ** 5)) * (alpha / 2 - pik ** 2) * f
+        c = sqrt(pi / (alpha ** 5))
+        return shift * c  * (alpha / 2 - pik ** 2) * f0
     else:
         msg = ("there is not implementation for the primivite fourier "
                "transform of l: {}".format(l))
         raise NotImplementedError(msg)
 
 
+# def calculate_fourier_trasform_primitive(l: int, A: float, k: float,
+#                                          alpha: float) -> complex:
+#     """
+#     Compute the fourier transform for primitive Gaussian Type Orbitals.
+#     """
+#     pik = pi * k
+#     f = exp(-alpha * A ** 2 + complex(alpha * A, - pik) ** 2 / alpha)
+#     if l == 0:
+#         return sqrt(pi / alpha) * f
+#     elif l == 1:
+#         f = k * exp(-pik * complex(pik / alpha, 2 * A))
+#         r = (pi / alpha) ** 1.5  * f
+#         return complex(0, -r)
+#     elif l == 2:
+#         f = exp(-pik * complex(pik / alpha, 2 * A))
+#         return sqrt(pi / (alpha ** 5)) * (alpha / 2 - pik ** 2) * f
+#     else:
+#         msg = ("there is not implementation for the primivite fourier "
+#                "transform of l: {}".format(l))
+#         raise NotImplementedError(msg)
+
+    
 def real_to_reciprocal_space(tup: Tuple) -> tuple:
     """
     Transform a 3D point from real space to reciprocal space.

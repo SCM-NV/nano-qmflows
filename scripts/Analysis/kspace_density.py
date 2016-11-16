@@ -66,7 +66,7 @@ def main(parser):
     result = np.empty((dim_x, nPoints))
     with Pool() as p:
         for i, orb in enumerate(orbitals):
-            print("Orbital: ", orb)
+            # compute density
             density = momentum_density(orb)
             alphas = [normalize(p.map(density, grid_k))
                       for grid_k in grids_alpha]
@@ -76,8 +76,8 @@ def main(parser):
             rs_betas = normalize(np.stack(betas).sum(axis=0))
             rss = normalize(rs_alphas + rs_betas)
             result[i] = rss
-            np.save('alphas', alphas)
-            np.save('betas', betas)
+            np.save('alphas', rs_alphas)
+            np.save('betas', rs_betas)
             print("Orb: ", orb)
             print(rss)
 
