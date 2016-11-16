@@ -1,5 +1,4 @@
 from nac import (calculate_mos, initialize)
-from nac.integrals import calcMtxOverlapP
 from nac.workflows.workflow_coupling import generate_pyxaid_hamiltonians
 from nose.plugins.attrib import attr
 from os.path import join
@@ -70,14 +69,6 @@ def test_workflow_coupling():
     finally:
         # remove tmp data and clean global config
         shutil.rmtree(scratch_path)
-
-
-def fun_overlap(ds):
-    atoms = ds['geometries'][0]
-    dictCGFs = ds['dictCGFs']
-    cgfsN = [dictCGFs[at.label] for at in atoms]
-    rs = calcMtxOverlapP(atoms, cgfsN)
-    np.save("cartesian_overlap", rs)
 
 
 def fun_calculte_mos(cp2k_args, ds):

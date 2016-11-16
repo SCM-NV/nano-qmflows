@@ -1,14 +1,24 @@
-
-
 # ===============================<>============================================
 from math import sqrt
-from nac.common import AtomXYZ
-from nac.integrals import calc_transf_matrix
+from nac.common import (AtomXYZ, change_mol_units, retrieve_hdf5_data, triang2mtx)
+from nac.integrals import (calcMtxOverlapP, calc_transf_matrix)
+from nac.schedule.components import create_dict_CGFs
+from qmworks.parsers import parse_string_xyz
 
 import h5py
 import numpy as np
 # ===============================<>============================================
 path_hdf5 = 'test/test_files/ethylene.hdf5'
+
+ethylene_str =  \
+"""6
+molecule
+C   -2.580  0.068  0.000
+H   -2.047  -0.859  0.000
+H   -3.650  0.068  0.000
+C   -1.905  1.243  0.000
+H   -2.438  2.171  0.000
+H   -0.835  1.243  0.000"""
 
 
 def test_cart2spherical():
@@ -99,3 +109,29 @@ def test_cart2spherical():
     mtx_spher2cart[24, 23] = -1.06066017
 
     assert np.sum(mtx_test - mtx_spher2cart) < 1e-8
+
+
+def test_compare_with_cp2k():
+    """
+    Test overlap matrix transformation from cartesian to spherical
+    """
+    # Overlap matrix in cartesian coordinates
+    basisname = "DZVP-MOLOPT-SR-GTH"
+    # Molecular geometry in a.u.
+    atoms = change_mol_units(parse_string_xyz(ethylene_str))
+    dictCGFs = create_dict_CGFs(path_hdf5, basisname, atoms)
+    cgfsN = [dictCGFs[at.symbol] for at in atoms]
+    rs = calcMtxOverlapP(atoms, cgfsN)
+    mtx_overlap = triang2mtx(rs, 48)  # there are 48 Cartesian basis CGFs
+
+    transf_matrix = retrieve_hdf5_data(path_hdf5, ['ethylene/trans_mtx'])[0]
+    transpose = np.transpose(transf_matrix)
+
+    test = np.dot(transf_matrix, np.dot(mtx_overlap, transpose))
+    expected = np.load('test/test_files/overlap_ethylene_sphericals.npy')
+
+    assert abs(np.sum(test - expected)) > 1e-5
+
+
+if __name__ == '__main__':
+    test_compare_with_cp2k()
