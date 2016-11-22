@@ -1,6 +1,6 @@
 
-__all__ = ["calculate_fourier_trasform_cartesian", "fun_density_real",
-           "real_to_reciprocal_space", "transform_to_spherical"]
+__all__ = ["calculate_fourier_trasform_cartesian",
+           "real_to_reciprocal_space"]
 
 from cmath import (exp, pi, sqrt)
 from functools import partial
@@ -11,36 +11,18 @@ import numpy as np
 
 
 # Some Hint about the types
-from typing import  Callable, Dict, List, NamedTuple, Tuple
+from typing import (Dict, List, NamedTuple, Tuple)
 Vector = np.ndarray
 Matrix = np.ndarray
-
-
-def fun_density_real(function: Callable, k: float) -> float:
-    """ Compute the momentum density"""
-    xs = function(k)
-    return np.dot(xs, np.conjugate(xs)).real
-
-
-def transform_to_spherical(fun_fourier: Callable, path_hdf5: str,
-                           project_name: str, orbital: str,
-                           k: Vector) -> complex:
-    """
-    Calculate the Fourier transform in Cartesian, convert it to Spherical
-    multiplying by the `trans_mtx` and finally multiply the coefficients
-    in Spherical coordinates.
-    """
-    trans_mtx = retrieve_hdf5_data(path_hdf5, join(project_name, 'trans_mtx'))
-    path_to_mo = join(project_name, 'point_0/cp2k/mo/coefficients')
-    molecular_orbital_i = retrieve_hdf5_data(path_hdf5, path_to_mo)[:, orbital]
-
-    return np.dot(molecular_orbital_i, np.dot(trans_mtx, fun_fourier(k)))
 
 
 def calculate_fourier_trasform_cartesian(atomic_symbols: Vector,
                                          atomic_coords: Vector,
                                          dictCGFs: Dict,
                                          number_of_basis: int,
+                                         path_hdf5: str,
+                                         project_name: str,
+                                         orbital: int,
                                          ks: Vector) -> Vector:
     """
     Calculate the Fourier transform projecting the MO in a set of plane waves
@@ -62,12 +44,18 @@ def calculate_fourier_trasform_cartesian(atomic_symbols: Vector,
     fun = partial(calculate_fourier_trasform_atom, ks)
     molecular_orbital_transformed = np.empty(number_of_basis, dtype=np.complex128)
     acc = 0
+    # Fourier transform of the molecular orbitals in Cartesians
     for cgfs, xyz in zip(stream_cgfs, stream_coord):
         dim_cgfs = len(cgfs)
         molecular_orbital_transformed[acc: acc + dim_cgfs] = fun(cgfs, xyz)
         acc += dim_cgfs
 
-    return molecular_orbital_transformed
+    # read molecular orbital
+    path_to_mo = join(project_name, 'point_0/cp2k/mo/coefficients')
+    mo_i = retrieve_hdf5_data(path_hdf5, path_to_mo)[:, orbital]
+
+    # dot product between the CGFs and the molecular orbitals
+    return np.dot(mo_i, molecular_orbital_transformed)
 
 
 def chunksOf(xs, n):
@@ -106,7 +94,7 @@ def calculate_fourier_trasform_contracted(cgf: NamedTuple, xyz: Vector,
     angular_momenta = compute_angular_momenta(label)
     acc = np.ones(cs.shape, dtype=np.complex128)
 
-    # Accumlate x, y and z for each one of the primitves
+    # Accumlate x, y and z for each one of the primitives
     for l, x, k in zip(angular_momenta, xyz, ks):
         fun_primitive = partial(calculate_fourier_trasform_primitive, l, x, k)
         rs = np.apply_along_axis(np.vectorize(fun_primitive), 0, es)
@@ -136,25 +124,48 @@ def compute_angular_momenta(label) -> Vector:
     return np.apply_along_axis(np.vectorize(lookup), 0, np.arange(3))
 
 
-def calculate_fourier_trasform_primitive(l: int, x: float, k: float,
+def calculate_fourier_trasform_primitive(l: int, A: float, k: float,
                                          alpha: float) -> complex:
     """
     Compute the fourier transform for primitive Gaussian Type Orbitals.
     """
+    shift = exp(- complex(0, 2 * k * A))
     pik = pi * k
-    f = exp(-alpha * x ** 2 + complex(alpha * x, - pik) ** 2 / alpha)
+    f0 = exp(- (pik ** 2) / alpha)
     if l == 0:
-        return sqrt(pi / alpha) * f
+        return shift * sqrt(pi / alpha) * f0
     elif l == 1:
-        f = k * exp(-pik * complex(pik / alpha, 2 * x))
-        return (pi / alpha) ** 1.5  * f
+        c = (pi / alpha) ** 1.5 * k * f0
+        return complex(0, shift * c)
     elif l == 2:
-        f = exp(-pik * complex(pik / alpha, 2 * x))
-        return sqrt(pi / (alpha ** 5)) * (alpha / 2 - pik ** 2) * f
+        c = sqrt(pi / (alpha ** 5))
+        return shift * c  * (alpha / 2 - pik ** 2) * f0
     else:
         msg = ("there is not implementation for the primivite fourier "
                "transform of l: {}".format(l))
         raise NotImplementedError(msg)
+
+
+# def calculate_fourier_trasform_primitive(l: int, A: float, k: float,
+#                                          alpha: float) -> complex:
+#     """
+#     Compute the fourier transform for primitive Gaussian Type Orbitals.
+#     """
+#     pik = pi * k
+#     f = exp(-alpha * A ** 2 + complex(alpha * A, - pik) ** 2 / alpha)
+#     if l == 0:
+#         return sqrt(pi / alpha) * f
+#     elif l == 1:
+#         f = k * exp(-pik * complex(pik / alpha, 2 * A))
+#         r = (pi / alpha) ** 1.5  * f
+#         return complex(0, -r)
+#     elif l == 2:
+#         f = exp(-pik * complex(pik / alpha, 2 * A))
+#         return sqrt(pi / (alpha ** 5)) * (alpha / 2 - pik ** 2) * f
+#     else:
+#         msg = ("there is not implementation for the primivite fourier "
+#                "transform of l: {}".format(l))
+#         raise NotImplementedError(msg)
 
 
 def real_to_reciprocal_space(tup: Tuple) -> tuple:
