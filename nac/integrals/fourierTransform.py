@@ -1,5 +1,5 @@
 
-__all__ = ["calculate_fourier_trasform_cartesian",
+__all__ = ["calculate_fourier_trasform_cartesian","calculate_fourier_trasform_cartesian_prokop"
            "real_to_reciprocal_space"]
 
 from cmath import (exp, pi, sqrt)
@@ -16,6 +16,101 @@ Vector = np.ndarray
 Matrix = np.ndarray
 
 
+
+
+#================ Prokop
+
+
+def calculate_fourier_trasform_cartesian_prokop(atomic_symbols: Vector,
+                                         atomic_coords: Vector,
+                                         dictCGFs: Dict,
+                                         number_of_basis: int,
+                                         path_hdf5: str,
+                                         project_name: str,
+                                         orbital: int,
+                                         kpoints: Vector) -> Vector:
+    # ---- evaluate fourier transforms for basiset of each atom type
+    unique_symbols = {}
+    for symbol in atomic_symbols:
+         unique_symbols[symbol] = None
+    xyz0 = np.zeros(3)
+    for symbol in unique_symbols:
+        cgfs = dictCGFs[symbol]
+        #print ( "cgfs", cgfs )
+        #print ( "cgfs", len(cgfs) )
+        #for cgf in cgfs:
+        #    print( cgf )
+        chik=np.zeros( (len(cgfs),len(kpoints)), dtype=np.complex128 )
+        #print( "Atom Type :   ",symbol)
+        for ik,k in enumerate(kpoints):
+            #print( "k=", k )
+            chis_k = calculate_fourier_trasform_atom( k, cgfs, xyz0)
+            chik[:,ik] = chis_k
+            #print( "chis_k",len(chis_k),chis_k)
+            #break;
+            #print( symbol, k, chis_k )
+        #print( chik[:,0] )
+        unique_symbols[symbol] = chik
+    #print( unique_symbols )
+    
+    #molecular_orbital_transformed = np.empty(number_of_basis, dtype=np.complex128)
+    #xyzs = atomic_coords.reshape(len(xyzs)/3,3)
+    #shifts = xyzs[0]
+    
+    
+    path_to_mo   = join(project_name, 'point_0/cp2k/mo/coefficients')
+    mo_i         = retrieve_hdf5_data(path_hdf5, path_to_mo)[:, orbital]
+    #print( "norbitals", len(mo_i),number_of_basis)
+    result = np.zeros( len(kpoints), dtype=np.complex128 )
+    stream_coord = chunksOf(atomic_coords, 3)
+    acc = 0
+    for symbol, xyz in zip(atomic_symbols, stream_coord):
+        #print (kpoints)
+        #print (xyz)
+        krs       = 2*-1j*xyz[None,:] * kpoints 
+        shiftKs   = np.prod( np.exp( krs ), axis=1 )
+        #print ( "shiftKs", shiftKs)
+        cfgks    = unique_symbols[symbol]
+        dim_cgfs = len(cfgks)
+        coefs    = mo_i[acc:acc+dim_cgfs]
+        prod     = coefs[:,None]*cfgks*shiftKs[None,:]
+        result  += np.sum( prod, axis=0 ) 
+        acc     += dim_cgfs
+    return result
+        
+        
+    '''
+    stream_coord = chunksOf(atomic_coords, 3)
+    stream_cgfs  = yieldCGF(dictCGFs, atomic_symbols)
+    fun = partial(calculate_fourier_trasform_atom, ks)
+    molecular_orbital_transformed = np.empty(number_of_basis, dtype=np.complex128)
+    acc = 0
+    # Fourier transform of the molecular orbitals in Cartesians
+    for cgfs, xyz in zip(stream_cgfs, stream_coord):
+        dim_cgfs = len(cgfs)
+        molecular_orbital_transformed[acc: acc + dim_cgfs] = fun(cgfs, xyz)
+        acc += dim_cgfs
+
+    # read molecular orbital
+    path_to_mo = join(project_name, 'point_0/cp2k/mo/coefficients')
+    mo_i = retrieve_hdf5_data(path_hdf5, path_to_mo)[:, orbital]
+
+    # dot product between the CGFs and the molecular orbitals
+    return np.dot(mo_i, molecular_orbital_transformed)
+    '''
+
+
+
+
+
+
+
+
+
+
+
+
+#================ ORIGINAL
 def calculate_fourier_trasform_cartesian(atomic_symbols: Vector,
                                          atomic_coords: Vector,
                                          dictCGFs: Dict,
