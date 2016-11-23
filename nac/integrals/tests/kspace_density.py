@@ -7,11 +7,15 @@ data_dir = "/home/prokop/Desktop/kscan_qmworks/Si68-H"
 from functools import (partial, reduce)
 from math import (pi, sqrt)
 from multiprocessing import Pool
-from nac.integrals.fourierTransform import calculate_fourier_trasform_cartesian, calculate_fourier_trasform_cartesian_prokop
+from nac.integrals.fourierTransform import calculate_fourier_trasform_cartesian, calculate_fourier_trasform_cartesian_prokop, get_fourier_basis
 from nac.schedule.components        import create_dict_CGFs
 from os.path import join
 from qmworks.parsers.xyzParser import readXYZ
 from qmworks.utils import concat
+
+from nac import retrieve_hdf5_data
+
+import matplotlib.pyplot as plt
 
 import argparse
 import itertools
@@ -22,6 +26,29 @@ import os
 from typing import (Callable, List, Tuple)
 Vector = np.ndarray
 Matrix = np.ndarray
+
+
+
+
+def projectionsToBins( kdata, Es, Emin=-6.0, Emax=0.0, dE=0.02 ):
+    nks = kdata.shape[1]
+    nE   = int((Emax-Emin)/dE) 
+    bins = np.zeros( (nE, nks) )
+    for i,Ei in enumerate(Es):
+        iE = int((Ei-Emin)/dE)
+        if (iE>0) and (iE<nE):
+            bins[iE,:] = np.maximum( bins[iE,:], kdata[i,:] )
+    extent=(0,1,Emin,Emax)
+    return bins, extent
+
+
+
+
+
+
+
+
+
 
 
 def main(parser):
@@ -86,54 +113,106 @@ def main(parser):
             print("Orb: ", orb)
             print(rss)
     '''
-    
+    '''
+    # original Fillipe Zappata - but removed renormalization
+    # [ 0.1010494   0.12795925  0.11550439  0.09820901  0.14555559  0.14273843
+    # 0.08865795  0.07344947  0.06574112  0.05107196  0.06109847  0.07562495
+    # 0.12683827  0.17763785  0.18248881  0.29108211  0.30235151  0.49110912
+    # 0.89813029  1.08569162]
+    with Pool() as p:
+        for i, orb in enumerate(orbitals):
+            print("Orbital: ", orb)
+            density = momentum_density(orb)
+            alphas = [ p.map(density, grid_k) for grid_k in grids_alpha ]
+            betas  = [ p.map(density, grid_k) for grid_k in grids_beta  ]
+            print( alphas)
+            rs_alphas = np.stack(alphas).sum(axis=0)
+            rs_betas  = np.stack(betas).sum(axis=0) 
+            rss       = rs_alphas + rs_betas
+            result[i] = rss
+            np.save('alphas', rs_alphas)
+            np.save('betas' , rs_betas)
+            print("Orb: ", orb)
+            print(rss)
+    '''
+    '''
     # Prokop Hapala V1 - reproduce fillipe's result but normalization should not be here
-    '''
     # result it produces for Si68H orb 19. 
-    [ 0.06289826  0.07835282  0.06883761  0.06073309  0.09062537  0.08889299
-    0.05469662  0.04578841  0.04325191  0.03772494  0.04611629  0.05368498
-    0.08025384  0.1093876   0.11306399  0.18438708  0.18586155  0.28444182
-    0.55230157  0.68285762]
-    '''
+    # with normalization
+    #[ 0.06289826  0.07835282  0.06883761  0.06073309  0.09062537  0.08889299
+    #0.05469662  0.04578841  0.04325191  0.03772494  0.04611629  0.05368498
+    #0.08025384  0.1093876   0.11306399  0.18438708  0.18586155  0.28444182
+    #0.55230157  0.68285762]
+    # without normalization
+    #[ 0.05664861  0.0767676   0.06960464  0.05724898  0.08921345  0.08777105
+    #0.05197325  0.04430297  0.04071755  0.03115768  0.03770548  0.04530169
+    #0.07558461  0.10453225  0.1040781   0.17481291  0.17713627  0.29428565
+    #0.56023894  0.68298257]
     for i, orb in enumerate(orbitals):
         print("Orbital: ", orb)
         density   = momentum_density(orb)
-        alphas    = np.array([ normalize(density( grid_k)) for grid_k in grids_alpha ])
-        betas     = np.array([ normalize(density( grid_k)) for grid_k in grids_beta  ])
-        rs_alphas = normalize(np.stack(alphas).sum(axis=0))
-        rs_betas  = normalize(np.stack(betas).sum(axis=0))
-        rss       = normalize(rs_alphas + rs_betas)
+        alphas    = np.array([ density( grid_k) for grid_k in grids_alpha ])
+        betas     = np.array([ density( grid_k) for grid_k in grids_beta  ])
+        #alphas    = np.array([ normalize(density( grid_k)) for grid_k in grids_alpha ])
+        #betas     = np.array([ normalize(density( grid_k)) for grid_k in grids_beta  ])
+        #rs_alphas = normalize(np.stack(alphas).sum(axis=0))
+        #rs_betas  = normalize(np.stack(betas).sum(axis=0))
+        #rss       = normalize(rs_alphas + rs_betas)
+        
         result[i] = rss
-        np.save('alphas', rs_alphas)
-        np.save('betas', rs_betas)
+        #np.save('alphas', rs_alphas)
+        #np.save('betas', rs_betas)
         print("Orb: ", orb)
         print(rss)      
-    
     '''
+    
     # Prokop Hapala V2 - not yet working - probably due to normalization
     grids_alpha = np.array(grids_alpha)
     grids_beta  = np.array(grids_beta)
-    nalpha = grids_alpha.shape[0] * grids_alpha.shape[1]
-    nbeta  = grids_beta .shape[0] * grids_beta .shape[1]
-    kpoints = np.concatenate( (grids_alpha.reshape(-1,3),grids_beta.reshape(-1,3)) ) 
+    nalpha      = grids_alpha.shape[0] * grids_alpha.shape[1]
+    nbeta       = grids_beta .shape[0] * grids_beta .shape[1]
+    kpoints     = np.concatenate( (grids_alpha.reshape(-1,3),grids_beta.reshape(-1,3)) ) 
     print ( "shapes:", grids_alpha.shape, grids_beta.shape, kpoints.shape, nalpha, nbeta )
     #print ( kpoints )
     #exit()
+    print ("building basiset fourier dictionary ... ")
+    chikdic = get_fourier_basis( symbols, dictCGFs, kpoints )
+    print ("...fourier basis DONE !")
     for i, orb in enumerate(orbitals):
         print("Orbital: ", orb)
-        density   = momentum_density(orb)
-        orbK      = normalize( density( kpoints ) ) 
+        orbK      = calculate_fourier_trasform_cartesian_prokop( symbols, coords, dictCGFs, number_of_basis, path_hdf5, project_name, orb, kpoints, chikdic=chikdic )
+        orbK      = np.absolute( orbK )
         alphas    = orbK[:nalpha].reshape(grids_alpha.shape[0],grids_alpha.shape[1])
         betas     = orbK[nalpha:].reshape(grids_beta.shape[0],grids_beta.shape[1])
-        rs_alphas = normalize(np.stack(alphas).sum(axis=0))
-        rs_betas  = normalize(np.stack(betas).sum(axis=0))
-        rss       = normalize(rs_alphas + rs_betas)
+        #rs_alphas = normalize(np.stack(alphas).sum(axis=0))
+        #rs_betas  = normalize(np.stack(betas).sum(axis=0))
+        #rss       = normalize(rs_alphas + rs_betas)
+        rs_alphas = np.stack(alphas).sum(axis=0)
+        rs_betas  = np.stack(betas).sum(axis=0)
+        rss       = rs_alphas + rs_betas
         result[i] = rss
-        np.save('alphas', rs_alphas)
-        np.save('betas', rs_betas)
-        print("Orb: ", orb)
-        print(rss)  
-    '''
+        #np.save('alphas', rs_alphas)
+        #np.save('betas', rs_betas)
+        #print("Orb: ", orb)
+        #print(rss)  
+        #plt.plot( range(len(rss)),rss )
+    
+    print (result[19-1])
+    
+    path_energy = 'Si68-H/point_0/cp2k/mo/eigenvalues'
+    Es = retrieve_hdf5_data(join(data_dir,'quantum.hdf5'), [path_energy])[0]
+    #print( "Es = ", Es )
+    Es = [ Es[i]*27.2114 for i in orbitals]
+    #print( "Es = ", Es )
+    
+    bins, extent = projectionsToBins( result, Es, Emin=-6.0, Emax=0.0, dE=0.02 )
+    
+    plt.figure(figsize=(3,8))
+    plt.imshow( np.log10(bins), interpolation='nearest', origin='image', extent=extent, cmap='jet' )
+    plt.colorbar()
+    #plt.savefig( fname+".png", bbox='tight' )
+    plt.show()    
+    
     
 
 def compute_momentum_density(project_name, symbols, coords, dictCGFs,
@@ -144,8 +223,8 @@ def compute_momentum_density(project_name, symbols, coords, dictCGFs,
     """
     
     # Compute the fourier transformation in cartesian coordinates
-    #fun_fourier = partial(calculate_fourier_trasform_cartesian, symbols, coords, dictCGFs, number_of_basis, path_hdf5, project_name, orbital)
-    fun_fourier  = partial(calculate_fourier_trasform_cartesian_prokop, symbols, coords, dictCGFs, number_of_basis, path_hdf5, project_name, orbital)
+    fun_fourier = partial(calculate_fourier_trasform_cartesian, symbols, coords, dictCGFs, number_of_basis, path_hdf5, project_name, orbital)
+    #fun_fourier  = partial(calculate_fourier_trasform_cartesian_prokop, symbols, coords, dictCGFs, number_of_basis, path_hdf5, project_name, orbital)
     
     # Compute the momentum density (an Scalar)
     return partial(fun_density_real, fun_fourier)

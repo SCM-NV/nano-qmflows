@@ -1,5 +1,5 @@
 
-__all__ = ["calculate_fourier_trasform_cartesian","calculate_fourier_trasform_cartesian_prokop"
+__all__ = ["calculate_fourier_trasform_cartesian","calculate_fourier_trasform_cartesian_prokop", "get_fourier_basis"
            "real_to_reciprocal_space"]
 
 from cmath import (exp, pi, sqrt)
@@ -15,11 +15,23 @@ from typing import (Dict, List, NamedTuple, Tuple)
 Vector = np.ndarray
 Matrix = np.ndarray
 
-
-
-
 #================ Prokop
 
+def get_fourier_basis( atomic_symbols: Vector, dictCGFs: Dict, kpoints: Vector ):
+    unique_symbols = {}
+    for symbol in atomic_symbols:
+         unique_symbols[symbol] = None
+    xyz0 = np.zeros(3)
+    for symbol in unique_symbols:
+        cgfs = dictCGFs[symbol]
+        chik=np.zeros( (len(cgfs),len(kpoints)), dtype=np.complex128 )
+        # --- original Fillipe's version
+        #for ik,k in enumerate(kpoints):
+        #    chis_k = calculate_fourier_trasform_atom( k, cgfs, xyz0)
+        #    chik[:,ik] = chis_k
+        chik = calculate_fourier_trasform_atom_prokop( kpoints, cgfs )
+        unique_symbols[symbol] = chik
+    return unique_symbols
 
 def calculate_fourier_trasform_cartesian_prokop(atomic_symbols: Vector,
                                          atomic_coords: Vector,
@@ -28,89 +40,79 @@ def calculate_fourier_trasform_cartesian_prokop(atomic_symbols: Vector,
                                          path_hdf5: str,
                                          project_name: str,
                                          orbital: int,
-                                         kpoints: Vector) -> Vector:
-    # ---- evaluate fourier transforms for basiset of each atom type
-    unique_symbols = {}
-    for symbol in atomic_symbols:
-         unique_symbols[symbol] = None
-    xyz0 = np.zeros(3)
-    for symbol in unique_symbols:
-        cgfs = dictCGFs[symbol]
-        #print ( "cgfs", cgfs )
-        #print ( "cgfs", len(cgfs) )
-        #for cgf in cgfs:
-        #    print( cgf )
-        chik=np.zeros( (len(cgfs),len(kpoints)), dtype=np.complex128 )
-        #print( "Atom Type :   ",symbol)
-        for ik,k in enumerate(kpoints):
-            #print( "k=", k )
-            chis_k = calculate_fourier_trasform_atom( k, cgfs, xyz0)
-            chik[:,ik] = chis_k
-            #print( "chis_k",len(chis_k),chis_k)
-            #break;
-            #print( symbol, k, chis_k )
-        #print( chik[:,0] )
-        unique_symbols[symbol] = chik
-    #print( unique_symbols )
-    
-    #molecular_orbital_transformed = np.empty(number_of_basis, dtype=np.complex128)
-    #xyzs = atomic_coords.reshape(len(xyzs)/3,3)
-    #shifts = xyzs[0]
-    
+                                         kpoints: Vector, 
+                                         chikdic =None ) -> Vector:
+    if (chikdic is None):
+        chikdic = get_fourier_basis( atomic_symbols, dictCGFs, kpoints )
     
     path_to_mo   = join(project_name, 'point_0/cp2k/mo/coefficients')
     mo_i         = retrieve_hdf5_data(path_hdf5, path_to_mo)[:, orbital]
-    #print( "norbitals", len(mo_i),number_of_basis)
     result = np.zeros( len(kpoints), dtype=np.complex128 )
     stream_coord = chunksOf(atomic_coords, 3)
     acc = 0
     for symbol, xyz in zip(atomic_symbols, stream_coord):
-        #print (kpoints)
-        #print (xyz)
         krs       = 2*-1j*xyz[None,:] * kpoints 
         shiftKs   = np.prod( np.exp( krs ), axis=1 )
-        #print ( "shiftKs", shiftKs)
-        cfgks    = unique_symbols[symbol]
-        dim_cgfs = len(cfgks)
-        coefs    = mo_i[acc:acc+dim_cgfs]
-        prod     = coefs[:,None]*cfgks*shiftKs[None,:]
-        result  += np.sum( prod, axis=0 ) 
-        acc     += dim_cgfs
+        cfgks     = chikdic[symbol]
+        dim_cgfs  = len(cfgks)
+        coefs     = mo_i[acc:acc+dim_cgfs]
+        prod      = coefs[:,None]*cfgks*shiftKs[None,:]
+        result   += np.sum( prod, axis=0 ) 
+        acc      += dim_cgfs
     return result
-        
-        
-    '''
-    stream_coord = chunksOf(atomic_coords, 3)
-    stream_cgfs  = yieldCGF(dictCGFs, atomic_symbols)
-    fun = partial(calculate_fourier_trasform_atom, ks)
-    molecular_orbital_transformed = np.empty(number_of_basis, dtype=np.complex128)
-    acc = 0
-    # Fourier transform of the molecular orbitals in Cartesians
-    for cgfs, xyz in zip(stream_cgfs, stream_coord):
-        dim_cgfs = len(cgfs)
-        molecular_orbital_transformed[acc: acc + dim_cgfs] = fun(cgfs, xyz)
-        acc += dim_cgfs
 
-    # read molecular orbital
-    path_to_mo = join(project_name, 'point_0/cp2k/mo/coefficients')
-    mo_i = retrieve_hdf5_data(path_hdf5, path_to_mo)[:, orbital]
+def calculate_fourier_trasform_atom_prokop(ks: Vector, cgfs: List)-> Vector:
+    """
+    Calculate the Fourier transform for the set of CGFs in an Atom.
+    """
+    arr = np.empty( (len(cgfs),len(ks)), dtype=np.complex128)
+    for i, cgf in enumerate(cgfs):
+        arr[i] = calculate_fourier_trasform_contracted_prokop(cgf, ks)
+    #print( arr )
+    #exit()
+    return arr
 
-    # dot product between the CGFs and the molecular orbitals
-    return np.dot(mo_i, molecular_orbital_transformed)
-    '''
-
-
-
-
-
-
-
-
-
+def calculate_fourier_trasform_contracted_prokop(cgf: NamedTuple, ks: Vector) -> complex:
+    """
+    Compute the fourier transform for a given CGF.
+    Implementation note: the function loops over the x,y and z coordinates
+    while operate in the whole set of Contracted Gaussian primitives.
+    """
+    cs, es          = cgf.primitives
+    label           = cgf.orbType
+    angular_momenta = compute_angular_momenta(label)
+    res = np.zeros( len(ks), dtype=np.complex128)
+    for c,e in zip( cs, es ):
+        fouKx = calculate_fourier_trasform_primitive_prokop( angular_momenta[0], ks[:,0], e )
+        fouKy = calculate_fourier_trasform_primitive_prokop( angular_momenta[1], ks[:,1], e )
+        fouKz = calculate_fourier_trasform_primitive_prokop( angular_momenta[2], ks[:,2], e )
+        #print( fouKx.shape, fouKy.shape, fouKz.shape )
+        res +=c*( fouKx * fouKy * fouKz )    
+    return res
+    
+def calculate_fourier_trasform_primitive_prokop(l: int, ks: Vector, alpha: float) -> complex:
+    """
+    Compute the fourier transform for primitive Gaussian Type Orbitals.
+    """
+    piks  = pi * ks
+    f0   = np.exp(- (piks ** 2) / alpha)
+    if l == 0:
+        return np.sqrt(pi / alpha) * f0
+    elif l == 1:
+        c = ((pi / alpha) ** 1.5) * ks * f0
+        return 1j * c
+    elif l == 2:
+        c = np.sqrt(pi / (alpha ** 5))
+        return c  * (alpha / 2 - piks ** 2) * f0
+    else:
+        msg = ("there is not implementation for the primivite fourier "
+               "transform of l: {}".format(l))
+        raise NotImplementedError(msg)
 
 
 
 #================ ORIGINAL
+
 def calculate_fourier_trasform_cartesian(atomic_symbols: Vector,
                                          atomic_coords: Vector,
                                          dictCGFs: Dict,
