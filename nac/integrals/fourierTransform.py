@@ -51,9 +51,10 @@ def calculate_fourier_trasform_cartesian_prokop(atomic_symbols: Vector,
     stream_coord = chunksOf(atomic_coords, 3)
     acc = 0
     for symbol, xyz in zip(atomic_symbols, stream_coord):
-        krs       = 2*-1j*xyz[None,:] * kpoints 
+        krs       = -2*1j*xyz[None,:] * kpoints 
         shiftKs   = np.prod( np.exp( krs ), axis=1 )
         cfgks     = chikdic[symbol]
+        #cfgks     = np.ones(cfgks.shape)
         dim_cgfs  = len(cfgks)
         coefs     = mo_i[acc:acc+dim_cgfs]
         prod      = coefs[:,None]*cfgks*shiftKs[None,:]
@@ -98,9 +99,15 @@ def calculate_fourier_trasform_primitive_prokop(l: int, ks: Vector, alpha: float
     f0   = np.exp(- (piks ** 2) / alpha)
     if l == 0:
         return np.sqrt(pi / alpha) * f0
+        return np.ones(ks.shape[0])
+    #else:
+    #    return np.ones(ks.shape[0])
+    #    #return 0*ks
+    
     elif l == 1:
         c = ((pi / alpha) ** 1.5) * ks * f0
         return 1j * c
+        return 0*ks
     elif l == 2:
         c = np.sqrt(pi / (alpha ** 5))
         return c  * (alpha / 2 - piks ** 2) * f0
@@ -108,7 +115,7 @@ def calculate_fourier_trasform_primitive_prokop(l: int, ks: Vector, alpha: float
         msg = ("there is not implementation for the primivite fourier "
                "transform of l: {}".format(l))
         raise NotImplementedError(msg)
-
+    
 
 
 #================ ORIGINAL

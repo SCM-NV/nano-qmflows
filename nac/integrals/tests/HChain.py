@@ -2,8 +2,7 @@
 import sys
 sys.path.append('/home/prokop/git_SW/nonAdiabaticCoupling')
 
-#data_dir = "/home/prokop/Desktop/kscan_qmworks/Si68-H"
-data_dir = "/home/prokop/Desktop/kscan_qmworks/Si538H"
+data_dir = "/home/prokop/Desktop/kscan_qmworks/HChain"
 
 from functools import (partial, reduce)
 from math import (pi, sqrt)
@@ -15,6 +14,7 @@ from qmworks.parsers.xyzParser import readXYZ
 from qmworks.utils import concat
 
 from nac import retrieve_hdf5_data
+
 import h5py
 
 import matplotlib.pyplot as plt
@@ -38,14 +38,19 @@ def projectionsToBins( kdata, Es, Emin=-6.0, Emax=0.0, dE=0.02 ):
     bins = np.zeros( (nE, nks) )
     for i,Ei in enumerate(Es):
         iE = int((Ei-Emin)/dE)
+        print( i, iE, Ei, nE, nks )
         if (iE>0) and (iE<nE):
             bins[iE,:] = np.maximum( bins[iE,:], kdata[i,:] )
-    extent=(0,1,Emin,Emax)
+    extent=(0,10,Emin,Emax)
     return bins, extent
+
 
 
 def print_attrs(name, obj):
     print( name )
+    #for key, val in obj.attrs.iteritems():
+    #    print( "    %s: %s" % (key, val) )
+
 
 
 
@@ -61,22 +66,39 @@ def main(parser):
     2- to 3-nm Si nanocrystals`
     PHYSICAL REVIEW B 87, 195420 (2013)
     """
+   
     # Parse Command line
     project_name, path_hdf5, path_xyz, lattice_cte, basis_name, lower, \
         upper = read_cmd_line(parser)
     # Coordinates transformation
     path_hdf5 = join( data_dir, path_hdf5 )
+    path_xyz  = join( data_dir, path_xyz )
+    atoms     = readXYZ(path_xyz)
+    symbols         = np.array([at.symbol for at in atoms])
+    coords_angstrom = np.array([at.xyz    for at in atoms])
     
-    f = h5py.File(path_hdf5,'r')
-    f.visititems(print_attrs)
+    #atoms = np.array(atoms)
+    print( coords_angstrom )
+    #f = h5py.File(path_hdf5,'r')
+    #f.visititems(print_attrs)
+    
     path_energy = project_name+'/point_0/cp2k/mo/eigenvalues'
     path_coefs  = project_name+'/point_0/cp2k/mo/coefficients'
     Es = retrieve_hdf5_data( path_hdf5, [path_energy])[0]
-    print( "len(Es)", len(Es) )
-    print( "Es =", np.array(Es)*27.2114 )
+    print( len(Es) )
+    print( np.array(Es)*27.2114 )
     
-    path_xyz  = join( data_dir, path_xyz )
-    atoms = readXYZ(path_xyz)
+    ''''
+    coefs = retrieve_hdf5_data( path_hdf5, [path_coefs])[0]
+    print( coefs )
+    print( coefs.shape )
+    for i,coef in enumerate(coefs):
+        plt.plot( coords_angstrom[:,0], coef )
+    
+    plt.show()
+    exit()
+    '''
+    
     symbols = np.array([at.symbol for at in atoms])
     coords_angstrom = np.concatenate([at.xyz for at in atoms])
     angstroms_to_au = 1.889725989
@@ -84,18 +106,17 @@ def main(parser):
     lattice_cte = lattice_cte * angstroms_to_au
 
     # Dictionary containing as key the atomic symbols and as values the set of CGFs
-    dictCGFs = create_dict_CGFs(path_hdf5, basis_name, atoms)
-    count_cgfs = np.vectorize(lambda s: len(dictCGFs[s]))
+    dictCGFs        = create_dict_CGFs(path_hdf5, basis_name, atoms)
+    count_cgfs      = np.vectorize(lambda s: len(dictCGFs[s]))
     number_of_basis = np.sum(np.apply_along_axis(count_cgfs, 0, symbols))
 
     # K-space grid to calculate the fuzzy band
     nPoints = 100
-    # grid_k_vectors = grid_kspace(initial, final, nPoints)
-    map_grid_kspace = lambda ps: [grid_kspace(i, f, nPoints) for i, f in ps]
-
-    # Grid
-    grids_alpha = map_grid_kspace(create_alpha_paths(lattice_cte))
-    grids_beta = map_grid_kspace(create_beta_paths(lattice_cte))
+    clin    = np.linspace(0.0,1.0,nPoints)[:,None]
+    kmin    = np.array([-1.0,0.0,0.0]) 
+    kmax    = np.array([+1.0,0.0,0.0])
+    kpoints = kmin[None,:]*(1-clin) + clin*kmax[None,:]
+    print("kpoints = ", kpoints)
 
     # Apply the whole fourier transform to the subset of the grid
     # correspoding to each process
@@ -105,119 +126,25 @@ def main(parser):
     orbitals = list(range(lower, upper + 1))
     dim_x    = len(orbitals)
     result   = np.empty((dim_x, nPoints))
-    '''
-    # original Fillipe Zappata
-    with Pool(processes=1) as p:
-        for i, orb in enumerate(orbitals):
-            print("Orbital: ", orb)
-            density = momentum_density(orb)
-            alphas = [normalize(p.map(density, grid_k))
-                      for grid_k in grids_alpha]
-            betas = [normalize(p.map(density, grid_k))
-                     for grid_k in grids_beta]
-            print( alphas)
-            rs_alphas = normalize(np.stack(alphas).sum(axis=0))
-            rs_betas  = normalize(np.stack(betas).sum(axis=0))
-            rss       = normalize(rs_alphas + rs_betas)
-            result[i] = rss
-            np.save('alphas', rs_alphas)
-            np.save('betas', rs_betas)
-            print("Orb: ", orb)
-            print(rss)
-    '''
-    '''
-    # original Fillipe Zappata - but removed renormalization
-    # [ 0.1010494   0.12795925  0.11550439  0.09820901  0.14555559  0.14273843
-    # 0.08865795  0.07344947  0.06574112  0.05107196  0.06109847  0.07562495
-    # 0.12683827  0.17763785  0.18248881  0.29108211  0.30235151  0.49110912
-    # 0.89813029  1.08569162]
-    with Pool() as p:
-        for i, orb in enumerate(orbitals):
-            print("Orbital: ", orb)
-            density = momentum_density(orb)
-            alphas = [ p.map(density, grid_k) for grid_k in grids_alpha ]
-            betas  = [ p.map(density, grid_k) for grid_k in grids_beta  ]
-            print( alphas)
-            rs_alphas = np.stack(alphas).sum(axis=0)
-            rs_betas  = np.stack(betas).sum(axis=0) 
-            rss       = rs_alphas + rs_betas
-            result[i] = rss
-            np.save('alphas', rs_alphas)
-            np.save('betas' , rs_betas)
-            print("Orb: ", orb)
-            print(rss)
-    '''
-    '''
-    # Prokop Hapala V1 - reproduce fillipe's result but normalization should not be here
-    # result it produces for Si68H orb 19. 
-    # with normalization
-    #[ 0.06289826  0.07835282  0.06883761  0.06073309  0.09062537  0.08889299
-    #0.05469662  0.04578841  0.04325191  0.03772494  0.04611629  0.05368498
-    #0.08025384  0.1093876   0.11306399  0.18438708  0.18586155  0.28444182
-    #0.55230157  0.68285762]
-    # without normalization
-    #[ 0.05664861  0.0767676   0.06960464  0.05724898  0.08921345  0.08777105
-    #0.05197325  0.04430297  0.04071755  0.03115768  0.03770548  0.04530169
-    #0.07558461  0.10453225  0.1040781   0.17481291  0.17713627  0.29428565
-    #0.56023894  0.68298257]
-    for i, orb in enumerate(orbitals):
-        print("Orbital: ", orb)
-        density   = momentum_density(orb)
-        alphas    = np.array([ density( grid_k) for grid_k in grids_alpha ])
-        betas     = np.array([ density( grid_k) for grid_k in grids_beta  ])
-        #alphas    = np.array([ normalize(density( grid_k)) for grid_k in grids_alpha ])
-        #betas     = np.array([ normalize(density( grid_k)) for grid_k in grids_beta  ])
-        #rs_alphas = normalize(np.stack(alphas).sum(axis=0))
-        #rs_betas  = normalize(np.stack(betas).sum(axis=0))
-        #rss       = normalize(rs_alphas + rs_betas)
-        
-        result[i] = rss
-        #np.save('alphas', rs_alphas)
-        #np.save('betas', rs_betas)
-        print("Orb: ", orb)
-        print(rss)      
-    '''
-    
+
     # Prokop Hapala V2 - not yet working
-    grids_alpha = np.array(grids_alpha)
-    grids_beta  = np.array(grids_beta)
-    nalpha      = grids_alpha.shape[0] * grids_alpha.shape[1]
-    nbeta       = grids_beta .shape[0] * grids_beta .shape[1]
-    kpoints     = np.concatenate( (grids_alpha.reshape(-1,3),grids_beta.reshape(-1,3)) ) 
-    print ( "shapes:", grids_alpha.shape, grids_beta.shape, kpoints.shape, nalpha, nbeta )
-    #print ( kpoints )
-    #exit()
     print ("building basiset fourier dictionary ... ")
     chikdic = get_fourier_basis( symbols, dictCGFs, kpoints )
     print ("...fourier basis DONE !")
     for i, orb in enumerate(orbitals):
         print("Orbital: ", orb)
         orbK      = calculate_fourier_trasform_cartesian_prokop( symbols, coords, dictCGFs, number_of_basis, path_hdf5, project_name, orb, kpoints, chikdic=chikdic )
-        orbK      = np.absolute( orbK )
-        alphas    = orbK[:nalpha].reshape(grids_alpha.shape[0],grids_alpha.shape[1])
-        betas     = orbK[nalpha:].reshape(grids_beta.shape[0],grids_beta.shape[1])
-        #rs_alphas = normalize(np.stack(alphas).sum(axis=0))
-        #rs_betas  = normalize(np.stack(betas).sum(axis=0))
-        #rss       = normalize(rs_alphas + rs_betas)
-        rs_alphas = np.stack(alphas).sum(axis=0)
-        rs_betas  = np.stack(betas).sum(axis=0)
-        rss       = rs_alphas + rs_betas
-        result[i] = rss
-        #np.save('alphas', rs_alphas)
-        #np.save('betas', rs_betas)
-        #print("Orb: ", orb)
-        #print(rss)  
-        #plt.plot( range(len(rss)),rss )
+        orbKdens  = np.absolute( orbK )
+        result[i] = orbKdens
+        #print( orbKdens )
+        #plt.plot( kpoints[:,0], orbKdens )
+        
+    Es = [ Es[i]*27.2114 for i in orbitals]
+    bins, extent = projectionsToBins( result, Es, Emin=-15.0, Emax=5.0, dE=0.1 )
     
-    #print (result[19-1])
-    #print( "Es = ", Es )
-    Es = [ Es[i]*27.2114 for i in orbitals ]
-    #print( "Es = ", Es )
-    
-    bins, extent = projectionsToBins( result, Es, Emin=-6.0, Emax=0.0, dE=0.02 )
-    
-    plt.figure(figsize=(3,8))
-    plt.imshow( np.log10(bins), interpolation='nearest', origin='image', extent=extent, cmap='jet' )
+    plt.figure(figsize=(5,8))
+    #plt.imshow( np.log10(bins), interpolation='nearest', origin='image', extent=extent, cmap='jet' )
+    plt.imshow( bins, interpolation='nearest', origin='image', extent=extent, cmap='jet' )
     plt.colorbar()
     #plt.savefig( fname+".png", bbox='tight' )
     plt.show()    
