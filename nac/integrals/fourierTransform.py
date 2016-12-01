@@ -1,9 +1,7 @@
 
-__all__ = ["calculate_fourier_trasform_cartesian", "get_fourier_basis",
-           "real_to_reciprocal_space"]
+__all__ = ["calculate_fourier_trasform_cartesian", "get_fourier_basis"]
 
-from cmath import (exp, pi, sqrt)
-from functools import partial
+from cmath import pi
 from nac.common import retrieve_hdf5_data
 from os.path import join
 
@@ -22,7 +20,6 @@ def get_fourier_basis(atomic_symbols: Vector,
     """
     """
     unique_symbols = {symbol: None for symbol in atomic_symbols}
-    xyz0 = np.zeros(3)
     for symbol in unique_symbols:
         cgfs = dictCGFs[symbol]
         chik = np.zeros((len(cgfs), len(kpoints)), dtype=np.complex128)
@@ -53,12 +50,11 @@ def calculate_fourier_trasform_cartesian(atomic_symbols: Vector,
     stream_coord = chunksOf(atomic_coords, 3)
     acc = 0
     for symbol, xyz in zip(atomic_symbols, stream_coord):
-        krs = -2*1j*xyz[None, :] * kpoints
+        krs = -2 * 1j * xyz[None, :] * kpoints
         shiftKs = np.prod(np.exp(krs), axis=1)
         cfgks = chikdic[symbol]
-        #cfgks     = np.ones(cfgks.shape)
         dim_cgfs = len(cfgks)
-        coefs = mo_i[acc:acc+dim_cgfs]
+        coefs = mo_i[acc: acc + dim_cgfs]
         prod = coefs[:, None] * cfgks * shiftKs[None, :]
         result += np.sum(prod, axis=0)
         acc += dim_cgfs
@@ -72,8 +68,7 @@ def calculate_fourier_trasform_atom(ks: Vector, cgfs: List) -> Vector:
     arr = np.empty((len(cgfs), len(ks)), dtype=np.complex128)
     for i, cgf in enumerate(cgfs):
         arr[i] = calculate_fourier_trasform_contracted(cgf, ks)
-    #print( arr )
-    #exit()
+
     return arr
 
 
@@ -95,7 +90,6 @@ def calculate_fourier_trasform_contracted(cgf: NamedTuple,
         fouKx = calculate_fourier_trasform_primitive(ang0, ks[:, 0], e)
         fouKy = calculate_fourier_trasform_primitive(ang1, ks[:, 1], e)
         fouKz = calculate_fourier_trasform_primitive(ang2, ks[:, 2], e)
-        #print( fouKx.shape, fouKy.shape, fouKz.shape )
         res += c * (fouKx * fouKy * fouKz)
     return res
 
@@ -106,17 +100,14 @@ def calculate_fourier_trasform_primitive(l: int, ks: Vector,
     Compute the fourier transform for primitive Gaussian Type Orbitals.
     """
     piks = pi * ks
-    f0 = np.exp(- (piks ** 2) / alpha)
+    f0 = np.exp(-(piks ** 2) / alpha)
     if l == 0:
         return np.sqrt(pi / alpha) * f0
         return np.ones(ks.shape[0])
-    #else:
-    #    return np.ones(ks.shape[0])
-    #    #return 0*ks
     elif l == 1:
         c = ((pi / alpha) ** 1.5) * ks * f0
         return 1j * c
-        return 0*ks
+        return 0 * ks
     elif l == 2:
         c = np.sqrt(pi / (alpha ** 5))
         return c * (alpha / 2 - piks ** 2) * f0
@@ -138,18 +129,6 @@ def yieldCGF(dictCGFs, symbols):
         yield dictCGFs[symb]
 
 
-def calculate_fourier_trasform_atom(ks: Vector, cgfs: List,
-                                    xyz: Vector) -> Vector:
-    """
-    Calculate the Fourier transform for the set of CGFs in an Atom.
-    """
-    arr = np.empty(len(cgfs), dtype=np.complex128)
-    for i, cgf in enumerate(cgfs):
-        arr[i] = calculate_fourier_trasform_contracted(cgf, xyz, ks)
-
-    return arr
-
-
 def compute_angular_momenta(label) -> Vector:
     """
     Compute the exponents l,m and n for the CGF: x^l y^m z^n exp(-a (r-R)^2)
@@ -167,29 +146,3 @@ def compute_angular_momenta(label) -> Vector:
     lookup = lambda i: orbitalIndexes[(label, i)]
 
     return np.apply_along_axis(np.vectorize(lookup), 0, np.arange(3))
-
-
-def real_to_reciprocal_space(tup: Tuple) -> tuple:
-    """
-    Transform a 3D point from real space to reciprocal space.
-    """
-    a1, a2, a3 = tup
-    cte = 2 * pi / np.dot(a1, cross(a2, a3))
-
-    b1 = cte * cross(a2, a3)
-    b2 = cte * cross(a3, a1)
-    b3 = cte * cross(a1, a2)
-
-    return b1, b2, b3
-
-
-def cross(a: Vector, b: Vector) -> Vector:
-    """ Cross product"""
-    x1, y1, z1 = a
-    x2, y2, z2 = b
-
-    x = y1 * z2 - y2 * z1
-    y = x2 * z1 - x1 * z2
-    z = x1 * y2 - x2 * y1
-
-    return np.array([x, y, z])
