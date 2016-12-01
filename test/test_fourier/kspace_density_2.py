@@ -1,6 +1,5 @@
 
 import sys
-sys.path.append('/home/prokop/git_SW/nonAdiabaticCoupling')
 
 #data_dir = "/home/prokop/Desktop/kscan_qmworks/Si68-H"
 data_dir = "/home/prokop/Desktop/kscan_qmworks/Si538H"
@@ -8,8 +7,11 @@ data_dir = "/home/prokop/Desktop/kscan_qmworks/Si538H"
 from functools import (partial, reduce)
 from math import (pi, sqrt)
 from multiprocessing import Pool
-from nac.integrals.fourierTransform import calculate_fourier_trasform_cartesian, calculate_fourier_trasform_cartesian_prokop, get_fourier_basis
-from nac.schedule.components        import create_dict_CGFs
+from nac.integrals.fourierTransform import \
+    (calculate_fourier_trasform_cartesian,
+     calculate_fourier_trasform_cartesian,
+     get_fourier_basis)
+from nac.schedule.components import create_dict_CGFs
 from os.path import join
 from qmworks.parsers.xyzParser import readXYZ
 from qmworks.utils import concat
@@ -30,28 +32,22 @@ Vector = np.ndarray
 Matrix = np.ndarray
 
 
-
-
-def projectionsToBins( kdata, Es, Emin=-6.0, Emax=0.0, dE=0.02 ):
+def projectionsToBins(kdata, Es, Emin=-6.0, Emax=0.0, dE=0.02):
+    """
+    """
     nks = kdata.shape[1]
-    nE   = int((Emax-Emin)/dE) 
-    bins = np.zeros( (nE, nks) )
-    for i,Ei in enumerate(Es):
+    nE = int((Emax - Emin) / dE)
+    bins = np.zeros((nE, nks))
+    for i, Ei in enumerate(Es):
         iE = int((Ei-Emin)/dE)
-        if (iE>0) and (iE<nE):
-            bins[iE,:] = np.maximum( bins[iE,:], kdata[i,:] )
-    extent=(0,2,Emin,Emax)
+        if (iE > 0) and (iE < nE):
+            bins[iE, :] = np.maximum(bins[iE, :], kdata[i, :])
+    extent = (0, 2, Emin, Emax)
     return bins, extent
 
 
 def print_attrs(name, obj):
-    print( name )
-
-
-
-
-
-
+    print(name)
 
 
 def main(parser):
@@ -65,17 +61,19 @@ def main(parser):
     project_name, path_hdf5, path_xyz, lattice_cte, basis_name, lower, \
         upper = read_cmd_line(parser)
     # Coordinates transformation
-    path_hdf5 = join( data_dir, path_hdf5 )
-    
-    f = h5py.File(path_hdf5,'r')
-    f.visititems(print_attrs)
-    path_energy = project_name+'/point_0/cp2k/mo/eigenvalues'
-    path_coefs  = project_name+'/point_0/cp2k/mo/coefficients'
-    Es = retrieve_hdf5_data( path_hdf5, [path_energy])[0]
-    print( "len(Es)", len(Es) )
-    print( "Es =", np.array(Es)*27.2114 )
-    
-    path_xyz  = join( data_dir, path_xyz )
+    path_hdf5 = join(data_dir, path_hdf5)
+
+    path_energy = join(project_name, 'point_0/cp2k/mo/eigenvalues')
+    path_coefs = join(project_name + '/point_0/cp2k/mo/coefficients')
+
+    with h5py.File(path_hdf5, 'r') as f:
+        f.visititems(print_attrs)
+
+    Es = retrieve_hdf5_data(path_hdf5, [path_energy])[0]
+    print("len(Es)", len(Es))
+    print("Es =", np.array(Es)*27.2114)
+
+    path_xyz = join(data_dir, path_xyz)
     atoms = readXYZ(path_xyz)
     symbols = np.array([at.symbol for at in atoms])
     coords_angstrom = np.concatenate([at.xyz for at in atoms])
@@ -83,30 +81,31 @@ def main(parser):
     coords = angstroms_to_au * coords_angstrom
     lattice_cte = lattice_cte * angstroms_to_au
 
-    # Dictionary containing as key the atomic symbols and as values the set of CGFs
+    # Dictionary containing as key the atomic symbols
+    # and as values the set of CGFs
     dictCGFs = create_dict_CGFs(path_hdf5, basis_name, atoms)
     count_cgfs = np.vectorize(lambda s: len(dictCGFs[s]))
     number_of_basis = np.sum(np.apply_along_axis(count_cgfs, 0, symbols))
 
     # K-space grid to calculate the fuzzy band
     nPoints = 100
-    lscale  = np.pi/lattice_cte
-    print("lscale = 1/au ",lscale)
-    clin    = np.linspace(0.0,1.0,nPoints)[:,None]
-    
+    lscale = np.pi/lattice_cte
+    print("lscale = 1/au ", lscale)
+    clin = np.linspace(0. 0, 1. 0, nPoints)[:, None]
+
     #kmin    = np.array([2.0,0.0,0.0])*lscale
     #kmax    = np.array([1.0,1.0,0.0])*lscale
-    
+
     #kmin    = np.array([-2.0,0.0,0.0])*lscale
     #kmax    = np.array([ 2.0,0.0,0.0])*lscale
-   
-    kmin    = np.array([-1.0,-1.0,-1.0])*lscale
-    kmax    = np.array([ 1.0, 1.0, 1.0])*lscale
-    
+
+    kmin = np.array([-1. 0, -1. 0, -1. 0]) * lscale
+    kmax = np.array([1. 0, 1. 0,  1. 0]) * lscale
+
     #kmax   = np.array([1.0,0.0,0.0])*lscale
     #kmax   = np.array([1.0,1.0,1.0])*lscale
-    
-    kpoints = kmin[None,:]*(1-clin) + clin*kmax[None,:]
+
+    kpoints = kmin[None, :] * (1 - clin) + clin * kmax[None, :]
     print("kpoints = ", kpoints)
 
     # Apply the whole fourier transform to the subset of the grid
@@ -115,35 +114,38 @@ def main(parser):
                                coords, dictCGFs, number_of_basis, path_hdf5)
 
     orbitals = list(range(lower, upper + 1))
-    dim_x    = len(orbitals)
-    result   = np.empty((dim_x, nPoints))
-    
+    dim_x = len(orbitals)
+    result = np.empty((dim_x, nPoints))
+
     print ("building basiset fourier dictionary ... ")
-    chikdic = get_fourier_basis( symbols, dictCGFs, kpoints )
+    chikdic = get_fourier_basis(symbols, dictCGFs, kpoints)
     print ("...fourier basis DONE !")
     for i, orb in enumerate(orbitals):
         print("Orbital: ", orb)
-        orbK      = calculate_fourier_trasform_cartesian_prokop( symbols, coords, dictCGFs, number_of_basis, path_hdf5, project_name, orb, kpoints, chikdic=chikdic )
-        orbKdens  = np.absolute( orbK )
+        orbK = calculate_fourier_trasform_cartesian(symbols, coords, dictCGFs,
+                                                    number_of_basis, path_hdf5,
+                                                    project_name, orb, kpoints,
+                                                    chikdic=chikdic)
+        orbKdens = np.absolute(orbK)
         result[i] = orbKdens
         #print( orbKdens )
         #plt.plot( kpoints[:,0], orbKdens )
-    
+
     #print (result[19-1])
     #print( "Es = ", Es )
-    Es = [ Es[i]*27.2114 for i in orbitals ]
+    Es = [Es[i] * 27.2114 for i in orbitals]
     #print( "Es = ", Es )
-    
-    bins, extent = projectionsToBins( result, Es, Emin=-4.0, Emax=-1.5, dE=0.05 )
-    
-    plt.figure(figsize=(8,8))
+
+    bins, extent = projectionsToBins(result, Es, Emin=-4.0, Emax=-1.5, dE=0.05)
+
+    plt.figure(figsize=(8, 8))
     #plt.imshow( np.log10(bins), interpolation='nearest', origin='image', extent=extent, cmap='jet' )
-    plt.imshow( bins, interpolation='nearest', origin='image', extent=extent, cmap='jet' )
+    plt.imshow(bins, interpolation='nearest', origin='image', extent=extent,
+               cmap='jet')
     plt.colorbar()
     #plt.savefig( fname+".png", bbox='tight' )
-    plt.show()    
-    
-    
+    plt.show()   
+
 
 def compute_momentum_density(project_name, symbols, coords, dictCGFs,
                              number_of_basis, path_hdf5, orbital):
@@ -151,11 +153,11 @@ def compute_momentum_density(project_name, symbols, coords, dictCGFs,
     Compute the reciprocal space density for a given Molecular
     Orbital.
     """
-    
     # Compute the fourier transformation in cartesian coordinates
-    fun_fourier = partial(calculate_fourier_trasform_cartesian, symbols, coords, dictCGFs, number_of_basis, path_hdf5, project_name, orbital)
-    #fun_fourier  = partial(calculate_fourier_trasform_cartesian_prokop, symbols, coords, dictCGFs, number_of_basis, path_hdf5, project_name, orbital)
-    
+    fun_fourier = partial(calculate_fourier_trasform_cartesian, symbols,
+                          coords, dictCGFs, number_of_basis, path_hdf5,
+                          project_name, orbital)
+
     # Compute the momentum density (an Scalar)
     return partial(fun_density_real, fun_fourier)
 
@@ -252,7 +254,7 @@ def map_fun(f, xs):
 
 
 def point_number_to_compute(size, points) -> Vector:
-    """ Compute how many grid points is computed in a given worker """
+    """ Compute how many grid points are calculated  in a given worker """
     res = points % size
     n = points // size
 
@@ -294,12 +296,6 @@ def read_cmd_line(parser):
     return [getattr(args, x) for x in attributes]
 
 
-def normalize(xs):
-    norm = sqrt(np.dot(xs, xs))
-
-    return np.array(xs) / norm
-
-
 def fun_density_real(function: Callable, k: float) -> float:
     """ Compute the momentum density"""
     return np.absolute(function(k))
@@ -313,8 +309,8 @@ if __name__ == "__main__":
     parser.add_argument('-hdf5', required=True, help='path to the HDF5 file')
     parser.add_argument('-xyz', required=True,
                         help='path to molecular gemetry')
-    parser.add_argument('-alat', required=True, help='Lattice Constant [Angstroms]',
-                        type=float)
+    parser.add_argument('-alat', required=True,
+                        help='Lattice Constant [Angstroms]', type=float)
     parser.add_argument('-basis', help='Basis Name',
                         default="DZVP-MOLOPT-SR-GTH")
     parser.add_argument('-lower',
