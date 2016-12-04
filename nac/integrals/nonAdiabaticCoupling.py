@@ -3,11 +3,10 @@ __author__ = "Felipe Zapata"
 # ================> Python Standard  and third-party <==========
 from functools import partial
 from multiprocessing import Pool
-import numpy as np
-# =============================> Internal modules <============================
 from nac.integrals.overlapIntegral import sijContracted
-from nac.integrals.multipoleIntegrals import createTupleXYZ_CGF
-from qmworks.utils import concatMap
+
+import numpy as np
+
 # =====================================<>======================================
 
 
@@ -32,66 +31,101 @@ def calculateCoupling3Points(geometries, coefficients, dictCGFs, dt,
     """
     r0, r1, r2 = geometries
     css0, css1, css2 = coefficients
-    symbols = [x.symbol for x in r0]
-    cgfsN = [dictCGFs[s] for s in symbols]
 
-    mtx_sji_t0 = calcuate_Sij(cgfsN, r0, r1, css0, css1, trans_mtx)
-    mtx_sij_t0 = calcuate_Sij(cgfsN, r1, r0, css1, css0, trans_mtx)
-    mtx_sji_t1 = calcuate_Sij(cgfsN, r1, r2, css1, css2, trans_mtx)
-    mtx_sij_t1 = calcuate_Sij(cgfsN, r2, r1, css2, css1, trans_mtx)
+    mtx_sji_t0 = calcuate_Sij(dictCGFs, r0, r1, css0, css1, trans_mtx)
+    mtx_sij_t0 = calcuate_Sij(dictCGFs, r1, r0, css1, css0, trans_mtx)
+    mtx_sji_t1 = calcuate_Sij(dictCGFs, r1, r2, css1, css2, trans_mtx)
+    mtx_sij_t1 = calcuate_Sij(dictCGFs, r2, r1, css2, css1, trans_mtx)
     cte = 1.0 / (4.0 * dt)
 
     return cte * np.add(3 * np.subtract(mtx_sji_t1, mtx_sij_t1),
                         np.subtract(mtx_sij_t0, mtx_sji_t0))
 
 
-def calcuate_Sij(cgfsN, r0, r1, css0, css1, trans_mtx):
+def calcuate_Sij(dictCGFs, r0, r1, css0, css1, trans_mtx):
     """
     Calculate the Overlap Matrix between molecular orbitals at different times.
     """
-    suv = calcOverlapMtxPar(cgfsN, r0, r1)
+    suv = calcOverlapMtx(dictCGFs, r0, r1)
     css0T = np.transpose(css0)
     if trans_mtx is not None:
+        # Overlap in Sphericals
         transpose = np.transpose(trans_mtx)
-        suv = np.dot(trans_mtx, np.dot(suv, transpose))  # Overlap in Sphericals
+        suv = np.dot(trans_mtx, np.dot(suv, transpose))
 
     return np.dot(css0T, np.dot(suv, css1))
 
 
-def calcOverlapMtxPar(cgfsN, r0, r1):
+def calcOverlapMtx(dictCGFs, r0, r1):
     """
     Parallel calculation of the overlap matrix using the atomic
-    basis at two different geometries: R0 and R1. The rows of the
-    matrix are calculated in
-    using a pool of processes.
+    basis at two different geometries: R0 and R1.
     """
-    xyz_cgfs0 = concatMap(lambda rs: createTupleXYZ_CGF(*rs),
-                          zip(r0, cgfsN))
-    xyz_cgfs1 = concatMap(lambda rs: createTupleXYZ_CGF(*rs),
-                          zip(r1, cgfsN))
+    symbols = [x.symbol for x in r0]
+    cgfs_per_atoms = {s: len(extract_labels(dictCGFs[s]))
+                      for s, _ in dictCGFs.items()}
+    dim = sum(cgfs_per_atoms[s] for s in symbols)
+    mtx = np.empty((dim, dim))
+    for i in range(dim):
+        xyz_atom0, cgf_i = lookup_cgf(i, r0, cgfs_per_atoms, dictCGFs)
+        mtx[i, :] = calc_overlap_row(dictCGFs, r1, dim, xyz_atom0, cgf_i)
 
-    dim = len(xyz_cgfs0)
-    iss = range(dim)
-
-    with Pool() as p:
-        rss = p.map(partial(chunkSij, xyz_cgfs0, xyz_cgfs1, dim), iss)
-
-    result = np.concatenate(rss)
-
-    return result.reshape((dim, dim))
+    return mtx
 
 
-def chunkSij(xyz_cgfs0, xyz_cgfs1, dim, i):
+def calc_overlap_row(dictCGFs, r1, dim,  xyz_atom0, cgf_i):
     """
     Calculate the k-th row of the overlap integral using
-    the 2 atomics basis at different geometries
-    and the total dimension of the overlap matrix
+    2 CGFs  and 2 different atomic coordinates.
     """
-    xs = np.empty(dim)
-    for j in range(dim):
-        t1 = xyz_cgfs0[i]
-        t2 = xyz_cgfs1[j]
-        xs[j] = sijContracted(t1, t2)
+    row = np.empty(dim)
+    acc = 0
+    for s, xyz_atom1 in r1:
+        cgfs_j = dictCGFs[s]
+        nContracted = len(cgfs_j)
+        vs = calc_overlap_atom(xyz_atom0, xyz_atom1, cgf_i, cgfs_j)
+        row[acc: acc + nContracted] = vs
+        acc += nContracted
+    return row
 
-    return xs
 
+def calc_overlap_atom(xyz_0, xyz_1, fi, cgfs_j):
+    """
+    Compute the overlap between the CGF_i of atom0 and all the
+    CGFs of atom1
+    """
+    rs = np.empty(len(cgfs_j))
+    for fj in cgfs_j:
+        sijContracted((xyz_0, fi), (xyz_1, fj))
+
+    return rs
+
+
+def lookup_cgf(i, atoms, cgfs_per_atoms, dictCGFs):
+    """
+    Search for CGFs number `i` in the dictCGFs.
+    """
+    if i == 0:
+        # return first CGFs for the first atomic symbol
+        xyz = atoms[0][1]
+        r = dictCGFs[atoms[0].symbol][0]
+        return xyz, r
+    else:
+        acc = 0
+        for s, xyz in atoms:
+            length = cgfs_per_atoms[s]
+            acc += length
+            n = (acc - 1) // i
+            if n != 0:
+                index = length - (acc - i)
+                break
+
+    return xyz, dictCGFs[s][index]
+
+
+def extract_labels(cgfs):
+    """
+    Get all the orbital labels from a list of CGFs
+    """
+    rs = list(map(list, zip(*cgfs)))
+    return rs[1]
