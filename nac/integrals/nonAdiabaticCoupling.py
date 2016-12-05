@@ -34,33 +34,25 @@ def calculateCoupling3Points(geometries, coefficients, dictCGFs, dt,
 
     # Dictionary containing the number of CGFs per atoms
     cgfs_per_atoms = {s: len(extract_labels(dictCGFs[s]))
-                      for s, _ in dictCGFs.items()}
+                      for s in dictCGFs.keys()}
     # Dimension of the square overlap matrix
     dim = sum(cgfs_per_atoms[at[0]] for at in r0)
 
-    fun_Sij = partial(calcuate_Sij, dictCGFs, cgfs_per_atoms, dim)
+    suv_0 = calcOverlapMtx(dictCGFs, cgfs_per_atoms, dim, r0, r1)
+    suv_0_t = np.transpose(suv_0)
+    suv_1 = calcOverlapMtx(dictCGFs, cgfs_per_atoms, dim, r1, r2)
+    suv_1_t = np.transpose(suv_1)
 
-    mtx_sji_t0 = fun_Sij(r0, r1, css0, css1, trans_mtx)
-    mtx_sij_t0 = fun_Sij(r1, r0, css1, css0, trans_mtx)
-    mtx_sji_t1 = fun_Sij(r1, r2, css1, css2, trans_mtx)
-    mtx_sij_t1 = fun_Sij(r2, r1, css2, css1, trans_mtx)
+    mtx_sji_t0 = calculate_spherical_overlap(suv_0, css0, css1, trans_mtx)
+    mtx_sji_t1 = calculate_spherical_overlap(suv_1, css1, css2, trans_mtx)
+    mtx_sij_t0 = calculate_spherical_overlap(suv_0_t, css1, css0, trans_mtx)
+    mtx_sij_t1 = calculate_spherical_overlap(suv_1_t, css2, css1, trans_mtx)
     cte = 1.0 / (4.0 * dt)
 
-    return cte * np.add(3 * np.subtract(mtx_sji_t1, mtx_sij_t1),
-                        np.subtract(mtx_sij_t0, mtx_sji_t0))
+    return cte * (3 * (mtx_sji_t1 - mtx_sij_t1) + (mtx_sij_t0 - mtx_sji_t0))
 
 
-def calcuate_Sij(dictCGFs, cgfs_per_atoms, dim, r0, r1, css0, css1,
-                 trans_mtx):
-    """
-    Compute the overlap matrix in spherical coordinates.
-    """
-    suv = calcOverlapMtx(dictCGFs, cgfs_per_atoms, dim, r0, r1)
-
-    return calcuate_spherical_overlap(suv, css0, css1, trans_mtx)
-
-
-def calcuate_spherical_overlap(suv, css0, css1, trans_mtx):
+def calculate_spherical_overlap(suv, css0, css1, trans_mtx):
     """
     Calculate the Overlap Matrix between molecular orbitals at different times.
     """
@@ -78,13 +70,6 @@ def calcOverlapMtx(dictCGFs, cgfs_per_atoms, dim, r0, r1):
     Parallel calculation of the overlap matrix using the atomic
     basis at two different geometries: R0 and R1.
     """
-    # mtx = np.empty((dim, dim))
-    # for i in range(dim):
-    #     xyz_atom0, cgf_i = lookup_cgf(r0, cgfs_per_atoms, dictCGFs, i)
-    #     mtx[i, :] = calc_overlap_row(dictCGFs, r1, dim, xyz_atom0, cgf_i)
-
-    # return mtx
-
     fun_overlap = partial(calc_overlap_row, dictCGFs, r1, dim)
     fun_lookup = partial(lookup_cgf, r0, cgfs_per_atoms, dictCGFs)
 
