@@ -73,7 +73,7 @@ def calcOverlapMtx(dictCGFs, r0, r1):
     return mtx
 
 
-def calc_overlap_row(dictCGFs, r1, dim,  xyz_atom0, cgf_i):
+def calc_overlap_row(dictCGFs, r1, dim, xyz_atom0, cgf_i):
     """
     Calculate the k-th row of the overlap integral using
     2 CGFs  and 2 different atomic coordinates.
@@ -95,8 +95,8 @@ def calc_overlap_atom(xyz_0, xyz_1, fi, cgfs_j):
     CGFs of atom1
     """
     rs = np.empty(len(cgfs_j))
-    for fj in cgfs_j:
-        sijContracted((xyz_0, fi), (xyz_1, fj))
+    for j, fj in enumerate(cgfs_j):
+        rs[j] = sijContracted((xyz_0, fi), (xyz_1, fj))
 
     return rs
 
@@ -120,7 +120,9 @@ def lookup_cgf(i, atoms, cgfs_per_atoms, dictCGFs):
                 index = length - (acc - i)
                 break
 
-    return xyz, dictCGFs[s][index]
+    t = xyz, dictCGFs[s][index]
+
+    return t
 
 
 def extract_labels(cgfs):

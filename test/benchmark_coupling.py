@@ -19,7 +19,7 @@ def benchmark_coupling():
     geometries_au = tuple(map(change_mol_units, geometries_ang))
     dictCGFs = create_dict_CGFs(path_hdf5, "DZVP-MOLOPT-SR-GTH",
                                 geometries_au[0])
-
+    
     trans_mtx = retrieve_hdf5_data(path_hdf5, 'ethylene/trans_mtx')
     dt_au = 1 * femtosec2au
     mo_paths = ['ethylene/point_{}/cp2k/mo/coefficients'.format(i)
@@ -33,8 +33,6 @@ def benchmark_coupling():
         path_coupling = 'ethylene/coupling_0'
         couplings_expected = f5[path_coupling].value
 
-    rs = couplings - couplings_expected
-    print(rs[0])
     assert np.allclose(couplings, couplings_expected)
 
 
