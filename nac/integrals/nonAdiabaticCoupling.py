@@ -32,21 +32,44 @@ def calculateCoupling3Points(geometries, coefficients, dictCGFs, dt,
     r0, r1, r2 = geometries
     css0, css1, css2 = coefficients
 
-    mtx_sji_t0 = calcuate_Sij(dictCGFs, r0, r1, css0, css1, trans_mtx)
-    mtx_sij_t0 = calcuate_Sij(dictCGFs, r1, r0, css1, css0, trans_mtx)
-    mtx_sji_t1 = calcuate_Sij(dictCGFs, r1, r2, css1, css2, trans_mtx)
-    mtx_sij_t1 = calcuate_Sij(dictCGFs, r2, r1, css2, css1, trans_mtx)
+    # Dictionary containing the number of CGFs per atoms
+    cgfs_per_atoms = {s: len(extract_labels(dictCGFs[s]))
+                      for s, _ in dictCGFs.items()}
+    # Dimension of the square overlap matrix
+    dim = sum(cgfs_per_atoms[at[0]] for at in r0)
+
+    fun_Sij = partial(calcuate_Sij, dictCGFs, cgfs_per_atoms, dim)
+
+    # mtx_sji_t0 = fun_Sij(r0, r1, css0, css1, trans_mtx)
+    # mtx_sij_t0 = fun_Sij(r1, r0, css1, css0, trans_mtx)
+    # mtx_sji_t1 = fun_Sij(r1, r2, css1, css2, trans_mtx)
+    # mtx_sij_t1 = fun_Sij(r2, r1, css2, css1, trans_mtx)
     cte = 1.0 / (4.0 * dt)
+
+    with Pool() as p:
+        mtx_sji_t0 = p.apply(fun_Sij, [r0, r1, css0, css1, trans_mtx])
+        mtx_sij_t0 = p.apply(fun_Sij, [r1, r0, css1, css0, trans_mtx])
+        mtx_sji_t1 = p.apply(fun_Sij, [r1, r2, css1, css2, trans_mtx])
+        mtx_sij_t1 = p.apply(fun_Sij, [r2, r1, css2, css1, trans_mtx])
 
     return cte * np.add(3 * np.subtract(mtx_sji_t1, mtx_sij_t1),
                         np.subtract(mtx_sij_t0, mtx_sji_t0))
 
 
-def calcuate_Sij(dictCGFs, r0, r1, css0, css1, trans_mtx):
+def calcuate_Sij(dictCGFs, cgfs_per_atoms, dim, r0, r1, css0, css1,
+                 trans_mtx):
+    """
+    Compute the overlap matrix in spherical coordinates.
+    """
+    suv = calcOverlapMtx(dictCGFs, cgfs_per_atoms, dim, r0, r1)
+
+    return calcuate_spherical_overlap(suv, css0, css1, trans_mtx)
+
+
+def calcuate_spherical_overlap(suv, css0, css1, trans_mtx):
     """
     Calculate the Overlap Matrix between molecular orbitals at different times.
     """
-    suv = calcOverlapMtx(dictCGFs, r0, r1)
     css0T = np.transpose(css0)
     if trans_mtx is not None:
         # Overlap in Sphericals
@@ -56,15 +79,11 @@ def calcuate_Sij(dictCGFs, r0, r1, css0, css1, trans_mtx):
     return np.dot(css0T, np.dot(suv, css1))
 
 
-def calcOverlapMtx(dictCGFs, r0, r1):
+def calcOverlapMtx(dictCGFs, cgfs_per_atoms, dim, r0, r1):
     """
     Parallel calculation of the overlap matrix using the atomic
     basis at two different geometries: R0 and R1.
     """
-    symbols = [x.symbol for x in r0]
-    cgfs_per_atoms = {s: len(extract_labels(dictCGFs[s]))
-                      for s, _ in dictCGFs.items()}
-    dim = sum(cgfs_per_atoms[s] for s in symbols)
     mtx = np.empty((dim, dim))
     for i in range(dim):
         xyz_atom0, cgf_i = lookup_cgf(i, r0, cgfs_per_atoms, dictCGFs)
