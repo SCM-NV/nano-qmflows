@@ -46,14 +46,23 @@ def calculateCoupling3Points(geometries, coefficients, dictCGFs, dt,
     # mtx_sij_t1 = fun_Sij(r2, r1, css2, css1, trans_mtx)
     cte = 1.0 / (4.0 * dt)
 
+    sji_t0 = partial(fun_Sij, r0, r1, css0, css1)
+    sij_t0 = partial(fun_Sij, r1, r0, css1, css0)
+    sji_t1 = partial(fun_Sij, r1, r2, css1, css2)
+    sij_t1 = partial(fun_Sij, r2, r1, css2, css1)
+
     with Pool() as p:
-        mtx_sji_t0 = p.apply(fun_Sij, [r0, r1, css0, css1, trans_mtx])
-        mtx_sij_t0 = p.apply(fun_Sij, [r1, r0, css1, css0, trans_mtx])
-        mtx_sji_t1 = p.apply(fun_Sij, [r1, r2, css1, css2, trans_mtx])
-        mtx_sij_t1 = p.apply(fun_Sij, [r2, r1, css2, css1, trans_mtx])
+        ts = tuple(p.map(partial(apply_arg, trans_mtx),
+                         [sji_t0, sij_t0, sji_t1, sij_t1]))
+
+    mtx_sji_t0, mtx_sij_t0, mtx_sji_t1, mtx_sij_t1 = ts
 
     return cte * np.add(3 * np.subtract(mtx_sji_t1, mtx_sij_t1),
                         np.subtract(mtx_sij_t0, mtx_sji_t0))
+
+
+def apply_arg(arg, f):
+    return f(arg)
 
 
 def calcuate_Sij(dictCGFs, cgfs_per_atoms, dim, r0, r1, css0, css1,
