@@ -40,29 +40,14 @@ def calculateCoupling3Points(geometries, coefficients, dictCGFs, dt,
 
     fun_Sij = partial(calcuate_Sij, dictCGFs, cgfs_per_atoms, dim)
 
-    # mtx_sji_t0 = fun_Sij(r0, r1, css0, css1, trans_mtx)
-    # mtx_sij_t0 = fun_Sij(r1, r0, css1, css0, trans_mtx)
-    # mtx_sji_t1 = fun_Sij(r1, r2, css1, css2, trans_mtx)
-    # mtx_sij_t1 = fun_Sij(r2, r1, css2, css1, trans_mtx)
+    mtx_sji_t0 = fun_Sij(r0, r1, css0, css1, trans_mtx)
+    mtx_sij_t0 = fun_Sij(r1, r0, css1, css0, trans_mtx)
+    mtx_sji_t1 = fun_Sij(r1, r2, css1, css2, trans_mtx)
+    mtx_sij_t1 = fun_Sij(r2, r1, css2, css1, trans_mtx)
     cte = 1.0 / (4.0 * dt)
-
-    sji_t0 = partial(fun_Sij, r0, r1, css0, css1)
-    sij_t0 = partial(fun_Sij, r1, r0, css1, css0)
-    sji_t1 = partial(fun_Sij, r1, r2, css1, css2)
-    sij_t1 = partial(fun_Sij, r2, r1, css2, css1)
-
-    with Pool() as p:
-        ts = tuple(p.map(partial(apply_arg, trans_mtx),
-                         [sji_t0, sij_t0, sji_t1, sij_t1]))
-
-    mtx_sji_t0, mtx_sij_t0, mtx_sji_t1, mtx_sij_t1 = ts
 
     return cte * np.add(3 * np.subtract(mtx_sji_t1, mtx_sij_t1),
                         np.subtract(mtx_sij_t0, mtx_sji_t0))
-
-
-def apply_arg(arg, f):
-    return f(arg)
 
 
 def calcuate_Sij(dictCGFs, cgfs_per_atoms, dim, r0, r1, css0, css1,
@@ -93,12 +78,25 @@ def calcOverlapMtx(dictCGFs, cgfs_per_atoms, dim, r0, r1):
     Parallel calculation of the overlap matrix using the atomic
     basis at two different geometries: R0 and R1.
     """
-    mtx = np.empty((dim, dim))
-    for i in range(dim):
-        xyz_atom0, cgf_i = lookup_cgf(i, r0, cgfs_per_atoms, dictCGFs)
-        mtx[i, :] = calc_overlap_row(dictCGFs, r1, dim, xyz_atom0, cgf_i)
+    # mtx = np.empty((dim, dim))
+    # for i in range(dim):
+    #     xyz_atom0, cgf_i = lookup_cgf(r0, cgfs_per_atoms, dictCGFs, i)
+    #     mtx[i, :] = calc_overlap_row(dictCGFs, r1, dim, xyz_atom0, cgf_i)
 
-    return mtx
+    # return mtx
+
+    fun_overlap = partial(calc_overlap_row, dictCGFs, r1, dim)
+    fun_lookup = partial(lookup_cgf, r0, cgfs_per_atoms, dictCGFs)
+
+    with Pool() as p:
+        xss = p.map(partial(apply_nested, fun_overlap, fun_lookup),
+                    range(dim))
+
+    return np.stack(xss)
+
+
+def apply_nested(f, g, i):
+    return f(*g(i))
 
 
 def calc_overlap_row(dictCGFs, r1, dim, xyz_atom0, cgf_i):
@@ -111,13 +109,13 @@ def calc_overlap_row(dictCGFs, r1, dim, xyz_atom0, cgf_i):
     for s, xyz_atom1 in r1:
         cgfs_j = dictCGFs[s]
         nContracted = len(cgfs_j)
-        vs = calc_overlap_atom(xyz_atom0, xyz_atom1, cgf_i, cgfs_j)
+        vs = calc_overlap_atom(xyz_atom0, cgf_i, xyz_atom1, cgfs_j)
         row[acc: acc + nContracted] = vs
         acc += nContracted
     return row
 
 
-def calc_overlap_atom(xyz_0, xyz_1, fi, cgfs_j):
+def calc_overlap_atom(xyz_0, fi, xyz_1, cgfs_j):
     """
     Compute the overlap between the CGF_i of atom0 and all the
     CGFs of atom1
@@ -129,7 +127,7 @@ def calc_overlap_atom(xyz_0, xyz_1, fi, cgfs_j):
     return rs
 
 
-def lookup_cgf(i, atoms, cgfs_per_atoms, dictCGFs):
+def lookup_cgf(atoms, cgfs_per_atoms, dictCGFs, i):
     """
     Search for CGFs number `i` in the dictCGFs.
     """
