@@ -1,16 +1,13 @@
 
-__all__ = ["calculate_fourier_trasform_cartesian","calculate_fourier_trasform_cartesian_prokop", "get_fourier_basis"
-           "real_to_reciprocal_space"]
+__all__ = ["calculate_fourier_trasform_cartesian", "get_fourier_basis"]
 
-from cmath import (exp, pi, sqrt)
-from functools import partial
+from cmath import pi
 from nac.common import retrieve_hdf5_data
 from os.path import join
 
 import numpy as np
 
-
-# Some Hint about the types
+# Some Hints about the types
 from typing import (Dict, List, NamedTuple, Tuple)
 Vector = np.ndarray
 Matrix = np.ndarray
@@ -20,9 +17,7 @@ def get_fourier_basis( atomic_symbols: Vector, dictCGFs: Dict, kpoints: Vector )
     for each element in system compute Fourier transfroms of its basis functions in given set of k-points
     and store them into dictionary 
     '''
-    unique_symbols = {}
-    for symbol in atomic_symbols:
-         unique_symbols[symbol] = None
+    unique_symbols = {symbol: None for symbol in atomic_symbols}
     xyz0 = np.zeros(3)
     for symbol in unique_symbols:
         cgfs = dictCGFs[symbol]
@@ -31,7 +26,6 @@ def get_fourier_basis( atomic_symbols: Vector, dictCGFs: Dict, kpoints: Vector )
         unique_symbols[symbol] = chik
     return unique_symbols
 
-#def calculate_fourier_trasform_cartesian(symbols, coords, dictCGFs, mo_i, kpoints, chikdic=None):
 def calculate_fourier_trasform_cartesian(symbols: Vector,
                                          coords: Vector,
                                          dictCGFs: Dict,
@@ -48,25 +42,21 @@ def calculate_fourier_trasform_cartesian(symbols: Vector,
     result = np.zeros( len(kpoints), dtype=np.complex128 )
     acc = 0
     for symbol, xyz in zip(symbols, coords ):
-        #print ( symbol, xyz )
-        krs        = -2j*pi*np.dot( kpoints, xyz )
-        eikrs      = np.exp( krs )
-        cfgks      = chikdic[symbol]
-        #cfgks      = np.ones(cfgks.shape)
-        dim_cgfs   = len(cfgks)
-        coefs      = mo_i[acc:acc+dim_cgfs]
-        #print ( "shape coefs,cfgks,eikrs : ", coefs.shape, cfgks.shape, eikrs.shape )
-        prod       = coefs[:,None]*cfgks*eikrs[None,:]
-        result    += np.sum( prod, axis=0 ) 
-        acc       += dim_cgfs
-        #break
+        krs = -2j*pi*np.dot( kpoints, xyz )
+        eikrs = np.exp( krs )
+        cfgks = chikdic[symbol]
+        dim_cgfs = len(cfgks)
+        coefs = mo_i[acc:acc+dim_cgfs]
+        prod  = coefs[:,None]*cfgks*eikrs[None,:]
+        result += np.sum( prod, axis=0 ) 
+        acc += dim_cgfs
     return result
 
 def calculate_fourier_trasform_atom(ks: Vector, cgfs: List)-> Vector:
     """
     Compute 3D Fourier transform for basis function of particular element for set of kpoints "ks"
     """
-    arr = np.empty( (len(cgfs),len(ks)), dtype=np.complex128)
+    arr = np.empty((len(cgfs), len(ks)), dtype=np.complex128)
     for i, cgf in enumerate(cgfs):
         arr[i] = calculate_fourier_trasform_contracted(cgf, ks)
     return arr
@@ -75,15 +65,14 @@ def calculate_fourier_trasform_contracted(cgf: NamedTuple, ks: Vector) -> comple
     """
     Compute 3D Fourier transform for given basis function "cgf" composed of gaussian primitives for set of kpoints "ks"
     """
-    cs, es          = cgf.primitives
-    label           = cgf.orbType
+    cs, es = cgf.primitives
+    label = cgf.orbType
     angular_momenta = compute_angular_momenta(label)
     res = np.zeros( len(ks), dtype=np.complex128)
     for c,e in zip( cs, es ):
-        fouKx = calculate_fourier_trasform_primitive( angular_momenta[0], ks[:,0], e )
-        fouKy = calculate_fourier_trasform_primitive( angular_momenta[1], ks[:,1], e )
-        fouKz = calculate_fourier_trasform_primitive( angular_momenta[2], ks[:,2], e )
-        #print( fouKx.shape, fouKy.shape, fouKz.shape )
+        fouKx = calculate_fourier_trasform_primitive(angular_momenta[0], ks[:,0], e)
+        fouKy = calculate_fourier_trasform_primitive(angular_momenta[1], ks[:,1], e)
+        fouKz = calculate_fourier_trasform_primitive(angular_momenta[2], ks[:,2], e)
         res +=c*( fouKx * fouKy * fouKz )    
     return res
     
@@ -92,38 +81,20 @@ def calculate_fourier_trasform_primitive(l: int, ks: Vector, alpha: float) -> co
     calculate 1D Fourier transform of single gausian primitive function centred in zero
      for given ste of kpoints "ks"
     '''
-    gauss   = np.exp( -(pi**2/alpha) * ks**2 )
+    gauss = np.exp(-(pi**2/alpha) * ks**2)
     if l == 0:
-        return np.sqrt(pi / alpha) * gauss
+        return np.sqrt(pi/alpha) * gauss
     elif l == 1:
-        c = -1j*np.sqrt( (pi/alpha)**3 ) 
+        c = -1j*np.sqrt((pi/alpha)**3) 
         return c * ks * gauss
     elif l == 2:
-        c = np.sqrt( pi / alpha**5 )
-        return c * ( (alpha/2.0) - (pi**2)*(ks**2)) * gauss
+        c = np.sqrt(pi / alpha**5)
+        return c * ((alpha/2.0) - (pi**2)*(ks**2)) * gauss
     else:
         msg = ("there is not implementation for the primivite fourier "
                "transform of l: {}".format(l))
         raise NotImplementedError(msg)  
-    
-    '''
-    piks  = pi * ks
-    f0   = np.exp(- (piks ** 2) / alpha)
-    if l == 0:
-        return np.sqrt(pi / alpha) * f0
-        #return np.ones(ks.shape[0])    
-    elif l == 1:
-        c = -1j*((pi / alpha) ** 1.5) 
-        return c * ks * f0
-    elif l == 2:
-        c = np.sqrt(pi / (alpha ** 5))
-        return c  * (alpha / 2 - piks ** 2) * f0
-    else:
-        msg = ("there is not implementation for the primivite fourier "
-               "transform of l: {}".format(l))
-        raise NotImplementedError(msg)  
-    '''
-    
+
 def compute_angular_momenta(label) -> Vector:
     """
     Compute the exponents l,m and n for the CGF: x^l y^m z^n exp(-a (r-R)^2)
@@ -142,27 +113,3 @@ def compute_angular_momenta(label) -> Vector:
 
     return np.apply_along_axis(np.vectorize(lookup), 0, np.arange(3))
 
-def real_to_reciprocal_space(tup: Tuple) -> tuple:
-    """
-    Transform a 3D point from real space to reciprocal space.
-    """
-    a1, a2, a3 = tup
-    cte = 2 * pi / np.dot(a1, cross(a2, a3))
-
-    b1 = cte * cross(a2, a3)
-    b2 = cte * cross(a3, a1)
-    b3 = cte * cross(a1, a2)
-
-    return b1, b2, b3
-
-
-def cross(a: Vector, b: Vector) -> Vector:
-    """ Cross product"""
-    x1, y1, z1 = a
-    x2, y2, z2 = b
-
-    x = y1 * z2 - y2 * z1
-    y = x2 * z1 - x1 * z2
-    z = x1 * y2 - x2 * y1
-
-    return np.array([x, y, z])

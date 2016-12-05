@@ -1,12 +1,8 @@
 
-
 '''
-
 usage:
 python kspace_density.py -p Si538H240 -hdf5 quantum.hdf5 -xyz Si538H240.xyz -alat 5.40 -lower 1 -upper 39
-
 '''
-
 
 import sys
 sys.path.append('/home/prokop/git_SW/nonAdiabaticCoupling')

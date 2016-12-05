@@ -38,15 +38,11 @@ def chiRealSpace(Xs, Ys, Zs, cgfs, coefs):
     return wf
 
 
-XSF_HEAD_DEFAULT = headScan = '''
-ATOMS
- 1   0.0   0.0   0.0
-
+XSF_HEAD_DEFAULT = '''
 BEGIN_BLOCK_DATAGRID_3D                        
    some_datagrid      
    BEGIN_DATAGRID_3D_whatever 
 '''
-
 
 def writeArr(f, arr):
     f.write(" ".join(str(x) for x in arr) + "\n")
@@ -55,7 +51,6 @@ def writeArr(f, arr):
 def writeArr2D(f, arr):
     for vec in arr:
         writeArr(f, vec)
-
 
 def atoms_to_file(f, lvec, symbols, coords):
     '''
