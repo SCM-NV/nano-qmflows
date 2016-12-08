@@ -32,3 +32,8 @@ before_script:
 
 script:
   - nosetests --with-coverage --cover-erase --cover-package=nac -a '!slow' -v
+
+branches:
+  only:
+   - master
+   - devel
