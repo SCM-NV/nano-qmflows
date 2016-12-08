@@ -3,10 +3,44 @@
 __author__ = "Felipe Zapata"
 
 # ==========> Standard libraries and third-party <===============
-from libc.math cimport exp, sqrt
-from math import pi
+from libc.math cimport exp, M_PI, sqrt
+import numpy as np
 
 # ==================================<>======================================
+
+cpdef double sab_unfolded(np.ndarray r1, np.ndarray r2, str l1, str l2, double c1,
+                          double c2, double e1, double e2) except? -1:
+   """
+    Primitive overlap terms calculated with the Obara-Saika recurrence relations,
+    see: Molecular Electronic-Structure Theory. T. Helgaker, P. Jorgensen, J. Olsen. 
+    John Wiley & Sons. 2000, pages: 346-347. 
+    .. math:: 
+        S_{i+1,j} = X_PA * S_{ij} + 1/(2*p) * (i * S_{i-1,j} + j * S_{i,j-1})
+        S_{i,j+1} = X_PB * S_{ij} + 1/(2*p) * (i * S_{i-1,j} + j * S_{i,j-1})
+    """
+    cdef double cte, p, u
+    cdef np.ndarray rp, rab, rpa, rpb, rpc, s00
+
+    cte = sqrt(M_PI / (e1 + e2))
+    u = e1 * e2 / (e1 + e2)
+    p = 1.0 / (2.0 * (e1 + e2))
+
+    arr3 = arr=np.arange(3, dtype=np.int)
+    ls1 = np.apply_along_axis(lambda x: calcOrbType_ComponentsC(l1, x), arr3)
+    ls2 = np.apply_along_axis(lambda x: calcOrbType_ComponentsC(l2, x), arr3)
+
+    rp = (e1 * r1 + e2 * r2) / (e1 + e2)
+    rab = r1 - r2
+    rpa = rp - r1
+    rpb = rp - r2
+    rpc = rp - rc[i
+    s00 = cte * np.exp(-u * rab ** 2.0)
+
+    arr = np.stack(ls1, ls2, np.zeros(3))
+    prod = np.apply_along_axis(obaraSaikaMultipole, 0, arr, p, s00, rpa, rpb, rpc) 
+    
+    return c1 * c2 * prod
+    
 
 cpdef double sab(tuple gs1, tuple gs2) except? -1:
     """
@@ -27,7 +61,7 @@ cpdef double sab(tuple gs1, tuple gs2) except? -1:
     
     r1, l1, (c1, e1) = gs1
     r2, l2, (c2, e2) = gs2
-    cte = sqrt(pi / (e1 + e2))
+    cte = sqrt(M_PI / (e1 + e2))
     u = e1 * e2 / (e1 + e2)
     p = 1.0 / (2.0 * (e1 + e2))
     for i in range(3):
@@ -63,7 +97,7 @@ cpdef double sab_efg(tuple gs1, tuple gs2, tuple rc, int e, int f, int g) except
 
     r1, l1, (c1, e1) = gs1
     r2, l2, (c2, e2) = gs2
-    cte = sqrt(pi / (e1 + e2))
+    cte = sqrt(M_PI/ (e1 + e2))
     u = e1 * e2 / (e1 + e2)
     p = 1.0 / (2.0 * (e1 + e2))
     multipoles = [e, f, g]

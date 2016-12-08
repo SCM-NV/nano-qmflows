@@ -1,9 +1,9 @@
 __author__ = "Felipe Zapata"
 
 # ================> Python Standard  and third-party <==========
+# from multipoleObaraSaika import sab_unfolded
 from functools import partial
 from multiprocessing import Pool
-from nac.integrals.overlapIntegral import sijContracted
 
 import numpy as np
 
@@ -29,43 +29,39 @@ def calculateCoupling3Points(geometries, coefficients, dictCGFs, dt,
     :param trans_mtx: Transformation matrix to translate from Cartesian
     to Sphericals.
     """
-    r0, r1, r2 = geometries
+    r0, r1, r2 = tuple(map(coordinates_to_numpy, geometries))
     css0, css1, css2 = coefficients
 
     # Dictionary containing the number of CGFs per atoms
-    cgfs_per_atoms = {s: len(extract_labels(dictCGFs[s]))
+    cgfs_per_atoms = {s: len((dictCGFs[s][1]))
                       for s in dictCGFs.keys()}
     # Dimension of the square overlap matrix
     dim = sum(cgfs_per_atoms[at[0]] for at in r0)
 
-    suv_0 = calcOverlapMtx(dictCGFs, cgfs_per_atoms, dim, r0, r1)
+    suv_0 = calcOverlapMtx(trans_mtx, dictCGFs, cgfs_per_atoms, dim, r0, r1)
     suv_0_t = np.transpose(suv_0)
-    suv_1 = calcOverlapMtx(dictCGFs, cgfs_per_atoms, dim, r1, r2)
+    suv_1 = calcOverlapMtx(trans_mtx, dictCGFs, cgfs_per_atoms, dim, r1, r2)
     suv_1_t = np.transpose(suv_1)
 
-    mtx_sji_t0 = calculate_spherical_overlap(suv_0, css0, css1, trans_mtx)
-    mtx_sji_t1 = calculate_spherical_overlap(suv_1, css1, css2, trans_mtx)
-    mtx_sij_t0 = calculate_spherical_overlap(suv_0_t, css1, css0, trans_mtx)
-    mtx_sij_t1 = calculate_spherical_overlap(suv_1_t, css2, css1, trans_mtx)
+    mtx_sji_t0 = calculate_overlap(suv_0, css0, css1)
+    mtx_sji_t1 = calculate_overlap(suv_1, css1, css2)
+    mtx_sij_t0 = calculate_overlap(suv_0_t, css1, css0)
+    mtx_sij_t1 = calculate_overlap(suv_1_t, css2, css1)
     cte = 1.0 / (4.0 * dt)
 
     return cte * (3 * (mtx_sji_t1 - mtx_sij_t1) + (mtx_sij_t0 - mtx_sji_t0))
 
 
-def calculate_spherical_overlap(suv, css0, css1, trans_mtx):
+def calculate_overlap(suv, css0, css1):
     """
     Calculate the Overlap Matrix between molecular orbitals at different times.
     """
     css0T = np.transpose(css0)
-    if trans_mtx is not None:
-        # Overlap in Sphericals
-        transpose = np.transpose(trans_mtx)
-        suv = np.dot(trans_mtx, np.dot(suv, transpose))
 
     return np.dot(css0T, np.dot(suv, css1))
 
 
-def calcOverlapMtx(dictCGFs, cgfs_per_atoms, dim, r0, r1):
+def calcOverlapMtx(trans_mtx, dictCGFs, cgfs_per_atoms, dim, r0, r1):
     """
     Parallel calculation of the overlap matrix using the atomic
     basis at two different geometries: R0 and R1.
@@ -76,8 +72,15 @@ def calcOverlapMtx(dictCGFs, cgfs_per_atoms, dim, r0, r1):
     with Pool() as p:
         xss = p.map(partial(apply_nested, fun_overlap, fun_lookup),
                     range(dim))
+    suv = np.stack(xss)
 
-    return np.stack(xss)
+    # Transform to sphericals
+    if trans_mtx is not None:
+        # Overlap in Sphericals
+        transpose = np.transpose(trans_mtx)
+        return np.dot(trans_mtx, np.dot(suv, transpose))
+    else:
+        return suv
 
 
 def apply_nested(f, g, i):
@@ -105,9 +108,25 @@ def calc_overlap_atom(xyz_0, fi, xyz_1, cgfs_j):
     Compute the overlap between the CGF_i of atom0 and all the
     CGFs of atom1
     """
-    rs = np.empty(len(cgfs_j))
+    rs = np.empty(len(fi[1]))
     for j, fj in enumerate(cgfs_j):
-        rs[j] = sijContracted((xyz_0, fi), (xyz_1, fj))
+        ps1, ls1 = fi
+        ps2, ls2 = fj
+        rs[j] = apply_contraction(xyz_0, xyz_1, ls1, ls2, ps1, ps2)
+
+    return rs
+
+
+def apply_contraction(xyz_0, xyz_1, ls1, ls2, ps1, ps2):
+    """
+    """
+    rs = np.empty(len(ls1))
+    for i, (l1, l2, p1, p2) in enumerate(zip(ls1, ls2, ps1, ps2)):
+        cs1, es1 = p1
+        cs2, es2 = p2
+        mtx = np.stack([cs1, cs2, es1, es2])
+        fun = partial(sab_unfolded, xyz_0, xyz_1, l1, l2)
+        rs[i] = np.apply_along_axis(fun, axis=0, arr=mtx)
 
     return rs
 
@@ -136,9 +155,8 @@ def lookup_cgf(atoms, cgfs_per_atoms, dictCGFs, i):
     return t
 
 
-def extract_labels(cgfs):
+def coordinates_to_numpy(atom):
     """
-    Get all the orbital labels from a list of CGFs
+    Transform the atomic coordinates to numpy arrays
     """
-    rs = list(map(list, zip(*cgfs)))
-    return rs[1]
+    return atom[0], np.array(atom[1])
