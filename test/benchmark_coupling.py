@@ -19,7 +19,9 @@ def benchmark_coupling():
     geometries_au = tuple(map(change_mol_units, geometries_ang))
     dictCGFs = create_dict_CGFs(path_hdf5, "DZVP-MOLOPT-SR-GTH",
                                 geometries_au[0])
-    
+    new_dictCGFs = {k: tuple(map(list, zip(*v)))
+                    for k, v in dictCGFs.items()}
+
     trans_mtx = retrieve_hdf5_data(path_hdf5, 'ethylene/trans_mtx')
     dt_au = 1 * femtosec2au
     mo_paths = ['ethylene/point_{}/cp2k/mo/coefficients'.format(i)
@@ -28,7 +30,7 @@ def benchmark_coupling():
     coefficients = [cs[:, 3: 43] for cs in coefficients]
 
     couplings = calculateCoupling3Points(geometries_au, coefficients,
-                                         dictCGFs, dt_au, trans_mtx=trans_mtx)
+                                         new_dictCGFs, dt_au, trans_mtx=trans_mtx)
     with h5py.File(path_hdf5) as f5:
         path_coupling = 'ethylene/coupling_0'
         couplings_expected = f5[path_coupling].value

@@ -5,39 +5,36 @@ __author__ = "Felipe Zapata"
 # ==========> Standard libraries and third-party <===============
 from libc.math cimport exp, M_PI, sqrt
 import numpy as np
+cimport numpy as np
+
 
 # ==================================<>======================================
-
 cpdef double sab_unfolded(np.ndarray r1, np.ndarray r2, str l1, str l2, double c1,
                           double c2, double e1, double e2) except? -1:
-   """
-    Primitive overlap terms calculated with the Obara-Saika recurrence relations,
-    see: Molecular Electronic-Structure Theory. T. Helgaker, P. Jorgensen, J. Olsen. 
-    John Wiley & Sons. 2000, pages: 346-347. 
-    .. math:: 
-        S_{i+1,j} = X_PA * S_{ij} + 1/(2*p) * (i * S_{i-1,j} + j * S_{i,j-1})
-        S_{i,j+1} = X_PB * S_{ij} + 1/(2*p) * (i * S_{i-1,j} + j * S_{i,j-1})
-    """
     cdef double cte, p, u
-    cdef np.ndarray rp, rab, rpa, rpb, rpc, s00
+    cdef np.ndarray rp  = np.empty(3, dtype=np.float)
+    cdef np.ndarray rab = np.empty(3, dtype=np.float)
+    cdef np.ndarray rpa = np.empty(3, dtype=np.float)
+    cdef np.ndarray rpb = np.empty(3, dtype=np.float)
+    cdef np.ndarray rpc = np.empty(3, dtype=np.float)
+    cdef np.ndarray s00 = np.empty(3, dtype=np.float)
 
     cte = sqrt(M_PI / (e1 + e2))
     u = e1 * e2 / (e1 + e2)
     p = 1.0 / (2.0 * (e1 + e2))
 
-    arr3 = arr=np.arange(3, dtype=np.int)
-    ls1 = np.apply_along_axis(lambda x: calcOrbType_ComponentsC(l1, x), arr3)
-    ls2 = np.apply_along_axis(lambda x: calcOrbType_ComponentsC(l2, x), arr3)
+    arr3 = np.arange(3, dtype=np.int)
+    ls1 = np.apply_along_axis(reverse_calcOrbType, 0, arr3, l1)
+    ls2 = np.apply_along_axis(reverse_calcOrbType, 0, arr3, l2)
 
     rp = (e1 * r1 + e2 * r2) / (e1 + e2)
     rab = r1 - r2
     rpa = rp - r1
     rpb = rp - r2
-    rpc = rp - rc[i
     s00 = cte * np.exp(-u * rab ** 2.0)
 
-    arr = np.stack(ls1, ls2, np.zeros(3))
-    prod = np.apply_along_axis(obaraSaikaMultipole, 0, arr, p, s00, rpa, rpb, rpc) 
+    arr = np.stack([ls1, ls2, np.zeros(3)])
+    prod = np.apply_along_axis(obaraSaikaMultipole, 0, arr, p, s00, rpa, rpb, rp) 
     
     return c1 * c2 * prod
     
@@ -53,11 +50,10 @@ cpdef double sab(tuple gs1, tuple gs2) except? -1:
         S_{i,j+1} = X_PB * S_{ij} + 1/(2*p) * (i * S_{i-1,j} + j * S_{i,j-1})
     """
     cdef double c1, c2, cte, e1, e2, p, u
-    cdef double rab, rp, rpa, rpb, rpc, s00, prod = 1
+    cdef double rab, rp, rpa, rpb, s00, prod = 1
     cdef int i, l1x, l2x
     cdef list r1, r2
     cdef str l1, l2
-    cdef rc = (0, 0, 0)
     
     r1, l1, (c1, e1) = gs1
     r2, l2, (c2, e2) = gs2
@@ -71,10 +67,9 @@ cpdef double sab(tuple gs1, tuple gs2) except? -1:
         rab = r1[i] - r2[i]
         rpa = rp - r1[i]
         rpb = rp - r2[i]
-        rpc = rp - rc[i]
         s00 = cte * exp(-u * rab ** 2.0)
         # select the exponent of the multipole 
-        prod *= obaraSaikaMultipole(p, s00, rpa, rpb, rpc, l1x, l2x, 0) 
+        prod *= obaraSaikaMultipole(p, s00, rpa, rpb, rp, l1x, l2x, 0) 
     
     return c1 * c2 * prod
 
@@ -183,6 +178,13 @@ cdef double obaraSaikaMultipole(double p, double s00x, double xpa, double xpb,
                  j * obaraSaikaMultipole(p, s00x, xpa, xpb, xpc, i, j - 1, e - 1) +
                  (e - 1) * obaraSaikaMultipole(p, s00x, xpa, xpb, xpc, i, j, e - 2))
     
+
+cdef int reverse_calcOrbType(int x, str l):
+    """
+    Retrieve the cartesian component of a orbital momentum. 
+    """
+    return orbitalIndexes[l, x]
+
 
 cdef int calcOrbType_ComponentsC(str l, int x):
     """
