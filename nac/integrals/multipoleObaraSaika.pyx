@@ -4,39 +4,9 @@ __author__ = "Felipe Zapata"
 
 # ==========> Standard libraries and third-party <===============
 from libc.math cimport exp, M_PI, sqrt
+from functools import partial
 import numpy as np
 cimport numpy as np
-
-
-# ==================================<>======================================
-cpdef double sab_unfolded(np.ndarray r1, np.ndarray r2, str l1, str l2, double c1,
-                          double c2, double e1, double e2) except? -1:
-    cdef double cte, p, u
-    cdef np.ndarray rp  = np.empty(3, dtype=np.float)
-    cdef np.ndarray rab = np.empty(3, dtype=np.float)
-    cdef np.ndarray rpa = np.empty(3, dtype=np.float)
-    cdef np.ndarray rpb = np.empty(3, dtype=np.float)
-    cdef np.ndarray rpc = np.empty(3, dtype=np.float)
-    cdef np.ndarray s00 = np.empty(3, dtype=np.float)
-
-    cte = sqrt(M_PI / (e1 + e2))
-    u = e1 * e2 / (e1 + e2)
-    p = 1.0 / (2.0 * (e1 + e2))
-
-    arr3 = np.arange(3, dtype=np.int)
-    ls1 = np.apply_along_axis(reverse_calcOrbType, 0, arr3, l1)
-    ls2 = np.apply_along_axis(reverse_calcOrbType, 0, arr3, l2)
-
-    rp = (e1 * r1 + e2 * r2) / (e1 + e2)
-    rab = r1 - r2
-    rpa = rp - r1
-    rpb = rp - r2
-    s00 = cte * np.exp(-u * rab ** 2.0)
-
-    arr = np.stack([ls1, ls2, np.zeros(3)])
-    prod = np.apply_along_axis(obaraSaikaMultipole, 0, arr, p, s00, rpa, rpb, rp) 
-    
-    return c1 * c2 * prod
     
 
 cpdef double sab(tuple gs1, tuple gs2) except? -1:
@@ -179,6 +149,11 @@ cdef double obaraSaikaMultipole(double p, double s00x, double xpa, double xpb,
                  (e - 1) * obaraSaikaMultipole(p, s00x, xpa, xpb, xpc, i, j, e - 2))
     
 
+# cdef double reverse_obaraSaikaMultipole( int i, int j, int e, double p, double s00x,
+#                                          double xpa, double xpb, double xpc):
+#      return obaraSaikaMultipole(p, s00x, xpa,  xpb, xpc, i, j, e):
+
+    
 cdef int reverse_calcOrbType(int x, str l):
     """
     Retrieve the cartesian component of a orbital momentum. 
