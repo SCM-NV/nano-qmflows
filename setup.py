@@ -1,7 +1,6 @@
 
 from Cython.Distutils import build_ext
 from setuptools import Extension, setup
-import numpy as np
 
 setup(
     name='NonAdiabaticCouling',
@@ -25,6 +24,5 @@ setup(
     install_requires=['cython', 'numpy', 'h5py', 'noodles', 'qmworks', 'pymonad'],
     cmdclass={'build_ext': build_ext},
     ext_modules=[Extension('multipoleObaraSaika', ['nac/integrals/multipoleObaraSaika.pyx'])],
-    include_dirs=[np.get_include()],
     extras_require={'test': ['nose', 'coverage']}
 )

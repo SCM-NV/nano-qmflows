@@ -4,10 +4,7 @@ __author__ = "Felipe Zapata"
 
 # ==========> Standard libraries and third-party <===============
 from libc.math cimport exp, M_PI, sqrt
-from functools import partial
-import numpy as np
-cimport numpy as np
-    
+
 
 cpdef double sab(tuple gs1, tuple gs2) except? -1:
     """
@@ -83,7 +80,7 @@ cpdef double sab_efg(tuple gs1, tuple gs2, tuple rc, int e, int f, int g) except
     return c1 * c2 * prod
 
 
-cdef double obaraSaikaMultipole(double p, double s00x, double xpa, double xpb,
+cpdef double obaraSaikaMultipole(double p, double s00x, double xpa, double xpb,
                                 double xpc, int i, int j, int e):
     """
     The  Obara-Saika Scheme to calculate overlap integrals. Explicit expressions
@@ -148,18 +145,6 @@ cdef double obaraSaikaMultipole(double p, double s00x, double xpa, double xpb,
                  j * obaraSaikaMultipole(p, s00x, xpa, xpb, xpc, i, j - 1, e - 1) +
                  (e - 1) * obaraSaikaMultipole(p, s00x, xpa, xpb, xpc, i, j, e - 2))
     
-
-# cdef double reverse_obaraSaikaMultipole( int i, int j, int e, double p, double s00x,
-#                                          double xpa, double xpb, double xpc):
-#      return obaraSaikaMultipole(p, s00x, xpa,  xpb, xpc, i, j, e):
-
-    
-cdef int reverse_calcOrbType(int x, str l):
-    """
-    Retrieve the cartesian component of a orbital momentum. 
-    """
-    return orbitalIndexes[l, x]
-
 
 cdef int calcOrbType_ComponentsC(str l, int x):
     """
