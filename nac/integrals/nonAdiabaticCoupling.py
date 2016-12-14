@@ -4,7 +4,6 @@ __author__ = "Felipe Zapata"
 # from multipoleObaraSaika import sab_unfolded
 from functools import partial
 from multiprocessing import Pool
-from nac.common import AtomXYZ
 from nac.integrals.overlapIntegral import sijContracted
 
 from typing import Dict, List, Tuple
