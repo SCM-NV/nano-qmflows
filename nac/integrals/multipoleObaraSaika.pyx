@@ -3,10 +3,37 @@
 __author__ = "Felipe Zapata"
 
 # ==========> Standard libraries and third-party <===============
-from libc.math cimport exp, sqrt
-from math import pi
+from libc.math cimport exp, M_PI, sqrt
 
-# ==================================<>======================================
+import numpy as np
+cimport numpy as np    
+
+
+def sab_unfolded(np.ndarray [np.double_t] r1,  np.ndarray [np.double_t] r2,  np.ndarray [np.int64_t] ls1,
+                 np.ndarray [np.int64_t] ls2, double c1, double e1, double c2, double e2):
+    """
+    """
+    cdef double cte, p, u, prod
+    cdef np.ndarray [np.double_t] od, ps, rab, rp, rpa, rpb, s00
+    cdef np.ndarray [np.double_t, ndim=2] arr
+    
+    cte = sqrt(M_PI / (e1 + e2))
+    u = e1 * e2 / (e1 + e2)
+    p = 1.0 / (2.0 * (e1 + e2))
+
+    rp = (e1 * r1 + e2 * r2) / (e1 + e2)
+    rab = r1 - r2
+    rpa = rp - r1
+    rpb = rp - r2
+    s00 = cte * np.exp(-u * rab ** 2.0)
+    ps = np.repeat(p, 3)
+
+    arr = np.stack([ps, s00, rpa, rpb, rp, ls1, ls2, np.zeros(3)])
+
+    prod = np.prod(np.apply_along_axis(lambda xs: obaraSaikaMultipole(*xs), 0, arr))
+
+    return c1 * c2 * prod
+
 
 cpdef double sab(tuple gs1, tuple gs2) except? -1:
     """
@@ -19,15 +46,14 @@ cpdef double sab(tuple gs1, tuple gs2) except? -1:
         S_{i,j+1} = X_PB * S_{ij} + 1/(2*p) * (i * S_{i-1,j} + j * S_{i,j-1})
     """
     cdef double c1, c2, cte, e1, e2, p, u
-    cdef double rab, rp, rpa, rpb, rpc, s00, prod = 1
+    cdef double rab, rp, rpa, rpb, s00, prod = 1
     cdef int i, l1x, l2x
     cdef list r1, r2
     cdef str l1, l2
-    cdef rc = (0, 0, 0)
     
     r1, l1, (c1, e1) = gs1
     r2, l2, (c2, e2) = gs2
-    cte = sqrt(pi / (e1 + e2))
+    cte = sqrt(M_PI / (e1 + e2))
     u = e1 * e2 / (e1 + e2)
     p = 1.0 / (2.0 * (e1 + e2))
     for i in range(3):
@@ -37,10 +63,9 @@ cpdef double sab(tuple gs1, tuple gs2) except? -1:
         rab = r1[i] - r2[i]
         rpa = rp - r1[i]
         rpb = rp - r2[i]
-        rpc = rp - rc[i]
         s00 = cte * exp(-u * rab ** 2.0)
         # select the exponent of the multipole 
-        prod *= obaraSaikaMultipole(p, s00, rpa, rpb, rpc, l1x, l2x, 0) 
+        prod *= obaraSaikaMultipole(p, s00, rpa, rpb, rp, l1x, l2x, 0) 
     
     return c1 * c2 * prod
 
@@ -63,7 +88,7 @@ cpdef double sab_efg(tuple gs1, tuple gs2, tuple rc, int e, int f, int g) except
 
     r1, l1, (c1, e1) = gs1
     r2, l2, (c2, e2) = gs2
-    cte = sqrt(pi / (e1 + e2))
+    cte = sqrt(M_PI/ (e1 + e2))
     u = e1 * e2 / (e1 + e2)
     p = 1.0 / (2.0 * (e1 + e2))
     multipoles = [e, f, g]
@@ -84,7 +109,7 @@ cpdef double sab_efg(tuple gs1, tuple gs2, tuple rc, int e, int f, int g) except
     return c1 * c2 * prod
 
 
-cdef double obaraSaikaMultipole(double p, double s00x, double xpa, double xpb,
+cpdef double obaraSaikaMultipole(double p, double s00x, double xpa, double xpb,
                                 double xpc, int i, int j, int e):
     """
     The  Obara-Saika Scheme to calculate overlap integrals. Explicit expressions
@@ -179,3 +204,4 @@ orbitalIndexes = {
     ("Fyzz", 0): 0, ("Fyzz", 1): 1, ("Fyzz", 2): 2,
     ("Fzzz", 0): 0, ("Fzzz", 1): 0, ("Fzzz", 2): 3
 }
+
