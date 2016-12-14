@@ -34,7 +34,7 @@ def benchmark_coupling():
         couplings_expected = f5[path_coupling].value
 
     print("expected: ", couplings_expected[0, :10])
-    print("expected: ", couplings[0, :10])
+    print("computed: ", couplings[0, :10])
     
     assert np.allclose(couplings, couplings_expected)
 

@@ -5,6 +5,35 @@ __author__ = "Felipe Zapata"
 # ==========> Standard libraries and third-party <===============
 from libc.math cimport exp, M_PI, sqrt
 
+import numpy as np
+cimport numpy as np    
+
+
+def sab_unfolded(np.ndarray [np.double_t] r1,  np.ndarray [np.double_t] r2,  np.ndarray [np.int64_t] ls1,
+                 np.ndarray [np.int64_t] ls2, double c1, double e1, double c2, double e2):
+    """
+    """
+    cdef double cte, p, u, prod
+    cdef np.ndarray [np.double_t] od, ps, rab, rp, rpa, rpb, s00
+    cdef np.ndarray [np.double_t, ndim=2] arr
+    
+    cte = sqrt(M_PI / (e1 + e2))
+    u = e1 * e2 / (e1 + e2)
+    p = 1.0 / (2.0 * (e1 + e2))
+
+    rp = (e1 * r1 + e2 * r2) / (e1 + e2)
+    rab = r1 - r2
+    rpa = rp - r1
+    rpb = rp - r2
+    s00 = cte * np.exp(-u * rab ** 2.0)
+    ps = np.repeat(p, 3)
+
+    arr = np.stack([ps, s00, rpa, rpb, rp, ls1, ls2, np.zeros(3)])
+
+    prod = np.prod(np.apply_along_axis(lambda xs: obaraSaikaMultipole(*xs), 0, arr))
+
+    return c1 * c2 * prod
+
 
 cpdef double sab(tuple gs1, tuple gs2) except? -1:
     """
@@ -175,3 +204,4 @@ orbitalIndexes = {
     ("Fyzz", 0): 0, ("Fyzz", 1): 1, ("Fyzz", 2): 2,
     ("Fzzz", 0): 0, ("Fzzz", 1): 0, ("Fzzz", 2): 3
 }
+

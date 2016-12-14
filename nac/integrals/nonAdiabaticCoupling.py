@@ -3,14 +3,11 @@ __author__ = "Felipe Zapata"
 # ================> Python Standard  and third-party <==========
 # from multipoleObaraSaika import sab_unfolded
 from functools import partial
-from math import (pi, sqrt)
 from multiprocessing import Pool
-from multipoleObaraSaika import obaraSaikaMultipole
-from .multipoleIntegrals import calcOrbType_Components
 from nac.common import AtomXYZ
 from nac.integrals.overlapIntegral import sijContracted
 
-from typing import Any, Callable, Dict, List, Tuple
+from typing import Dict, List, Tuple
 
 import numpy as np
 
@@ -39,17 +36,17 @@ def calculateCoupling3Points(geometries: Tuple, coefficients: Tuple,
     :param trans_mtx: Transformation matrix to translate from Cartesian
     to Sphericals.
     """
-    r0, r1, r2 = geometries
+    mol0, mol1, mol2 = geometries
     css0, css1, css2 = coefficients
 
     # Dictionary containing the number of CGFs per atoms
     cgfs_per_atoms = {s: len(dictCGFs[s]) for s in dictCGFs.keys()}
     # Dimension of the square overlap matrix
-    dim = sum(cgfs_per_atoms[at[0]] for at in r0)
+    dim = sum(cgfs_per_atoms[at[0]] for at in mol0)
 
-    suv_0 = calcOverlapMtx(dictCGFs, dim, r0, r1)
+    suv_0 = calcOverlapMtx(dictCGFs, dim, mol0, mol1)
     suv_0_t = np.transpose(suv_0)
-    suv_1 = calcOverlapMtx(dictCGFs, dim, r1, r2)
+    suv_1 = calcOverlapMtx(dictCGFs, dim, mol1, mol2)
     suv_1_t = np.transpose(suv_1)
 
     mtx_sji_t0 = calculate_spherical_overlap(suv_0, css0, css1, trans_mtx)
@@ -118,37 +115,11 @@ def calc_overlap_atom(xyz_0: List, cgf_i: Tuple, xyz_1: List,
     Compute the overlap between the CGF_i of atom0 and all the
     CGFs of atom1
     """
-    # li = cgf_i.orbType
-    # ps_i = cgf_i.primitives
-    # rs = np.empty(len(cgfs_atom_j))
-    # for j, cgf_j in enumerate(cgfs_atom_j):
-    #     lj = cgf_j.orbType
-    #     ps_j = cgf_j.primitives
-    #     rs[j] = apply_contraction(np.array(xyz_0), np.array(xyz_1), li, lj, ps_i, ps_j)
-
-    # return rs
     rs = np.empty(len(cgfs_atom_j))
     for j, cgf_j in enumerate(cgfs_atom_j):
         rs[j] = sijContracted((xyz_0, cgf_i), (xyz_1, cgf_j))
 
     return rs
-
-
-def apply_contraction(xyz_0: Vector, xyz_1: Vector,
-                      li: str, lj: str,
-                      ps_i: Tuple, ps_j: Tuple) -> Vector:
-    """
-    Calculate the Overlap between two CGFs.
-    """
-    csi, esi = ps_i
-    csj, esj = ps_j
-    mtx = np.stack([csi, csj, esi, esj])
-
-    ls_i = np.array(list(map(partial(calcOrbType_Components, li), range(3))))
-    ls_j = np.array(list(map(partial(calcOrbType_Components, lj), range(3))))
-
-    fun_sab = partial(sab_unfolded, xyz_0, xyz_1, ls_i, ls_j)
-    return np.sum(np.apply_along_axis(lambda xs: fun_sab(*xs), axis=0, arr=mtx))
 
 
 def lookup_cgf(atoms: List, dictCGFs: Dict, i: int) -> Tuple:
@@ -173,31 +144,3 @@ def lookup_cgf(atoms: List, dictCGFs: Dict, i: int) -> Tuple:
     t = xyz, dictCGFs[s][index]
 
     return t
-
-
-def sab_unfolded(r1, r2, ls1, ls2, c1, c2, e1, e2):
-    """
-    """
-    cte = sqrt(pi / (e1 + e2))
-    u = e1 * e2 / (e1 + e2)
-    p = 1.0 / (2.0 * (e1 + e2))
-
-    rp = (e1 * r1 + e2 * r2) / (e1 + e2)
-    rab = r1 - r2
-    rpa = rp - r1
-    rpb = rp - r2
-    s00 = cte * np.exp(-u * rab ** 2.0)
-    ps = np.repeat(p, 3)
-
-    arr = np.stack([ps, s00, rpa, rpb, rp, ls1, ls2, np.zeros(3)])
-
-    prod = np.prod(np.apply_along_axis(lambda xs: obaraSaikaMultipole(*xs), 0, arr))
-
-    return c1 * c2 * prod
-
-
-def coordinates_to_numpy(atom):
-    """
-    Transform the atomic coordinates to numpy arrays
-    """
-    return AtomXYZ(atom.symbol, np.array(atom.xyz))
