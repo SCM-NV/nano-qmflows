@@ -114,7 +114,7 @@ def distribute_computations(project_name, basisCP2K, potCP2K, cp2k_main,
         # function to be execute remotely
         write_python_script(folder, file_xyz, project_name,
                             basisCP2K, potCP2K, cp2k_main,
-                            cp2k_guess, enumerate_from, script_name, project_name)
+                            cp2k_guess, enumerate_from, script_name)
         write_slurm_script(folder, slurm, script_name)
         enumerate_from += number_of_geometries(join(folder, file_xyz))
 
