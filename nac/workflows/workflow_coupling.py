@@ -24,6 +24,7 @@ from qmworks.parsers import parse_string_xyz
 
 def generate_pyxaid_hamiltonians(package_name, project_name,
                                  cp2k_args, guess_args=None,
+                                 path=None,
                                  geometries=None, dictCGFs=None,
                                  calc_new_wf_guess_on_points=None,
                                  path_hdf5=None, enumerate_from=0,
@@ -93,7 +94,7 @@ def generate_pyxaid_hamiltonians(package_name, project_name,
                                        enumerate_from=enumerate_from,
                                        nCouplings=nCouplings)
 
-    hams_files = run(promise_files)
+    hams_files = run(promise_files, path=path)
 
     print(hams_files)
 # ==============================> Tasks <=====================================

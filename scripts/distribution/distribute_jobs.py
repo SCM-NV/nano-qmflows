@@ -114,7 +114,7 @@ def distribute_computations(project_name, basisCP2K, potCP2K, cp2k_main,
         # function to be execute remotely
         write_python_script(folder, file_xyz, project_name,
                             basisCP2K, potCP2K, cp2k_main,
-                            cp2k_guess, enumerate_from, script_name)
+                            cp2k_guess, enumerate_from, script_name, project_name)
         write_slurm_script(folder, slurm, script_name)
         enumerate_from += number_of_geometries(join(folder, file_xyz))
 
@@ -125,7 +125,10 @@ def write_python_script(folder, file_xyz, project_name, basisCP2K, potCP2K, cp2k
     scratch = '/scratch-shared'
     user = getpass.getuser()
     path_hdf5 = join(scratch, user, project_name, '{}.hdf5'.format(folder))
-
+    path = join(scratch, user, project_name)
+    if not os.path.exists(path):
+        os.makedirs(path)
+    nCouplings = 40
     xs = """
 from nac.workflows.workflow_coupling import generate_pyxaid_hamiltonians
 from nac.workflows.initialization import initialize
@@ -153,11 +156,13 @@ cp2k_main = dict2Setting({})
 cp2k_guess = dict2Setting({})
 
 generate_pyxaid_hamiltonians('cp2k', project_name, cp2k_main,
-                             guess_args=cp2k_guess, nCouplings=40,
+                             guess_args=cp2k_guess, path='{}',
+                             nCouplings={},
                              **initial_config)
 plams.finish()
  """.format(project_name, basisCP2K, potCP2K, path_hdf5, file_xyz, cp2k_main.basis,
-            enumerate_from, settings2Dict(cp2k_main), settings2Dict(cp2k_guess))
+            enumerate_from, settings2Dict(cp2k_main), settings2Dict(cp2k_guess),
+            path, nCouplings)
 
     with open(join(folder, script_name), 'w') as f:
         f.write(xs)
