@@ -36,9 +36,6 @@ def initialize(project_name, path_traj_xyz, basisname, enumerate_from=0,
     # Create Work_dir if it does not exist
     work_dir = scratch_path
     # remove previous
-    if os.path.exists(work_dir):
-        shutil.rmtree(work_dir)
-        os.makedirs(work_dir)
 
     if not os.path.exists(scratch_path):
         os.makedirs(scratch_path)
