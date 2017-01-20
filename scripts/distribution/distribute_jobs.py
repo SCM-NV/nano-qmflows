@@ -5,7 +5,6 @@ from os.path import join
 from qmworks import Settings
 from qmworks.utils import settings2Dict
 
-import getpass
 import os
 import shutil
 import string
@@ -34,7 +33,8 @@ def main():
 
     """
     # USER DEFINED CONFIGURATION
-    project_name = 'distribute_Cd33Se33'  # name use to create folders
+    scratch = 'scratch-shared/user29/jobs_quantumdot'
+    project_name = 'Quantumdot'  # name use to create folders
 
     # Path to the basis set used by Cp2k
     home = os.path.expanduser('~')
@@ -56,8 +56,9 @@ def main():
         name="namd"
     )
 
-    distribute_computations(project_name, basisCP2K, potCP2K, cp2k_main,
-                            cp2k_guess, path_to_trajectory, blocks, slurm)
+    distribute_computations(scratch, project_name, basisCP2K, potCP2K,
+                            cp2k_main, cp2k_guess, path_to_trajectory, blocks,
+                            slurm)
 
 
 def cp2k_input(lower_orbital, upper_orbital, cell_parameters=None):
@@ -98,8 +99,9 @@ def cp2k_input(lower_orbital, upper_orbital, cell_parameters=None):
 # ============================> Distribution <=================================
 
 
-def distribute_computations(project_name, basisCP2K, potCP2K, cp2k_main,
-                            cp2k_guess, path_to_trajectory, blocks, slurm):
+def distribute_computations(scratch, project_name, basisCP2K, potCP2K,
+                            cp2k_main, cp2k_guess, path_to_trajectory,
+                            blocks, slurm):
 
     script_name = "script_remote_function.py"
     # Split the trajectory in Chunks and move each chunk to its corresponding
@@ -112,20 +114,19 @@ def distribute_computations(project_name, basisCP2K, potCP2K, cp2k_main,
         os.mkdir(folder)
         shutil.move(file_xyz, folder)
         # function to be execute remotely
-        write_python_script(folder, file_xyz, project_name,
+        write_python_script(scratch, folder, file_xyz, project_name,
                             basisCP2K, potCP2K, cp2k_main,
                             cp2k_guess, enumerate_from, script_name)
         write_slurm_script(folder, slurm, script_name)
         enumerate_from += number_of_geometries(join(folder, file_xyz))
 
 
-def write_python_script(folder, file_xyz, project_name, basisCP2K, potCP2K, cp2k_main,
-                        cp2k_guess, enumerate_from, script_name):
+def write_python_script(scratch, folder, file_xyz, project_name, basisCP2K,
+                        potCP2K, cp2k_main, cp2k_guess, enumerate_from,
+                        script_name):
     """ Write the python script to compute the PYXAID hamiltonians"""
-    scratch = '/scratch-shared'
-    user = getpass.getuser()
-    path_hdf5 = join(scratch, user, project_name, '{}.hdf5'.format(folder))
-    path = join(scratch, user, project_name)
+    path_hdf5 = join(scratch, project_name, '{}.hdf5'.format(folder))
+    path = join(scratch, project_name)
     if not os.path.exists(path):
         os.makedirs(path)
     nCouplings = 40
@@ -135,7 +136,7 @@ from nac.workflows.initialization import initialize
 from qmworks.utils import dict2Setting
 import plams
 
-plams.init()
+plams.init(folder='{}')
 
 project_name = '{}'
 path_basis = '{}'
@@ -160,9 +161,9 @@ generate_pyxaid_hamiltonians('cp2k', project_name, cp2k_main,
                              nCouplings={},
                              **initial_config)
 plams.finish()
- """.format(project_name, basisCP2K, potCP2K, path_hdf5, file_xyz, cp2k_main.basis,
-            enumerate_from, settings2Dict(cp2k_main), settings2Dict(cp2k_guess),
-            path, nCouplings)
+ """.format(scratch, project_name, basisCP2K, potCP2K, path_hdf5, file_xyz,
+            cp2k_main.basis, enumerate_from, settings2Dict(cp2k_main),
+            settings2Dict(cp2k_guess), path, nCouplings)
 
     with open(join(folder, script_name), 'w') as f:
         f.write(xs)
