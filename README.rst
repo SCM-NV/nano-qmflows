@@ -12,23 +12,23 @@
 NonAdiabaticCoupling
 ====================
 
-Package to calculate several properties related to the Nonadiabatic behaviour of a molecular system.
-
+This library contains some funcionality to carry out a numerical approximation
+to the *nonadibatic coupling". see http://felipez.github.io/nonAdiabaticCoupling/ for more information.
  
 Installation
 ============
 
-- type the following command in ther terminal:
-    ``git clone git@github.com:felipeZ/nonAdiabaticCoupling.git``
+In order to install the *nonadiabaticCoupling* library you need to install first the **QMWorks** package and its environment using *Anaconda* as detailed here_.
 
-    - Then move to the new folder called *nonAdibatic* and type:
-    ``pip install .`` 
+.. _here: https://github.com/SCM-NV/qmworks
+
+Then,  to install the **nonadiabaticCoupling** library type the following command inside the conda environment::
+
+  (qmworks) user@server> pip install https://github.com/felipeZ/nonAdiabaticCoupling/tarball/master#egg=qmworks --upgrade
 
 Overview
 ========
-This library contains both a library and a set of scripts to carry out a numerical approximation
-to the *nonadibatic coupling". The Library contains the numerical routines written in cython_ 
-and numpy_ that are the core of the library. While the scripts are set of workflows to compute different properties using different approximations that can be tuned by the user.
+ The Library contains the numerical routines written in cython_ and numpy_ that are the core of the library. While the scripts are set of workflows to compute different properties using different approximations that can be tuned by the user.
 
 .. _cython: http://cython.org
 .. _numpy: http://www.numpy.org

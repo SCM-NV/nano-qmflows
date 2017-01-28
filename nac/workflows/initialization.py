@@ -28,18 +28,14 @@ def initialize(project_name, path_traj_xyz, basisname, enumerate_from=0,
     the nonadaibatic coupling
     """
     # User variables
-    cwd = os.path.realpath(".")
     username = getpass.getuser()
 
     # Scratch
     scratch_path = join(scratch, username, project_name)
 
     # Create Work_dir if it does not exist
-    work_dir = os.path.join(cwd, project_name)
+    work_dir = scratch_path
     # remove previous
-    if os.path.exists(work_dir):
-        shutil.rmtree(work_dir)
-        os.makedirs(work_dir)
 
     if not os.path.exists(scratch_path):
         os.makedirs(scratch_path)
