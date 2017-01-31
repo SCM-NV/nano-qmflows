@@ -102,6 +102,7 @@ def calculate_mos(package_name, all_geometries, project_name, path_hdf5,
         # If the MOs are already store in the HDF5 format return the path
         # to them and skip the calculation
         if search_data_in_hdf5(hdf5_orb_path):
+            print(hdf5_orb_path, "has already been calculated")
             orbitals.append(hdf5_orb_path)
         else:
             point_dir = folders[j]
