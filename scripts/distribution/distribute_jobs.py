@@ -173,7 +173,7 @@ from nac.workflows.initialization import initialize
 from qmworks.utils import dict2Setting
 import plams
 
-plams.init(folder='{}')
+plams.init(folder='{}/batch_{}')
 
 project_name = '{}'
 path_basis = '{}'
@@ -199,9 +199,9 @@ generate_pyxaid_hamiltonians('cp2k', project_name, cp2k_main,
                              nCouplings={},
                              **initial_config)
 plams.finish()
- """.format(scratch, project_name, basisCP2K, potCP2K, path_hdf5, file_xyz,
-            cp2k_main.basis, enumerate_from, scratch, settings2Dict(cp2k_main),
-            settings2Dict(cp2k_guess), nCouplings)
+ """.format(scratch, enumerate_from, project_name, basisCP2K, potCP2K,
+            path_hdf5, file_xyz, cp2k_main.basis, enumerate_from, scratch,
+            settings2Dict(cp2k_main), settings2Dict(cp2k_guess), nCouplings)
 
     with open(join(folder, script_name), 'w') as f:
         f.write(xs)
