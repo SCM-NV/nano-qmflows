@@ -34,7 +34,7 @@ def test_obaraSaika():
                                 basisname=basisname, path_basis=basiscp2k,
                                 path_potential=potcp2k,
                                 enumerate_from=0,
-                                scratch='/tmp',
+                                scratch_path='/tmp',
                                 path_hdf5=path_hdf5_test,
                                 calculate_guesses='first')
 
