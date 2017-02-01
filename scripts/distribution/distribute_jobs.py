@@ -78,7 +78,7 @@ def main():
         name="namd"
     )
     # Path where the data will be copy back
-    cwd = os.path.expanduser('.')
+    cwd = os.getcwd()
 
     distribute_computations(scratch, project_name, basisCP2K, potCP2K,
                             cp2k_main, cp2k_guess, path_to_trajectory, blocks,
@@ -210,18 +210,10 @@ plams.finish()
 
 
 def write_slurm_script(cwd, folder, slurm, python_script, path_hdf5,
-                       hamiltonians, range_batch):
+                       hamiltonians, range_batch=None):
     """
     write an Slurm launch script
     """
-    sbatch = lambda x, y: "#SBATCH -{} {}\n".format(x, y)
-
-    header = "#! /bin/bash\n"
-    modules = "\nmodule load cp2k/3.0\nsource activate qmworks\n\n"
-    time = sbatch('t', slurm.time)
-    nodes = sbatch('N', slurm.nodes)
-    tasks = sbatch('n', slurm.tasks)
-    name = sbatch('J', slurm.name)
     python = "python {}\n".format(python_script)
     results_dir = "{}/results_{}".format(cwd, folder)
     mkdir = "mkdir {}\n".format(results_dir)
@@ -234,14 +226,30 @@ def write_slurm_script(cwd, folder, slurm, python_script, path_hdf5,
 
     copy = 'cp -r {} {} {}\n'.format(path_hdf5, files_hams, results_dir)
     # Script content
-    content = (header + time + nodes + tasks + name + modules + python
-               + mkdir + copy)
+    content = format_slurm_parameters(slurm) + python + mkdir + copy
 
+    # Write the script
     file_name = join(folder, "launch.sh")
 
     with open(file_name, 'w') as f:
         f.write(content)
     return file_name
+
+
+def format_slurm_parameters(slurm):
+    """
+    Format as a string some SLURM parameters
+    """
+    sbatch = lambda x, y: "#SBATCH -{} {}\n".format(x, y)
+
+    header = "#! /bin/bash\n"
+    modules = "\nmodule load cp2k/3.0\nsource activate qmworks\n\n"
+    time = sbatch('t', slurm.time)
+    nodes = sbatch('N', slurm.nodes)
+    tasks = sbatch('n', slurm.tasks)
+    name = sbatch('J', slurm.name)
+
+    return ''.join([header, modules, time, nodes, tasks, name])
 
 
 def number_of_geometries(file_name):
