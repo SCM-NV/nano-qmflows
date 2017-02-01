@@ -93,6 +93,7 @@ def cp2k_input(range_orbitals, cell_parameters, cell_angles,
     cp2k_args.basis = "DZVP-MOLOPT-SR-GTH"
     cp2k_args.potential = "GTH-PBE"
     cp2k_args.cell_parameters = cell_parameters
+    cp2k_args.cell_angles = cell_angles
     main_dft = cp2k_args.specific.cp2k.force_eval.dft
     main_dft.scf.added_mos = added_mos
     main_dft.scf.max_scf = 200
@@ -105,6 +106,7 @@ def cp2k_input(range_orbitals, cell_parameters, cell_angles,
     cp2k_OT.basis = "DZVP-MOLOPT-SR-GTH"
     cp2k_OT.potential = "GTH-PBE"
     cp2k_OT.cell_parameters = cell_parameters
+    cp2k_OT.cell_angles = cell_angles
     ot_dft = cp2k_OT.specific.cp2k.force_eval.dft
     ot_dft.scf.scf_guess = 'atomic'
     ot_dft.scf.ot.minimizer = 'DIIS'

@@ -14,14 +14,13 @@ import fnmatch
 import getpass
 import h5py
 import os
-import shutil
 import subprocess
 # ====================================<>=======================================
 
 
 def initialize(project_name, path_traj_xyz, basisname, enumerate_from=0,
                calculate_guesses='first', path_hdf5=None,
-               scratch="/scratch-shared", path_basis=None, path_potential=None,
+               scratch_path=None, path_basis=None, path_potential=None,
                dt=1, geometry_units='angstrom'):
     """
     Initialize all the data required to schedule the workflows associated with
@@ -31,12 +30,10 @@ def initialize(project_name, path_traj_xyz, basisname, enumerate_from=0,
     username = getpass.getuser()
 
     # Scratch
-    scratch_path = join(scratch, username, project_name)
+    if scratch_path is None:
+        scratch_path = join('/tmp', username, project_name)
 
-    # Create Work_dir if it does not exist
-    work_dir = scratch_path
-    # remove previous
-
+    # If the directory does not exist create it
     if not os.path.exists(scratch_path):
         os.makedirs(scratch_path)
 
@@ -51,7 +48,7 @@ def initialize(project_name, path_traj_xyz, basisname, enumerate_from=0,
     geometries = split_file_geometries(path_traj_xyz)
 
     # Create a folder for each point the the dynamics
-    traj_folders = create_point_folder(work_dir, len(geometries),
+    traj_folders = create_point_folder(scratch_path, len(geometries),
                                        enumerate_from)
     if calculate_guesses is None:
         points_guess = []
@@ -80,7 +77,7 @@ def initialize(project_name, path_traj_xyz, basisname, enumerate_from=0,
     d = {'package_config': cp2k_config, 'path_hdf5': path_hdf5,
          'calc_new_wf_guess_on_points': points_guess,
          'geometries': geometries, 'enumerate_from': enumerate_from,
-         'dt': 1, 'dictCGFs': dictCGFs, 'work_dir': work_dir,
+         'dt': 1, 'dictCGFs': dictCGFs, 'work_dir': scratch_path,
          'traj_folders': traj_folders, 'basisname': basisname,
          'hdf5_trans_mtx': hdf5_trans_mtx}
 
