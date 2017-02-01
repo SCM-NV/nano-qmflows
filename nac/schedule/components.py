@@ -99,10 +99,13 @@ def calculate_mos(package_name, all_geometries, project_name, path_hdf5,
     for j, gs in enumerate(all_geometries):
         k = j + enumerate_from
         hdf5_orb_path = create_properties_path(k)
+        point_str = 'point_{}'.format(k)
+        print("Computing Molecular orbitals of Point: ", point_str)
         # If the MOs are already store in the HDF5 format return the path
         # to them and skip the calculation
+
         if search_data_in_hdf5(hdf5_orb_path):
-            print(hdf5_orb_path, "has already been calculated")
+            print(point_str, " has already been calculated")
             orbitals.append(hdf5_orb_path)
         else:
             point_dir = folders[j]
@@ -120,7 +123,6 @@ def calculate_mos(package_name, all_geometries, project_name, path_hdf5,
                                              guess_job=guess_job,
                                              package_config=package_config)
 
-            print("Calling promise qm")
             promise_qm = call_schedule_qm(package_name, package_args,
                                           point_dir, job_files,
                                           k, gs,
@@ -176,7 +178,8 @@ def create_point_folder(work_dir, n, enumerate_from):
     """
     folders = []
     for k in range(enumerate_from, n + enumerate_from):
-        new_dir = join(work_dir, 'point_{}'.format(k))
+        new_dir = join(work_dir, 'batch_'.format(enumerate_from),
+                       'point_{}'.format(k))
         if not os.path.exists(new_dir):
             os.makedirs(new_dir)
         folders.append(new_dir)

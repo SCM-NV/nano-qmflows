@@ -66,7 +66,9 @@ def main():
 
     # Trajectory splitting
     path_to_trajectory = "<Path/to/the/trajectory/in/xyz/format"
-    blocks = 5  # Number of chunks to split the trajectory
+
+    # Number of chunks to split the trajectory
+    blocks = 5
 
     # SLURM Configuration
     slurm = SLURM(
@@ -133,23 +135,28 @@ def distribute_computations(scratch, project_name, basisCP2K, potCP2K,
     chunks_trajectory = split_trajectory(path_to_trajectory, blocks, '.')
     chunks_trajectory.sort()
     enumerate_from = 0
-    for  file_xyz, l in zip(chunks_trajectory, string.ascii_lowercase):
+    for  i, (file_xyz, l) in enumerate(zip(chunks_trajectory,
+                                           string.ascii_lowercase)):
         folder = 'chunk_{}'.format(l)
         os.mkdir(folder)
         shutil.move(file_xyz, folder)
 
         # HDF5 file where both the Molecular orbitals and coupling are stored
-        path_hdf5 = join(scratch, project_name, '{}.hdf5'.format(folder))
-        hamiltonians_dir = join(scratch, project_name, 'hamiltonians')
+        path_hdf5 = join(scratch, '{}.hdf5'.format(folder))
+        hamiltonians_dir = join(scratch, 'hamiltonians')
         # function to be execute remotely
         write_python_script(scratch, folder, file_xyz, project_name,
                             basisCP2K, potCP2K, cp2k_main,
                             cp2k_guess, enumerate_from, script_name,
                             path_hdf5)
+
+        # number of geometries per batch
+        dim_batch = number_of_geometries(join(folder, file_xyz))
         # Slurm executable
         write_slurm_script(cwd, folder, slurm, script_name, path_hdf5,
-                           hamiltonians_dir)
-        enumerate_from += number_of_geometries(join(folder, file_xyz))
+                           hamiltonians_dir, (dim_batch * i,
+                                              dim_batch * (i + 1) - 3))
+        enumerate_from += dim_batch
 
 
 def write_python_script(scratch, folder, file_xyz, project_name, basisCP2K,
@@ -181,7 +188,8 @@ initial_config = initialize(project_name, path_traj_xyz,
                             path_potential=path_potential,
                             enumerate_from={},
                             calculate_guesses='first',
-                            path_hdf5=path_hdf5)
+                            path_hdf5=path_hdf5,
+                            scratch_path='{}')
 
 cp2k_main = dict2Setting({})
 cp2k_guess = dict2Setting({})
@@ -192,7 +200,7 @@ generate_pyxaid_hamiltonians('cp2k', project_name, cp2k_main,
                              **initial_config)
 plams.finish()
  """.format(scratch, project_name, basisCP2K, potCP2K, path_hdf5, file_xyz,
-            cp2k_main.basis, enumerate_from, settings2Dict(cp2k_main),
+            cp2k_main.basis, enumerate_from, scratch, settings2Dict(cp2k_main),
             settings2Dict(cp2k_guess), nCouplings)
 
     with open(join(folder, script_name), 'w') as f:
@@ -202,7 +210,7 @@ plams.finish()
 
 
 def write_slurm_script(cwd, folder, slurm, python_script, path_hdf5,
-                       hamiltonians):
+                       hamiltonians, range_batch):
     """
     write an Slurm launch script
     """
@@ -215,10 +223,16 @@ def write_slurm_script(cwd, folder, slurm, python_script, path_hdf5,
     tasks = sbatch('n', slurm.tasks)
     name = sbatch('J', slurm.name)
     python = "python {}\n".format(python_script)
-    results_dir = "{}/results_{}".format(cwd, fold)
+    results_dir = "{}/results_{}".format(cwd, folder)
     mkdir = "mkdir {}\n".format(results_dir)
-    copy = 'cp -r {} {} {}\n'.format(path_hdf5, hamiltonians, results_dir)
 
+    # Copy a subset of Hamiltonians
+    if range_batch is not None:
+        files_hams = '{}/Ham_{{{}..{}}}_*'.format(hamiltonians, *range_batch)
+    else:
+        files_hams = hamiltonians
+
+    copy = 'cp -r {} {} {}\n'.format(path_hdf5, files_hams, results_dir)
     # Script content
     content = (header + time + nodes + tasks + name + modules + python
                + mkdir + copy)
