@@ -9,16 +9,20 @@ import os
 
 
 def main():
+
+    # Current Work Directory
+    cwd = os.getcwd()
+
     # ========== Fill in the following variables
     # Varaible to define the Path ehere the Cp2K jobs will be computed
-    scratch = "/scratch-shared/fza900/Cd33Se33"
-    project_name = 'Cd33Se33'  # name use to create folders
+    scratch = "/path/to/scratch"
+    project_name = 'My_awesome_project'  # name use to create folders
 
     # Path to the basis set used by Cp2k
-    basisCP2K = "/home/fza900/Cp2k/cp2k_basis/BASIS_MOLOPT"
-    potCP2K = "/home/fza900/Cp2k/cp2k_basis/GTH_POTENTIALS"
+    basisCP2K = "/Path/to/CP2K/BASIS_MOLOPT"
+    potCP2K = "/Path/to/CP2K/GTH_POTENTIALS"
 
-    path_to_trajectory = "eightpoints.xyz"
+    path_to_trajectory = 'Path/to/trajectory/in/XYZ'
 
     # Basis
     basis = "DZVP-MOLOPT-SR-GTH"
@@ -27,37 +31,41 @@ def main():
     cp2k_args = Settings()
     cp2k_args.basis = basis
 
-    # Current Work Directory
-    cwd = os.getcwd()
-
     # Results folder
     results_dir = join(cwd, 'total_results')
     if not os.path.exists(results_dir):
         os.mkdir(results_dir)
 
-    # Merge all the HDF5 files        
-    file_hdf5 = merge_hdf5(scratch, project_name, cwd ,results_dir)
+    # Merge all the HDF5 files
+    file_hdf5 = merge_hdf5(scratch, project_name, cwd, results_dir)
 
     # compute missing couplings
     script_name = "merge_data.py"
-    
+
     write_python_script(scratch, 'total_results', path_to_trajectory, project_name,
                         basisCP2K, potCP2K, cp2k_args, Settings(), 0, script_name,
                         file_hdf5)
 
     # Script using SLURM
-    write_slurm_script(results_dir, script_name)
+    write_slurm_script(scratch, results_dir, script_name)
 
-    
-    
-def write_slurm_script(scratch, results_dir):
+
+def write_slurm_script(scratch, results_dir, script_name):
     slurm = SLURM(1, 24, "00:60:00", "merged_namd")
-    
-    python = "python {}\n".format(results_dir)
-    copy = "cp -r {} {}".format(results_dir, join(scratch, 'hamiltonians'))
 
-    return format_slurm_parameters(slurm) + python + copy
-    
+    python = "python {}\n".format(script_name)
+    copy = "cp -r {} {}".format(join(scratch, 'hamiltonians'), results_dir)
+
+    # script
+    xs = format_slurm_parameters(slurm) + python + copy
+
+    # File path
+    file_path = join(results_dir, "launchSlurm.sh")
+
+    with open(file_path, 'w') as f:
+        f.write(xs)
+
+
 def merge_hdf5(scratch, project_name, cwd, results_dir):
     """
     Merge all the hdf5 into a unique file.
@@ -80,6 +88,7 @@ def merge_hdf5(scratch, project_name, cwd, results_dir):
         merge_files(path, file_hdf5)
 
     return file_hdf5
+
 
 def merge_files(file_inp, file_out):
     """

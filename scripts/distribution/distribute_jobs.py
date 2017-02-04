@@ -249,7 +249,7 @@ def format_slurm_parameters(slurm):
     tasks = sbatch('n', slurm.tasks)
     name = sbatch('J', slurm.name)
 
-    return ''.join([header, modules, time, nodes, tasks, name])
+    return ''.join([header, time, nodes, tasks, name, modules])
 
 
 def number_of_geometries(file_name):
