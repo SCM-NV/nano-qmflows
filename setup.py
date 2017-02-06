@@ -22,7 +22,8 @@ setup(
         'intended audience :: science/research',
         'topic :: scientific/engineering :: chemistry'
     ],
-    install_requires=['cython', 'numpy', 'h5py', 'noodles', 'qmworks', 'pymonad'],
+    install_requires=['cython', 'numpy', 'h5py', 'noodles', 'qmworks',
+                      'pymonad', 'scipy'],
     cmdclass={'build_ext': build_ext},
     ext_modules=[Extension('multipoleObaraSaika', ['nac/integrals/multipoleObaraSaika.pyx'])],
     include_dirs=[np.get_include()],

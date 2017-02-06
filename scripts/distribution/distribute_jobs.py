@@ -33,20 +33,42 @@ def main():
 
     """
     # USER DEFINED CONFIGURATION
-    scratch = 'scratch-shared/user29/jobs_quantumdot'
-    project_name = 'Quantumdot'  # name use to create folders
+
+    # Varaible to define the Path ehere the Cp2K jobs will be computed
+    scratch = "<Path/where/the/Molecular Orbitals/and/Couplings/are/computed>"
+    project_name = 'replace_with_Name_of_the_Project'  # name use to create folders
 
     # Path to the basis set used by Cp2k
-    home = os.path.expanduser('~')
-    basisCP2K = join(home, "Cp2k/cp2k_basis/BASIS_MOLOPT")
-    potCP2K = join(home, "Cp2k/cp2k_basis/GTH_POTENTIALS")
-    lower_orbital, upper_orbital = 278, 317
-    cp2k_main, cp2k_guess = cp2k_input(lower_orbital, upper_orbital,
-                                       cell_parameters=28)
+    basisCP2K = "<Path/to/the/BASIS_MOLOPT>"
+    potCP2K = "<Path/to/the/GTH_POTENTIALS>"
+
+    # Cell parameter can be a:
+    # * number.
+    # * list contaning 3 Number.
+    # * list of list containing the matrix describing the cell.
+    cell_parameters = None
+
+    # Angles of the cell
+    cell_angles = [90.0, 90.0, 90.0]
+
+    # Range of Molecular orbitals use to print.
+    # They will be used to compute the derivative coupling. If you want
+    # to compute the coupling with 40 Orbitals: 20 occupied and 20 virtual,
+    # you should choose the following index in such a way that you
+    # print 20 HOMOs and 20 LUMOs.
+
+    range_orbitals = Lower_Index, Highest_Index
+
+    # The number of LUMOs to print must be equal to the added_mos variable
+    # in CP2K. We are printing 20 by default.
+    cp2k_main, cp2k_guess = cp2k_input(range_orbitals, cell_parameters,
+                                       cell_angles)
 
     # Trajectory splitting
-    path_to_trajectory = "traj1000.xyz"
-    blocks = 5  # Number of chunks to split the trajectory
+    path_to_trajectory = "<Path/to/the/trajectory/in/xyz/format"
+
+    # Number of chunks to split the trajectory
+    blocks = 5
 
     # SLURM Configuration
     slurm = SLURM(
@@ -55,13 +77,16 @@ def main():
         time="48:00:00",
         name="namd"
     )
+    # Path where the data will be copy back
+    cwd = os.getcwd()
 
     distribute_computations(scratch, project_name, basisCP2K, potCP2K,
                             cp2k_main, cp2k_guess, path_to_trajectory, blocks,
-                            slurm)
+                            slurm, cwd)
 
 
-def cp2k_input(lower_orbital, upper_orbital, cell_parameters=None):
+def cp2k_input(range_orbitals, cell_parameters, cell_angles,
+               added_mos=20):
     """
     # create ``Settings`` for the Cp2K Jobs.
     """
@@ -69,27 +94,28 @@ def cp2k_input(lower_orbital, upper_orbital, cell_parameters=None):
     cp2k_args = Settings()
     cp2k_args.basis = "DZVP-MOLOPT-SR-GTH"
     cp2k_args.potential = "GTH-PBE"
-    cp2k_args.cell_parameters = [cell_parameters] * 3
+    cp2k_args.cell_parameters = cell_parameters
+    cp2k_args.cell_angles = cell_angles
     main_dft = cp2k_args.specific.cp2k.force_eval.dft
-    main_dft.scf.added_mos = 20
+    main_dft.scf.added_mos = added_mos
     main_dft.scf.max_scf = 200
-    main_dft.scf.eps_scf = 1e-5
-    main_dft['print']['mo']['mo_index_range'] = "{} {}".format(lower_orbital,
-                                                               upper_orbital)
+    main_dft.scf.eps_scf = 1e-4
+    main_dft['print']['mo']['mo_index_range'] = "{} {}".format(*range_orbitals)
     cp2k_args.specific.cp2k.force_eval.subsys.cell.periodic = 'None'
 
     # Setting to calculate the wave function used as guess
     cp2k_OT = Settings()
     cp2k_OT.basis = "DZVP-MOLOPT-SR-GTH"
     cp2k_OT.potential = "GTH-PBE"
-    cp2k_OT.cell_parameters = [cell_parameters] * 3
+    cp2k_OT.cell_parameters = cell_parameters
+    cp2k_OT.cell_angles = cell_angles
     ot_dft = cp2k_OT.specific.cp2k.force_eval.dft
     ot_dft.scf.scf_guess = 'atomic'
     ot_dft.scf.ot.minimizer = 'DIIS'
     ot_dft.scf.ot.n_diis = 7
     ot_dft.scf.ot.preconditioner = 'FULL_SINGLE_INVERSE'
     ot_dft.scf.added_mos = 0
-    ot_dft.scf.eps_scf = 1e-05
+    ot_dft.scf.eps_scf = 1e-04
     ot_dft.scf.scf_guess = 'restart'
     cp2k_OT.specific.cp2k.force_eval.subsys.cell.periodic = 'None'
 
@@ -101,7 +127,7 @@ def cp2k_input(lower_orbital, upper_orbital, cell_parameters=None):
 
 def distribute_computations(scratch, project_name, basisCP2K, potCP2K,
                             cp2k_main, cp2k_guess, path_to_trajectory,
-                            blocks, slurm):
+                            blocks, slurm, cwd):
 
     script_name = "script_remote_function.py"
     # Split the trajectory in Chunks and move each chunk to its corresponding
@@ -109,23 +135,34 @@ def distribute_computations(scratch, project_name, basisCP2K, potCP2K,
     chunks_trajectory = split_trajectory(path_to_trajectory, blocks, '.')
     chunks_trajectory.sort()
     enumerate_from = 0
-    for  file_xyz, l in zip(chunks_trajectory, string.ascii_lowercase):
+    for  i, (file_xyz, l) in enumerate(zip(chunks_trajectory,
+                                           string.ascii_lowercase)):
         folder = 'chunk_{}'.format(l)
         os.mkdir(folder)
         shutil.move(file_xyz, folder)
+
+        # HDF5 file where both the Molecular orbitals and coupling are stored
+        path_hdf5 = join(scratch, '{}.hdf5'.format(folder))
+        hamiltonians_dir = join(scratch, 'hamiltonians')
         # function to be execute remotely
         write_python_script(scratch, folder, file_xyz, project_name,
                             basisCP2K, potCP2K, cp2k_main,
-                            cp2k_guess, enumerate_from, script_name)
-        write_slurm_script(folder, slurm, script_name)
-        enumerate_from += number_of_geometries(join(folder, file_xyz))
+                            cp2k_guess, enumerate_from, script_name,
+                            path_hdf5)
+
+        # number of geometries per batch
+        dim_batch = number_of_geometries(join(folder, file_xyz))
+        # Slurm executable
+        write_slurm_script(cwd, folder, slurm, script_name, path_hdf5,
+                           hamiltonians_dir, (dim_batch * i,
+                                              dim_batch * (i + 1) - 3))
+        enumerate_from += dim_batch
 
 
 def write_python_script(scratch, folder, file_xyz, project_name, basisCP2K,
                         potCP2K, cp2k_main, cp2k_guess, enumerate_from,
-                        script_name):
+                        script_name, path_hdf5):
     """ Write the python script to compute the PYXAID hamiltonians"""
-    path_hdf5 = join(scratch, project_name, '{}.hdf5'.format(folder))
     path = join(scratch, project_name)
     if not os.path.exists(path):
         os.makedirs(path)
@@ -136,7 +173,7 @@ from nac.workflows.initialization import initialize
 from qmworks.utils import dict2Setting
 import plams
 
-plams.init(folder='{}')
+plams.init(folder='{}/batch_{}')
 
 project_name = '{}'
 path_basis = '{}'
@@ -151,19 +188,20 @@ initial_config = initialize(project_name, path_traj_xyz,
                             path_potential=path_potential,
                             enumerate_from={},
                             calculate_guesses='first',
-                            path_hdf5=path_hdf5)
+                            path_hdf5=path_hdf5,
+                            scratch_path='{}')
 
 cp2k_main = dict2Setting({})
 cp2k_guess = dict2Setting({})
 
 generate_pyxaid_hamiltonians('cp2k', project_name, cp2k_main,
-                             guess_args=cp2k_guess, path='{}',
+                             guess_args=cp2k_guess,
                              nCouplings={},
                              **initial_config)
 plams.finish()
- """.format(scratch, project_name, basisCP2K, potCP2K, path_hdf5, file_xyz,
-            cp2k_main.basis, enumerate_from, settings2Dict(cp2k_main),
-            settings2Dict(cp2k_guess), path, nCouplings)
+ """.format(scratch, enumerate_from, project_name, basisCP2K, potCP2K,
+            path_hdf5, file_xyz, cp2k_main.basis, enumerate_from, scratch,
+            settings2Dict(cp2k_main), settings2Dict(cp2k_guess), nCouplings)
 
     with open(join(folder, script_name), 'w') as f:
         f.write(xs)
@@ -171,9 +209,36 @@ plams.finish()
     return script_name
 
 
-def write_slurm_script(folder, slurm, python_script):
+def write_slurm_script(cwd, folder, slurm, python_script, path_hdf5,
+                       hamiltonians, range_batch=None):
     """
     write an Slurm launch script
+    """
+    python = "python {}\n".format(python_script)
+    results_dir = "{}/results_{}".format(cwd, folder)
+    mkdir = "mkdir {}\n".format(results_dir)
+
+    # Copy a subset of Hamiltonians
+    if range_batch is not None:
+        files_hams = '{}/Ham_{{{}..{}}}_*'.format(hamiltonians, *range_batch)
+    else:
+        files_hams = hamiltonians
+
+    copy = 'cp -r {} {} {}\n'.format(path_hdf5, files_hams, results_dir)
+    # Script content
+    content = format_slurm_parameters(slurm) + python + mkdir + copy
+
+    # Write the script
+    file_name = join(folder, "launch.sh")
+
+    with open(file_name, 'w') as f:
+        f.write(content)
+    return file_name
+
+
+def format_slurm_parameters(slurm):
+    """
+    Format as a string some SLURM parameters
     """
     sbatch = lambda x, y: "#SBATCH -{} {}\n".format(x, y)
 
@@ -183,16 +248,8 @@ def write_slurm_script(folder, slurm, python_script):
     nodes = sbatch('N', slurm.nodes)
     tasks = sbatch('n', slurm.tasks)
     name = sbatch('J', slurm.name)
-    python = "python {}".format(python_script)
 
-    # Script content
-    content = header + time + nodes + tasks + name + modules + python
-
-    file_name = join(folder, "launch.sh")
-
-    with open(file_name, 'w') as f:
-        f.write(content)
-    return file_name
+    return ''.join([header, time, nodes, tasks, name, modules])
 
 
 def number_of_geometries(file_name):

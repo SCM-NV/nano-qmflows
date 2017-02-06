@@ -46,7 +46,7 @@ def test_workflow_coupling():
                                     path_potential=potcp2k,
                                     calculate_guesses=None,
                                     path_hdf5=path_hdf5_test,
-                                    scratch=scratch_path)
+                                    scratch_path=scratch_path)
 
         # create Settings for the Cp2K Jobs
         cp2k_args = Settings()

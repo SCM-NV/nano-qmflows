@@ -5,7 +5,7 @@ __author__ = "Felipe Zapata"
 from functools import partial
 from multiprocessing import Pool
 from nac.integrals.overlapIntegral import sijContracted
-
+from scipy import sparse
 from typing import Dict, List, Tuple
 
 import numpy as np
@@ -48,6 +48,9 @@ def calculateCoupling3Points(geometries: Tuple, coefficients: Tuple,
     suv_1 = calcOverlapMtx(dictCGFs, dim, mol1, mol2)
     suv_1_t = np.transpose(suv_1)
 
+    # Convert the transformation matrix to sparse representation
+    trans_mtx = sparse.csr_matrix(trans_mtx)
+    
     mtx_sji_t0 = calculate_spherical_overlap(suv_0, css0, css1, trans_mtx)
     mtx_sji_t1 = calculate_spherical_overlap(suv_1, css1, css2, trans_mtx)
     mtx_sij_t0 = calculate_spherical_overlap(suv_0_t, css1, css0, trans_mtx)
@@ -62,12 +65,12 @@ def calculate_spherical_overlap(suv: Matrix, css0: Matrix,
     """
     Calculate the Overlap Matrix between molecular orbitals at different times.
     """
-    css0T = np.transpose(css0)
     if trans_mtx is not None:
-        # Overlap in Sphericals
-        transpose = np.transpose(trans_mtx)
-        suv = np.dot(trans_mtx, np.dot(suv, transpose))
+        # Overlap in Sphericals using a sparse representation
+        transpose = trans_mtx.transpose()
+        suv = trans_mtx.dot(sparse.csr_matrix.dot(suv, transpose))
 
+    css0T = np.transpose(css0)
     return np.dot(css0T, np.dot(suv, css1))
 
 
