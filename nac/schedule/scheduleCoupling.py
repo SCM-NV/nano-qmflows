@@ -26,8 +26,7 @@ def lazy_schedule_couplings(i: int, path_hdf5: str, dictCGFs: Dict,
                             geometries: Tuple, mo_paths: List, dt: float=1,
                             hdf5_trans_mtx: str=None, output_folder: str=None,
                             enumerate_from: int=0,
-                            nHOMOs: int=None,
-                            nLUMOs: int=None,
+                            nHOMO: int=None,
                             couplings_range: Tuple=None) -> str:
     """
     Calculate the non-adiabatic coupling using 3 consecutive set of MOs in
@@ -54,10 +53,13 @@ def lazy_schedule_couplings(i: int, path_hdf5: str, dictCGFs: Dict,
     :param enumerate_from: Number from where to start enumerating the folders
     create for each point in the MD
     :type enumerate_from: Int
+    :param nHOMO: index of the HOMO orbital in the HDF5
+    :param couplings_range: range of Molecular orbitals used to compute the
+    coupling.
 
     :returns: path to the Coupling inside the HDF5
     """
-    def calc_coupling(output_path, nHOMOs, nLUMOs, couplings_range, dt):
+    def calc_coupling(output_path, nHOMO, couplings_range, dt):
 
         if hdf5_trans_mtx is not None:
             trans_mtx = retrieve_hdf5_data(path_hdf5, hdf5_trans_mtx)
@@ -74,18 +76,19 @@ def lazy_schedule_couplings(i: int, path_hdf5: str, dictCGFs: Dict,
         # If the user does not define the number of HOMOs and LUMOs
         # assume that the first half of the read MO from the HDF5
         # are HOMOs and the last Half are LUMOs.
-        nHOMOs = nHOMOs if nHOMOs is not None else nStates // 2
-        nLUMOs = nLUMOs if nLUMOs is not None else nStates // 2
+        nHOMO = nHOMO if nHOMO is not None else nStates // 2
 
+        # If the couplings_range variable is not define I assume
+        # that the number of LUMOs is nStates - nHOMO
         if couplings_range is None:
-            couplings_range = (nHOMOs, nLUMOs)
+            couplings_range = (nHOMO, nStates - nHOMO)
 
         # Define the range of couplings that are going to be compute
-        lower = nHOMOs - couplings_range[0]
+        lower = nHOMO - couplings_range[0]
         upper = couplings_range[1]
 
         # Extract a subset of molecular orbitals to compute the coupling
-        mos = tuple(map(lambda xs: xs[:, lower: nHOMOs + upper], mos))
+        mos = tuple(map(lambda xs: xs[:, lower: nHOMO + upper], mos))
 
         # time in atomic units
         dt_au = dt * femtosec2au
@@ -108,7 +111,7 @@ def lazy_schedule_couplings(i: int, path_hdf5: str, dictCGFs: Dict,
     with h5py.File(path_hdf5, 'r') as f5:
         is_done = output_path in f5
     if not is_done:
-        calc_coupling(output_path, nHOMOs, nLUMOs, couplings_range, dt)
+        calc_coupling(output_path, nHOMO, couplings_range, dt)
     else:
         print(output_path, " Coupling is already in the HDF5")
     return output_path

@@ -31,8 +31,7 @@ def generate_pyxaid_hamiltonians(package_name, project_name,
                                  package_config=None, dt=1,
                                  traj_folders=None, work_dir=None,
                                  basisname=None, hdf5_trans_mtx=None,
-                                 nHOMOs=None, nLUMOs=None,
-                                 couplings_range=None):
+                                 nHOMO=None, couplings_range=None):
     """
     Use a md trajectory to generate the hamiltonian components to tun PYXAID
     nmad.
@@ -55,8 +54,9 @@ def generate_pyxaid_hamiltonians(package_name, project_name,
     :type enumerate_from: Int
     :param package_config: Parameters required by the Package.
     :type package_config: Dict
-    :param nCouplings: Number of coupling to calcute and store.
-    :param nCouplings: Int
+    :param nHOMO: index of the HOMO orbital.
+    :param couplings_range: Range of MO use to compute the nonadiabatic
+    coupling matrix.
     :returns: None
     """
     # prepare Cp2k Jobs
@@ -75,7 +75,7 @@ def generate_pyxaid_hamiltonians(package_name, project_name,
                                             mo_paths_hdf5, hdf5_trans_mtx,
                                             enumerate_from,
                                             output_folder=project_name,
-                                            nHOMOs=nHOMOs, nLUMOs=nLUMOs,
+                                            nHOMO=nHOMO,
                                             couplings_range=couplings_range,
                                             dt=dt, units='angstrom')
                          for i in range(nPoints)]
@@ -103,7 +103,7 @@ def generate_pyxaid_hamiltonians(package_name, project_name,
 
 def calculate_coupling(i, path_hdf5, dictCGFs, all_geometries, mo_paths,
                        hdf5_trans_mtx, enumerate_from, output_folder=None,
-                       nHOMOs=None, nLUMOs=None, couplings_range=None,
+                       nHOMO=None, couplings_range=None,
                        dt=1, units='angstrom'):
     """
     Calculate the non-adiabatic coupling using 3 consecutive set of MOs in
@@ -143,8 +143,7 @@ def calculate_coupling(i, path_hdf5, dictCGFs, all_geometries, mo_paths,
                                    dt=dt, hdf5_trans_mtx=hdf5_trans_mtx,
                                    output_folder=output_folder,
                                    enumerate_from=enumerate_from,
-                                   nHOMOs=nHOMOs, nLUMOs=nLUMOs,
-                                   couplings_range=couplings_range)
+                                   nHOMO=nHOMO, couplings_range=couplings_range)
 # ============<>===============
 
 
