@@ -82,7 +82,7 @@ def lazy_schedule_couplings(i: int, path_hdf5: str, dictCGFs: Dict,
 
         # Define the range of couplings that are going to be compute
         lower = nHOMOs - couplings_range[0]
-        upper = nLUMOs - couplings_range[0]
+        upper = couplings_range[1]
 
         # Extract a subset of molecular orbitals to compute the coupling
         mos = tuple(map(lambda xs: xs[:, lower: nHOMOs + upper], mos))
