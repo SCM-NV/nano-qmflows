@@ -57,7 +57,7 @@ def lazy_schedule_couplings(i: int, path_hdf5: str, dictCGFs: Dict,
 
     :returns: path to the Coupling inside the HDF5
     """
-    def calc_coupling(output_path, dt):
+    def calc_coupling(output_path, nHOMOs, nLUMOs, couplings_range, dt):
 
         if hdf5_trans_mtx is not None:
             trans_mtx = retrieve_hdf5_data(path_hdf5, hdf5_trans_mtx)
@@ -108,7 +108,7 @@ def lazy_schedule_couplings(i: int, path_hdf5: str, dictCGFs: Dict,
     with h5py.File(path_hdf5, 'r') as f5:
         is_done = output_path in f5
     if not is_done:
-        calc_coupling(output_path, dt)
+        calc_coupling(output_path, nHOMOs, nLUMOs, couplings_range, dt)
     else:
         print(output_path, " Coupling is already in the HDF5")
     return output_path
