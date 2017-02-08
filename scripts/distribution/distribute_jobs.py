@@ -64,6 +64,29 @@ def main():
     cp2k_main, cp2k_guess = cp2k_input(range_orbitals, cell_parameters,
                                        cell_angles)
 
+    # In relation to the above range
+    # The store orbitals store in the HDF5 are going to be reindex in
+    # such way tha the Molecular corresponding with Lower_Index
+    # is assigned the index 1.
+    # Then, What is the index from the HOMO?
+    # If you are asking for 100 orbitals, 50 HOMOs and 50 LUMOs then nHOMO = 50
+    # If you are asking for 100 orbitals, 30 HOMOS and 70 LUMos then nHOMO = 30
+    nHOMO = None
+
+    # Given the range_orbitals define above, which of those orbitals are going
+    # to be used to compute the nonadiabatic copling?
+    
+    # If you are asking for 100 orbitals of which 50 are HOMOs and 50 are
+    #LUMOs, and you want to compute the coupling btween all of then
+    # then coupling_range = (50, 50)
+
+    # If you want to compute only a subset of the orbitals specify which orbitals
+    # you want to use. For instance if nHOMO = 50, the value
+    # coupling_range = (30, 20) means that you want to compute the coupling
+    # between the 30 Highest Occupied Molecular Orbitals  and the 20
+    # Lowest Unoccupied Molecular Orbitals
+    coupling_range = None
+
     # Trajectory splitting
     path_to_trajectory = "<Path/to/the/trajectory/in/xyz/format"
 
@@ -77,12 +100,13 @@ def main():
         time="48:00:00",
         name="namd"
     )
+    
     # Path where the data will be copy back
     cwd = os.getcwd()
 
     distribute_computations(scratch, project_name, basisCP2K, potCP2K,
                             cp2k_main, cp2k_guess, path_to_trajectory, blocks,
-                            slurm, cwd)
+                            slurm, cwd, nHOMO, coupling_range)
 
 
 def cp2k_input(range_orbitals, cell_parameters, cell_angles,
@@ -127,7 +151,7 @@ def cp2k_input(range_orbitals, cell_parameters, cell_angles,
 
 def distribute_computations(scratch, project_name, basisCP2K, potCP2K,
                             cp2k_main, cp2k_guess, path_to_trajectory,
-                            blocks, slurm, cwd):
+                            blocks, slurm, cwd, nHOMO, coupling_range):
 
     script_name = "script_remote_function.py"
     # Split the trajectory in Chunks and move each chunk to its corresponding
@@ -148,7 +172,7 @@ def distribute_computations(scratch, project_name, basisCP2K, potCP2K,
         write_python_script(scratch, folder, file_xyz, project_name,
                             basisCP2K, potCP2K, cp2k_main,
                             cp2k_guess, enumerate_from, script_name,
-                            path_hdf5)
+                            path_hdf5, nHOMO, coupling_range)
 
         # number of geometries per batch
         dim_batch = number_of_geometries(join(folder, file_xyz))
@@ -161,12 +185,11 @@ def distribute_computations(scratch, project_name, basisCP2K, potCP2K,
 
 def write_python_script(scratch, folder, file_xyz, project_name, basisCP2K,
                         potCP2K, cp2k_main, cp2k_guess, enumerate_from,
-                        script_name, path_hdf5):
+                        script_name, path_hdf5, nHOMO, coupling_range):
     """ Write the python script to compute the PYXAID hamiltonians"""
     path = join(scratch, project_name)
     if not os.path.exists(path):
         os.makedirs(path)
-    nCouplings = 40
     xs = """
 from nac.workflows.workflow_coupling import generate_pyxaid_hamiltonians
 from nac.workflows.initialization import initialize
@@ -196,12 +219,14 @@ cp2k_guess = dict2Setting({})
 
 generate_pyxaid_hamiltonians('cp2k', project_name, cp2k_main,
                              guess_args=cp2k_guess,
-                             nCouplings={},
+                             nHOMO={},
+                             coupling_range=({},{})
                              **initial_config)
 plams.finish()
  """.format(scratch, enumerate_from, project_name, basisCP2K, potCP2K,
             path_hdf5, file_xyz, cp2k_main.basis, enumerate_from, scratch,
-            settings2Dict(cp2k_main), settings2Dict(cp2k_guess), nCouplings)
+            settings2Dict(cp2k_main), settings2Dict(cp2k_guess), nHOMO,
+            *coupling_range)
 
     with open(join(folder, script_name), 'w') as f:
         f.write(xs)
