@@ -115,8 +115,7 @@ def lazy_schedule_couplings(i: int, path_hdf5: str, dictCGFs: Dict,
 
 
 def write_hamiltonians(path_hdf5, work_dir, mo_paths, path_couplings, nPoints,
-                       path_dir_results=None, enumerate_from=0,
-                       nCouplings=None):
+                       path_dir_results=None, enumerate_from=0):
     """
     Write the real and imaginary components of the hamiltonian using both
     the orbitals energies and the derivative coupling accoring to:
