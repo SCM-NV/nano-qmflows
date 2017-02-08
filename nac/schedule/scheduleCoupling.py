@@ -11,13 +11,24 @@ from nac.integrals import calculateCoupling3Points
 from nac.common import (femtosec2au, retrieve_hdf5_data)
 from qmworks.hdf5.quantumHDF5 import StoreasHDF5
 
+# Types hint
+from typing import (Dict, List, Tuple)
+
+# Numpy type hints
+Vector = np.ndarray
+Matrix = np.ndarray
+
 # ==============================> Schedule Tasks <=============================
 
 
 @schedule
-def lazy_schedule_couplings(i, path_hdf5, dictCGFs, geometries, mo_paths, dt=1,
-                            hdf5_trans_mtx=None, output_folder=None,
-                            enumerate_from=0, nCouplings=None):
+def lazy_schedule_couplings(i: int, path_hdf5: str, dictCGFs: Dict,
+                            geometries: Tuple, mo_paths: List, dt: float=1,
+                            hdf5_trans_mtx: str=None, output_folder: str=None,
+                            enumerate_from: int=0,
+                            nHOMOs: int=None,
+                            nLUMOs: int=None,
+                            couplings_range: Tuple=None) -> str:
     """
     Calculate the non-adiabatic coupling using 3 consecutive set of MOs in
     a dynamics, using 3 consecutive geometries in atomic units.
@@ -43,6 +54,7 @@ def lazy_schedule_couplings(i, path_hdf5, dictCGFs, geometries, mo_paths, dt=1,
     :param enumerate_from: Number from where to start enumerating the folders
     create for each point in the MD
     :type enumerate_from: Int
+
     :returns: path to the Coupling inside the HDF5
     """
     def calc_coupling(output_path, dt):
@@ -56,14 +68,24 @@ def lazy_schedule_couplings(i, path_hdf5, dictCGFs, geometries, mo_paths, dt=1,
                         retrieve_hdf5_data(path_hdf5,
                                            mo_paths[i + j][1]), range(3)))
 
-        #  Calculate the coupling among nCouplings/2 HOMOs
-        #  and nCouplings/2 LUMOs.
-        if nCouplings is not None:
-            _, nStates = mos[0].shape
-            middle, ncs = [n // 2 for n in [nStates, nCouplings]]
-            lower, upper = middle - ncs, middle + ncs
-            # Extrract a subset of nCouplings coefficients
-            mos = tuple(map(lambda xs: xs[:, lower: upper], mos))
+        #  Calculate the coupling in the range provided by the user
+        _, nStates = mos[0].shape
+
+        # If the user does not define the number of HOMOs and LUMOs
+        # assume that the first half of the read MO from the HDF5
+        # are HOMOs and the last Half are LUMOs.
+        nHOMOs = nHOMOs if nHOMOs is not None else nStates // 2
+        nLUMOs = nLUMOs if nLUMOs is not None else nStates // 2
+
+        if couplings_range is None:
+            couplings_range = (nHOMOs, nLUMOs)
+
+        # Define the range of couplings that are going to be compute
+        lower = nHOMOs - couplings_range[0]
+        upper = nLUMOs - couplings_range[0]
+
+        # Extract a subset of molecular orbitals to compute the coupling
+        mos = tuple(map(lambda xs: xs[:, lower: nHOMOs + upper], mos))
 
         # time in atomic units
         dt_au = dt * femtosec2au
