@@ -1,4 +1,4 @@
-#cython: bounds_check=False
+
 
 __author__ = "Felipe Zapata"
 
@@ -35,6 +35,7 @@ def sab_unfolded(np.ndarray [np.double_t] r1,  np.ndarray [np.double_t] r2,  np.
     return c1 * c2 * prod
 
 
+#cython: bounds_check=False
 cpdef double sab(tuple gs1, tuple gs2) except? -1:
     """
     Primitive overlap terms calculated with the Obara-Saika recurrence relations,
@@ -69,6 +70,8 @@ cpdef double sab(tuple gs1, tuple gs2) except? -1:
     
     return c1 * c2 * prod
 
+
+#cython: bounds_check=False
 cpdef double sab_efg(tuple gs1, tuple gs2, tuple rc, int e, int f, int g) except? -1:
     """
     Primitive overlap terms calculated with the Obara-Saika recurrence relations,
