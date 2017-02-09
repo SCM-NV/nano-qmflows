@@ -220,13 +220,13 @@ cp2k_guess = dict2Setting({})
 generate_pyxaid_hamiltonians('cp2k', project_name, cp2k_main,
                              guess_args=cp2k_guess,
                              nHOMO={},
-                             coupling_range=({},{})
+                             couplings_range=({},{}),
                              **initial_config)
 plams.finish()
  """.format(scratch, enumerate_from, project_name, basisCP2K, potCP2K,
             path_hdf5, file_xyz, cp2k_main.basis, enumerate_from, scratch,
             settings2Dict(cp2k_main), settings2Dict(cp2k_guess), nHOMO,
-            *coupling_range)
+            *couplings_range)
 
     with open(join(folder, script_name), 'w') as f:
         f.write(xs)
