@@ -75,9 +75,9 @@ def main():
 
     # Given the range_orbitals define above, which of those orbitals are going
     # to be used to compute the nonadiabatic copling?
-    
+
     # If you are asking for 100 orbitals of which 50 are HOMOs and 50 are
-    #LUMOs, and you want to compute the coupling btween all of then
+    # LUMOs, and you want to compute the coupling btween all of then
     # then coupling_range = (50, 50)
 
     # If you want to compute only a subset of the orbitals specify which orbitals
@@ -151,7 +151,7 @@ def cp2k_input(range_orbitals, cell_parameters, cell_angles,
 
 def distribute_computations(scratch, project_name, basisCP2K, potCP2K,
                             cp2k_main, cp2k_guess, path_to_trajectory,
-                            blocks, slurm, cwd, nHOMO, coupling_range):
+                            blocks, slurm, cwd, nHOMO, couplings_range):
 
     script_name = "script_remote_function.py"
     # Split the trajectory in Chunks and move each chunk to its corresponding
@@ -172,7 +172,7 @@ def distribute_computations(scratch, project_name, basisCP2K, potCP2K,
         write_python_script(scratch, folder, file_xyz, project_name,
                             basisCP2K, potCP2K, cp2k_main,
                             cp2k_guess, enumerate_from, script_name,
-                            path_hdf5, nHOMO, coupling_range)
+                            path_hdf5, nHOMO, couplings_range)
 
         # number of geometries per batch
         dim_batch = number_of_geometries(join(folder, file_xyz))
@@ -185,7 +185,7 @@ def distribute_computations(scratch, project_name, basisCP2K, potCP2K,
 
 def write_python_script(scratch, folder, file_xyz, project_name, basisCP2K,
                         potCP2K, cp2k_main, cp2k_guess, enumerate_from,
-                        script_name, path_hdf5, nHOMO, coupling_range):
+                        script_name, path_hdf5, nHOMO, couplings_range):
     """ Write the python script to compute the PYXAID hamiltonians"""
     path = join(scratch, project_name)
     if not os.path.exists(path):

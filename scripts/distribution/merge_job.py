@@ -24,6 +24,10 @@ def main():
 
     path_to_trajectory = 'Path/to/trajectory/in/XYZ'
 
+    # Number of MO used to compute the coupling
+    nHOMO = None
+    couplings_range = None
+
     # Basis
     basis = "DZVP-MOLOPT-SR-GTH"
     # ============== End of User definitions ===================================
@@ -44,7 +48,7 @@ def main():
 
     write_python_script(scratch, 'total_results', path_to_trajectory, project_name,
                         basisCP2K, potCP2K, cp2k_args, Settings(), 0, script_name,
-                        file_hdf5)
+                        file_hdf5, nHOMO, couplings_range)
 
     # Script using SLURM
     write_slurm_script(scratch, results_dir, script_name)
