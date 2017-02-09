@@ -99,8 +99,7 @@ def fun_workflow_coupling(cp2k_args, initial_config):
     Call cp2k and calculated the coupling for an small molecule.
     """
     generate_pyxaid_hamiltonians('cp2k', project_name,
-                                 cp2k_args, nCouplings=40,
-                                 **initial_config)
+                                 cp2k_args, **initial_config)
 
     with h5py.File(path_hdf5) as f5, h5py.File(path_hdf5_test) as f6:
         path_coupling = 'ethylene/coupling_0'

@@ -11,13 +11,23 @@ from nac.integrals import calculateCoupling3Points
 from nac.common import (femtosec2au, retrieve_hdf5_data)
 from qmworks.hdf5.quantumHDF5 import StoreasHDF5
 
+# Types hint
+from typing import (Dict, List, Tuple)
+
+# Numpy type hints
+Vector = np.ndarray
+Matrix = np.ndarray
+
 # ==============================> Schedule Tasks <=============================
 
 
 @schedule
-def lazy_schedule_couplings(i, path_hdf5, dictCGFs, geometries, mo_paths, dt=1,
-                            hdf5_trans_mtx=None, output_folder=None,
-                            enumerate_from=0, nCouplings=None):
+def lazy_schedule_couplings(i: int, path_hdf5: str, dictCGFs: Dict,
+                            geometries: Tuple, mo_paths: List, dt: float=1,
+                            hdf5_trans_mtx: str=None, output_folder: str=None,
+                            enumerate_from: int=0,
+                            nHOMO: int=None,
+                            couplings_range: Tuple=None) -> str:
     """
     Calculate the non-adiabatic coupling using 3 consecutive set of MOs in
     a dynamics, using 3 consecutive geometries in atomic units.
@@ -43,9 +53,13 @@ def lazy_schedule_couplings(i, path_hdf5, dictCGFs, geometries, mo_paths, dt=1,
     :param enumerate_from: Number from where to start enumerating the folders
     create for each point in the MD
     :type enumerate_from: Int
+    :param nHOMO: index of the HOMO orbital in the HDF5
+    :param couplings_range: range of Molecular orbitals used to compute the
+    coupling.
+
     :returns: path to the Coupling inside the HDF5
     """
-    def calc_coupling(output_path, dt):
+    def calc_coupling(output_path, nHOMO, couplings_range, dt):
 
         if hdf5_trans_mtx is not None:
             trans_mtx = retrieve_hdf5_data(path_hdf5, hdf5_trans_mtx)
@@ -56,14 +70,25 @@ def lazy_schedule_couplings(i, path_hdf5, dictCGFs, geometries, mo_paths, dt=1,
                         retrieve_hdf5_data(path_hdf5,
                                            mo_paths[i + j][1]), range(3)))
 
-        #  Calculate the coupling among nCouplings/2 HOMOs
-        #  and nCouplings/2 LUMOs.
-        if nCouplings is not None:
-            _, nStates = mos[0].shape
-            middle, ncs = [n // 2 for n in [nStates, nCouplings]]
-            lower, upper = middle - ncs, middle + ncs
-            # Extrract a subset of nCouplings coefficients
-            mos = tuple(map(lambda xs: xs[:, lower: upper], mos))
+        #  Calculate the coupling in the range provided by the user
+        _, nStates = mos[0].shape
+
+        # If the user does not define the number of HOMOs and LUMOs
+        # assume that the first half of the read MO from the HDF5
+        # are HOMOs and the last Half are LUMOs.
+        nHOMO = nHOMO if nHOMO is not None else nStates // 2
+
+        # If the couplings_range variable is not define I assume
+        # that the number of LUMOs is nStates - nHOMO
+        if couplings_range is None:
+            couplings_range = (nHOMO, nStates - nHOMO)
+
+        # Define the range of couplings that are going to be compute
+        lower = nHOMO - couplings_range[0]
+        upper = couplings_range[1]
+
+        # Extract a subset of molecular orbitals to compute the coupling
+        mos = tuple(map(lambda xs: xs[:, lower: nHOMO + upper], mos))
 
         # time in atomic units
         dt_au = dt * femtosec2au
@@ -86,15 +111,14 @@ def lazy_schedule_couplings(i, path_hdf5, dictCGFs, geometries, mo_paths, dt=1,
     with h5py.File(path_hdf5, 'r') as f5:
         is_done = output_path in f5
     if not is_done:
-        calc_coupling(output_path, dt)
+        calc_coupling(output_path, nHOMO, couplings_range, dt)
     else:
         print(output_path, " Coupling is already in the HDF5")
     return output_path
 
 
 def write_hamiltonians(path_hdf5, work_dir, mo_paths, path_couplings, nPoints,
-                       path_dir_results=None, enumerate_from=0,
-                       nCouplings=None):
+                       path_dir_results=None, enumerate_from=0):
     """
     Write the real and imaginary components of the hamiltonian using both
     the orbitals energies and the derivative coupling accoring to:
