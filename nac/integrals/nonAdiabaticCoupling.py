@@ -57,7 +57,7 @@ def calculateCoupling3Points(geometries: Tuple, coefficients: Tuple,
     trans_mtx = sparse.csr_matrix(trans_mtx)
 
     # Partial application of the first two arguments
-    spherical_fun = partial(trans_mtx, references)
+    spherical_fun = partial(calculate_spherical_overlap, trans_mtx, references)
 
     mtx_sji_t0 = spherical_fun(suv_0, css0, css1)
     mtx_sji_t1 = spherical_fun(suv_1, css1, css2)
