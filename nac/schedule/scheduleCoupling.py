@@ -90,10 +90,15 @@ def lazy_schedule_couplings(i: int, path_hdf5: str, dictCGFs: Dict,
         # Extract a subset of molecular orbitals to compute the coupling
         mos = tuple(map(lambda xs: xs[:, lower: nHOMO + upper], mos))
 
+        # Extract the reference values of the phase as the sign
+        # of the first orbital in the first point
+        css_0 = retrieve_hdf5_data(path_hdf5, mo_paths[0][1])
+        references = np.sign(css_0[0, lower: upper])
+
         # time in atomic units
         dt_au = dt * femtosec2au
         rs = calculateCoupling3Points(geometries, mos, dictCGFs, dt_au,
-                                      trans_mtx)
+                                      trans_mtx, references)
 
         # Store the couplings
         with h5py.File(path_hdf5) as f5:
