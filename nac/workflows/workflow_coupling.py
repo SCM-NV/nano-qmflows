@@ -86,7 +86,7 @@ def generate_pyxaid_hamiltonians(package_name, project_name,
 
     # Write the results in PYXAID format
     path_hamiltonians = join(work_dir, 'hamiltonians')
-    if not os.path.exists(path_hamiltonians): 
+    if not os.path.exists(path_hamiltonians):
         os.makedirs(path_hamiltonians)
 
     # Inplace scheduling of write_hamiltonians function.
@@ -98,7 +98,7 @@ def generate_pyxaid_hamiltonians(package_name, project_name,
                                        path_dir_results=path_hamiltonians,
                                        enumerate_from=enumerate_from)
 
-    hams_files = run(promise_files, path=path)
+    run(promise_files, folder=path)
 
     print("Hamiltonian files have been sucessfully created")
 # ==============================> Tasks <=====================================
