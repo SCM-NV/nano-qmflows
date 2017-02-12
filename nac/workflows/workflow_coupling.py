@@ -31,7 +31,8 @@ def generate_pyxaid_hamiltonians(package_name, project_name,
                                  package_config=None, dt=1,
                                  traj_folders=None, work_dir=None,
                                  basisname=None, hdf5_trans_mtx=None,
-                                 nHOMO=None, couplings_range=None):
+                                 nHOMO=None, couplings_range=None,
+                                 phase_references=None):
     """
     Use a md trajectory to generate the hamiltonian components to tun PYXAID
     nmad.
@@ -70,20 +71,22 @@ def generate_pyxaid_hamiltonians(package_name, project_name,
     # Calculate Non-Adiabatic Coupling
     # Number of Coupling points calculated with the MD trajectory
     nPoints = len(geometries) - 2
-    promise_couplings = [calculate_coupling(i, path_hdf5, dictCGFs,
-                                            geometries,
-                                            mo_paths_hdf5, hdf5_trans_mtx,
-                                            enumerate_from,
-                                            output_folder=project_name,
-                                            nHOMO=nHOMO,
-                                            couplings_range=couplings_range,
-                                            dt=dt, units='angstrom')
+    promise_couplings = [
+        calculate_coupling(i, path_hdf5, dictCGFs,
+                           geometries,
+                           mo_paths_hdf5, hdf5_trans_mtx,
+                           enumerate_from,
+                           output_folder=project_name,
+                           nHOMO=nHOMO,
+                           couplings_range=couplings_range,
+                           phase_references=phase_references,
+                           dt=dt, units='angstrom')
                          for i in range(nPoints)]
     path_couplings = gather(*promise_couplings)
 
     # Write the results in PYXAID format
     path_hamiltonians = join(work_dir, 'hamiltonians')
-    if not os.path.exists(path_hamiltonians):
+    if not os.path.exists(path_hamiltonians): 
         os.makedirs(path_hamiltonians)
 
     # Inplace scheduling of write_hamiltonians function.
@@ -97,13 +100,13 @@ def generate_pyxaid_hamiltonians(package_name, project_name,
 
     hams_files = run(promise_files, path=path)
 
-    print(hams_files)
+    print("Hamiltonian files have been sucessfully created")
 # ==============================> Tasks <=====================================
 
 
 def calculate_coupling(i, path_hdf5, dictCGFs, all_geometries, mo_paths,
                        hdf5_trans_mtx, enumerate_from, output_folder=None,
-                       nHOMO=None, couplings_range=None,
+                       nHOMO=None, couplings_range=None, phase_references=None,
                        dt=1, units='angstrom'):
     """
     Calculate the non-adiabatic coupling using 3 consecutive set of MOs in
@@ -129,6 +132,12 @@ def calculate_coupling(i, path_hdf5, dictCGFs, all_geometries, mo_paths,
     :param enumerate_from: Number from where to start enumerating the folders
     create for each point in the MD
     :type enumerate_from: Int
+    :param nHOMO: index of the HOMO orbital in the HDF5
+    :param couplings_range: range of Molecular orbitals used to compute the
+    coupling.
+    :param phase_references: Matrix containing the indices of the phases 
+    of the overlap Sji(t).
+
     :returns: promise to path to the Coupling inside the HDF5
     """
     j, k = i + 1, i + 2
@@ -143,7 +152,8 @@ def calculate_coupling(i, path_hdf5, dictCGFs, all_geometries, mo_paths,
                                    dt=dt, hdf5_trans_mtx=hdf5_trans_mtx,
                                    output_folder=output_folder,
                                    enumerate_from=enumerate_from,
-                                   nHOMO=nHOMO, couplings_range=couplings_range)
+                                   nHOMO=nHOMO, couplings_range=couplings_range,
+                                   phase_references=phase_references)
 # ============<>===============
 
 
