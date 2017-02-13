@@ -81,16 +81,17 @@ def lazy_schedule_couplings(i: int, path_hdf5: str, dictCGFs: Dict,
         nHOMO = nHOMO if nHOMO is not None else nStates // 2
 
         # If the couplings_range variable is not define I assume
-        # that the number of LUMOs is nStates - nHOMO
-        if couplings_range is None:
+        # that the number of LUMOs is equal to the HOMOs.
+        if all(x is not None for x in [nHOMO, couplings_range]):
             couplings_range = (nHOMO, nStates - nHOMO)
-
-        # Define the range of couplings that are going to be compute
-        lower = nHOMO - couplings_range[0]
-        upper = couplings_range[1]
-
+            lowest = nHOMO - couplings_range[0]
+            highest = nHOMO + couplings_range[1]
+        else:
+            lowest = 0
+            highest = nStates
+    
         # Extract a subset of molecular orbitals to compute the coupling
-        mos = tuple(map(lambda xs: xs[:, lower: nHOMO + upper], mos))
+        mos = tuple(map(lambda xs: xs[:, lowest: highest], mos))
 
         # time in atomic units
         dt_au = dt * femtosec2au
@@ -120,7 +121,8 @@ def lazy_schedule_couplings(i: int, path_hdf5: str, dictCGFs: Dict,
 
 
 def write_hamiltonians(path_hdf5, work_dir, mo_paths, path_couplings, nPoints,
-                       path_dir_results=None, enumerate_from=0):
+                       path_dir_results=None, enumerate_from=0, nHOMO=None,
+                       couplings_range=None):
     """
     Write the real and imaginary components of the hamiltonian using both
     the orbitals energies and the derivative coupling accoring to:
@@ -132,10 +134,16 @@ def write_hamiltonians(path_hdf5, work_dir, mo_paths, path_couplings, nPoints,
 
     ham_files = []
     for i in range(nPoints):
+        j = i + enumerate_from
         path_coupling = path_couplings[i]
         css = retrieve_hdf5_data(path_hdf5, path_coupling)
+
+        # Extract the energy values 
         energies = retrieve_hdf5_data(path_hdf5, mo_paths[i][0])
-        j = i + enumerate_from
+        if all(x is not None for x in [nHOMO, couplings_range]):
+            lowest = nHOMO - couplings_range[0]
+            highest = nHOMO + couplings_range[1]
+            energies = energies[lowest: highest]
 
         # FileNames
         file_ham_im = join(path_dir_results, 'Ham_{}_im'.format(j))
