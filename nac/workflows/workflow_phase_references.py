@@ -111,7 +111,7 @@ def workflow_phase_references(project_name, cp2k_args, cp2k_OT_args=None,
     # Take a subset of orbitas if the user request them
     if all(x is not None for x in [nHOMO, couplings_range]):
         lowest = couplings_range[0]
-        highest = nHOMO + couplings_range
+        highest = nHOMO + couplings_range[1]
         css_0 = css_0[:, lowest, highest]
         css_1 = css_1[:, lowest, highest]
 
