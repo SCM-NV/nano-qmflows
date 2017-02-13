@@ -96,7 +96,9 @@ def generate_pyxaid_hamiltonians(package_name, project_name,
     promise_files = schedule_write_ham(path_hdf5, work_dir, mo_paths_hdf5,
                                        path_couplings, nPoints,
                                        path_dir_results=path_hamiltonians,
-                                       enumerate_from=enumerate_from)
+                                       enumerate_from=enumerate_from,
+                                       nHOMO=nHOMO,
+                                       couplings_range=couplings_range)
 
     run(promise_files, folder=path)
 
