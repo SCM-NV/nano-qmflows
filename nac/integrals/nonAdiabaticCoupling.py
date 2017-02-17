@@ -16,7 +16,8 @@ Matrix = np.ndarray
 
 
 # =====================================<>======================================
-def calculateCoupling3Points(dt,
+def calculateCoupling3Points(
+        dt,
         mtx_sji_t0, mtx_sij_t0, mtx_sji_t1, mtx_sij_t1):
     """
     Calculate the non-adiabatic interaction matrix using 3 geometries,
@@ -26,7 +27,6 @@ def calculateCoupling3Points(dt,
     cte = 1.0 / (4.0 * dt)
     return cte * (3 * (mtx_sji_t1 - mtx_sij_t1) + (mtx_sij_t0 - mtx_sji_t0))
 
-    
 
 def correct_phases(overlaps, mtx_phases, dim):
     """
@@ -34,14 +34,14 @@ def correct_phases(overlaps, mtx_phases, dim):
     """
     # Reshape phases vector to matrix
     phases_t0, phases_t1, phases_t2 = [
-        mtx_phases[i,:].reshape(dim, 1) for i in range(3)]
+        mtx_phases[i, :].reshape(dim, 1) for i in range(3)]
 
     # Matrices containing the phases resulting from multipling
     # the phases of state_i * state_j
     mtx_phases_Sji_t0_t1 = np.dot(phases_t0, phases_t1.transpose())
     mtx_phases_Sji_t1_t2 = np.dot(phases_t1, phases_t2.transpose())
     mtx_phases_Sij_t1_t0 = np.transpose(mtx_phases_Sji_t0_t1)
-    mtx_phases_Sij_t2_t1 = np.transpose(mtx_phases_Sji_t1_t2)        
+    mtx_phases_Sij_t2_t1 = np.transpose(mtx_phases_Sji_t1_t2)
 
     return  [Sji * phases for Sji, phases in
              zip(overlaps, [mtx_phases_Sji_t0_t1, mtx_phases_Sij_t1_t0,
@@ -49,7 +49,7 @@ def correct_phases(overlaps, mtx_phases, dim):
 
 
 def compute_overlaps_for_coupling(
-        geometries: Tuple, coefficients: Tuple, dictCGFs: Dict, 
+        geometries: Tuple, coefficients: Tuple, dictCGFs: Dict,
         trans_mtx: Matrix=None) -> Matrix:
     """
     Compute the Overlap matrices used to compute the couplings
@@ -94,7 +94,7 @@ def compute_overlaps_for_coupling(
 
     return mtx_sji_t0, mtx_sij_t0, mtx_sji_t1, mtx_sij_t1
 
- 
+
 def calculate_spherical_overlap(trans_mtx: Matrix, suv: Matrix, css0: Matrix,
                                 css1: Matrix) -> Matrix:
     """

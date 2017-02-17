@@ -3,21 +3,15 @@ __author__ = "Felipe Zapata"
 __all__ = ['generate_pyxaid_hamiltonians']
 
 # ================> Python Standard  and third-party <==========
-from os.path import join
-
-import numpy as np
-import os
-import plams
-
-# =========================> Internal modules <================================
 from noodles import (gather, schedule)
 
-from nac import initialize
 from nac.common import change_mol_units
 from nac.schedule.components import calculate_mos
 from nac.schedule.scheduleCoupling import (lazy_overlaps, lazy_couplings,
                                            write_hamiltonians)
-from qmworks import run, Settings
+from os.path import join
+import os
+from qmworks import run
 from qmworks.parsers import parse_string_xyz
 
 # Type Hints
@@ -90,7 +84,7 @@ def generate_pyxaid_hamiltonians(package_name: str, project_name: str,
     schedule_couplings = schedule(lazy_couplings)
     promised_couplings = schedule_couplings(promised_overlaps, path_hdf5,
                                             project_name, enumerate_from, dt)
-    
+
     # Write the results in PYXAID format
     path_hamiltonians = join(work_dir, 'hamiltonians')
     if not os.path.exists(path_hamiltonians):
@@ -111,8 +105,6 @@ def generate_pyxaid_hamiltonians(package_name: str, project_name: str,
         couplings_range=couplings_range)
 
     run(promise_files, folder=path)
-
-
 
 # ==============================> Tasks <=====================================
 
@@ -150,9 +142,9 @@ def calculate_overlap(project_name: str, path_hdf5: str, dictCGFs: Dict,
     """
     nPoints = len(geometries) - 2
 
-    # Compute the Overlaps 
+    # Compute the Overlaps
     paths_overlaps = []
-    for i in range(nPoints): 
+    for i in range(nPoints):
         j, k = i + 1, i + 2
 
         # extract 3 molecular geometries to compute the overlaps

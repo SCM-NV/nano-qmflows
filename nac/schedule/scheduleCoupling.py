@@ -2,7 +2,6 @@ __author__ = "Felipe Zapata"
 
 # ================> Python Standard  and third-party <==========
 from functools import partial
-from noodles import schedule  # Workflow Engine
 from os.path import join
 
 import h5py
@@ -23,17 +22,15 @@ Matrix = np.ndarray
 
 # ==============================> Schedule Tasks <=============================
 
+
 def lazy_couplings(paths_overlaps: List, path_hdf5: str, project_name: str,
-                   enumerate_from: int, dt:float) -> List:
+                   enumerate_from: int, dt: float) -> List:
     """
     :parameter dt: dynamic integration time
     :type      dt: Float (Femtoseconds)
     """
     # time in atomic units
     dt_au = dt * femtosec2au
-
-    # Partial application of the function that coupling the coupling
-    fun_coupling = partial(calculateCoupling3Points, dt_au)
 
     # Compute the dimension of the coupling matrix
     mtx_0 = retrieve_hdf5_data(path_hdf5, paths_overlaps[0][0])
@@ -44,16 +41,16 @@ def lazy_couplings(paths_overlaps: List, path_hdf5: str, project_name: str,
 
     # Compute all the phases
     mtx_phases = compute_phases(overlaps, dim)
-    
+
     # Compute the couplings using the four matrices previously calculated
     # Together with the phases
     paths_couplings = []
-    
+
     for i, ps in enumerate(overlaps):
         # Path were the couplinp is store
         k = i + enumerate_from
         path = join(project_name, 'coupling_{}'.format(k))
-        with h5py.File(path_hdf5 , 'r+') as f5:
+        with h5py.File(path_hdf5, 'r+') as f5:
             is_done  = path in f5
 
         # Skip the computation if the coupling is already done
@@ -61,14 +58,14 @@ def lazy_couplings(paths_overlaps: List, path_hdf5: str, project_name: str,
             print("Coupling: ", path, " has already been calculated")
         else:
             # Correct the Phase of the Molecular orbitals
-            fixed_phase_overlaps = correct_phases(ps, mtx_phases[i: i+3, :], dim)
-        
+            fixed_phase_overlaps = correct_phases(ps, mtx_phases[i: i + 3, :], dim)
+
             # Compute the couplings with the phase corrected overlaps
             couplings = calculateCoupling3Points(dt_au, *fixed_phase_overlaps)
 
-            with h5py.File(path_hdf5 , 'r+') as f5:
+            with h5py.File(path_hdf5, 'r+') as f5:
                 store = StoreasHDF5(f5, 'cp2k')
-                store.funHDF5(path, couplings) 
+                store.funHDF5(path, couplings)
 
         paths_couplings.append(path)
 
@@ -99,7 +96,7 @@ def compute_phases(overlaps: List, dim: int) -> Matrix:
     return mtx_phases
 
 
-def lazy_overlaps(i: int, project_name:str, path_hdf5: str, dictCGFs: Dict,
+def lazy_overlaps(i: int, project_name: str, path_hdf5: str, dictCGFs: Dict,
                   geometries: Tuple, mo_paths: List, hdf5_trans_mtx: str=None,
                   enumerate_from: int=0, nHOMO: int=None,
                   couplings_range: Tuple=None) -> str:
@@ -136,7 +133,7 @@ def lazy_overlaps(i: int, project_name:str, path_hdf5: str, dictCGFs: Dict,
     root = join(project_name, 'overlaps_{}'.format(i + enumerate_from))
     names_matrices = ['mtx_sji_t0', 'mtx_sij_t0', 'mtx_sji_t1', 'mtx_sij_t1']
     overlaps_paths_hdf5 = [join(root, name) for name in names_matrices]
-    
+
     # Test if the overlap is store in the HDF5 calculate it
     with h5py.File(path_hdf5, 'r') as f5:
         is_done = all(path in f5 for path in overlaps_paths_hdf5)
@@ -152,7 +149,7 @@ def lazy_overlaps(i: int, project_name:str, path_hdf5: str, dictCGFs: Dict,
                                            mo_paths[i + j][1]), range(3)))
 
         # Extract a subset of molecular orbitals to compute the coupling
-        lowest,  highest = compute_range_orbitals(mos[0], nHOMO, couplings_range)
+        lowest, highest = compute_range_orbitals(mos[0], nHOMO, couplings_range)
         mos = tuple(map(lambda xs: xs[:, lowest: highest], mos))
 
         # Read the transformation matrix to convert from Cartesian to
@@ -165,7 +162,7 @@ def lazy_overlaps(i: int, project_name:str, path_hdf5: str, dictCGFs: Dict,
                                                  trans_mtx)
 
         # Store the matrices in the HDF5 file
-        with h5py.File(path_hdf5 , 'r+') as f5:
+        with h5py.File(path_hdf5, 'r+') as f5:
             store = StoreasHDF5(f5, 'cp2k')
             for p, mtx in zip(overlaps_paths_hdf5, overlaps):
                 store.funHDF5(p, mtx)
@@ -192,7 +189,7 @@ def compute_range_orbitals(mtx: Matrix, nHOMO: int,
         highest = nHOMO + couplings_range[1]
     else:
         lowest = 0
-        highest = nStates
+        highest = nOrbitals
 
     return lowest, highest
 
@@ -216,7 +213,7 @@ def write_hamiltonians(path_hdf5: str, mo_paths: List, path_couplings: List,
         path_coupling = path_couplings[i]
         css = retrieve_hdf5_data(path_hdf5, path_coupling)
 
-        # Extract the energy values 
+        # Extract the energy values
         energies = retrieve_hdf5_data(path_hdf5, mo_paths[i][0])
         if all(x is not None for x in [nHOMO, couplings_range]):
             lowest = nHOMO - couplings_range[0]
