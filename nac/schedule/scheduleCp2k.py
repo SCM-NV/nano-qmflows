@@ -47,7 +47,6 @@ def prepare_cp2k_settings(geometry, files, cp2k_args, k, work_dir,
     dft.potential_file_name = potential_file
     dft['print']['mo']['filename'] = files.get_MO
 
-    topology = cp2k_args.specific.cp2k.force_eval.subsys.topology
     cp2k_args.specific.cp2k['global']['project'] = 'point_{}'.format(k)
 
     if wfn_restart_job is not None:
@@ -59,7 +58,7 @@ def prepare_cp2k_settings(geometry, files, cp2k_args, k, work_dir,
 
     with open(files.get_xyz, 'w') as f:
                 f.write(geometry)
-        
+
     input_args = templates.singlepoint.overlay(cp2k_args)
 
     # Do not print the MOs if is an OT computation

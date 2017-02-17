@@ -1,7 +1,6 @@
 __author__ = "Felipe Zapata"
 
 # ================> Python Standard  and third-party <==========
-from functools import partial
 from os.path import join
 
 import h5py
@@ -156,7 +155,7 @@ def lazy_overlaps(i: int, project_name: str, path_hdf5: str, dictCGFs: Dict,
         # Spherical coordinates
         if hdf5_trans_mtx is not None:
             trans_mtx = retrieve_hdf5_data(path_hdf5, hdf5_trans_mtx)
-        
+
         # Partial application of the function computing the overlap
         overlaps = compute_overlaps_for_coupling(geometries, mos, dictCGFs,
                                                  trans_mtx)
