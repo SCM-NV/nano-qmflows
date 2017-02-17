@@ -16,14 +16,44 @@ Matrix = np.ndarray
 
 
 # =====================================<>======================================
-def calculateCoupling3Points(geometries: Tuple, coefficients: Tuple,
-                             dictCGFs: Dict, dt: float,
-                             trans_mtx: Matrix=None,
-                             references: Matrix=None) -> Matrix:
+def calculateCoupling3Points(dt,
+        mtx_sji_t0, mtx_sij_t0, mtx_sji_t1, mtx_sij_t1):
     """
     Calculate the non-adiabatic interaction matrix using 3 geometries,
     the CGFs for the atoms and molecular orbitals coefficients read
     from a HDF5 File.
+    """
+    cte = 1.0 / (4.0 * dt)
+    return cte * (3 * (mtx_sji_t1 - mtx_sij_t1) + (mtx_sij_t0 - mtx_sji_t0))
+
+    
+
+def correct_phases(overlaps, mtx_phases, dim):
+    """
+    Correct the phases of the overlap matrices
+    """
+    # Reshape phases vector to matrix
+    phases_t0, phases_t1, phases_t2 = [
+        mtx_phases[i,:].reshape(dim, 1) for i in range(3)]
+
+    # Matrices containing the phases resulting from multipling
+    # the phases of state_i * state_j
+    mtx_phases_Sji_t0_t1 = np.dot(phases_t0, phases_t1.transpose())
+    mtx_phases_Sji_t1_t2 = np.dot(phases_t1, phases_t2.transpose())
+    mtx_phases_Sij_t1_t0 = np.transpose(mtx_phases_Sji_t0_t1)
+    mtx_phases_Sij_t2_t1 = np.transpose(mtx_phases_Sji_t1_t2)        
+
+    return  [Sji * phases for Sji, phases in
+             zip(overlaps, [mtx_phases_Sji_t0_t1, mtx_phases_Sij_t1_t0,
+                            mtx_phases_Sji_t1_t2, mtx_phases_Sij_t2_t1])]
+
+
+def compute_overlaps_for_coupling(
+        geometries: Tuple, coefficients: Tuple, dictCGFs: Dict, 
+        trans_mtx: Matrix=None) -> Matrix:
+    """
+    Compute the Overlap matrices used to compute the couplings
+
     :parameter geometries: Tuple of molecular geometries.
     :type      geometries: ([AtomXYZ], [AtomXYZ], [AtomXYZ])
     :parameter coefficients: Tuple of Molecular Orbital coefficients.
@@ -31,13 +61,9 @@ def calculateCoupling3Points(geometries: Tuple, coefficients: Tuple,
     :paramter dictCGFS: Dictionary from Atomic Label to basis set.
     :type     dictCGFS: Dict String [CGF], CGF = ([Primitives],
     AngularMomentum), Primitive = (Coefficient, Exponent)
-    :parameter dt: dynamic integration time
-    :type      dt: Float (a.u)
     :param trans_mtx: Transformation matrix to translate from Cartesian
     to Sphericals.
-    :param references: Matrix containing the sign of the phases of 
-    the first overlap matrix of type Sji.
-    :returns: Matrix containing the nonadiabatic couplings
+    :returns: [Matrix] containing the overlaps at different times
     """
     mol0, mol1, mol2 = geometries
     css0, css1, css2 = coefficients
@@ -60,23 +86,16 @@ def calculateCoupling3Points(geometries: Tuple, coefficients: Tuple,
     # Partial application of the first argument
     spherical_fun = partial(calculate_spherical_overlap, trans_mtx)
 
-    # The transpose references are used to fix te phase of the
-    # overlap matrix of time Sij. Because the references
-    # were computed for matrices of type Sji
-    references_T = np.transpose(references)
-    
     # Overlap matrix for different times in Spherical coordinates
-    mtx_sji_t0 = spherical_fun(references, suv_0, css0, css1)
-    mtx_sji_t1 = spherical_fun(references, suv_1, css1, css2)
-    mtx_sij_t0 = spherical_fun(references_T, suv_0_t, css1, css0)
-    mtx_sij_t1 = spherical_fun(references_T, suv_1_t, css2, css1)
-    cte = 1.0 / (4.0 * dt)
+    mtx_sji_t0 = spherical_fun(suv_0, css0, css1)
+    mtx_sji_t1 = spherical_fun(suv_1, css1, css2)
+    mtx_sij_t0 = spherical_fun(suv_0_t, css1, css0)
+    mtx_sij_t1 = spherical_fun(suv_1_t, css2, css1)
 
-    return cte * (3 * (mtx_sji_t1 - mtx_sij_t1) + (mtx_sij_t0 - mtx_sji_t0))
+    return mtx_sji_t0, mtx_sij_t0, mtx_sji_t1, mtx_sij_t1
 
-
-def calculate_spherical_overlap(trans_mtx: Matrix, references: Vector,
-                                suv: Matrix, css0: Matrix,
+ 
+def calculate_spherical_overlap(trans_mtx: Matrix, suv: Matrix, css0: Matrix,
                                 css1: Matrix) -> Matrix:
     """
     Calculate the Overlap Matrix between molecular orbitals at different times.
@@ -87,25 +106,8 @@ def calculate_spherical_overlap(trans_mtx: Matrix, references: Vector,
         suv = trans_mtx.dot(sparse.csr_matrix.dot(suv, transpose))
 
     css0T = np.transpose(css0)
-    overlap = np.dot(css0T, np.dot(suv, css1))
-        
-    # Phase correction using as references the sign of the overlap matrix
-    # between the first point of the dynamics.
-    if references is not None:
-        overlap = correct_phase(references, overlap)
 
-    return overlap
-
-
-def correct_phase(references: Matrix, overlap: Matrix) -> Matrix:
-    """
-    Using the sign of the first overlap matrix computed from
-    the first two point in the dynamics, correct the molecular orbital phase.
-    """
-    mtx_signs = np.sign(overlap)
-    # If the overlap matrix has the same phase that the reference keep
-    # the value, otherwise negate the value.
-    return np.where(references == mtx_signs, overlap, np.negative(overlap)) 
+    return np.dot(css0T, np.dot(suv, css1))
 
 
 def calcOverlapMtx(dictCGFs: Dict, dim: int,
@@ -117,7 +119,7 @@ def calcOverlapMtx(dictCGFs: Dict, dim: int,
     fun_overlap = partial(calc_overlap_row, dictCGFs, mol1, dim)
     fun_lookup = partial(lookup_cgf, mol0, dictCGFs)
 
-    with Pool() as p:
+    with Pool(processes=24) as p:
         xss = p.map(partial(apply_nested, fun_overlap, fun_lookup),
                     range(dim))
 
