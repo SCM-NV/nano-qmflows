@@ -1,7 +1,8 @@
 
 from nac import calculateCoupling3Points
 from nac.common import (femtosec2au, retrieve_hdf5_data)
-from nac.schedule import (compute_phases, correct_phases)
+from nac.schedule import compute_phases
+from nac.integrals import correct_phases
 from os.path import join
 
 import numpy as np
