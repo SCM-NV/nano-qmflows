@@ -119,7 +119,7 @@ def calcOverlapMtx(dictCGFs: Dict, dim: int,
     fun_overlap = partial(calc_overlap_row, dictCGFs, mol1, dim)
     fun_lookup = partial(lookup_cgf, mol0, dictCGFs)
 
-    with Pool(processes=24) as p:
+    with Pool() as p:
         xss = p.map(partial(apply_nested, fun_overlap, fun_lookup),
                     range(dim))
 
