@@ -119,7 +119,7 @@ def calcOverlapMtx(dictCGFs: Dict, dim: int,
     fun_overlap = partial(calc_overlap_row, dictCGFs, mol1, dim)
     fun_lookup = partial(lookup_cgf, mol0, dictCGFs)
 
-    with Pool(processes=24) as p:
+    with Pool() as p:
         xss = p.map(partial(apply_nested, fun_overlap, fun_lookup),
                     range(dim))
 
@@ -127,37 +127,40 @@ def calcOverlapMtx(dictCGFs: Dict, dim: int,
 
 
 def apply_nested(f, g, i):
-    return f(*g(i))
+    return f(i, *g(i))
 
 
-def calc_overlap_row(dictCGFs: Dict, mol1: List, dim: int,
+def calc_overlap_row(dictCGFs: Dict, mol1: List, dim: int, rowIndex: int,
                      xyz_atom0: List, cgf_i: Tuple) -> Vector:
     """
     Calculate the k-th row of the overlap integral using
-    2 CGFs  and 2 different atomic coordinates.
+    2 CGFs  and 2 different atomic coordinates. 
+    This function only computes the upper triangular matrix since for the atomic
+    basis, the folliwng condition is fulfill
+    <f(t-dt) | f(t) > = <f(t) | f(t - dt) >
     """
-    row = np.empty(dim)
+    row = np.zeros(dim)
     acc = 0
     for s, xyz_atom1 in mol1:
         cgfs_j = dictCGFs[s]
         nContracted = len(cgfs_j)
-        vs = calc_overlap_atom(xyz_atom0, cgf_i, xyz_atom1, cgfs_j)
-        row[acc: acc + nContracted] = vs
+        calc_overlap_atom(
+            row, xyz_atom0, cgf_i, xyz_atom1, cgfs_j, rowIndex, acc)
         acc += nContracted
     return row
 
 
-def calc_overlap_atom(xyz_0: List, cgf_i: Tuple, xyz_1: List,
-                      cgfs_atom_j: Tuple) -> Vector:
+def calc_overlap_atom(row:Vector, xyz_0: List, cgf_i: Tuple, xyz_1: List,
+                      cgfs_atom_j: Tuple, rowIndex: int, acc: int) -> Vector:
     """
     Compute the overlap between the CGF_i of atom0 and all the
     CGFs of atom1
     """
-    rs = np.empty(len(cgfs_atom_j))
     for j, cgf_j in enumerate(cgfs_atom_j):
-        rs[j] = sijContracted((xyz_0, cgf_i), (xyz_1, cgf_j))
-
-    return rs
+        # Compute only the upper triangular
+        idx = acc + j  
+        # if idx >= rowIndex:
+        row[idx] = sijContracted((xyz_0, cgf_i), (xyz_1, cgf_j))
 
 
 def lookup_cgf(atoms: List, dictCGFs: Dict, i: int) -> Tuple:
