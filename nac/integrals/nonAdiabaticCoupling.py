@@ -127,14 +127,14 @@ def calcOverlapMtx(dictCGFs: Dict, dim: int,
 
 
 def apply_nested(f, g, i):
-    return f(i, *g(i))
+    return f(*g(i))
 
 
-def calc_overlap_row(dictCGFs: Dict, mol1: List, dim: int, rowIndex: int,
+def calc_overlap_row(dictCGFs: Dict, mol1: List, dim: int,
                      xyz_atom0: List, cgf_i: Tuple) -> Vector:
     """
     Calculate the k-th row of the overlap integral using
-    2 CGFs  and 2 different atomic coordinates. 
+    2 CGFs  and 2 different atomic coordinates.
     This function only computes the upper triangular matrix since for the atomic
     basis, the folliwng condition is fulfill
     <f(t-dt) | f(t) > = <f(t) | f(t - dt) >
@@ -145,21 +145,19 @@ def calc_overlap_row(dictCGFs: Dict, mol1: List, dim: int, rowIndex: int,
         cgfs_j = dictCGFs[s]
         nContracted = len(cgfs_j)
         calc_overlap_atom(
-            row, xyz_atom0, cgf_i, xyz_atom1, cgfs_j, rowIndex, acc)
+            row, xyz_atom0, cgf_i, xyz_atom1, cgfs_j, acc)
         acc += nContracted
     return row
 
 
-def calc_overlap_atom(row:Vector, xyz_0: List, cgf_i: Tuple, xyz_1: List,
-                      cgfs_atom_j: Tuple, rowIndex: int, acc: int) -> Vector:
+def calc_overlap_atom(row: Vector, xyz_0: List, cgf_i: Tuple, xyz_1: List,
+                      cgfs_atom_j: Tuple, acc: int) -> Vector:
     """
     Compute the overlap between the CGF_i of atom0 and all the
     CGFs of atom1
     """
     for j, cgf_j in enumerate(cgfs_atom_j):
-        # Compute only the upper triangular
-        idx = acc + j  
-        # if idx >= rowIndex:
+        idx = acc + j
         row[idx] = sijContracted((xyz_0, cgf_i), (xyz_1, cgf_j))
 
 
