@@ -77,8 +77,6 @@ def compute_overlaps_for_coupling(
     # Atomic orbitals overlap
     suv_0 = calcOverlapMtx(dictCGFs, dim, mol0, mol1)
     suv_0_t = np.transpose(suv_0)
-    suv_1 = calcOverlapMtx(dictCGFs, dim, mol1, mol2)
-    suv_1_t = np.transpose(suv_1)
 
     # Convert the transformation matrix to sparse representation
     trans_mtx = sparse.csr_matrix(trans_mtx)
@@ -88,11 +86,9 @@ def compute_overlaps_for_coupling(
 
     # Overlap matrix for different times in Spherical coordinates
     mtx_sji_t0 = spherical_fun(suv_0, css0, css1)
-    mtx_sji_t1 = spherical_fun(suv_1, css1, css2)
     mtx_sij_t0 = spherical_fun(suv_0_t, css1, css0)
-    mtx_sij_t1 = spherical_fun(suv_1_t, css2, css1)
 
-    return mtx_sji_t0, mtx_sij_t0, mtx_sji_t1, mtx_sij_t1
+    return mtx_sji_t0, mtx_sij_t0
 
 
 def calculate_spherical_overlap(trans_mtx: Matrix, suv: Matrix, css0: Matrix,
