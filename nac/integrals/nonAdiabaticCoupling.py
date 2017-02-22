@@ -43,9 +43,9 @@ def correct_phases(overlaps, mtx_phases, dim):
     mtx_phases_Sij_t1_t0 = np.transpose(mtx_phases_Sji_t0_t1)
     mtx_phases_Sij_t2_t1 = np.transpose(mtx_phases_Sji_t1_t2)
 
-    return  [Sji * phases for Sji, phases in
-             zip(overlaps, [mtx_phases_Sji_t0_t1, mtx_phases_Sij_t1_t0,
-                            mtx_phases_Sji_t1_t2, mtx_phases_Sij_t2_t1])]
+    return [overlaps[i, :, :].reshape(dim, dim) * phases for i, phases in
+            enumerate([mtx_phases_Sji_t0_t1, mtx_phases_Sij_t1_t0,
+                       mtx_phases_Sji_t1_t2, mtx_phases_Sij_t2_t1])]
 
 
 def compute_overlaps_for_coupling(

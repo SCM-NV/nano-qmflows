@@ -38,17 +38,19 @@ def lazy_couplings(paths_overlaps: List, path_hdf5: str, project_name: str,
 
     # Read all the Overlaps
     concat_paths = chain(*paths_overlaps)
-    overlaps = np.stack([retrieve_hdf5_data(path_hdf5, ps) for ps in concat_paths])
+    overlaps = np.stack([retrieve_hdf5_data(path_hdf5, ps)
+                         for ps in concat_paths])
+
+
+    # Number of couplings to compute
+    nCouplings = overlaps.shape[0] // 2 - 1
 
     # Compute all the phases
-    mtx_phases = compute_phases(overlaps, dim)
+    mtx_phases = compute_phases(overlaps, nCouplings, dim)
 
     # Compute the couplings using the four matrices previously calculated
     # Together with the phases
     paths_couplings = []
-
-    # Number of couplings to compute
-    nCouplings = overlaps.shape[0] // 2 - 1
 
     for i in range(nCouplings):
         # Path were the couplinp is store
@@ -62,9 +64,11 @@ def lazy_couplings(paths_overlaps: List, path_hdf5: str, project_name: str,
             print("Coupling: ", path, " has already been calculated")
         else:
             # Tensor containing the overlaps
-            ps = FIXME
+            j = 2 * i
+            ps = overlaps[j: j + 4, :, :])
             # Correct the Phase of the Molecular orbitals
-            fixed_phase_overlaps = correct_phases(ps, mtx_phases[i: i + 3, :], dim)
+            fixed_phase_overlaps = correct_phases(
+                ps, mtx_phases[i: i + 3, :], dim)
 
             # Compute the couplings with the phase corrected overlaps
             couplings = calculateCoupling3Points(dt_au, *fixed_phase_overlaps)
@@ -78,7 +82,7 @@ def lazy_couplings(paths_overlaps: List, path_hdf5: str, project_name: str,
     return paths_couplings
 
 
-def compute_phases(overlaps: List, dim: int) -> Matrix:
+def compute_phases(overlaps: List, nCouplings: int, dim: int) -> Matrix:
     """
     Compute the phase of the state_i at time t + dt, using the following
     equation:
@@ -88,16 +92,15 @@ def compute_phases(overlaps: List, dim: int) -> Matrix:
     references = np.ones(dim)
 
     # Matrix containing the phases
-    rows  = len(overlaps)
-    mtx_phases = np.empty((rows + 2, dim))
+    mtx_phases = np.empty((nCouplings, dim))
     mtx_phases[0, :] = references
-
+    
     # Compute the phases at times t + dt using the phases at time t
-    for i, matrices in enumerate(overlaps):
-            Sji_t = matrices[0]
-            phases = np.sign(np.diag(Sji_t)) * references
-            mtx_phases[i + 1] = phases
-            references = phases
+    for i in range(nCouplings - 1):
+        Sji_t = overlaps[2 * i, :, :].reshape(dim, dim)
+        phases = np.sign(np.diag(Sji_t)) * references
+        mtx_phases[i + 1] = phases
+        references = phases
 
     return mtx_phases
 
