@@ -92,11 +92,11 @@ def compute_phases(overlaps: List, nCouplings: int, dim: int) -> Matrix:
     references = np.ones(dim)
 
     # Matrix containing the phases
-    mtx_phases = np.empty((nCouplings, dim))
+    mtx_phases = np.empty((nCouplings + 2, dim))
     mtx_phases[0, :] = references
     
     # Compute the phases at times t + dt using the phases at time t
-    for i in range(nCouplings - 1):
+    for i in range(nCouplings + 1):
         Sji_t = overlaps[2 * i, :, :].reshape(dim, dim)
         phases = np.sign(np.diag(Sji_t)) * references
         mtx_phases[i + 1] = phases
