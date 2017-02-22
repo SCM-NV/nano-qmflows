@@ -65,8 +65,8 @@ def compute_overlaps_for_coupling(
     to Sphericals.
     :returns: [Matrix] containing the overlaps at different times
     """
-    mol0, mol1, mol2 = geometries
-    css0, css1, css2 = coefficients
+    mol0, mol1 = geometries
+    css0, css1 = coefficients
 
     # Dictionary containing the number of CGFs per atoms
     cgfs_per_atoms = {s: len(dictCGFs[s]) for s in dictCGFs.keys()}

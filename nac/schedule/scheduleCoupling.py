@@ -65,7 +65,7 @@ def lazy_couplings(paths_overlaps: List, path_hdf5: str, project_name: str,
         else:
             # Tensor containing the overlaps
             j = 2 * i
-            ps = overlaps[j: j + 4, :, :])
+            ps = overlaps[j: j + 4, :, :]
             # Correct the Phase of the Molecular orbitals
             fixed_phase_overlaps = correct_phases(
                 ps, mtx_phases[i: i + 3, :], dim)
