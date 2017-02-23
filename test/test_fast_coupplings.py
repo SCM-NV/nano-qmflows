@@ -29,26 +29,29 @@ def test_obaraSaika():
     project_name = 'ethylene'
 
     # Read the Overlap matrices from the HDF5
-    root = join(project_name, 'overlaps_0')
-    names_matrices = ['mtx_sji_t0', 'mtx_sij_t0', 'mtx_sji_t1', 'mtx_sij_t1']
-    paths_overlaps = [join(root, name) for name in names_matrices]
-    overlaps = retrieve_hdf5_data(path_hdf5, paths_overlaps)
+    names_matrices = ['mtx_sji_t0', 'mtx_sij_t0']
+    concat_paths = [join(project_name, 'overlaps_{}'.format(i), mtx)
+                    for i in range(2) for mtx in names_matrices]
+
+    overlaps = np.stack([retrieve_hdf5_data(path_hdf5, ps)
+                         for ps in concat_paths])
 
     # Size of the overlaps matrices
     dim = 12
 
     # Compute all the phases
-    mtx_phases = compute_phases([overlaps], dim)
+    mtx_phases = compute_phases(overlaps, 1, dim)
 
     # Correct the phases
-    fixed_phase_overlaps = correct_phases(overlaps, mtx_phases[0: 3, :], dim)
+    tensor = overlaps[0: 4, :, :]
+    fixed_phase_overlaps = correct_phases(tensor, mtx_phases[0: 3, :], dim)
 
     dt_au = femtosec2au
     rs = calculateCoupling3Points(dt_au, *fixed_phase_overlaps)
 
     expected = retrieve_hdf5_data(path_hdf5, join(project_name, 'coupling_0'))
 
-    assert np.sum(rs - expected) < 1e-7
+    assert np.allclose(rs, expected)
 
 if __name__ == "__main__":
     test_obaraSaika()

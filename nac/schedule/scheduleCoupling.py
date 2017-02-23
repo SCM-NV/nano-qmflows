@@ -41,7 +41,6 @@ def lazy_couplings(paths_overlaps: List, path_hdf5: str, project_name: str,
     overlaps = np.stack([retrieve_hdf5_data(path_hdf5, ps)
                          for ps in concat_paths])
 
-
     # Number of couplings to compute
     nCouplings = overlaps.shape[0] // 2 - 1
 
@@ -63,6 +62,7 @@ def lazy_couplings(paths_overlaps: List, path_hdf5: str, project_name: str,
         if is_done:
             print("Coupling: ", path, " has already been calculated")
         else:
+            print("Computing coupling: ", path)
             # Tensor containing the overlaps
             j = 2 * i
             ps = overlaps[j: j + 4, :, :]
@@ -94,7 +94,7 @@ def compute_phases(overlaps: List, nCouplings: int, dim: int) -> Matrix:
     # Matrix containing the phases
     mtx_phases = np.empty((nCouplings + 2, dim))
     mtx_phases[0, :] = references
-    
+
     # Compute the phases at times t + dt using the phases at time t
     for i in range(nCouplings + 1):
         Sji_t = overlaps[2 * i, :, :].reshape(dim, dim)
