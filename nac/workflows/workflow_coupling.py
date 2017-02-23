@@ -140,16 +140,15 @@ def calculate_overlap(project_name: str, path_hdf5: str, dictCGFs: Dict,
     coupling.
     :returns: paths to the Overlap matrices inside the HDF5.
     """
-    nPoints = len(geometries) - 2
+    nPoints = len(geometries) - 1
 
     # Compute the Overlaps
     paths_overlaps = []
     for i in range(nPoints):
-        j, k = i + 1, i + 2
 
         # extract 3 molecular geometries to compute the overlaps
         molecules = tuple(map(lambda idx: parse_string_xyz(geometries[idx]),
-                              [i, j, k]))
+                              [i, i + 1]))
 
         # If units are Angtrom convert then to a.u.
         if 'angstrom' in units.lower():

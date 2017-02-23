@@ -1,6 +1,7 @@
 __author__ = "Felipe Zapata"
 
 # ================> Python Standard  and third-party <==========
+from itertools import chain
 from os.path import join
 
 import h5py
@@ -36,16 +37,22 @@ def lazy_couplings(paths_overlaps: List, path_hdf5: str, project_name: str,
     _, dim = mtx_0.shape
 
     # Read all the Overlaps
-    overlaps = [retrieve_hdf5_data(path_hdf5, ps) for ps in paths_overlaps]
+    concat_paths = chain(*paths_overlaps)
+    overlaps = np.stack([retrieve_hdf5_data(path_hdf5, ps)
+                         for ps in concat_paths])
+
+
+    # Number of couplings to compute
+    nCouplings = overlaps.shape[0] // 2 - 1
 
     # Compute all the phases
-    mtx_phases = compute_phases(overlaps, dim)
+    mtx_phases = compute_phases(overlaps, nCouplings, dim)
 
     # Compute the couplings using the four matrices previously calculated
     # Together with the phases
     paths_couplings = []
 
-    for i, ps in enumerate(overlaps):
+    for i in range(nCouplings):
         # Path were the couplinp is store
         k = i + enumerate_from
         path = join(project_name, 'coupling_{}'.format(k))
@@ -56,8 +63,12 @@ def lazy_couplings(paths_overlaps: List, path_hdf5: str, project_name: str,
         if is_done:
             print("Coupling: ", path, " has already been calculated")
         else:
+            # Tensor containing the overlaps
+            j = 2 * i
+            ps = overlaps[j: j + 4, :, :]
             # Correct the Phase of the Molecular orbitals
-            fixed_phase_overlaps = correct_phases(ps, mtx_phases[i: i + 3, :], dim)
+            fixed_phase_overlaps = correct_phases(
+                ps, mtx_phases[i: i + 3, :], dim)
 
             # Compute the couplings with the phase corrected overlaps
             couplings = calculateCoupling3Points(dt_au, *fixed_phase_overlaps)
@@ -71,7 +82,7 @@ def lazy_couplings(paths_overlaps: List, path_hdf5: str, project_name: str,
     return paths_couplings
 
 
-def compute_phases(overlaps: List, dim: int) -> Matrix:
+def compute_phases(overlaps: List, nCouplings: int, dim: int) -> Matrix:
     """
     Compute the phase of the state_i at time t + dt, using the following
     equation:
@@ -81,16 +92,15 @@ def compute_phases(overlaps: List, dim: int) -> Matrix:
     references = np.ones(dim)
 
     # Matrix containing the phases
-    rows  = len(overlaps)
-    mtx_phases = np.empty((rows + 2, dim))
+    mtx_phases = np.empty((nCouplings + 2, dim))
     mtx_phases[0, :] = references
-
+    
     # Compute the phases at times t + dt using the phases at time t
-    for i, matrices in enumerate(overlaps):
-            Sji_t = matrices[0]
-            phases = np.sign(np.diag(Sji_t)) * references
-            mtx_phases[i + 1] = phases
-            references = phases
+    for i in range(nCouplings + 1):
+        Sji_t = overlaps[2 * i, :, :].reshape(dim, dim)
+        phases = np.sign(np.diag(Sji_t)) * references
+        mtx_phases[i + 1] = phases
+        references = phases
 
     return mtx_phases
 
@@ -130,7 +140,7 @@ def lazy_overlaps(i: int, project_name: str, path_hdf5: str, dictCGFs: Dict,
     """
     # Path inside the HDF5 where the overlaps are stored
     root = join(project_name, 'overlaps_{}'.format(i + enumerate_from))
-    names_matrices = ['mtx_sji_t0', 'mtx_sij_t0', 'mtx_sji_t1', 'mtx_sij_t1']
+    names_matrices = ['mtx_sji_t0', 'mtx_sij_t0']
     overlaps_paths_hdf5 = [join(root, name) for name in names_matrices]
 
     # Test if the overlap is store in the HDF5 calculate it
@@ -145,7 +155,7 @@ def lazy_overlaps(i: int, project_name: str, path_hdf5: str, dictCGFs: Dict,
         print("Computing: ", root)
         mos = tuple(map(lambda j:
                         retrieve_hdf5_data(path_hdf5,
-                                           mo_paths[i + j][1]), range(3)))
+                                           mo_paths[i + j][1]), range(2)))
 
         # Extract a subset of molecular orbitals to compute the coupling
         lowest, highest = compute_range_orbitals(mos[0], nHOMO, couplings_range)

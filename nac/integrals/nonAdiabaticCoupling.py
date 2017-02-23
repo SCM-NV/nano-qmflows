@@ -43,9 +43,9 @@ def correct_phases(overlaps, mtx_phases, dim):
     mtx_phases_Sij_t1_t0 = np.transpose(mtx_phases_Sji_t0_t1)
     mtx_phases_Sij_t2_t1 = np.transpose(mtx_phases_Sji_t1_t2)
 
-    return  [Sji * phases for Sji, phases in
-             zip(overlaps, [mtx_phases_Sji_t0_t1, mtx_phases_Sij_t1_t0,
-                            mtx_phases_Sji_t1_t2, mtx_phases_Sij_t2_t1])]
+    return [overlaps[i, :, :].reshape(dim, dim) * phases for i, phases in
+            enumerate([mtx_phases_Sji_t0_t1, mtx_phases_Sij_t1_t0,
+                       mtx_phases_Sji_t1_t2, mtx_phases_Sij_t2_t1])]
 
 
 def compute_overlaps_for_coupling(
@@ -65,8 +65,8 @@ def compute_overlaps_for_coupling(
     to Sphericals.
     :returns: [Matrix] containing the overlaps at different times
     """
-    mol0, mol1, mol2 = geometries
-    css0, css1, css2 = coefficients
+    mol0, mol1 = geometries
+    css0, css1 = coefficients
 
     # Dictionary containing the number of CGFs per atoms
     cgfs_per_atoms = {s: len(dictCGFs[s]) for s in dictCGFs.keys()}
@@ -77,8 +77,6 @@ def compute_overlaps_for_coupling(
     # Atomic orbitals overlap
     suv_0 = calcOverlapMtx(dictCGFs, dim, mol0, mol1)
     suv_0_t = np.transpose(suv_0)
-    suv_1 = calcOverlapMtx(dictCGFs, dim, mol1, mol2)
-    suv_1_t = np.transpose(suv_1)
 
     # Convert the transformation matrix to sparse representation
     trans_mtx = sparse.csr_matrix(trans_mtx)
@@ -88,11 +86,9 @@ def compute_overlaps_for_coupling(
 
     # Overlap matrix for different times in Spherical coordinates
     mtx_sji_t0 = spherical_fun(suv_0, css0, css1)
-    mtx_sji_t1 = spherical_fun(suv_1, css1, css2)
     mtx_sij_t0 = spherical_fun(suv_0_t, css1, css0)
-    mtx_sij_t1 = spherical_fun(suv_1_t, css2, css1)
 
-    return mtx_sji_t0, mtx_sij_t0, mtx_sji_t1, mtx_sij_t1
+    return mtx_sji_t0, mtx_sij_t0
 
 
 def calculate_spherical_overlap(trans_mtx: Matrix, suv: Matrix, css0: Matrix,
