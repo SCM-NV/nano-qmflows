@@ -3,13 +3,13 @@
 __author__ = "Felipe Zapata"
 
 # ==========> Standard libraries and third-party <===============
+cimport cython
 from cpython cimport bool # Python Boolean
 from libc.math cimport exp, log, M_PI, sqrt
 
-import numpy as np
-cimport numpy as np
 
-#cython: bounds_check=False
+@cython.boundscheck(False)
+@cython.wraparound(False)
 cpdef double sab(tuple gs1, tuple gs2) except? -1:
     """
     Primitive overlap terms calculated with the Obara-Saika recurrence relations,
@@ -50,7 +50,8 @@ cpdef double sab(tuple gs1, tuple gs2) except? -1:
         return c1 * c2 * prod
 
 
-#cython: bounds_check=False
+@cython.boundscheck(False)
+@cython.wraparound(False)
 cpdef double sab_efg(tuple gs1, tuple gs2, tuple rc, int e, int f, int g) except? -1:
     """
     Primitive overlap terms calculated with the Obara-Saika recurrence relations,
@@ -188,6 +189,8 @@ orbitalIndexes = {
 }
 
 
+@cython.boundscheck(False)
+@cython.wraparound(False)
 cpdef bool neglect_integral(double r, double e1, double e2, double accuracy):
     """
     Compute whether an overlap integral should be neglected 
@@ -201,6 +204,8 @@ cpdef bool neglect_integral(double r, double e1, double e2, double accuracy):
 
     return b
 
+@cython.boundscheck(False)
+@cython.wraparound(False)
 cpdef double distance(list xs, list ys):
     """
     Distance between 2 points
