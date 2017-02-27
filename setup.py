@@ -2,6 +2,12 @@
 from Cython.Distutils import build_ext
 from setuptools import Extension, setup
 import numpy as np
+import os
+import shutil
+
+if shutil.which('icc') is not None:
+    os.environ['CC'] ='icc'
+    os.environ['LDSHARED'] = 'icc -shared'
 
 setup(
     name='NonAdiabaticCouling',
