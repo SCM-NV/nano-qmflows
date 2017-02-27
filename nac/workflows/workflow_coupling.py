@@ -10,9 +10,10 @@ from nac.schedule.components import calculate_mos
 from nac.schedule.scheduleCoupling import (lazy_overlaps, lazy_couplings,
                                            write_hamiltonians)
 from os.path import join
-import os
 from qmworks import run
 from qmworks.parsers import parse_string_xyz
+import os
+import shutil
 
 # Type Hints
 from typing import (Dict, List, Tuple)
@@ -106,6 +107,8 @@ def generate_pyxaid_hamiltonians(package_name: str, project_name: str,
 
     run(promise_files, folder=path)
 
+    remove_folders(traj_folders)
+
 # ==============================> Tasks <=====================================
 
 
@@ -164,3 +167,11 @@ def calculate_overlap(project_name: str, path_hdf5: str, dictCGFs: Dict,
 
     # Gather all the promised paths
     return gather(*paths_overlaps)
+
+
+def remove_folders(folders):
+    """
+    Remove unused folders
+    """
+    for f in folders:
+        shutil.rmtree(f)
