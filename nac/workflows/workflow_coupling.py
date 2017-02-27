@@ -174,4 +174,5 @@ def remove_folders(folders):
     Remove unused folders
     """
     for f in folders:
-        shutil.rmtree(f)
+        if os.path.exists(f):
+            shutil.rmtree(f)
