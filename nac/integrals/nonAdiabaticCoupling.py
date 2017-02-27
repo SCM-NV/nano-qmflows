@@ -4,6 +4,7 @@ __author__ = "Felipe Zapata"
 # from multipoleObaraSaika import sab_unfolded
 from functools import partial
 from multiprocessing import Pool
+from nac.common import retrieve_hdf5_data
 from nac.integrals.overlapIntegral import sijContracted
 from scipy import sparse
 from typing import Dict, List, Tuple
@@ -49,24 +50,24 @@ def correct_phases(overlaps, mtx_phases, dim):
 
 
 def compute_overlaps_for_coupling(
-        geometries: Tuple, coefficients: Tuple, dictCGFs: Dict,
-        trans_mtx: Matrix=None) -> Matrix:
+        geometries: Tuple, path_hdf5: str,
+        mo_paths: Tuple, dictCGFs: Dict,
+        nHOMO: int, couplings_range: Tuple,
+        hdf5_trans_mtx: str=None) -> Matrix:
     """
     Compute the Overlap matrices used to compute the couplings
 
     :parameter geometries: Tuple of molecular geometries.
     :type      geometries: ([AtomXYZ], [AtomXYZ], [AtomXYZ])
-    :parameter coefficients: Tuple of Molecular Orbital coefficients.
-    :type      coefficients: (Matrix, Matrix, Matrix)
+    :parameter mo_paths: Path to the MO inside the HDF5.
     :paramter dictCGFS: Dictionary from Atomic Label to basis set.
     :type     dictCGFS: Dict String [CGF], CGF = ([Primitives],
     AngularMomentum), Primitive = (Coefficient, Exponent)
-    :param trans_mtx: Transformation matrix to translate from Cartesian
-    to Sphericals.
+    :param trans_mtx: path to the transformation matrix to
+    translate from Cartesian to Sphericals.
     :returns: [Matrix] containing the overlaps at different times
     """
     mol0, mol1 = geometries
-    css0, css1 = coefficients
 
     # Dictionary containing the number of CGFs per atoms
     cgfs_per_atoms = {s: len(dictCGFs[s]) for s in dictCGFs.keys()}
@@ -77,6 +78,9 @@ def compute_overlaps_for_coupling(
     # Atomic orbitals overlap
     suv_0 = calcOverlapMtx(dictCGFs, dim, mol0, mol1)
     suv_0_t = np.transpose(suv_0)
+
+    css0, css1, trans_mtx = read_overlap_data(
+        path_hdf5, mo_paths, hdf5_trans_mtx, nHOMO, couplings_range)
 
     # Convert the transformation matrix to sparse representation
     trans_mtx = sparse.csr_matrix(trans_mtx)
@@ -89,6 +93,24 @@ def compute_overlaps_for_coupling(
     mtx_sij_t0 = spherical_fun(suv_0_t, css1, css0)
 
     return mtx_sji_t0, mtx_sij_t0
+
+
+def read_overlap_data(path_hdf5, mo_paths, hdf5_trans_mtx, nHOMO, couplings_range):
+    """
+    Read the Molecular orbital coefficients and the transformation matrix
+    """
+    mos = retrieve_hdf5_data(path_hdf5, mo_paths)
+
+    # Extract a subset of molecular orbitals to compute the coupling
+    lowest, highest = compute_range_orbitals(mos[0], nHOMO, couplings_range)
+    css0, css1 = tuple(map(lambda xs: xs[:, lowest: highest], mos))
+
+    # Read the transformation matrix to convert from Cartesian to
+    # Spherical coordinates
+    if hdf5_trans_mtx is not None:
+        trans_mtx = retrieve_hdf5_data(path_hdf5, hdf5_trans_mtx)
+
+    return css0, css1, trans_mtx
 
 
 def calculate_spherical_overlap(trans_mtx: Matrix, suv: Matrix, css0: Matrix,
@@ -179,3 +201,26 @@ def lookup_cgf(atoms: List, dictCGFs: Dict, i: int) -> Tuple:
     t = xyz, dictCGFs[s][index]
 
     return t
+
+def compute_range_orbitals(mtx: Matrix, nHOMO: int,
+                           couplings_range: Tuple) -> Tuple:
+    """
+    Compute the lowest and highest index used to extract
+    a subset of Columns from the MOs
+    """
+    # If the user does not define the number of HOMOs and LUMOs
+    # assume that the first half of the read MO from the HDF5
+    # are HOMOs and the last Half are LUMOs.
+    _, nOrbitals = mtx.shape
+    nHOMO = nHOMO if nHOMO is not None else nOrbitals // 2
+
+    # If the couplings_range variable is not define I assume
+    # that the number of LUMOs is equal to the HOMOs.
+    if all(x is not None for x in [nHOMO, couplings_range]):
+        lowest = nHOMO - couplings_range[0]
+        highest = nHOMO + couplings_range[1]
+    else:
+        lowest = 0
+        highest = nOrbitals
+
+    return lowest, highest
