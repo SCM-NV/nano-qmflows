@@ -153,22 +153,14 @@ def lazy_overlaps(i: int, project_name: str, path_hdf5: str, dictCGFs: Dict,
     else:
         # Read the Molecular orbitals from the HDF5
         print("Computing: ", root)
-        mos = tuple(map(lambda j:
-                        retrieve_hdf5_data(path_hdf5,
-                                           mo_paths[i + j][1]), range(2)))
 
-        # Extract a subset of molecular orbitals to compute the coupling
-        lowest, highest = compute_range_orbitals(mos[0], nHOMO, couplings_range)
-        mos = tuple(map(lambda xs: xs[:, lowest: highest], mos))
-
-        # Read the transformation matrix to convert from Cartesian to
-        # Spherical coordinates
-        if hdf5_trans_mtx is not None:
-            trans_mtx = retrieve_hdf5_data(path_hdf5, hdf5_trans_mtx)
+        # Paths to the MOs inside the HDF5
+        hdf5_mos_path = [mo_paths[i + j][1] for j in range(2)]
 
         # Partial application of the function computing the overlap
-        overlaps = compute_overlaps_for_coupling(geometries, mos, dictCGFs,
-                                                 trans_mtx)
+        overlaps = compute_overlaps_for_coupling(
+            geometries, path_hdf5, hdf5_mos_path, dictCGFs, nHOMO,
+            couplings_range, hdf5_trans_mtx)
 
         # Store the matrices in the HDF5 file
         with h5py.File(path_hdf5, 'r+') as f5:
@@ -177,30 +169,6 @@ def lazy_overlaps(i: int, project_name: str, path_hdf5: str, dictCGFs: Dict,
                 store.funHDF5(p, mtx)
 
     return overlaps_paths_hdf5
-
-
-def compute_range_orbitals(mtx: Matrix, nHOMO: int,
-                           couplings_range: Tuple) -> Tuple:
-    """
-    Compute the lowest and highest index used to extract
-    a subset of Columns from the MOs
-    """
-    # If the user does not define the number of HOMOs and LUMOs
-    # assume that the first half of the read MO from the HDF5
-    # are HOMOs and the last Half are LUMOs.
-    _, nOrbitals = mtx.shape
-    nHOMO = nHOMO if nHOMO is not None else nOrbitals // 2
-
-    # If the couplings_range variable is not define I assume
-    # that the number of LUMOs is equal to the HOMOs.
-    if all(x is not None for x in [nHOMO, couplings_range]):
-        lowest = nHOMO - couplings_range[0]
-        highest = nHOMO + couplings_range[1]
-    else:
-        lowest = 0
-        highest = nOrbitals
-
-    return lowest, highest
 
 
 def write_hamiltonians(path_hdf5: str, mo_paths: List, path_couplings: List,
