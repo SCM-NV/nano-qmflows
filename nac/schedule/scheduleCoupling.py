@@ -3,6 +3,7 @@ __author__ = "Felipe Zapata"
 # ================> Python Standard  and third-party <==========
 from itertools import chain
 from os.path import join
+from scipy.optimize import linear_sum_assignment
 
 import h5py
 import numpy as np
@@ -19,6 +20,7 @@ from typing import (Dict, List, Tuple)
 # Numpy type hints
 Vector = np.ndarray
 Matrix = np.ndarray
+Tensor3D = np.ndarray
 
 # ==============================> Schedule Tasks <=============================
 
@@ -26,8 +28,7 @@ Matrix = np.ndarray
 def lazy_couplings(paths_overlaps: List, path_hdf5: str, project_name: str,
                    enumerate_from: int, dt: float) -> List:
     """
-    :parameter dt: dynamic integration time
-    :type      dt: Float (Femtoseconds)
+    Compute the Nonadibatic coupling using a 3 point approximation
     """
     # time in atomic units
     dt_au = dt * femtosec2au
@@ -41,11 +42,14 @@ def lazy_couplings(paths_overlaps: List, path_hdf5: str, project_name: str,
     overlaps = np.stack([retrieve_hdf5_data(path_hdf5, ps)
                          for ps in concat_paths])
 
+    # Compoute the unavoided crossing bet
+    crossing_indexes = compute_the_min_cost_sum(overlaps)
+
     # Number of couplings to compute
     nCouplings = overlaps.shape[0] // 2 - 1
 
     # Compute all the phases
-    mtx_phases = compute_phases(overlaps, nCouplings, dim)
+    mtx_phases = compute_phases(overlaps, crossing_indexes, nCouplings, dim)
 
     # Compute the couplings using the four matrices previously calculated
     # Together with the phases
@@ -65,6 +69,7 @@ def lazy_couplings(paths_overlaps: List, path_hdf5: str, project_name: str,
             print("Computing coupling: ", path)
             # Tensor containing the overlaps
             j = 2 * i
+            raise(RuntimeError("FIXME"))
             ps = overlaps[j: j + 4, :, :]
             # Correct the Phase of the Molecular orbitals
             fixed_phase_overlaps = correct_phases(
@@ -79,10 +84,11 @@ def lazy_couplings(paths_overlaps: List, path_hdf5: str, project_name: str,
 
         paths_couplings.append(path)
 
-    return paths_couplings
+    return crossing_indexes, paths_couplings
 
 
-def compute_phases(overlaps: List, nCouplings: int, dim: int) -> Matrix:
+def compute_phases(overlaps: Tensor3D, crossing_indexes: Matrix, nCouplings: int,
+                   dim: int) -> Matrix:
     """
     Compute the phase of the state_i at time t + dt, using the following
     equation:
@@ -97,12 +103,36 @@ def compute_phases(overlaps: List, nCouplings: int, dim: int) -> Matrix:
 
     # Compute the phases at times t + dt using the phases at time t
     for i in range(nCouplings + 1):
-        Sji_t = overlaps[2 * i, :, :].reshape(dim, dim)
+        Sji_t = overlaps[2 * i, crossing_indexes[i]].reshape(dim, dim)
         phases = np.sign(np.diag(Sji_t)) * references
         mtx_phases[i + 1] = phases
         references = phases
 
     return mtx_phases
+
+
+def compute_the_min_cost_sum(overlaps: Tensor3D) -> Matrix:
+    """
+    Track the index of the states if there is a crossing using the algorithm
+    at J. Chem. Phys. 137, 014512 (2012); doi: 10.1063/1.4732536.
+    """
+    # take only one of the two available overlap matrices at time t (Sij and Sji)
+    overlaps = overlaps[0:-1:2]
+
+    # Apply algorithm
+    cost_tensor = np.negative(overlaps ** 2)
+
+    # Indices
+    nFrames, nOrbitals, _ = overlaps.shape
+    indexes = np.arange((nFrames + 1, nOrbitals), dtype=np.int)
+
+    # At time 0 the indexes do not change
+    indexes[0] = np.arange(nOrbitals, dtype=np.int)
+    
+    for k in range(nFrames):
+        indexes[k + 1] = linear_sum_assignment(cost_tensor[k])
+
+    return indexes
 
 
 def lazy_overlaps(i: int, project_name: str, path_hdf5: str, dictCGFs: Dict,

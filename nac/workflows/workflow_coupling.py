@@ -7,8 +7,8 @@ from noodles import (gather, schedule)
 
 from nac.common import change_mol_units
 from nac.schedule.components import calculate_mos
-from nac.schedule.scheduleCoupling import (lazy_overlaps, lazy_couplings,
-                                           write_hamiltonians)
+from nac.schedule.scheduleCoupling import (
+    lazy_overlaps, lazy_couplings, write_hamiltonians)
 from os.path import join
 from qmworks import run
 from qmworks.parsers import parse_string_xyz
@@ -76,15 +76,15 @@ def generate_pyxaid_hamiltonians(package_name: str, project_name: str,
     # Number of Coupling points calculated with the MD trajectory
     schedule_overlaps = schedule(calculate_overlap)
 
-    promised_overlaps = schedule_overlaps(
+    crossing_indexes, promised_overlaps = schedule_overlaps(
         project_name, path_hdf5, dictCGFs, geometries, mo_paths_hdf5,
         hdf5_trans_mtx, enumerate_from, nHOMO=nHOMO,
         couplings_range=couplings_range)
 
     # Compute the Couplings
     schedule_couplings = schedule(lazy_couplings)
-    promised_couplings = schedule_couplings(promised_overlaps, path_hdf5,
-                                            project_name, enumerate_from, dt)
+    promised_crossing_and_couplings = schedule_couplings(
+        promised_overlaps, path_hdf5, project_name, enumerate_from, dt)
 
     # Write the results in PYXAID format
     path_hamiltonians = join(work_dir, 'hamiltonians')
@@ -100,8 +100,8 @@ def generate_pyxaid_hamiltonians(package_name: str, project_name: str,
 
     # Write Hamilotians in PYXAID format
     promise_files = schedule_write_ham(
-        path_hdf5, mo_paths_hdf5, promised_couplings, nPoints,
-        path_dir_results=path_hamiltonians,
+        path_hdf5, mo_paths_hdf5, promised_crossing_and_couplings,
+        nPoints, path_dir_results=path_hamiltonians,
         enumerate_from=enumerate_from, nHOMO=nHOMO,
         couplings_range=couplings_range)
 
