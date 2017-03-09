@@ -49,17 +49,18 @@ def lazy_couplings(paths_overlaps: List, path_hdf5: str, project_name: str,
 
     # Compute the unavoided crossing using the Overlap matrix
     # and correct the swaps between Molecular Orbitals
-    crossing_indexes = compute_the_min_cost_sum(overlaps)
+    swaps = compute_the_min_cost_sum(overlaps)
 
     # Track the crossings bewtween MOs
     dim_x = overlaps.shape[0] // 2
     overlaps = np.concatenate(
-        [np.stack((swap_indexes(overlaps[2 * i], crossing_indexes[i]),
-                   swap_indexes(overlaps[2 * i + 1], crossing_indexes[i])))
+        [np.stack((swap_indexes(overlaps[2 * i], swaps[i], swaps[i + 1]),
+                   swap_indexes(overlaps[2 * i + 1], swaps[i + 1], swaps[i])))
          for i in range(dim_x)])
 
-    np.save("crossings", crossing_indexes)
-
+    np.save("crossings", swaps)
+    np.save("overlaps", overlaps)
+    
     # Number of couplings to compute
     nCouplings = overlaps.shape[0] // 2 - 1
 
@@ -72,7 +73,7 @@ def lazy_couplings(paths_overlaps: List, path_hdf5: str, project_name: str,
         i, project_name, overlaps, mtx_phases,
         path_hdf5, enumerate_from, dt_au) for i in range(nCouplings)]
 
-    return crossing_indexes, couplings
+    return swaps, couplings
 
 
 def calculate_couplings(
@@ -144,25 +145,27 @@ def compute_the_min_cost_sum(overlaps: Tensor3D) -> Matrix:
     Track the index of the states if there is a crossing using the algorithm
     at J. Chem. Phys. 137, 014512 (2012); doi: 10.1063/1.4732536.
     """
+    # 3D array containing the costs
+    # Notice that the cost is compute on half of the overlap matrices
+    # correspoding to Sji_t, the other half corresponds to Sij_t
+    tensor_cost = np.negative(overlaps[0:-1:2] ** 2)
+
     # Indices
-    nOverlaps, nOrbitals, _ = overlaps.shape
+    dim_x, nOrbitals, _ = tensor_cost.shape
 
     # There are 2 Overlap matrices at each time t
-    dim_x  = nOverlaps // 2
     references = np.arange(nOrbitals, dtype=np.int)
 
     # Indexes taking into account the crossing
     indexes = np.empty((dim_x + 1, nOrbitals), dtype=np.int)
     indexes[0] = references
 
+    print("Tensor shape", tensor_cost.shape)
+
     # Track the crossing using the overlap matrices
     for k in range(dim_x):
-        j = 2 * k
-        cost = np.negative(overlaps[j] ** 2)
-        swaps = linear_sum_assignment(cost)[1]
-        deltas = swaps - references
-        indexes[k + 1] = references + deltas
-        references += deltas
+        cost = tensor_cost[k]
+        indexes[k + 1] = linear_sum_assignment(cost)[1]
 
     return indexes
 
@@ -244,7 +247,7 @@ def write_hamiltonians(path_hdf5: str, mo_paths: List,
     http://pubs.acs.org/doi/abs/10.1021/ct400641n
     **Units are: Rydbergs**.
     """
-    crossing_indexes, path_couplings = crossing_and_couplings
+    swaps, path_couplings = crossing_and_couplings
 
     def write_pyxaid_format(arr, fileName):
         np.savetxt(fileName, arr, fmt='%10.5e', delimiter='  ')
@@ -260,7 +263,7 @@ def write_hamiltonians(path_hdf5: str, mo_paths: List,
         energies = retrieve_hdf5_data(path_hdf5, mo_paths[i + 1][0])
 
         # Swap the energies of the states that are crossing
-        energies = energies[crossing_indexes[i]]
+        energies = energies[swaps[i]]
 
         # Print Energies in the range given by the user
         if all(x is not None for x in [nHOMO, couplings_range]):
@@ -286,24 +289,22 @@ def write_hamiltonians(path_hdf5: str, mo_paths: List,
     return [write_data(i) for i in range(nPoints)]
 
 
-def swap_indexes(arr: Matrix, indexes: Vector) -> Matrix:
+def swap_indexes(arr: Matrix, swaps_t0: Vector, swaps_t1) -> Matrix:
     """
-    Swap the index of row i to j following the order given by indexes
-    taken from the min_cost algorithm.
+    Swap the index i corresponding to the ith Molecular orbital
+    with the corresponding swap at time t0.
+    Repeat the same procedure with the index and swap at time t1.
+    The swaps are compute with the linear sum assignment algorithm from Scipy.
     https://docs.scipy.org/doc/scipy-0.18.1/reference/generated/scipy.optimize.linear_sum_assignment.html
     """
     dim = arr.shape[0]
-    permutations = np.stack((np.arange(dim), indexes), axis=1)
 
     # New Matrix where the matrix elements have been swap according
     # to the states
     brr = np.empty((dim, dim))
 
-    # Switch the index i -> j
-    for i, j in permutations:
-        if i == j:
-            brr[i] = arr[i]
-        else:
-            brr[i] = arr[(np.repeat(j, dim), indexes)]
+    for k in range(dim):
+        indexes = np.repeat(swaps_t0[k], dim), swaps_t1
+        brr[k] = arr[indexes]
 
     return brr
