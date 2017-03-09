@@ -1,4 +1,4 @@
-__author__ = "Felipe Zapata"
+_author__ = "Felipe Zapata"
 
 # ================> Python Standard  and third-party <==========
 # from multipoleObaraSaika import sab_unfolded
@@ -14,9 +14,11 @@ import numpy as np
 # Numpy type hints
 Vector = np.ndarray
 Matrix = np.ndarray
-
+Tensor3D = np.ndarray
 
 # =====================================<>======================================
+
+
 def calculateCoupling3Points(
         dt,
         mtx_sji_t0, mtx_sij_t0, mtx_sji_t1, mtx_sij_t1):
@@ -29,13 +31,14 @@ def calculateCoupling3Points(
     return cte * (3 * (mtx_sji_t1 - mtx_sij_t1) + (mtx_sij_t0 - mtx_sji_t0))
 
 
-def correct_phases(overlaps, mtx_phases, dim):
+def correct_phases(overlaps: Tensor3D, mtx_phases: Matrix) -> List:
     """
     Correct the phases of the overlap matrices
     """
+    dim = overlaps.shape[1]
     # Reshape phases vector to matrix
     phases_t0, phases_t1, phases_t2 = [
-        mtx_phases[i, :].reshape(dim, 1) for i in range(3)]
+        mtx_phases[i].reshape(dim, 1) for i in range(3)]
 
     # Matrices containing the phases resulting from multipling
     # the phases of state_i * state_j
@@ -44,7 +47,7 @@ def correct_phases(overlaps, mtx_phases, dim):
     mtx_phases_Sij_t1_t0 = np.transpose(mtx_phases_Sji_t0_t1)
     mtx_phases_Sij_t2_t1 = np.transpose(mtx_phases_Sji_t1_t2)
 
-    return [overlaps[i, :, :].reshape(dim, dim) * phases for i, phases in
+    return [overlaps[i] * phases for i, phases in
             enumerate([mtx_phases_Sji_t0_t1, mtx_phases_Sij_t1_t0,
                        mtx_phases_Sji_t1_t2, mtx_phases_Sij_t2_t1])]
 

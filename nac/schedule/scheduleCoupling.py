@@ -28,7 +28,12 @@ Tensor3D = np.ndarray
 def lazy_couplings(paths_overlaps: List, path_hdf5: str, project_name: str,
                    enumerate_from: int, dt: float) -> List:
     """
-    Compute the Nonadibatic coupling using a 3 point approximation
+    Compute the Nonadibatic coupling using a 3 point approximation. See:
+    The Journal of Chemical Physics 137, 22A514 (2012); doi: 10.1063/1.4738960
+
+    Notice that the states can cross frequently due to unavoided crossing and
+    such crossing must be track. see:
+    J. Chem. Phys. 137, 014512 (2012); doi: 10.1063/1.4732536
     """
     # time in atomic units
     dt_au = dt * femtosec2au
@@ -42,52 +47,73 @@ def lazy_couplings(paths_overlaps: List, path_hdf5: str, project_name: str,
     overlaps = np.stack([retrieve_hdf5_data(path_hdf5, ps)
                          for ps in concat_paths])
 
-    # Compoute the unavoided crossing bet
+    # Compute the unavoided crossing using the Overlap matrix
+    # and correct the swaps between Molecular Orbitals
     crossing_indexes = compute_the_min_cost_sum(overlaps)
+
+    # Track the crossings bewtween MOs
+    dim_x = overlaps.shape[0] // 2
+    overlaps = np.concatenate(
+        [np.stack((swap_indexes(overlaps[2 * i], crossing_indexes[i]),
+                   swap_indexes(overlaps[2 * i + 1], crossing_indexes[i])))
+         for i in range(dim_x)])
+
+    np.save("crossings", crossing_indexes)
 
     # Number of couplings to compute
     nCouplings = overlaps.shape[0] // 2 - 1
 
-    # Compute all the phases
-    mtx_phases = compute_phases(overlaps, crossing_indexes, nCouplings, dim)
+    # Compute all the phases taking into account the unavoided crossings
+    mtx_phases = compute_phases(overlaps, nCouplings, dim)
 
     # Compute the couplings using the four matrices previously calculated
     # Together with the phases
-    paths_couplings = []
+    couplings = [calculate_couplings(
+        i, project_name, overlaps, mtx_phases,
+        path_hdf5, enumerate_from, dt_au) for i in range(nCouplings)]
 
-    for i in range(nCouplings):
-        # Path were the couplinp is store
-        k = i + enumerate_from
-        path = join(project_name, 'coupling_{}'.format(k))
+    return crossing_indexes, couplings
+
+
+def calculate_couplings(
+        i: int, project_name: str, overlaps: Tensor3D,
+        mtx_phases: Matrix, path_hdf5: str,
+        enumerate_from: int, dt_au: float) -> str:
+    """
+    Search for thr ith Coupling in the HDF5 if is not available compute it
+    using the 3 points approximation.
+    """
+    # Path were the couplinp is store
+    k = i + enumerate_from
+    path = join(project_name, 'coupling_{}'.format(k))
+    with h5py.File(path_hdf5, 'r+') as f5:
+        is_done  = path in f5
+
+    # Skip the computation if the coupling is already done
+    if is_done:
+        print("Coupling: ", path, " has already been calculated")
+        return path
+    else:
+        print("Computing coupling: ", path)
+        # Extract the 4 overlap matrices involved in the coupling computation
+        j = 2 * i
+        ps = overlaps[j: j + 4]
+
+        # Correct the Phase of the Molecular orbitals
+        fixed_phase_overlaps = correct_phases(ps, mtx_phases[i: i + 3])
+
+        # Compute the couplings with the phase corrected overlaps
+        couplings = calculateCoupling3Points(dt_au, *fixed_phase_overlaps)
+
+        # Store the Coupling in the HDF5
         with h5py.File(path_hdf5, 'r+') as f5:
-            is_done  = path in f5
+            store = StoreasHDF5(f5, 'cp2k')
+            store.funHDF5(path, couplings)
 
-        # Skip the computation if the coupling is already done
-        if is_done:
-            print("Coupling: ", path, " has already been calculated")
-        else:
-            print("Computing coupling: ", path)
-            # Tensor containing the overlaps
-            j = 2 * i
-            raise(RuntimeError("FIXME"))
-            ps = overlaps[j: j + 4, :, :]
-            # Correct the Phase of the Molecular orbitals
-            fixed_phase_overlaps = correct_phases(
-                ps, mtx_phases[i: i + 3, :], dim)
-
-            # Compute the couplings with the phase corrected overlaps
-            couplings = calculateCoupling3Points(dt_au, *fixed_phase_overlaps)
-
-            with h5py.File(path_hdf5, 'r+') as f5:
-                store = StoreasHDF5(f5, 'cp2k')
-                store.funHDF5(path, couplings)
-
-        paths_couplings.append(path)
-
-    return crossing_indexes, paths_couplings
+        return path
 
 
-def compute_phases(overlaps: Tensor3D, crossing_indexes: Matrix, nCouplings: int,
+def compute_phases(overlaps: Tensor3D, nCouplings: int,
                    dim: int) -> Matrix:
     """
     Compute the phase of the state_i at time t + dt, using the following
@@ -103,7 +129,9 @@ def compute_phases(overlaps: Tensor3D, crossing_indexes: Matrix, nCouplings: int
 
     # Compute the phases at times t + dt using the phases at time t
     for i in range(nCouplings + 1):
-        Sji_t = overlaps[2 * i, crossing_indexes[i]].reshape(dim, dim)
+        Sji_t = overlaps[2 * i].reshape(dim, dim)
+
+        # Compute the phase at time t
         phases = np.sign(np.diag(Sji_t)) * references
         mtx_phases[i + 1] = phases
         references = phases
@@ -116,21 +144,25 @@ def compute_the_min_cost_sum(overlaps: Tensor3D) -> Matrix:
     Track the index of the states if there is a crossing using the algorithm
     at J. Chem. Phys. 137, 014512 (2012); doi: 10.1063/1.4732536.
     """
-    # take only one of the two available overlap matrices at time t (Sij and Sji)
-    overlaps = overlaps[0:-1:2]
-
-    # Apply algorithm
-    cost_tensor = np.negative(overlaps ** 2)
-
     # Indices
-    nFrames, nOrbitals, _ = overlaps.shape
-    indexes = np.arange((nFrames + 1, nOrbitals), dtype=np.int)
+    nOverlaps, nOrbitals, _ = overlaps.shape
 
-    # At time 0 the indexes do not change
-    indexes[0] = np.arange(nOrbitals, dtype=np.int)
-    
-    for k in range(nFrames):
-        indexes[k + 1] = linear_sum_assignment(cost_tensor[k])
+    # There are 2 Overlap matrices at each time t
+    dim_x  = nOverlaps // 2
+    references = np.arange(nOrbitals, dtype=np.int)
+
+    # Indexes taking into account the crossing
+    indexes = np.empty((dim_x + 1, nOrbitals), dtype=np.int)
+    indexes[0] = references
+
+    # Track the crossing using the overlap matrices
+    for k in range(dim_x):
+        j = 2 * k
+        cost = np.negative(overlaps[j] ** 2)
+        swaps = linear_sum_assignment(cost)[1]
+        deltas = swaps - references
+        indexes[k + 1] = references + deltas
+        references += deltas
 
     return indexes
 
@@ -201,7 +233,8 @@ def lazy_overlaps(i: int, project_name: str, path_hdf5: str, dictCGFs: Dict,
     return overlaps_paths_hdf5
 
 
-def write_hamiltonians(path_hdf5: str, mo_paths: List, path_couplings: List,
+def write_hamiltonians(path_hdf5: str, mo_paths: List,
+                       crossing_and_couplings: Tuple,
                        nPoints: int, path_dir_results: str=None,
                        enumerate_from: int=0, nHOMO: int=None,
                        couplings_range: Tuple=None) -> None:
@@ -211,17 +244,25 @@ def write_hamiltonians(path_hdf5: str, mo_paths: List, path_couplings: List,
     http://pubs.acs.org/doi/abs/10.1021/ct400641n
     **Units are: Rydbergs**.
     """
+    crossing_indexes, path_couplings = crossing_and_couplings
+
     def write_pyxaid_format(arr, fileName):
         np.savetxt(fileName, arr, fmt='%10.5e', delimiter='  ')
 
-    ham_files = []
-    for i in range(nPoints):
+    def write_data(i):
         j = i + enumerate_from
         path_coupling = path_couplings[i]
         css = retrieve_hdf5_data(path_hdf5, path_coupling)
 
-        # Extract the energy values
-        energies = retrieve_hdf5_data(path_hdf5, mo_paths[i][0])
+        # Extract the energy values at time t
+        # The first coupling is compute at time t + dt
+        # Then I'm shifting the energies dt to get the correct value
+        energies = retrieve_hdf5_data(path_hdf5, mo_paths[i + 1][0])
+
+        # Swap the energies of the states that are crossing
+        energies = energies[crossing_indexes[i]]
+
+        # Print Energies in the range given by the user
         if all(x is not None for x in [nHOMO, couplings_range]):
             lowest = nHOMO - couplings_range[0]
             highest = nHOMO + couplings_range[1]
@@ -237,6 +278,32 @@ def write_hamiltonians(path_hdf5: str, mo_paths: List, path_couplings: List,
 
         write_pyxaid_format(ham_im, file_ham_im)
         write_pyxaid_format(ham_re, file_ham_re)
-        ham_files.append((file_ham_im, file_ham_re))
 
-    return ham_files
+        return (file_ham_im, file_ham_re)
+
+    # The couplings are compute at time t + dt therefore
+    # we associate the energies at time t + dt with the corresponding coupling
+    return [write_data(i) for i in range(nPoints)]
+
+
+def swap_indexes(arr: Matrix, indexes: Vector) -> Matrix:
+    """
+    Swap the index of row i to j following the order given by indexes
+    taken from the min_cost algorithm.
+    https://docs.scipy.org/doc/scipy-0.18.1/reference/generated/scipy.optimize.linear_sum_assignment.html
+    """
+    dim = arr.shape[0]
+    permutations = np.stack((np.arange(dim), indexes), axis=1)
+
+    # New Matrix where the matrix elements have been swap according
+    # to the states
+    brr = np.empty((dim, dim))
+
+    # Switch the index i -> j
+    for i, j in permutations:
+        if i == j:
+            brr[i] = arr[i]
+        else:
+            brr[i] = arr[(np.repeat(j, dim), indexes)]
+
+    return brr

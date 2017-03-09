@@ -22,17 +22,18 @@ from typing import (Dict, List, Tuple)
 # ==============================> Main <==================================
 
 
-def generate_pyxaid_hamiltonians(package_name: str, project_name: str,
-                                 cp2k_args: Dict, guess_args: Dict=None,
-                                 path: str=None, geometries: List=None,
-                                 dictCGFs: Dict=None,
-                                 calc_new_wf_guess_on_points: str=None,
-                                 path_hdf5: str=None, enumerate_from: int=0,
-                                 package_config: Dict=None, dt: float=1,
-                                 traj_folders: List=None, work_dir: str=None,
-                                 basisname: str=None, hdf5_trans_mtx: str=None,
-                                 nHOMO: int=None,
-                                 couplings_range: Tuple=None) -> None:
+def generate_pyxaid_hamiltonians(
+        package_name: str, project_name: str,
+        cp2k_args: Dict, guess_args: Dict=None,
+        geometries: List=None,
+        dictCGFs: Dict=None,
+        calc_new_wf_guess_on_points: str=None,
+        path_hdf5: str=None, enumerate_from: int=0,
+        package_config: Dict=None, dt: float=1,
+        traj_folders: List=None, work_dir: str=None,
+        basisname: str=None, hdf5_trans_mtx: str=None,
+        nHOMO: int=None,
+        couplings_range: Tuple=None) -> None:
     """
     Use a md trajectory to generate the hamiltonian components to tun PYXAID
     nmad.
@@ -66,17 +67,18 @@ def generate_pyxaid_hamiltonians(package_name: str, project_name: str,
     """
     # prepare Cp2k Jobs
     # Point calculations Using CP2K
-    mo_paths_hdf5 = calculate_mos(package_name, geometries, project_name,
-                                  path_hdf5, traj_folders, cp2k_args,
-                                  guess_args, calc_new_wf_guess_on_points,
-                                  enumerate_from,
-                                  package_config=package_config)
+    mo_paths_hdf5 = calculate_mos(
+        package_name, geometries, project_name,
+        path_hdf5, traj_folders, cp2k_args,
+        guess_args, calc_new_wf_guess_on_points,
+        enumerate_from,
+        package_config=package_config)
 
     # Calculate Non-Adiabatic Coupling
     # Number of Coupling points calculated with the MD trajectory
     schedule_overlaps = schedule(calculate_overlap)
 
-    crossing_indexes, promised_overlaps = schedule_overlaps(
+    promised_overlaps = schedule_overlaps(
         project_name, path_hdf5, dictCGFs, geometries, mo_paths_hdf5,
         hdf5_trans_mtx, enumerate_from, nHOMO=nHOMO,
         couplings_range=couplings_range)
@@ -105,7 +107,7 @@ def generate_pyxaid_hamiltonians(package_name: str, project_name: str,
         enumerate_from=enumerate_from, nHOMO=nHOMO,
         couplings_range=couplings_range)
 
-    run(promise_files, folder=path)
+    run(promise_files, folder=work_dir)
 
     remove_folders(traj_folders)
 
