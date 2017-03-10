@@ -9,6 +9,7 @@ from noodles import (gather, schedule)
 from os.path import join
 
 import h5py
+import logging
 import os
 
 # ==================> Internal modules <==========
@@ -24,6 +25,8 @@ from qmworks.utils import chunksOf
 # Tuple contanining file paths
 JobFiles = namedtuple("JobFiles", ("get_xyz", "get_inp", "get_out", "get_MO"))
 
+# Starting logger
+logger = logging.getLogger(__name__)
 # ==============================> Tasks <=====================================
 
 
@@ -100,14 +103,14 @@ def calculate_mos(package_name, all_geometries, project_name, path_hdf5,
         k = j + enumerate_from
         hdf5_orb_path = create_properties_path(k)
         point_str = 'point_{}'.format(k)
-        print("Computing Molecular orbitals of: ", point_str)
+
         # If the MOs are already store in the HDF5 format return the path
         # to them and skip the calculation
-
         if search_data_in_hdf5(hdf5_orb_path):
-            print(point_str, " has already been calculated")
+            logger.info("{} has already been calculated".format(point_str))
             orbitals.append(hdf5_orb_path)
         else:
+            logger.info("Computing Molecular orbitals of: {}".format(point_str))
             point_dir = folders[j]
             job_files = create_file_names(point_dir, k)
             # A job  is a restart if guess_job is None and the list of
@@ -117,18 +120,15 @@ def calculate_mos(package_name, all_geometries, project_name, path_hdf5,
             # Calculating initial guess
             if (((calc_new_wf_guess_on_points is not None) and
                  k in calc_new_wf_guess_on_points) or is_restart):
-                guess_job = call_schedule_qm(package_name, guess_args,
-                                             point_dir, job_files, k, gs,
-                                             project_name=project_name,
-                                             guess_job=guess_job,
-                                             package_config=package_config)
+                guess_job = call_schedule_qm(
+                    package_name, guess_args, point_dir, job_files, k, gs,
+                    project_name=project_name, guess_job=guess_job,
+                    package_config=package_config)
 
-            promise_qm = call_schedule_qm(package_name, package_args,
-                                          point_dir, job_files,
-                                          k, gs,
-                                          project_name=project_name,
-                                          guess_job=guess_job,
-                                          package_config=package_config)
+            promise_qm = call_schedule_qm(
+                package_name, package_args, point_dir, job_files,
+                k, gs, project_name=project_name, guess_job=guess_job,
+                package_config=package_config)
             job_name = 'point_{}'.format(k)
             xs = store_in_hdf5(promise_qm.orbitals, hdf5_orb_path, job_name)
             orbitals.append(xs)
@@ -161,11 +161,10 @@ def call_schedule_qm(packageName, package_args, point_dir, job_files, k,
     """
     prepare_and_schedule = {'cp2k': prepare_job_cp2k}
 
-    job = prepare_and_schedule[packageName](geometry, job_files, package_args,
-                                            k, point_dir,
-                                            project_name=project_name,
-                                            wfn_restart_job=guess_job,
-                                            package_config=package_config)
+    job = prepare_and_schedule[packageName](
+        geometry, job_files, package_args,
+        k, point_dir, project_name=project_name,
+        wfn_restart_job=guess_job, package_config=package_config)
 
     return job
 

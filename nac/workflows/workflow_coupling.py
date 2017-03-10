@@ -12,6 +12,8 @@ from nac.schedule.scheduleCoupling import (
 from os.path import join
 from qmworks import run
 from qmworks.parsers import parse_string_xyz
+
+import logging
 import os
 import shutil
 
@@ -24,9 +26,8 @@ from typing import (Dict, List, Tuple)
 
 def generate_pyxaid_hamiltonians(
         package_name: str, project_name: str,
-        cp2k_args: Dict, guess_args: Dict=None,
-        geometries: List=None,
-        dictCGFs: Dict=None,
+        package_args: Dict, guess_args: Dict=None,
+        geometries: List=None, dictCGFs: Dict=None,
         calc_new_wf_guess_on_points: str=None,
         path_hdf5: str=None, enumerate_from: int=0,
         package_config: Dict=None, dt: float=1,
@@ -35,16 +36,14 @@ def generate_pyxaid_hamiltonians(
         nHOMO: int=None,
         couplings_range: Tuple=None) -> None:
     """
-    Use a md trajectory to generate the hamiltonian components to tun PYXAID
-    nmad.
+    Use a md trajectory to generate the hamiltonian components to run PYXAID
+    nonadiabatic molecular dynamics.
 
     :param package_name: Name of the package to run the QM simulations.
-    :type  package_name: String
     :param project_name: Folder name where the computations
     are going to be stored.
-    :type project_name: String
-    :param cp2k_args: Specific settings for CP2K
-    :type package_args: Settings
+    :param package_args: Specific Settings for the package that will compute
+    the MOs.
     :param geometries: List of string cotaining the molecular geometries
     numerical results.
     :paramter dictCGFS: Dictionary from Atomic Label to basis set
@@ -55,7 +54,6 @@ def generate_pyxaid_hamiltonians(
     create for each point in the MD.
     :param hdf5_trans_mtx: Path into the HDF5 file where the transformation
     matrix (from Cartesian to sphericals) is stored.
-    :type enumerate_from: Int
     :param dt: Time used in the dynamics (femtoseconds)
     :param package_config: Parameters required by the Package.
     :type package_config: Dict
@@ -65,19 +63,25 @@ def generate_pyxaid_hamiltonians(
 
     :returns: None
     """
+    # Start logging event
+    file_log = '{}.log'.format(project_name)
+    logging.basicConfig(filename=file_log, level=logging.WARNING,
+                        format='%(levelname)s:%(message)s  %(asctime)s\n',
+                        datefmt='%m/%d/%Y %I:%M:%S %p')
+
     # prepare Cp2k Jobs
     # Point calculations Using CP2K
     mo_paths_hdf5 = calculate_mos(
-        package_name, geometries, project_name,
-        path_hdf5, traj_folders, cp2k_args,
-        guess_args, calc_new_wf_guess_on_points,
-        enumerate_from,
-        package_config=package_config)
+        package_name, geometries, project_name, path_hdf5, traj_folders,
+        package_args, guess_args, calc_new_wf_guess_on_points,
+        enumerate_from, package_config=package_config)
+
+    # Inplace scheduling of calculate_overlap function
+    # Equivalent to add @schedule on top of the function
+    schedule_overlaps = schedule(calculate_overlap)
 
     # Calculate Non-Adiabatic Coupling
     # Number of Coupling points calculated with the MD trajectory
-    schedule_overlaps = schedule(calculate_overlap)
-
     promised_overlaps = schedule_overlaps(
         project_name, path_hdf5, dictCGFs, geometries, mo_paths_hdf5,
         hdf5_trans_mtx, enumerate_from, nHOMO=nHOMO,

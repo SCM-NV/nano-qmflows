@@ -6,6 +6,7 @@ from os.path import join
 from scipy.optimize import linear_sum_assignment
 
 import h5py
+import logging
 import numpy as np
 # ==================> Internal modules <==========
 from nac.integrals import (calculateCoupling3Points,
@@ -21,6 +22,9 @@ from typing import (Dict, List, Tuple)
 Vector = np.ndarray
 Matrix = np.ndarray
 Tensor3D = np.ndarray
+
+# Starting logger
+logger = logging.getLogger(__name__)
 
 # ==============================> Schedule Tasks <=============================
 
@@ -47,25 +51,41 @@ def lazy_couplings(paths_overlaps: List, path_hdf5: str, project_name: str,
     overlaps = np.stack([retrieve_hdf5_data(path_hdf5, ps)
                          for ps in concat_paths])
 
-    # Compute the unavoided crossing using the Overlap matrix
-    # and correct the swaps between Molecular Orbitals
-    swaps = compute_the_min_cost_sum(overlaps)
-
-    # Track the crossings bewtween MOs
-    dim_x = overlaps.shape[0] // 2
-    overlaps = np.concatenate(
-        [np.stack((swap_indexes(overlaps[2 * i], swaps[i], swaps[i + 1]),
-                   swap_indexes(overlaps[2 * i + 1], swaps[i + 1], swaps[i])))
-         for i in range(dim_x)])
-
-    np.save("crossings", swaps)
-    np.save("overlaps", overlaps)
-    
     # Number of couplings to compute
     nCouplings = overlaps.shape[0] // 2 - 1
 
-    # Compute all the phases taking into account the unavoided crossings
     mtx_phases = compute_phases(overlaps, nCouplings, dim)
+
+    arr = np.stack([correct_phases(overlaps[2 * i: 2 * i + 4], mtx_phases[i: i + 3])
+                    for i in range(nCouplings)])
+    
+    np.save('phases_before', arr)
+
+    # Compute the unavoided crossing using the Overlap matrix
+    # and correct the swaps between Molecular Orbitals
+    logger.debug("Computing the Unavoided crossings")
+    swaps = compute_the_min_cost_sum(overlaps)
+
+    # Track the crossings bewtween MOs
+    logger.debug("Tracking the crossings between MOs")
+
+    # Tracking the unavoided crossings
+    dim_x = overlaps.shape[0] // 2
+    overlaps = np.concatenate(
+        [np.stack((swap_indexes(overlaps[2 * i], swaps[0], swaps[i + 1]),
+                   swap_indexes(overlaps[2 * i + 1], swaps[i + 1], swaps[0])))
+         for i in range(dim_x)])
+
+    validate_crossings(overlaps)
+
+    # Compute all the phases taking into account the unavoided crossings
+    logger.debug("Computing the phases of the MOs")
+    mtx_phases = compute_phases(overlaps, nCouplings, dim)
+
+    brr = np.stack([correct_phases(overlaps[2 * i: 2 * i + 4], mtx_phases[i: i + 3])
+                    for i in range(nCouplings)])
+
+    np.save('phases_after', brr)
 
     # Compute the couplings using the four matrices previously calculated
     # Together with the phases
@@ -81,7 +101,7 @@ def calculate_couplings(
         mtx_phases: Matrix, path_hdf5: str,
         enumerate_from: int, dt_au: float) -> str:
     """
-    Search for thr ith Coupling in the HDF5 if is not available compute it
+    Search for the ith Coupling in the HDF5, if it is not available compute it
     using the 3 points approximation.
     """
     # Path were the couplinp is store
@@ -92,10 +112,10 @@ def calculate_couplings(
 
     # Skip the computation if the coupling is already done
     if is_done:
-        print("Coupling: ", path, " has already been calculated")
+        logger.info("Coupling: {} has already been calculated".format(path))
         return path
     else:
-        print("Computing coupling: ", path)
+        logger.info("Computing coupling: {}".format(path))
         # Extract the 4 overlap matrices involved in the coupling computation
         j = 2 * i
         ps = overlaps[j: j + 4]
@@ -148,10 +168,11 @@ def compute_the_min_cost_sum(overlaps: Tensor3D) -> Matrix:
     # 3D array containing the costs
     # Notice that the cost is compute on half of the overlap matrices
     # correspoding to Sji_t, the other half corresponds to Sij_t
-    tensor_cost = np.negative(overlaps[0:-1:2] ** 2)
+    overlaps = overlaps[0:-1:2]
+    tensor_cost = np.negative(overlaps ** 2)
 
     # Indices
-    dim_x, nOrbitals, _ = tensor_cost.shape
+    dim_x, nOrbitals, _ = overlaps.shape
 
     # There are 2 Overlap matrices at each time t
     references = np.arange(nOrbitals, dtype=np.int)
@@ -160,14 +181,42 @@ def compute_the_min_cost_sum(overlaps: Tensor3D) -> Matrix:
     indexes = np.empty((dim_x + 1, nOrbitals), dtype=np.int)
     indexes[0] = references
 
-    print("Tensor shape", tensor_cost.shape)
-
     # Track the crossing using the overlap matrices
+    acc = references
     for k in range(dim_x):
-        cost = tensor_cost[k]
-        indexes[k + 1] = linear_sum_assignment(cost)[1]
+        # Compute the swap at time t + dt
+        swaps = linear_sum_assignment(tensor_cost[k])[1]
+        deltas = swaps - references
+        acc += deltas
 
+        # Matrix containing the swaps
+        indexes[k + 1] = acc
+
+    # return indexes
     return indexes
+
+
+def correct_crossings(mtx_Sji: Matrix, mtx_Sij: Matrix,
+                      references: Vector, acc: Vector) -> Tuple:
+    """
+    Correct the indexes bewteen the molecular orbitals that are crossing
+    in two phases: first at time t using the previous swap then at time
+    t + dt using the new computed swaps.
+    """
+    # Correct the indexes at time t
+    mtx_Sji = swap_indexes(mtx_Sji, acc, references)
+    mtx_Sij = swap_indexes(mtx_Sij, acc, references)
+
+    # Compute the swap at time t + dt
+    swaps = linear_sum_assignment(mtx_Sji)[1]
+    deltas = swaps - references
+    acc += deltas
+
+    # Correct the indexes at time t + dt
+    mtx_Sji = swap_indexes(mtx_Sji, references, acc)
+    mtx_Sij = swap_indexes(mtx_Sij, references, acc)
+
+    return mtx_Sji, mtx_Sij, acc
 
 
 def lazy_overlaps(i: int, project_name: str, path_hdf5: str, dictCGFs: Dict,
@@ -214,10 +263,10 @@ def lazy_overlaps(i: int, project_name: str, path_hdf5: str, dictCGFs: Dict,
 
     # If the Overlaps are not in the HDF5 file compute them
     if is_done:
-        print(overlaps_paths_hdf5, " Overlaps are already in the HDF5")
+        logger.info("{} Overlaps are already in the HDF5".format(root))
     else:
         # Read the Molecular orbitals from the HDF5
-        print("Computing: ", root)
+        logger.info("Computing: {}".format(root))
 
         # Paths to the MOs inside the HDF5
         hdf5_mos_path = [mo_paths[i + j][1] for j in range(2)]
@@ -289,7 +338,7 @@ def write_hamiltonians(path_hdf5: str, mo_paths: List,
     return [write_data(i) for i in range(nPoints)]
 
 
-def swap_indexes(arr: Matrix, swaps_t0: Vector, swaps_t1) -> Matrix:
+def swap_indexes(arr: Matrix, swaps_t0: Vector, swaps_t1: Vector) -> Matrix:
     """
     Swap the index i corresponding to the ith Molecular orbital
     with the corresponding swap at time t0.
@@ -308,3 +357,17 @@ def swap_indexes(arr: Matrix, swaps_t0: Vector, swaps_t1) -> Matrix:
         brr[k] = arr[indexes]
 
     return brr
+
+
+def validate_crossings(overlaps: Matrix) -> None:
+    """
+    Warn the user about crossings that do not have physical meaning
+    or points entering/leaving the active space.
+    """
+    for k, mtx in enumerate(overlaps[1:-1:2]):
+        diag = np.abs(np.diag(mtx))
+        indexes = np.argwhere(diag < 0.5).flatten()
+        if indexes.size != 0:
+            msg = " the following MOs has a overlap Sii < 0.5: {}\
+            at time {}".format(indexes, k)
+            logger.warning(msg)
