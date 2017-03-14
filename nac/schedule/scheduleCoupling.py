@@ -58,7 +58,7 @@ def lazy_couplings(paths_overlaps: List, path_hdf5: str, project_name: str,
 
     arr = np.stack([correct_phases(overlaps[2 * i: 2 * i + 4], mtx_phases[i: i + 3])
                     for i in range(nCouplings)])
-    
+
     np.save('phases_before', arr)
 
     # Compute the unavoided crossing using the Overlap matrix

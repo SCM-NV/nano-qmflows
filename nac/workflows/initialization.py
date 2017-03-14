@@ -36,7 +36,7 @@ def initialize(project_name, path_traj_xyz, basisname, enumerate_from=0,
     # Scratch
     if scratch_path is None:
         scratch_path = join('/tmp', username, project_name)
-        logger.warning("path to scratch was not defined, using: ".format(scratch_path))
+        logger.warning("path to scratch was not defined, using: {}".format(scratch_path))
 
     # If the directory does not exist create it
     if not os.path.exists(scratch_path):
@@ -48,7 +48,7 @@ def initialize(project_name, path_traj_xyz, basisname, enumerate_from=0,
     # HDF5 path
     if path_hdf5 is None:
         path_hdf5 = join(scratch_path, 'quantum.hdf5')
-        logger.warning("path to the HDF5 was not defined, using: ".format(path_hdf5))
+        logger.warning("path to the HDF5 was not defined, using: {}".format(path_hdf5))
 
     # all_geometries type :: [String]
     geometries = split_file_geometries(path_traj_xyz)
