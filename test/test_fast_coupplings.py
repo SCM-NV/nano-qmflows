@@ -43,8 +43,8 @@ def test_obaraSaika():
     mtx_phases = compute_phases(overlaps, 1, dim)
 
     # Correct the phases
-    tensor = overlaps[0: 4, :, :]
-    fixed_phase_overlaps = correct_phases(tensor, mtx_phases[0: 3, :], dim)
+    tensor = overlaps[0: 4]
+    fixed_phase_overlaps = correct_phases(tensor, mtx_phases[0: 3])
 
     dt_au = femtosec2au
     rs = calculateCoupling3Points(dt_au, *fixed_phase_overlaps)

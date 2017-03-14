@@ -13,8 +13,12 @@ from subprocess import (PIPE, Popen)
 import fnmatch
 import getpass
 import h5py
+import logging
 import os
 import subprocess
+
+# Starting logger
+logger = logging.getLogger(__name__)
 # ====================================<>=======================================
 
 
@@ -32,6 +36,7 @@ def initialize(project_name, path_traj_xyz, basisname, enumerate_from=0,
     # Scratch
     if scratch_path is None:
         scratch_path = join('/tmp', username, project_name)
+        logger.warning("path to scratch was not defined, using: {}".format(scratch_path))
 
     # If the directory does not exist create it
     if not os.path.exists(scratch_path):
@@ -43,6 +48,7 @@ def initialize(project_name, path_traj_xyz, basisname, enumerate_from=0,
     # HDF5 path
     if path_hdf5 is None:
         path_hdf5 = join(scratch_path, 'quantum.hdf5')
+        logger.warning("path to the HDF5 was not defined, using: {}".format(path_hdf5))
 
     # all_geometries type :: [String]
     geometries = split_file_geometries(path_traj_xyz)
@@ -55,9 +61,13 @@ def initialize(project_name, path_traj_xyz, basisname, enumerate_from=0,
     elif calculate_guesses.lower() in 'first':
         # Calculate new Guess in the first geometry
         points_guess = [enumerate_from]
+        msg = "An initial Calculation will be computed as guess for the wave function"
+        logger.info(msg)
     else:
         # Calculate new Guess in each geometry
         points_guess = [enumerate_from + i for i in range(len(geometries))]
+        msg = "A guess calculation will be done for each geometry"
+        logger.info(msg)
 
     # Generate a list of tuples containing the atomic label
     # and the coordinates to generate
