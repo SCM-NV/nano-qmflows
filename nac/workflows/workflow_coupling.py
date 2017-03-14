@@ -65,7 +65,7 @@ def generate_pyxaid_hamiltonians(
     """
     # Start logging event
     file_log = '{}.log'.format(project_name)
-    logging.basicConfig(filename=file_log, level=logging.WARNING,
+    logging.basicConfig(filename=file_log, level=logging.DEBUG,
                         format='%(levelname)s:%(message)s  %(asctime)s\n',
                         datefmt='%m/%d/%Y %I:%M:%S %p')
 
