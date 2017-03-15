@@ -113,13 +113,15 @@ def calculate_mos(package_name, all_geometries, project_name, path_hdf5,
             logger.info("Computing Molecular orbitals of: {}".format(point_str))
             point_dir = folders[j]
             job_files = create_file_names(point_dir, k)
+
+            # Calculating initial guess
+            compute_guess = calc_new_wf_guess_on_points is not None
+
             # A job  is a restart if guess_job is None and the list of
             # wf guesses are not empty
-            is_restart = bool((guess_job is None) and
-                              calc_new_wf_guess_on_points)
-            # Calculating initial guess
-            if (((calc_new_wf_guess_on_points is not None) and
-                 k in calc_new_wf_guess_on_points) or is_restart):
+            is_restart = guess_job is None and compute_guess
+
+            if (k in calc_new_wf_guess_on_points) or is_restart:
                 guess_job = call_schedule_qm(
                     package_name, guess_args, point_dir, job_files, k, gs,
                     project_name=project_name, guess_job=guess_job,
