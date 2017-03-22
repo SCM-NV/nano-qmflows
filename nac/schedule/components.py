@@ -33,7 +33,6 @@ logger = logging.getLogger(__name__)
 # ==============================> Tasks <=====================================
 
 
-@schedule
 def calculate_mos(package_name, all_geometries, project_name, path_hdf5,
                   folders, package_args, guess_args=None,
                   calc_new_wf_guess_on_points=None, enumerate_from=0,
@@ -101,15 +100,23 @@ def calculate_mos(package_name, all_geometries, project_name, path_hdf5,
             orbitals.append(hdf5_orb_path)
         else:
             logger.info("Computing Molecular orbitals of: point_{}".format(k))
-            point_dir = folders[j]
 
+            # Path to I/O files
+            point_dir = folders[j]
             # Compute the MOs and return a new guess
-            guess_job = compute_orbitals(
+            promise_qm = compute_orbitals(
                 guess_job, package_name, project_name, path_hdf5,
                 package_args, guess_args, package_config,
-                calc_new_wf_guess_on_points, point_dir, k, gs, hdf5_orb_path)
+                calc_new_wf_guess_on_points, point_dir, k, gs)
 
-            orbitals.append(hdf5_orb_path)
+            # Store the computation
+            job_name = 'point_{}'.format(k)
+            path_MOs = store_in_hdf5(project_name, path_hdf5, promise_qm.orbitals,
+                                     hdf5_orb_path, job_name)
+
+            # accumulate the MOs
+            guess_job = promise_qm
+            orbitals.append(path_MOs)
 
     return gather(*orbitals)
 
@@ -121,14 +128,14 @@ def store_in_hdf5(project_name: str, path_hdf5: str, mos: Tuple,
         with h5py.File(path_hdf5, 'r+') as f5:
             dump_to_hdf5(
                 mos, 'cp2k', f5, project_name=project_name, job_name=job_name)
+    return node_paths
+            
 
-
-@schedule
 def compute_orbitals(
         guess_job, package_name: str, project_name: str, path_hdf5: str,
         package_args: Dict, guess_args: Dict, package_config: Dict,
         calc_new_wf_guess_on_points: List,
-        point_dir: str, k: int, gs: List, hdf5_orb_path: str):
+        point_dir: str, k: int, gs: List):
     """
     Call a Quantum chemisty package to compute the MOs required to calculate
     the nonadiabatic coupling. When finish store the MOs in the HdF5 and
@@ -142,7 +149,6 @@ def compute_orbitals(
     # A job  is a restart if guess_job is None and the list of
     # wf guesses are not empty
     is_restart = guess_job is None and compute_guess
-
     if (k in calc_new_wf_guess_on_points) or is_restart:
         guess_job = call_schedule_qm(
             package_name, guess_args, point_dir, job_files, k, gs,
@@ -153,8 +159,6 @@ def compute_orbitals(
         package_name, package_args, point_dir, job_files,
         k, gs, project_name=project_name, guess_job=guess_job,
         package_config=package_config)
-    job_name = 'point_{}'.format(k)
-    store_in_hdf5(promise_qm.orbitals, hdf5_orb_path, job_name)
 
     return promise_qm
 
@@ -185,9 +189,9 @@ def call_schedule_qm(packageName, package_args, point_dir, job_files, k,
 
     job = prepare_and_schedule[packageName](
         geometry, job_files, package_args,
-        k, point_dir, project_name=project_name,
-        wfn_restart_job=guess_job, package_config=package_config)
-
+        k, point_dir, wfn_restart_job=guess_job,
+        package_config=package_config)
+    
     return job
 
 

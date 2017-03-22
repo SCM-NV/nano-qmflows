@@ -70,8 +70,7 @@ def prepare_cp2k_settings(geometry, files, cp2k_args, k, work_dir,
 
 @schedule
 def prepare_job_cp2k(geometry, files, dict_input, k, work_dir,
-                     project_name=None, wfn_restart_job=None,
-                     package_config=None):
+                     wfn_restart_job=None, package_config=None):
     """
     Fills in the parameters for running a single job in CP2K.
 
@@ -93,6 +92,5 @@ def prepare_job_cp2k(geometry, files, dict_input, k, work_dir,
     job_settings = prepare_cp2k_settings(geometry, files, dict_input, k,
                                          work_dir, wfn_restart_job,
                                          package_config)
-    project_name = project_name if project_name is not None else work_dir
 
     return cp2k(job_settings, plams.Molecule(files.get_xyz), work_dir=work_dir)
