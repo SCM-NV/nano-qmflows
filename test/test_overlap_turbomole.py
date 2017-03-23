@@ -46,7 +46,7 @@ def test_store_basisSet():
     and store in HDF5 format.
     """
     keyBasis = InputKey("basis", [path_basis])
-    with h5py.File(path_hdf5, chunks=True) as f5:
+    with h5py.File(path_hdf5) as f5:
         turbomole2hdf5(f5, [keyBasis])
         if not f5["turbomole/basis"]:
             assert False

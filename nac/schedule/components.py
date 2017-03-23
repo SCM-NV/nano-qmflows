@@ -218,7 +218,7 @@ def create_dict_CGFs(path_hdf5, basisname, xyz, package_name='cp2k',
     functions = {'cp2k': cp2k2hdf5, 'turbomole': turbomole2hdf5}
 
     basis_location = join(package_name, 'basis')
-    with h5py.File(path_hdf5, chunks=True) as f5:
+    with h5py.File(path_hdf5) as f5:
         if basis_location not in f5:
             # Search Path to the file containing the basis set
             pathBasis = package_config["basis"]
