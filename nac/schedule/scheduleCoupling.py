@@ -54,13 +54,6 @@ def lazy_couplings(paths_overlaps: List, path_hdf5: str, project_name: str,
     # Number of couplings to compute
     nCouplings = overlaps.shape[0] // 2 - 1
 
-    mtx_phases = compute_phases(overlaps, nCouplings, dim)
-
-    arr = np.stack([correct_phases(overlaps[2 * i: 2 * i + 4], mtx_phases[i: i + 3])
-                    for i in range(nCouplings)])
-
-    np.save('phases_before', arr)
-
     # Compute the unavoided crossing using the Overlap matrix
     # and correct the swaps between Molecular Orbitals
     logger.debug("Computing the Unavoided crossings")
@@ -81,11 +74,6 @@ def lazy_couplings(paths_overlaps: List, path_hdf5: str, project_name: str,
     # Compute all the phases taking into account the unavoided crossings
     logger.debug("Computing the phases of the MOs")
     mtx_phases = compute_phases(overlaps, nCouplings, dim)
-
-    brr = np.stack([correct_phases(overlaps[2 * i: 2 * i + 4], mtx_phases[i: i + 3])
-                    for i in range(nCouplings)])
-
-    np.save('phases_after', brr)
 
     # Compute the couplings using the four matrices previously calculated
     # Together with the phases
