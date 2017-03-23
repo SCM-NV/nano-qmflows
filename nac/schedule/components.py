@@ -32,7 +32,6 @@ logger = logging.getLogger(__name__)
 
 # ==============================> Tasks <=====================================
 
-
 def calculate_mos(package_name, all_geometries, project_name, path_hdf5,
                   folders, package_args, guess_args=None,
                   calc_new_wf_guess_on_points=None, enumerate_from=0,
@@ -111,7 +110,7 @@ def calculate_mos(package_name, all_geometries, project_name, path_hdf5,
 
             # Store the computation
             job_name = 'point_{}'.format(k)
-            path_MOs = store_in_hdf5(project_name, path_hdf5, promise_qm.orbitals,
+            path_MOs = store_in_hdf5(project_name, path_hdf5, promise_qm,
                                      hdf5_orb_path, job_name)
 
             # accumulate the MOs
@@ -120,10 +119,10 @@ def calculate_mos(package_name, all_geometries, project_name, path_hdf5,
 
     return gather(*orbitals)
 
-
 @schedule
-def store_in_hdf5(project_name: str, path_hdf5: str, mos: Tuple,
+def store_in_hdf5(project_name: str, path_hdf5: str, promise_qm: Tuple,
                   node_paths: str, job_name: str) -> None:
+    mos = promise_qm.orbitals
     if mos is not None:
         with h5py.File(path_hdf5, 'r+') as f5:
             dump_to_hdf5(
@@ -141,6 +140,10 @@ def compute_orbitals(
     the nonadiabatic coupling. When finish store the MOs in the HdF5 and
     returns a new guess.
     """
+    prepare_and_schedule = {'cp2k': prepare_job_cp2k}
+
+    call_schedule_qm = prepare_and_schedule[package_name]
+    
     job_files = create_file_names(point_dir, k)
 
     # Calculating initial guess
@@ -149,50 +152,21 @@ def compute_orbitals(
     # A job  is a restart if guess_job is None and the list of
     # wf guesses are not empty
     is_restart = guess_job is None and compute_guess
-    if (k in calc_new_wf_guess_on_points) or is_restart:
+
+    pred = (k in calc_new_wf_guess_on_points) or is_restart
+    
+    if pred:
         guess_job = call_schedule_qm(
-            package_name, guess_args, point_dir, job_files, k, gs,
-            project_name=project_name, guess_job=guess_job,
+            gs, job_files, guess_args,
+            k, point_dir, wfn_restart_job=guess_job,
+            package_config=package_config)
+        
+    promise_qm = call_schedule_qm(
+            gs, job_files, package_args,
+            k, point_dir, wfn_restart_job=guess_job,
             package_config=package_config)
 
-    promise_qm = call_schedule_qm(
-        package_name, package_args, point_dir, job_files,
-        k, gs, project_name=project_name, guess_job=guess_job,
-        package_config=package_config)
-
     return promise_qm
-
-
-def call_schedule_qm(packageName, package_args, point_dir, job_files, k,
-                     geometry, project_name=None, guess_job=None,
-                     package_config=None):
-    """
-    Call an external computational chemistry software to do some calculations
-
-    :param package_name: Name of the package to run the QM simulations.
-    :type  package_name: String
-    :param package_args: Specific settings for the package
-    :type package_args: Settings
-    :param point_dir: path to the directory where the output is written.
-    :type point_dir: String
-    :param job_files: Tuple containing the absolute path to IO files.
-    :type job_files: NamedTuple
-    :param k: current point being calculate in the MD
-    :type k: Int
-    :param geometry: Molecular geometry
-    :type geometry: String
-    :param package_config: Parameters required by the Package.
-    :type package_config: Dict
-    :returns: promise QMWORK
-    """
-    prepare_and_schedule = {'cp2k': prepare_job_cp2k}
-
-    job = prepare_and_schedule[packageName](
-        geometry, job_files, package_args,
-        k, point_dir, wfn_restart_job=guess_job,
-        package_config=package_config)
-    
-    return job
 
 
 def create_point_folder(work_dir, n, enumerate_from):
