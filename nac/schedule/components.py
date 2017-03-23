@@ -8,6 +8,7 @@ from collections import namedtuple
 from noodles import (gather, schedule)
 from os.path import join
 
+import fnmatch
 import h5py
 import logging
 import os
@@ -103,14 +104,21 @@ def calculate_mos(package_name, all_geometries, project_name, path_hdf5,
 
             # Path to I/O files
             point_dir = folders[j]
+            job_files = create_file_names(point_dir, k)
+            job_name = 'point_{}'.format(k)
+            
             # Compute the MOs and return a new guess
             promise_qm = compute_orbitals(
                 guess_job, package_name, project_name, path_hdf5,
                 package_args, guess_args, package_config,
-                calc_new_wf_guess_on_points, point_dir, k, gs)
+                calc_new_wf_guess_on_points, point_dir, job_files, k, gs)
 
+            # Check if the job finishes succesfully
+            promise_qm = schedule_check(
+                promise_qm, job_name, package_name, project_name, path_hdf5,
+                package_args, guess_args, package_config, point_dir, job_files, k, gs)
+            
             # Store the computation
-            job_name = 'point_{}'.format(k)
             path_MOs = store_in_hdf5(project_name, path_hdf5, promise_qm,
                                      hdf5_orb_path, job_name)
 
@@ -120,19 +128,12 @@ def calculate_mos(package_name, all_geometries, project_name, path_hdf5,
 
     return gather(*orbitals)
 
+
 @schedule
 def store_in_hdf5(project_name: str, path_hdf5: str, promise_qm: Tuple,
                   node_paths: str, job_name: str) -> None:
     #Molecular Orbitals
     mos = promise_qm.orbitals
-    # Warnings of the computation
-    warnings = promise_qm.warnings
-
-    if warnings is not None and (w == SCF_Convergence_Warning for msg, w in warnings.items()):
-        logger.warning("Job: {} Finished with Warnings: {}".format(job_name, warnings))
-        msg = "SCF did not converge in point: {}".format(job_name)
-        raise RuntimeError(msg)
-        
     if mos is not None:
         with h5py.File(path_hdf5, 'r+') as f5:
             dump_to_hdf5(
@@ -143,8 +144,8 @@ def store_in_hdf5(project_name: str, path_hdf5: str, promise_qm: Tuple,
 def compute_orbitals(
         guess_job, package_name: str, project_name: str, path_hdf5: str,
         package_args: Dict, guess_args: Dict, package_config: Dict,
-        calc_new_wf_guess_on_points: List,
-        point_dir: str, k: int, gs: List):
+        calc_new_wf_guess_on_points: List, point_dir: str, job_files: Tuple,
+        k: int, gs: List):
     """
     Call a Quantum chemisty package to compute the MOs required to calculate
     the nonadiabatic coupling. When finish store the MOs in the HdF5 and
@@ -153,8 +154,6 @@ def compute_orbitals(
     prepare_and_schedule = {'cp2k': prepare_job_cp2k}
 
     call_schedule_qm = prepare_and_schedule[package_name]
-    
-    job_files = create_file_names(point_dir, k)
 
     # Calculating initial guess
     compute_guess = calc_new_wf_guess_on_points is not None
@@ -166,6 +165,7 @@ def compute_orbitals(
     pred = (k in calc_new_wf_guess_on_points) or is_restart
     
     if pred:
+        print("Calling guess")
         guess_job = call_schedule_qm(
             gs, job_files, guess_args,
             k, point_dir, wfn_restart_job=guess_job,
@@ -175,9 +175,45 @@ def compute_orbitals(
             gs, job_files, package_args,
             k, point_dir, wfn_restart_job=guess_job,
             package_config=package_config)
-
+    
     return promise_qm
 
+@schedule
+def schedule_check(promise_qm, job_name: str, package_name: str,
+                   project_name: str, path_hdf5: str, package_args: Dict,
+                   guess_args: Dict, package_config: Dict, point_dir: str,
+                   job_files: Tuple, k: int, gs: List):
+    """
+    Check wether a calculation finishes succesfully otherwise run a new guess.
+    """
+    # Warnings of the computation
+    warnings = promise_qm.warnings
+
+    # Check for SCF convergence errors
+    if warnings is not None and any(
+            w == SCF_Convergence_Warning for msg, w in warnings.items()):
+        # Report the failure
+        msg = "Job: {} Finished with Warnings: {}".format(job_name, warnings)
+        logger.warning(msg)
+
+        # recompute a new guess
+        msg1 = "Computing a new wave function guess for job: {}".format(job_name)
+        logger.warning(msg1)
+
+        # Remove the previous ascii file containing the MOs 
+        msg2 = "removing file containig the previous failed MOs of {}".format(job_name)
+        logger.warning(msg2)
+        path = fnmatch.filter(os.listdir(point_dir), 'mo*MOLog')[0]
+        os.remove(join(point_dir, path))
+
+        # Compute new guess at point k
+        calc_new_wf_guess_on_points = [k]
+        return compute_orbitals(
+            None, package_name, project_name, path_hdf5,
+            package_args, guess_args, package_config,
+            calc_new_wf_guess_on_points, point_dir, job_files, k, gs)
+    
+    return promise_qm
 
 def create_point_folder(work_dir, n, enumerate_from):
     """
