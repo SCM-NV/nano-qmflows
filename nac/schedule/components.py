@@ -19,6 +19,7 @@ from qmworks.common import InputKey
 from qmworks.hdf5 import dump_to_hdf5
 from qmworks.hdf5.quantumHDF5 import (cp2k2hdf5, turbomole2hdf5)
 from qmworks.utils import chunksOf
+from qmworks.warnings_qmworks import SCF_Convergence_Warning
 
 # Type Hints
 from typing import (Dict, List, Tuple)
@@ -122,7 +123,16 @@ def calculate_mos(package_name, all_geometries, project_name, path_hdf5,
 @schedule
 def store_in_hdf5(project_name: str, path_hdf5: str, promise_qm: Tuple,
                   node_paths: str, job_name: str) -> None:
+    #Molecular Orbitals
     mos = promise_qm.orbitals
+    # Warnings of the computation
+    warnings = promise_qm.warnings
+
+    if warnings is not None and (w == SCF_Convergence_Warning for msg, w in warnings.items()):
+        logger.warning("Job: {} Finished with Warnings: {}".format(job_name, warnings))
+        msg = "SCF did not converge in point: {}".format(job_name)
+        raise RuntimeError(msg)
+        
     if mos is not None:
         with h5py.File(path_hdf5, 'r+') as f5:
             dump_to_hdf5(
