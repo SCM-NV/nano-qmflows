@@ -100,7 +100,7 @@ def main():
         time="48:00:00",
         name="namd"
     )
-    
+
     # Path where the data will be copy back
     cwd = os.getcwd()
 
@@ -194,9 +194,6 @@ def write_python_script(scratch, folder, file_xyz, project_name, basisCP2K,
 from nac.workflows.workflow_coupling import generate_pyxaid_hamiltonians
 from nac.workflows.initialization import initialize
 from qmworks.utils import dict2Setting
-import plams
-
-plams.init(folder='{}/batch_{}')
 
 project_name = '{}'
 path_basis = '{}'
@@ -222,8 +219,7 @@ generate_pyxaid_hamiltonians('cp2k', project_name, cp2k_main,
                              nHOMO={},
                              couplings_range=({},{}),
                              **initial_config)
-plams.finish()
- """.format(scratch, enumerate_from, project_name, basisCP2K, potCP2K,
+ """.format(enumerate_from, project_name, basisCP2K, potCP2K,
             path_hdf5, file_xyz, cp2k_main.basis, enumerate_from, scratch,
             settings2Dict(cp2k_main), settings2Dict(cp2k_guess), nHOMO,
             *couplings_range)
