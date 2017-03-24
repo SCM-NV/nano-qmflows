@@ -128,7 +128,7 @@ def store_in_hdf5(project_name: str, path_hdf5: str, promise_qm: Tuple,
             dump_to_hdf5(
                 mos, 'cp2k', f5, project_name=project_name, job_name=job_name)
     return node_paths
-            
+
 
 def compute_orbitals(
         guess_job, package_name: str, project_name: str, path_hdf5: str,
@@ -143,7 +143,7 @@ def compute_orbitals(
     prepare_and_schedule = {'cp2k': prepare_job_cp2k}
 
     call_schedule_qm = prepare_and_schedule[package_name]
-    
+
     job_files = create_file_names(point_dir, k)
 
     # Calculating initial guess
@@ -154,17 +154,17 @@ def compute_orbitals(
     is_restart = guess_job is None and compute_guess
 
     pred = (k in calc_new_wf_guess_on_points) or is_restart
-    
+
     if pred:
         guess_job = call_schedule_qm(
             gs, job_files, guess_args,
             k, point_dir, wfn_restart_job=guess_job,
             package_config=package_config)
-        
+
     promise_qm = call_schedule_qm(
-            gs, job_files, package_args,
-            k, point_dir, wfn_restart_job=guess_job,
-            package_config=package_config)
+        gs, job_files, package_args,
+        k, point_dir, wfn_restart_job=guess_job,
+        package_config=package_config)
 
     return promise_qm
 
