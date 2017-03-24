@@ -24,7 +24,7 @@ In order to install the *nonadiabaticCoupling* library you need to install first
 
 Then,  to install the **nonadiabaticCoupling** library type the following command inside the conda environment::
 
-  (qmworks) user@server> pip install https://github.com/felipeZ/nonAdiabaticCoupling/tarball/master#egg=qmworks --upgrade
+  (qmworks) user@server> pip install https://github.com/felipeZ/nonAdiabaticCoupling/tarball/master#egg=nac --upgrade
 
 Overview
 ========
