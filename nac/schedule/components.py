@@ -146,7 +146,7 @@ def store_in_hdf5(project_name: str, path_hdf5: str, promise_qm,
         finally:
             work_dir = promise_qm.archive['work_dir']
             path_MOs = fnmatch.filter(os.listdir(work_dir), 'mo_*MOLog')[0]
-            os.remove(path_MOs)
+            os.remove(join(work_dir, path_MOs))
 
     return node_paths
 
