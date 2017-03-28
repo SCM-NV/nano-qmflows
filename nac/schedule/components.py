@@ -108,7 +108,7 @@ def calculate_mos(package_name, all_geometries, project_name, path_hdf5,
             job_name = 'point_{}'.format(k)
 
             # Compute the MOs and return a new guess
-            promise_qm = compute_orbitals(
+            guess_job, promise_qm = compute_orbitals(
                 guess_job, package_name, project_name, path_hdf5,
                 package_args, guess_args, package_config,
                 calc_new_wf_guess_on_points, point_dir, job_files, k, gs)
@@ -180,7 +180,7 @@ def compute_orbitals(
         k, point_dir, wfn_restart_job=guess_job,
         package_config=package_config)
 
-    return promise_qm
+    return guess_job, promise_qm
 
 
 @schedule
