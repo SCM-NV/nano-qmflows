@@ -122,8 +122,6 @@ def calculate_mos(package_name, all_geometries, project_name, path_hdf5,
             path_MOs = store_in_hdf5(project_name, path_hdf5, promise_qm,
                                      hdf5_orb_path, job_name)
 
-            # accumulate the MOs
-            guess_job = promise_qm
             orbitals.append(path_MOs)
 
     return gather(*orbitals)
