@@ -75,7 +75,7 @@ def prepare_job_cp2k(geometry: str, files: Tuple, dict_input: Dict, k: int,
     :param wfn_restart_job: Path to *.wfn cp2k file use as restart file.
     :returns: ~qmworks.CP2K
     """
-    job_settings = prepare_cp2k_settings(geometry, files, dict_input, k,
+    job_settings = prepare_cp2k_settings(files, dict_input, k,
                                          wfn_restart_job, package_config)
 
     return cp2k(job_settings, string_to_plams_Molecule(geometry), work_dir=work_dir)
