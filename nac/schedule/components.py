@@ -115,7 +115,7 @@ def calculate_mos(package_name, all_geometries, project_name, path_hdf5,
 
             # Check if the job finishes succesfully
             promise_qm = schedule_check(
-                promise_qm, guess_job, job_name, package_name, project_name, path_hdf5,
+                promise_qm, job_name, package_name, project_name, path_hdf5,
                 package_args, guess_args, package_config, point_dir, job_files, k, gs)
 
             # Store the computation
@@ -184,7 +184,7 @@ def compute_orbitals(
 
 
 @schedule
-def schedule_check(promise_qm, guess_job, job_name: str, package_name: str,
+def schedule_check(promise_qm, job_name: str, package_name: str,
                    project_name: str, path_hdf5: str, package_args: Dict,
                    guess_args: Dict, package_config: Dict, point_dir: str,
                    job_files: Tuple, k: int, gs: List):
@@ -214,7 +214,7 @@ def schedule_check(promise_qm, guess_job, job_name: str, package_name: str,
         # Compute new guess at point k
         calc_new_wf_guess_on_points = [k]
         return compute_orbitals(
-            guess_job, package_name, project_name, path_hdf5,
+            None, package_name, project_name, path_hdf5,
             package_args, guess_args, package_config,
             calc_new_wf_guess_on_points, point_dir, job_files, k, gs)
 
