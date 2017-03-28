@@ -144,7 +144,7 @@ def store_in_hdf5(project_name: str, path_hdf5: str, promise_qm,
                     mos, 'cp2k', f5, project_name=project_name, job_name=job_name)
         # Remove the ascii MO file
         finally:
-            work_dir = promise_qm.archive.work_dir
+            work_dir = promise_qm.archive['work_dir']
             path_MOs = fnmatch.filter(work_dir, 'mo-*MOLog')[0]
             os.remove(path_MOs)
 
