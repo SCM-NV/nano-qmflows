@@ -129,8 +129,8 @@ def calculate_mos(package_name, all_geometries, project_name, path_hdf5,
 
 
 @schedule
-def store_in_hdf5(project_name: str, path_hdf5: str, promise_qm: Tuple,
-                  node_paths: str, job_name: str, path_MOs: str) -> None:
+def store_in_hdf5(project_name: str, path_hdf5: str, promise_qm,
+                  node_paths: str, job_name: str) -> None:
     """
     Store the MOs in the HDF5
     """
@@ -144,6 +144,8 @@ def store_in_hdf5(project_name: str, path_hdf5: str, promise_qm: Tuple,
                     mos, 'cp2k', f5, project_name=project_name, job_name=job_name)
         # Remove the ascii MO file
         finally:
+            work_dir = promise_qm.archive.work_dir
+            path_MOs = fnmatch.filter(work_dir, 'mo-*MOLog')[0]
             os.remove(path_MOs)
 
     return node_paths
