@@ -108,13 +108,13 @@ def calculate_mos(package_name, all_geometries, project_name, path_hdf5,
             job_name = 'point_{}'.format(k)
 
             # Compute the MOs and return a new guess
-            guess_job, promise_qm = unpack(compute_orbitals(
+            promise_qm = unpack(compute_orbitals(
                 guess_job, package_name, project_name, path_hdf5,
                 package_args, guess_args, package_config,
                 calc_new_wf_guess_on_points, point_dir, job_files, k, gs), 2)
 
             # Check if the job finishes succesfully
-            guess_job, promise_qm = unpack(schedule_check(
+            promise_qm = unpack(schedule_check(
                 promise_qm, job_name, package_name, project_name, path_hdf5,
                 package_args, guess_args, package_config, point_dir, job_files, k, gs), 2)
 
@@ -122,6 +122,7 @@ def calculate_mos(package_name, all_geometries, project_name, path_hdf5,
             path_MOs = store_in_hdf5(project_name, path_hdf5, promise_qm,
                                      hdf5_orb_path, job_name)
 
+            guess_job = promise_qm
             orbitals.append(path_MOs)
 
     return gather(*orbitals)
@@ -178,7 +179,7 @@ def compute_orbitals(
         k, point_dir, wfn_restart_job=guess_job,
         package_config=package_config)
 
-    return guess_job, promise_qm
+    return promise_qm
 
 
 @schedule
