@@ -5,7 +5,7 @@ __all__ = ["calculate_mos", "create_dict_CGFs", "create_point_folder",
 
 # ================> Python Standard  and third-party <==========
 from collections import namedtuple
-from noodles import (gather, schedule, unpack)
+from noodles import (gather, schedule)
 from os.path import join
 
 import fnmatch
@@ -108,15 +108,15 @@ def calculate_mos(package_name, all_geometries, project_name, path_hdf5,
             job_name = 'point_{}'.format(k)
 
             # Compute the MOs and return a new guess
-            promise_qm = unpack(compute_orbitals(
+            promise_qm = compute_orbitals(
                 guess_job, package_name, project_name, path_hdf5,
                 package_args, guess_args, package_config,
-                calc_new_wf_guess_on_points, point_dir, job_files, k, gs), 2)
+                calc_new_wf_guess_on_points, point_dir, job_files, k, gs)
 
             # Check if the job finishes succesfully
-            promise_qm = unpack(schedule_check(
+            promise_qm = schedule_check(
                 promise_qm, job_name, package_name, project_name, path_hdf5,
-                package_args, guess_args, package_config, point_dir, job_files, k, gs), 2)
+                package_args, guess_args, package_config, point_dir, job_files, k, gs)
 
             # Store the computation
             path_MOs = store_in_hdf5(project_name, path_hdf5, promise_qm,
