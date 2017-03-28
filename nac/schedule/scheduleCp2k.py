@@ -15,7 +15,7 @@ from qmworks.packages import cp2k
 # ==============================> Schedule Tasks <=========================
 
 
-def prepare_cp2k_settings(geometry, files, cp2k_args, k, work_dir,
+def prepare_cp2k_settings(geometry, files, cp2k_args, k,
                           wfn_restart_job, cp2k_config):
     """
     Fills in the parameters for running a single job in CP2K.
@@ -29,8 +29,6 @@ def prepare_cp2k_settings(geometry, files, cp2k_args, k, work_dir,
     :type  dict_input: Dict
     :param k: nth Job
     :type k: Int
-    :parameter work_dir: Name of the Working folder
-    :type      work_dir: String
     :param wfn_restart_job: Path to *.wfn cp2k file use as restart file.
     :type wfn_restart_job: String
     :param cp2k_config:  Parameters required by cp2k.
@@ -57,9 +55,6 @@ def prepare_cp2k_settings(geometry, files, cp2k_args, k, work_dir,
         wfn_file = list(filter(lambda x: fnmatch.fnmatch(x, '*wfn'), xs))[0]
         file_path = join(output_dir, wfn_file)
         dft.wfn_restart_file_name = file_path
-
-    with open(files.get_xyz, 'w') as f:
-                f.write(geometry)
 
     input_args = templates.singlepoint.overlay(cp2k_args)
 
@@ -92,7 +87,6 @@ def prepare_job_cp2k(geometry, files, dict_input, k, work_dir,
     :returns: ~qmworks.CP2K
     """
     job_settings = prepare_cp2k_settings(geometry, files, dict_input, k,
-                                         work_dir, wfn_restart_job,
-                                         package_config)
+                                         wfn_restart_job, package_config)
 
     return cp2k(job_settings, plams.Molecule(files.get_xyz), work_dir=work_dir)

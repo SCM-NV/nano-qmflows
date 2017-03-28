@@ -217,8 +217,8 @@ def schedule_check(promise_qm, guess_job, job_name: str, package_name: str,
             guess_job, package_name, project_name, path_hdf5,
             package_args, guess_args, package_config,
             calc_new_wf_guess_on_points, point_dir, job_files, k, gs)
-
-    return promise_qm
+    else:
+        return promise_qm
 
 
 def create_point_folder(work_dir, n, enumerate_from):
