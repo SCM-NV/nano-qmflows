@@ -114,7 +114,7 @@ def calculate_mos(package_name, all_geometries, project_name, path_hdf5,
                 calc_new_wf_guess_on_points, point_dir, job_files, k, gs)
 
             # Check if the job finishes succesfully
-            promise_qm = schedule_check(
+            guess_job, promise_qm = schedule_check(
                 promise_qm, job_name, package_name, project_name, path_hdf5,
                 package_args, guess_args, package_config, point_dir, job_files, k, gs)
 
