@@ -47,7 +47,9 @@ def prepare_cp2k_settings(geometry, files, cp2k_args, k, work_dir,
     dft.potential_file_name = potential_file
     dft['print']['mo']['filename'] = files.get_MO
 
+    # Global parameters for CP2K
     cp2k_args.specific.cp2k['global']['project'] = 'point_{}'.format(k)
+    cp2k_args.specific.cp2k['global']['run_type'] = 'Energy'
 
     if wfn_restart_job is not None:
         output_dir = getattr(wfn_restart_job.archive['plams_dir'], 'path')
