@@ -65,8 +65,8 @@ def lazy_couplings(paths_overlaps: List, path_hdf5: str, project_name: str,
     # Tracking the unavoided crossings
     dim_x = overlaps.shape[0] // 2
     overlaps = np.concatenate(
-        [np.stack((swap_indexes(overlaps[2 * i], swaps[0], swaps[i + 1]),
-                   swap_indexes(overlaps[2 * i + 1], swaps[i + 1], swaps[0])))
+        [np.stack((swap_indexes(overlaps[2 * i], swaps[i], swaps[i + 1]),
+                   swap_indexes(overlaps[2 * i + 1], swaps[i + 1], swaps[i])))
          for i in range(dim_x)])
 
     validate_crossings(overlaps)
@@ -182,29 +182,6 @@ def compute_the_min_cost_sum(overlaps: Tensor3D) -> Matrix:
 
     # return indexes
     return indexes
-
-
-def correct_crossings(mtx_Sji: Matrix, mtx_Sij: Matrix,
-                      references: Vector, acc: Vector) -> Tuple:
-    """
-    Correct the indexes bewteen the molecular orbitals that are crossing
-    in two phases: first at time t using the previous swap then at time
-    t + dt using the new computed swaps.
-    """
-    # Correct the indexes at time t
-    mtx_Sji = swap_indexes(mtx_Sji, acc, references)
-    mtx_Sij = swap_indexes(mtx_Sij, acc, references)
-
-    # Compute the swap at time t + dt
-    swaps = linear_sum_assignment(mtx_Sji)[1]
-    deltas = swaps - references
-    acc += deltas
-
-    # Correct the indexes at time t + dt
-    mtx_Sji = swap_indexes(mtx_Sji, references, acc)
-    mtx_Sij = swap_indexes(mtx_Sij, references, acc)
-
-    return mtx_Sji, mtx_Sij, acc
 
 
 def lazy_overlaps(i: int, project_name: str, path_hdf5: str, dictCGFs: Dict,
