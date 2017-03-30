@@ -122,7 +122,6 @@ def calculate_mos(package_name, all_geometries, project_name, path_hdf5,
             path_MOs = store_in_hdf5(project_name, path_hdf5, promise_qm,
                                      hdf5_orb_path, job_name)
 
-            # accumulate the MOs
             guess_job = promise_qm
             orbitals.append(path_MOs)
 
@@ -130,7 +129,7 @@ def calculate_mos(package_name, all_geometries, project_name, path_hdf5,
 
 
 @schedule
-def store_in_hdf5(project_name: str, path_hdf5: str, promise_qm: Tuple,
+def store_in_hdf5(project_name: str, path_hdf5: str, promise_qm,
                   node_paths: str, job_name: str) -> None:
     """
     Store the MOs in the HDF5
@@ -138,9 +137,17 @@ def store_in_hdf5(project_name: str, path_hdf5: str, promise_qm: Tuple,
     # Molecular Orbitals
     mos = promise_qm.orbitals
     if mos is not None:
-        with h5py.File(path_hdf5, 'r+') as f5:
-            dump_to_hdf5(
-                mos, 'cp2k', f5, project_name=project_name, job_name=job_name)
+        # Store in the HDF5
+        try:
+            with h5py.File(path_hdf5, 'r+') as f5:
+                dump_to_hdf5(
+                    mos, 'cp2k', f5, project_name=project_name, job_name=job_name)
+        # Remove the ascii MO file
+        finally:
+            work_dir = promise_qm.archive['work_dir']
+            path_MOs = fnmatch.filter(os.listdir(work_dir), 'mo_*MOLog')[0]
+            os.remove(join(work_dir, path_MOs))
+
     return node_paths
 
 
@@ -217,8 +224,8 @@ def schedule_check(promise_qm, job_name: str, package_name: str,
             None, package_name, project_name, path_hdf5,
             package_args, guess_args, package_config,
             calc_new_wf_guess_on_points, point_dir, job_files, k, gs)
-
-    return promise_qm
+    else:
+        return promise_qm
 
 
 def create_point_folder(work_dir, n, enumerate_from):
