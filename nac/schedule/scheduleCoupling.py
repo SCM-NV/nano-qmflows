@@ -162,20 +162,15 @@ def compute_the_min_cost_sum(overlaps: Tensor3D) -> Matrix:
     # Indices
     dim_x, nOrbitals, _ = overlaps.shape
 
-    # There are 2 Overlap matrices at each time t
-    references = np.arange(nOrbitals, dtype=np.int)
-
     # Indexes taking into account the crossing
+    # There are 2 Overlap matrices at each time t
     indexes = np.empty((dim_x + 1, nOrbitals), dtype=np.int)
-    indexes[0] = references
+    indexes[0] = np.arange(nOrbitals, dtype=np.int)
 
     # Track the crossing using the overlap matrices
-    acc = references
     for k in range(dim_x):
         # Compute the swap at time t + dt
-        swaps = linear_sum_assignment(tensor_cost[k])[1]
-        acc = acc[swaps]
-        indexes[k + 1] = acc
+        indexes[k + 1] = linear_sum_assignment(tensor_cost[k])[1]
 
     # return indexes
     return indexes
