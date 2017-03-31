@@ -174,10 +174,7 @@ def compute_the_min_cost_sum(overlaps: Tensor3D) -> Matrix:
     for k in range(dim_x):
         # Compute the swap at time t + dt
         swaps = linear_sum_assignment(tensor_cost[k])[1]
-        deltas = swaps - references
-        acc += deltas
-
-        # Matrix containing the swaps
+        acc = acc[swaps]
         indexes[k + 1] = acc
 
     # return indexes
