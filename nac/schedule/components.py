@@ -16,7 +16,7 @@ import os
 # ==================> Internal modules <==========
 from nac.basisSet.basisNormalization import createNormalizedCGFs
 from nac.schedule.scheduleCp2k import prepare_job_cp2k
-from qmworks.common import InputKey
+from qmworks.common import (InputKey, search_data_in_hdf5)
 from qmworks.hdf5 import dump_to_hdf5
 from qmworks.hdf5.quantumHDF5 import (cp2k2hdf5, turbomole2hdf5)
 from qmworks.utils import chunksOf
@@ -67,19 +67,6 @@ def calculate_mos(package_name, all_geometries, project_name, path_hdf5,
     :returns: path to nodes in the HDF5 file to MO energies
               and MO coefficients.
     """
-    def search_data_in_hdf5(xs):
-        """
-        Search if the node exists in the HDF5 file.
-        """
-        if os.path.exists(path_hdf5):
-            with h5py.File(path_hdf5, 'r') as f5:
-                if isinstance(xs, list):
-                    return all(path in f5 for path in xs)
-                else:
-                    return xs in f5
-        else:
-            return False
-
     # First calculation has no initial guess
     guess_job = None
 
@@ -96,7 +83,7 @@ def calculate_mos(package_name, all_geometries, project_name, path_hdf5,
 
         # If the MOs are already store in the HDF5 format return the path
         # to them and skip the calculation
-        if search_data_in_hdf5(hdf5_orb_path):
+        if search_data_in_hdf5(path_hdf5, hdf5_orb_path):
             logger.info("point_{} has already been calculated".format(k))
             orbitals.append(hdf5_orb_path)
         else:

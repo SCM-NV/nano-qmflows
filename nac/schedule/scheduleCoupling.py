@@ -12,7 +12,7 @@ import numpy as np
 from nac.integrals import (calculateCoupling3Points,
                            compute_overlaps_for_coupling,
                            correct_phases)
-from nac.common import (femtosec2au, retrieve_hdf5_data)
+from nac.common import (femtosec2au, retrieve_hdf5_data, search_data_in_hdf5)
 from qmworks.hdf5.quantumHDF5 import StoreasHDF5
 
 # Types hint
@@ -59,6 +59,8 @@ def lazy_couplings(paths_overlaps: List, path_hdf5: str, project_name: str,
     logger.debug("Computing the Unavoided crossings")
     swaps = compute_the_min_cost_sum(overlaps)
 
+    np.save("swapings", swaps)
+
     # Track the crossings bewtween MOs
     logger.debug("Tracking the crossings between MOs")
 
@@ -95,11 +97,9 @@ def calculate_couplings(
     # Path were the couplinp is store
     k = i + enumerate_from
     path = join(project_name, 'coupling_{}'.format(k))
-    with h5py.File(path_hdf5, 'r+') as f5:
-        is_done  = path in f5
 
     # Skip the computation if the coupling is already done
-    if is_done:
+    if search_data_in_hdf5(path_hdf5, path):
         logger.info("Coupling: {} has already been calculated".format(path))
         return path
     else:
