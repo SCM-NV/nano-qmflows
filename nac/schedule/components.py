@@ -16,7 +16,8 @@ import os
 # ==================> Internal modules <==========
 from nac.basisSet.basisNormalization import createNormalizedCGFs
 from nac.schedule.scheduleCp2k import prepare_job_cp2k
-from qmworks.common import (InputKey, search_data_in_hdf5)
+from nac.common import search_data_in_hdf5
+from qmworks.common import InputKey
 from qmworks.hdf5 import dump_to_hdf5
 from qmworks.hdf5.quantumHDF5 import (cp2k2hdf5, turbomole2hdf5)
 from qmworks.utils import chunksOf

@@ -3,7 +3,7 @@ __all__ = ['AtomBasisData', 'AtomBasisKey', 'AtomData', 'AtomXYZ', 'CGF',
            'InfoMO', 'InputKey', 'MO',
            'binomial', 'change_mol_units', 'even',
            'fac', 'getmass', 'odd', 'product', 'retrieve_hdf5_data',
-           'search_data_in_hdf5',  'triang2mtx']
+           'search_data_in_hdf5', 'triang2mtx']
 
 # ================> Python Standard  and third-party <==========
 from collections import namedtuple
