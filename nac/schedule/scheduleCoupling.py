@@ -219,12 +219,8 @@ def lazy_overlaps(i: int, project_name: str, path_hdf5: str, dictCGFs: Dict,
     names_matrices = ['mtx_sji_t0', 'mtx_sij_t0']
     overlaps_paths_hdf5 = [join(root, name) for name in names_matrices]
 
-    # Test if the overlap is store in the HDF5 calculate it
-    with h5py.File(path_hdf5, 'r') as f5:
-        is_done = all(path in f5 for path in overlaps_paths_hdf5)
-
     # If the Overlaps are not in the HDF5 file compute them
-    if is_done:
+    if search_data_in_hdf5(path_hdf5, overlaps_paths_hdf5):
         logger.info("{} Overlaps are already in the HDF5".format(root))
     else:
         # Read the Molecular orbitals from the HDF5
