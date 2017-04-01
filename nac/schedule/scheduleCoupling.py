@@ -181,7 +181,7 @@ def swap_forward(overlaps: Tensor3D, swaps: Vector) -> Tensor3D:
     Track all the crossings that happend previous to the current
     time.
     """
-    for i, mtx in np.rollaxis(overlaps, 0):
+    for i, mtx in enumerate(np.rollaxis(overlaps, 0)):
         overlaps[i] = swap_indexes(mtx, swaps)
 
     return overlaps
