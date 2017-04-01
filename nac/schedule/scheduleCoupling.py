@@ -171,7 +171,7 @@ def track_unavoided_crossings(overlaps: Tensor3D) -> Tuple:
             k2 = 2 * (k + 1)
             overlaps[k2:] = swap_forward(overlaps[k2:], swaps)
 
-    np.save("swapings", swaps)
+    np.save("swapings", indexes)
     # return indexes
     return overlaps, indexes
 
