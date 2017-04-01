@@ -59,8 +59,6 @@ def lazy_couplings(paths_overlaps: List, path_hdf5: str, project_name: str,
     logger.debug("Computing the Unavoided crossings")
     overlaps, swaps = track_unavoided_crossings(overlaps)
 
-    np.save("swapings", swaps)
-
     # Track the crossings bewtween MOs
     logger.debug("Tracking the crossings between MOs")
 
@@ -158,6 +156,7 @@ def track_unavoided_crossings(overlaps: Tensor3D) -> Tuple:
     indexes[0] = np.arange(nOrbitals, dtype=np.int)
 
     # Track the crossing using the overlap matrices
+    acc = indexes[0]
     for k in range(dim_x):
         # Cost matrix to track the corssings
         logger.info("Tracking crossings at time: {}".format(k))
@@ -165,13 +164,14 @@ def track_unavoided_crossings(overlaps: Tensor3D) -> Tuple:
 
         # Compute the swap at time t + dt
         swaps = linear_sum_assignment(cost_mtx)[1]
-        indexes[k + 1] = swaps
+        indexes[k + 1] = acc[swaps]
 
         # update the overlaps at times > t with the previous swaps
         if k != (dim_x - 1):  # last element
             k2 = 2 * (k + 1)
             overlaps[k2:] = swap_forward(overlaps[k2:], swaps)
 
+    np.save("swapings", swaps)
     # return indexes
     return overlaps, indexes
 
