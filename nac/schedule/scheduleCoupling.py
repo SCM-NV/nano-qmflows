@@ -57,19 +57,12 @@ def lazy_couplings(paths_overlaps: List, path_hdf5: str, project_name: str,
     # Compute the unavoided crossing using the Overlap matrix
     # and correct the swaps between Molecular Orbitals
     logger.debug("Computing the Unavoided crossings")
-    swaps = compute_the_min_cost_sum(overlaps)
+    overlaps, swaps = track_unavoided_crossings(overlaps)
 
     np.save("swapings", swaps)
 
     # Track the crossings bewtween MOs
     logger.debug("Tracking the crossings between MOs")
-
-    # Tracking the unavoided crossings
-    dim_x = overlaps.shape[0] // 2
-    overlaps = np.concatenate(
-        [np.stack((swap_indexes(overlaps[2 * i], swaps[i], swaps[i + 1]),
-                   swap_indexes(overlaps[2 * i + 1], swaps[i + 1], swaps[i])))
-         for i in range(dim_x)])
 
     validate_crossings(overlaps)
 
@@ -148,7 +141,7 @@ def compute_phases(overlaps: Tensor3D, nCouplings: int,
     return mtx_phases
 
 
-def compute_the_min_cost_sum(overlaps: Tensor3D) -> Matrix:
+def track_unavoided_crossings(overlaps: Tensor3D) -> Tuple:
     """
     Track the index of the states if there is a crossing using the algorithm
     at J. Chem. Phys. 137, 014512 (2012); doi: 10.1063/1.4732536.
@@ -168,15 +161,20 @@ def compute_the_min_cost_sum(overlaps: Tensor3D) -> Matrix:
     indexes[0] = np.arange(nOrbitals, dtype=np.int)
 
     # Track the crossing using the overlap matrices
-    acc = indexes[0].copy()
+    acc = indexes[0]
     for k in range(dim_x):
+        # Cost matrix to track the corssings
+        cost_mtx = np.negative(overlaps[2 * k] ** 2)
+        
         # Compute the swap at time t + dt
-        swaps = linear_sum_assignment(tensor_cost[k])[1]
-        acc = acc[swaps]
-        indexes[k + 1] = acc
+        swaps = linear_sum_assignment(cost_mtx)[1]
+        indexes[k + 1] = acc[swaps]
+        
+        # update the overlaps at times > t with the previous swaps
+        overlaps[2 * k:] = np.apply_along_axis(lambda mtx: swap_indexes(mtx, swaps)) 
 
     # return indexes
-    return indexes
+    return overlaps, indexes
 
 
 def lazy_overlaps(i: int, project_name: str, path_hdf5: str, dictCGFs: Dict,
@@ -294,7 +292,7 @@ def write_hamiltonians(path_hdf5: str, mo_paths: List,
     return [write_data(i) for i in range(nPoints)]
 
 
-def swap_indexes(arr: Matrix, swaps_t0: Vector, swaps_t1: Vector) -> Matrix:
+def swap_indexes(arr: Matrix, swaps_t: Vector) -> Matrix:
     """
     Swap the index i corresponding to the ith Molecular orbital
     with the corresponding swap at time t0.
@@ -309,7 +307,7 @@ def swap_indexes(arr: Matrix, swaps_t0: Vector, swaps_t1: Vector) -> Matrix:
     brr = np.empty((dim, dim))
 
     for k in range(dim):
-        indexes = np.repeat(swaps_t0[k], dim), swaps_t1
+        indexes = np.repeat(swaps_t[k], dim), swaps_t
         brr[k] = arr[indexes]
 
     return brr
