@@ -62,8 +62,6 @@ def lazy_couplings(paths_overlaps: List, path_hdf5: str, project_name: str,
     # Track the crossings bewtween MOs
     logger.debug("Tracking the crossings between MOs")
 
-    validate_crossings(overlaps)
-
     # Compute all the phases taking into account the unavoided crossings
     logger.debug("Computing the phases of the MOs")
     mtx_phases = compute_phases(overlaps, nCouplings, dim)
@@ -171,9 +169,18 @@ def track_unavoided_crossings(overlaps: Tensor3D) -> Tuple:
             k2 = 2 * (k + 1)
             overlaps[k2:] = swap_forward(overlaps[k2:], swaps)
 
+    # Accumulate the swaps
+    acc = indexes[0]
+    arr = np.empty(indexes.shape, dtype=np.int)
+
+    for i in range(dim_x):
+        acc = acc[indexes[i + 1]]
+        arr[i+1] = acc
+
     np.save("swapings", indexes)
+    np.save("swapings_fold", arr)    
     # return indexes
-    return overlaps, indexes
+    return overlaps, arr
 
 
 def swap_forward(overlaps: Tensor3D, swaps: Vector) -> Tensor3D:
