@@ -149,11 +149,8 @@ def track_unavoided_crossings(overlaps: Tensor3D) -> Tuple:
     # 3D array containing the costs
     # Notice that the cost is compute on half of the overlap matrices
     # correspoding to Sji_t, the other half corresponds to Sij_t
-    overlaps = overlaps[0:-1:2]
-    tensor_cost = np.negative(overlaps ** 2)
-
-    # Indices
-    dim_x, nOrbitals, _ = overlaps.shape
+    nOverlaps, nOrbitals, _ = overlaps.shape
+    dim_x = nOverlaps // 2
 
     # Indexes taking into account the crossing
     # There are 2 Overlap matrices at each time t
@@ -165,17 +162,29 @@ def track_unavoided_crossings(overlaps: Tensor3D) -> Tuple:
     for k in range(dim_x):
         # Cost matrix to track the corssings
         cost_mtx = np.negative(overlaps[2 * k] ** 2)
-        
+
         # Compute the swap at time t + dt
         swaps = linear_sum_assignment(cost_mtx)[1]
         indexes[k + 1] = acc[swaps]
-        
+
         # update the overlaps at times > t with the previous swaps
-        overlaps[2 * k:] = np.apply_along_axis(
-            lambda mtx: swap_indexes(mtx, swaps), 0, overlaps[2 * k])
+        if k != (dim_x - 1):  # last element
+            k2 = 2 * (k + 1)
+            overlaps[k2:] = swap_forward(overlaps[k2:], swaps)
 
     # return indexes
     return overlaps, indexes
+
+
+def swap_forward(overlaps: Tensor3D, swaps: Vector) -> Tensor3D:
+    """
+    Track all the crossings that happend previous to the current
+    time.
+    """
+    for i, mtx in np.rollaxis(overlaps, 0):
+        overlaps[i] = swap_indexes(mtx, swaps)
+
+    return overlaps
 
 
 def lazy_overlaps(i: int, project_name: str, path_hdf5: str, dictCGFs: Dict,
