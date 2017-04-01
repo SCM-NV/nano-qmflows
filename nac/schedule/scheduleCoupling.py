@@ -171,7 +171,8 @@ def track_unavoided_crossings(overlaps: Tensor3D) -> Tuple:
         indexes[k + 1] = acc[swaps]
         
         # update the overlaps at times > t with the previous swaps
-        overlaps[2 * k:] = np.apply_along_axis(lambda mtx: swap_indexes(mtx, swaps)) 
+        overlaps[2 * k:] = np.apply_along_axis(
+            lambda mtx: swap_indexes(mtx, swaps), 0, overlaps[2 * k])
 
     # return indexes
     return overlaps, indexes
