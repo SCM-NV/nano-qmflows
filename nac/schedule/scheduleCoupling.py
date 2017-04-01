@@ -160,6 +160,7 @@ def track_unavoided_crossings(overlaps: Tensor3D) -> Tuple:
     # Track the crossing using the overlap matrices
     acc = indexes[0]
     for k in range(dim_x):
+        logger.info("Correcting overlaps time:{}fs".format(k))
         # Cost matrix to track the corssings
         cost_mtx = np.negative(overlaps[2 * k] ** 2)
 
@@ -187,8 +188,9 @@ def swap_forward(overlaps: Tensor3D, swaps: Vector) -> Tensor3D:
     return overlaps
 
 
-def lazy_overlaps(i: int, project_name: str, path_hdf5: str, dictCGFs: Dict,
-                  geometries: Tuple, mo_paths: List, hdf5_trans_mtx: str=None,
+def lazy_overlaps(i: int, overlaps_paths_hdf5: str, path_hdf5: str,
+                  dictCGFs: Dict, geometries: Tuple, mo_paths: List,
+                  hdf5_trans_mtx: str=None,
                   enumerate_from: int=0, nHOMO: int=None,
                   couplings_range: Tuple=None) -> str:
     """
@@ -197,9 +199,7 @@ def lazy_overlaps(i: int, project_name: str, path_hdf5: str, dictCGFs: Dict,
     3 consecutive geometries( in atomic units), from a molecular dynamics.
 
     :param i: nth coupling calculation
-    :type i: int
-    :param project_name: Name of the project to be executed.
-    :type project_name: str
+    :param overlaps_paths_hdf5: paths inside the HDF5 to the overlaps.
     :paramter dictCGFS: Dictionary from Atomic Label to basis set
     :type     dictCGFS: Dict String [CGF],
               CGF = ([Primitives], AngularMomentum),
@@ -208,29 +208,22 @@ def lazy_overlaps(i: int, project_name: str, path_hdf5: str, dictCGFs: Dict,
                            namedtuples.
     :type      geometries: ([AtomXYZ], [AtomXYZ], [AtomXYZ])
     :parameter mo_paths: List of paths to the MO in the HDF5
-    :type      mo_paths: [str]
     :param hdf5_trans_mtx: path to the transformation matrix in the HDF5 file.
-    :type hdf5_trans_mtx: str
     :param enumerate_from: Number from where to start enumerating the folders
     create for each point in the MD
-    :type enumerate_from: int
     :param nHOMO: index of the HOMO orbital in the HDF5
     :param couplings_range: range of Molecular orbitals used to compute the
     coupling.
 
     :returns: path to the Coupling inside the HDF5
     """
-    # Path inside the HDF5 where the overlaps are stored
-    root = join(project_name, 'overlaps_{}'.format(i + enumerate_from))
-    names_matrices = ['mtx_sji_t0', 'mtx_sij_t0']
-    overlaps_paths_hdf5 = [join(root, name) for name in names_matrices]
-
     # If the Overlaps are not in the HDF5 file compute them
     if search_data_in_hdf5(path_hdf5, overlaps_paths_hdf5):
-        logger.info("{} Overlaps are already in the HDF5".format(root))
+        logger.info(
+            "{} Overlaps are already in the HDF5".format(overlaps_paths_hdf5))
     else:
         # Read the Molecular orbitals from the HDF5
-        logger.info("Computing: {}".format(root))
+        logger.info("Computing: {}".format(overlaps_paths_hdf5))
 
         # Paths to the MOs inside the HDF5
         hdf5_mos_path = [mo_paths[i + j][1] for j in range(2)]
