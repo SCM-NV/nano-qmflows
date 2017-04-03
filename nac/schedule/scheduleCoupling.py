@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 
 
 def lazy_couplings(paths_overlaps: List, path_hdf5: str, project_name: str,
-                   enumerate_from: int, dt: float) -> List:
+                   enumerate_from: int, nHOMO: int, dt: float) -> List:
     """
     Compute the Nonadibatic coupling using a 3 point approximation. See:
     The Journal of Chemical Physics 137, 22A514 (2012); doi: 10.1063/1.4738960
@@ -57,7 +57,7 @@ def lazy_couplings(paths_overlaps: List, path_hdf5: str, project_name: str,
     # Compute the unavoided crossing using the Overlap matrix
     # and correct the swaps between Molecular Orbitals
     logger.debug("Computing the Unavoided crossings")
-    overlaps, swaps = track_unavoided_crossings(overlaps)
+    overlaps, swaps = track_unavoided_crossings(overlaps, nHOMO)
 
     # Track the crossings bewtween MOs
     logger.debug("Tracking the crossings between MOs")
@@ -137,7 +137,7 @@ def compute_phases(overlaps: Tensor3D, nCouplings: int,
     return mtx_phases
 
 
-def track_unavoided_crossings(overlaps: Tensor3D) -> Tuple:
+def track_unavoided_crossings(overlaps: Tensor3D, nHOMO: int) -> Tuple:
     """
     Track the index of the states if there is a crossing using the algorithm
     at J. Chem. Phys. 137, 014512 (2012); doi: 10.1063/1.4732536.
@@ -158,16 +158,20 @@ def track_unavoided_crossings(overlaps: Tensor3D) -> Tuple:
     for k in range(dim_x):
         # Cost matrix to track the corssings
         logger.info("Tracking crossings at time: {}".format(k))
-        cost_mtx = np.negative(overlaps[2 * k] ** 2)
+        cost_mtx_homos = np.negative(overlaps[2 * k:, :nHOMO, :nHOMO] ** 2)
+        cost_mtx_lumos = np.negative(overlaps[2 * k:, nHOMO:, nHOMO:] ** 2)
 
-        # Compute the swap at time t + dt
-        swaps = linear_sum_assignment(cost_mtx)[1]
-        indexes[k + 1] = swaps
+        # Compute the swap at time t + dt using two set of Orbitals:
+        # HOMOs and LUMOS
+        swaps_homos = linear_sum_assignment(cost_mtx_homos)[1]
+        swaps_lumos = linear_sum_assignment(cost_mtx_lumos)[1]
+        total_swaps = np.concatenate((swaps_homos, swaps_lumos + nHOMO))
+        indexes[k + 1] = total_swaps
 
         # update the overlaps at times > t with the previous swaps
         if k != (dim_x - 1):  # last element
             k2 = 2 * (k + 1)
-            overlaps[k2:] = swap_forward(overlaps[k2:], swaps)
+            overlaps[k2:] = swap_forward(overlaps[k2:], total_swaps)
 
     # Accumulate the swaps
     acc = indexes[0]
