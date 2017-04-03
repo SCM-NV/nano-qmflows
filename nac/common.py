@@ -3,7 +3,7 @@ __all__ = ['AtomBasisData', 'AtomBasisKey', 'AtomData', 'AtomXYZ', 'CGF',
            'InfoMO', 'InputKey', 'MO',
            'binomial', 'change_mol_units', 'even',
            'fac', 'getmass', 'odd', 'product', 'retrieve_hdf5_data',
-           'triang2mtx']
+           'search_data_in_hdf5', 'triang2mtx']
 
 # ================> Python Standard  and third-party <==========
 from collections import namedtuple
@@ -11,6 +11,7 @@ from functools import reduce
 import h5py
 import numpy as np
 import operator as op
+import os
 
 # ======================================================================
 # Named Tuples
@@ -62,6 +63,20 @@ def retrieve_hdf5_data(path_hdf5, paths_to_prop):
     except FileNotFoundError:
         msg = "there is not HDF5 file containing the numerical results"
         raise RuntimeError(msg)
+
+
+def search_data_in_hdf5(path_hdf5, xs):
+    """
+    Search if the node exists in the HDF5 file.
+    """
+    if os.path.exists(path_hdf5):
+        with h5py.File(path_hdf5, 'r') as f5:
+            if isinstance(xs, list):
+                return all(path in f5 for path in xs)
+            else:
+                return xs in f5
+    else:
+        return False
 
 
 def fromIndex(ixs, shape):
