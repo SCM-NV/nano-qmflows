@@ -35,10 +35,10 @@ logger = logging.getLogger(__name__)
 # ==============================> Tasks <=====================================
 
 
-def calculate_mos(package_name, all_geometries, project_name, path_hdf5,
-                  folders, package_args, guess_args=None,
-                  calc_new_wf_guess_on_points=None, enumerate_from=0,
-                  package_config=None):
+def calculate_mos(package_name: str, all_geometries: List, project_name: str,
+                  path_hdf5: str, folders: List, package_args: Dict,
+                  guess_args: Dict=None, calc_new_wf_guess_on_points: List=None,
+                  enumerate_from: int=0, package_config: Dict=None) -> List:
     """
     Look for the MO in the HDF5 file if they do not exists calculate them by
     splitting the jobs in batches given by the ``restart_chunk`` variables.
@@ -47,24 +47,17 @@ def calculate_mos(package_name, all_geometries, project_name, path_hdf5,
     the batch.
 
     :param all_geometries: list of molecular geometries
-    :type all_geometries: String list
     :param project_name: Name of the project used as root path for storing
     data in HDF5.
-    :type project_name: String
     :param path_hdf5: Path to the HDF5 file that contains the
     numerical results.
-    :type path_hdf5: String
     :param folders: path to the directories containing the MO outputs
-    :type folders: String list
     :param package_args: Settings for the job to run.
-    :type package_args: Settings
     :param calc_new_wf_guess_on_points: Calculate a new Wave function guess in
     each of the geometries indicated. By Default only an initial guess is
     computed.
-    :type calc_new_wf_guess_on_points: [Int]
     :param enumerate_from: Number from where to start enumerating the folders
     create for each point in the MD
-    :type enumerate_from: Int
     :returns: path to nodes in the HDF5 file to MO energies
               and MO coefficients.
     """

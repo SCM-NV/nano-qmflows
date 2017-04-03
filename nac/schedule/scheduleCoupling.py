@@ -177,7 +177,7 @@ def track_unavoided_crossings(overlaps: Tensor3D) -> Tuple:
     # Fold accumulating the crossings
     for i in range(dim_x):
         acc = acc[indexes[i + 1]]
-        arr[i+1] = acc
+        arr[i + 1] = acc
 
     np.save("swapings_fold", arr)
     # return indexes
@@ -205,9 +205,7 @@ def lazy_overlaps(i: int, project_name: str, path_hdf5: str, dictCGFs: Dict,
     3 consecutive geometries( in atomic units), from a molecular dynamics.
 
     :param i: nth coupling calculation
-    :type i: int
     :param project_name: Name of the project to be executed.
-    :type project_name: str
     :paramter dictCGFS: Dictionary from Atomic Label to basis set
     :type     dictCGFS: Dict String [CGF],
               CGF = ([Primitives], AngularMomentum),
@@ -216,12 +214,9 @@ def lazy_overlaps(i: int, project_name: str, path_hdf5: str, dictCGFs: Dict,
                            namedtuples.
     :type      geometries: ([AtomXYZ], [AtomXYZ], [AtomXYZ])
     :parameter mo_paths: List of paths to the MO in the HDF5
-    :type      mo_paths: [str]
-    :param hdf5_trans_mtx: path to the transformation matrix in the HDF5 file.
-    :type hdf5_trans_mtx: str
+    :param hdf5_trans_mtx: Path to the transformation matrix in the HDF5
     :param enumerate_from: Number from where to start enumerating the folders
     create for each point in the MD
-    :type enumerate_from: int
     :param nHOMO: index of the HOMO orbital in the HDF5
     :param couplings_range: range of Molecular orbitals used to compute the
     coupling.
