@@ -228,22 +228,26 @@ def lazy_overlaps(i: int, project_name: str, path_hdf5: str, dictCGFs: Dict,
     names_matrices = ['mtx_sji_t0', 'mtx_sij_t0']
     overlaps_paths_hdf5 = [join(root, name) for name in names_matrices]
 
-    # Read the Molecular orbitals from the HDF5
-    logger.info("Computing: {}".format(root))
+    # If the Overlaps are not in the HDF5 file compute them
+    if search_data_in_hdf5(path_hdf5, overlaps_paths_hdf5):
+        logger.info("{} Overlaps are already in the HDF5".format(root))
+    else:
+        # Read the Molecular orbitals from the HDF5
+        logger.info("Computing: {}".format(root))
 
-    # Paths to the MOs inside the HDF5
-    hdf5_mos_path = [mo_paths[i + j][1] for j in range(2)]
+        # Paths to the MOs inside the HDF5
+        hdf5_mos_path = [mo_paths[i + j][1] for j in range(2)]
 
-    # Partial application of the function computing the overlap
-    overlaps = compute_overlaps_for_coupling(
-        geometries, path_hdf5, hdf5_mos_path, dictCGFs, nHOMO,
-        couplings_range, hdf5_trans_mtx)
+        # Partial application of the function computing the overlap
+        overlaps = compute_overlaps_for_coupling(
+            geometries, path_hdf5, hdf5_mos_path, dictCGFs, nHOMO,
+            couplings_range, hdf5_trans_mtx)
 
-    # Store the matrices in the HDF5 file
-    with h5py.File(path_hdf5, 'r+') as f5:
-        store = StoreasHDF5(f5, 'cp2k')
-        for p, mtx in zip(overlaps_paths_hdf5, overlaps):
-            store.funHDF5(p, mtx)
+        # Store the matrices in the HDF5 file
+        with h5py.File(path_hdf5, 'r+') as f5:
+            store = StoreasHDF5(f5, 'cp2k')
+            for p, mtx in zip(overlaps_paths_hdf5, overlaps):
+                store.funHDF5(p, mtx)
 
     return overlaps_paths_hdf5
 

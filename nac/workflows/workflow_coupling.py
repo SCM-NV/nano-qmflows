@@ -5,7 +5,7 @@ __all__ = ['generate_pyxaid_hamiltonians']
 # ================> Python Standard  and third-party <==========
 from noodles import (gather, schedule)
 
-from nac.common import (change_mol_units, search_data_in_hdf5)
+from nac.common import change_mol_units
 from nac.schedule.components import calculate_mos
 from nac.schedule.scheduleCoupling import (
     lazy_overlaps, lazy_couplings, write_hamiltonians)
@@ -20,7 +20,7 @@ import shutil
 # Type Hints
 from typing import (Dict, List, Tuple)
 
-logger = logging.getLogger(__name__)
+
 # ==============================> Main <==================================
 
 
@@ -76,16 +76,18 @@ def generate_pyxaid_hamiltonians(
         package_args, guess_args, calc_new_wf_guess_on_points,
         enumerate_from, package_config=package_config)
 
+    # Inplace scheduling of calculate_overlap function
+    # Equivalent to add @schedule on top of the function
+    schedule_overlaps = schedule(calculate_overlap)
+
     # Calculate Non-Adiabatic Coupling
     # Number of Coupling points calculated with the MD trajectory
-    promised_overlaps = calculate_overlap(
+    promised_overlaps = schedule_overlaps(
         project_name, path_hdf5, dictCGFs, geometries, mo_paths_hdf5,
         hdf5_trans_mtx, enumerate_from, nHOMO=nHOMO,
         couplings_range=couplings_range)
 
     # Compute the Couplings
-    # Inplace scheduling of lazy_couplings function
-    # Equivalent to add @schedule on top of the function
     schedule_couplings = schedule(lazy_couplings)
     promised_crossing_and_couplings = schedule_couplings(
         promised_overlaps, path_hdf5, project_name, enumerate_from, dt)
@@ -152,6 +154,7 @@ def calculate_overlap(project_name: str, path_hdf5: str, dictCGFs: Dict,
     # Compute the Overlaps
     paths_overlaps = []
     for i in range(nPoints):
+
         # extract 3 molecular geometries to compute the overlaps
         molecules = tuple(map(lambda idx: parse_string_xyz(geometries[idx]),
                               [i, i + 1]))
@@ -160,22 +163,13 @@ def calculate_overlap(project_name: str, path_hdf5: str, dictCGFs: Dict,
         if 'angstrom' in units.lower():
             molecules = tuple(map(change_mol_units, molecules))
 
-        # Path inside the HDF5 where the overlaps are stored
-        root = join(project_name, 'overlaps_{}'.format(i + enumerate_from))
-        names_matrices = ['mtx_sji_t0', 'mtx_sij_t0']
-        overlaps_paths_hdf5 = [join(root, name) for name in names_matrices]
+        # Compute the coupling
+        overlaps = lazy_overlaps(
+            i, project_name, path_hdf5, dictCGFs, molecules, mo_paths_hdf5,
+            hdf5_trans_mtx=hdf5_trans_mtx, enumerate_from=enumerate_from,
+            nHOMO=nHOMO, couplings_range=couplings_range)
 
-        # If the Overlaps are not in the HDF5 file compute them
-        if search_data_in_hdf5(path_hdf5, overlaps_paths_hdf5):
-            paths_overlaps.append(overlaps_paths_hdf5)
-            logger.info("{} Overlaps are already in the HDF5".format(root))
-        else:
-            # Compute the coupling
-            overlaps = lazy_overlaps(
-                i, project_name, path_hdf5, dictCGFs, molecules, mo_paths_hdf5,
-                hdf5_trans_mtx=hdf5_trans_mtx, enumerate_from=enumerate_from,
-                nHOMO=nHOMO, couplings_range=couplings_range)
-            paths_overlaps.append(overlaps)
+        paths_overlaps.append(overlaps)
 
     # Gather all the promised paths
     return gather(*paths_overlaps)
