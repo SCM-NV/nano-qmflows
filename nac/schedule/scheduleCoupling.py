@@ -158,8 +158,8 @@ def track_unavoided_crossings(overlaps: Tensor3D, nHOMO: int) -> Tuple:
     for k in range(dim_x):
         # Cost matrix to track the corssings
         logger.info("Tracking crossings at time: {}".format(k))
-        cost_mtx_homos = np.negative(overlaps[2 * k:, :nHOMO, :nHOMO] ** 2)
-        cost_mtx_lumos = np.negative(overlaps[2 * k:, nHOMO:, nHOMO:] ** 2)
+        cost_mtx_homos = np.negative(overlaps[2 * k, :nHOMO, :nHOMO] ** 2)
+        cost_mtx_lumos = np.negative(overlaps[2 * k, nHOMO:, nHOMO:] ** 2)
 
         # Compute the swap at time t + dt using two set of Orbitals:
         # HOMOs and LUMOS
