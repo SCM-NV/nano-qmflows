@@ -175,8 +175,7 @@ def calculate_overlap(project_name: str, path_hdf5: str, dictCGFs: Dict,
                 i, project_name, path_hdf5, dictCGFs, molecules, mo_paths_hdf5,
                 hdf5_trans_mtx=hdf5_trans_mtx, enumerate_from=enumerate_from,
                 nHOMO=nHOMO, couplings_range=couplings_range)
-
-        paths_overlaps.append(overlaps)
+            paths_overlaps.append(overlaps)
 
     # Gather all the promised paths
     return gather(*paths_overlaps)
