@@ -90,7 +90,7 @@ def generate_pyxaid_hamiltonians(
     # Compute the Couplings
     schedule_couplings = schedule(lazy_couplings)
     promised_crossing_and_couplings = schedule_couplings(
-        promised_overlaps, path_hdf5, project_name, enumerate_from, dt)
+        promised_overlaps, path_hdf5, project_name, enumerate_from, nHOMO, dt)
 
     # Write the results in PYXAID format
     path_hamiltonians = join(work_dir, 'hamiltonians')
