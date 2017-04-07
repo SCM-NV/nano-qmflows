@@ -19,16 +19,10 @@ Tensor3D = np.ndarray
 # =====================================<>======================================
 
 
-def calculateCoupling3Points(
-        dt,
-        mtx_sji_t0, mtx_sij_t0, mtx_sji_t1, mtx_sij_t1):
+def calculate_couplings_levine(dt, mtx_sji_t0, mtx_sij_t0):
     """
-    Calculate the non-adiabatic interaction matrix using 3 geometries,
-    the CGFs for the atoms and molecular orbitals coefficients read
-    from a HDF5 File.
     """
-    cte = 1.0 / (4.0 * dt)
-    return cte * (3 * (mtx_sji_t1 - mtx_sij_t1) + (mtx_sij_t0 - mtx_sji_t0))
+    pass
 
 
 def correct_phases(overlaps: Tensor3D, mtx_phases: Matrix) -> List:

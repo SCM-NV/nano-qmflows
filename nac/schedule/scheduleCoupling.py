@@ -9,7 +9,7 @@ import h5py
 import logging
 import numpy as np
 # ==================> Internal modules <==========
-from nac.integrals import (calculateCoupling3Points,
+from nac.integrals import (calculate_couplings_levine,
                            compute_overlaps_for_coupling,
                            correct_phases)
 from nac.common import (femtosec2au, retrieve_hdf5_data, search_data_in_hdf5)
@@ -95,13 +95,13 @@ def calculate_couplings(
         logger.info("Computing coupling: {}".format(path))
         # Extract the 4 overlap matrices involved in the coupling computation
         j = 2 * i
-        ps = overlaps[j: j + 4]
+        ps = overlaps[j: j + 2]
 
         # Correct the Phase of the Molecular orbitals
         fixed_phase_overlaps = correct_phases(ps, mtx_phases[i: i + 3])
 
         # Compute the couplings with the phase corrected overlaps
-        couplings = calculateCoupling3Points(dt_au, *fixed_phase_overlaps)
+        couplings = calculate_couplings_levine(dt_au, *fixed_phase_overlaps)
 
         # Store the Coupling in the HDF5
         with h5py.File(path_hdf5, 'r+') as f5:
