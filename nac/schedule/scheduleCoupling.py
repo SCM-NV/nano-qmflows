@@ -282,15 +282,15 @@ def write_hamiltonians(path_hdf5: str, mo_paths: List,
         # Then I'm shifting the energies dt to get the correct value
         energies = retrieve_hdf5_data(path_hdf5, mo_paths[i + 1][0])
 
-        # Swap the energies of the states that are crossing
-        energies = energies[swaps[i]]
-
         # Print Energies in the range given by the user
         if all(x is not None for x in [nHOMO, couplings_range]):
             lowest = nHOMO - couplings_range[0]
             highest = nHOMO + couplings_range[1]
             energies = energies[lowest: highest]
 
+        # Swap the energies of the states that are crossing
+        energies = energies[swaps[i]]
+            
         # FileNames
         file_ham_im = join(path_dir_results, 'Ham_{}_im'.format(j))
         file_ham_re = join(path_dir_results, 'Ham_{}_re'.format(j))
