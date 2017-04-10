@@ -169,6 +169,7 @@ def distribute_computations(scratch, project_name, basisCP2K, potCP2K,
         path_hdf5 = join(scratch, '{}.hdf5'.format(folder))
         hamiltonians_dir = join(scratch, 'hamiltonians')
         # function to be execute remotely
+        scratch = join(scratch, 'batch_{}'.format(i))
         write_python_script(scratch, folder, file_xyz, project_name,
                             basisCP2K, potCP2K, cp2k_main,
                             cp2k_guess, enumerate_from, script_name,
@@ -194,6 +195,10 @@ def write_python_script(scratch, folder, file_xyz, project_name, basisCP2K,
 from nac.workflows.workflow_coupling import generate_pyxaid_hamiltonians
 from nac.workflows.initialization import initialize
 from qmworks.utils import dict2Setting
+import plams
+
+
+plams.init(folder='{}')
 
 project_name = '{}'
 path_basis = '{}'
@@ -219,7 +224,8 @@ generate_pyxaid_hamiltonians('cp2k', project_name, cp2k_main,
                              nHOMO={},
                              couplings_range=({},{}),
                              **initial_config)
- """.format(enumerate_from, project_name, basisCP2K, potCP2K,
+plams.finish()
+ """.format(scratch, project_name, basisCP2K, potCP2K,
             path_hdf5, file_xyz, cp2k_main.basis, enumerate_from, scratch,
             settings2Dict(cp2k_main), settings2Dict(cp2k_guess), nHOMO,
             *couplings_range)
