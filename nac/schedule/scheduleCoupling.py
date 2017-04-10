@@ -122,11 +122,12 @@ def compute_phases(overlaps: Tensor3D, nCouplings: int,
     references = np.ones(dim)
 
     # Matrix containing the phases
-    mtx_phases = np.empty((nCouplings + 2, dim))
+    mtx_phases = np.empty((nCouplings + 1, dim))
     mtx_phases[0, :] = references
 
+    print(overlaps.shape)
     # Compute the phases at times t + dt using the phases at time t
-    for i in range(nCouplings + 1):
+    for i in range(nCouplings):
         Sji_t = overlaps[2 * i].reshape(dim, dim)
 
         # Compute the phase at time t
