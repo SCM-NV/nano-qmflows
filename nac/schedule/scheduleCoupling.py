@@ -52,7 +52,7 @@ def lazy_couplings(paths_overlaps: List, path_hdf5: str, project_name: str,
                          for ps in concat_paths])
 
     # Number of couplings to compute
-    nCouplings = overlaps.shape[0] // 2 - 1
+    nCouplings = overlaps.shape[0] // 2
 
     # Compute the unavoided crossing using the Overlap matrix
     # and correct the swaps between Molecular Orbitals

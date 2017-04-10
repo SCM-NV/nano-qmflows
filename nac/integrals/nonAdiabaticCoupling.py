@@ -1,4 +1,4 @@
-_author__ = "Felipe Zapata"
+__author__ = "Felipe Zapata"
 
 # ================> Python Standard  and third-party <==========
 # from multipoleObaraSaika import sab_unfolded
@@ -30,7 +30,7 @@ def calculate_couplings_levine(dt: float, w_jk: Matrix,
     """
     # Diagonal matrix
     w_jj = np.diag(np.diag(w_jk))
-    w_kk = np.diag(np.diag(w_kk))
+    w_kk = np.diag(np.diag(w_kj))
 
     # Components A + B
     acos_w_jj = np.arccos(w_jj)
@@ -48,18 +48,19 @@ def calculate_couplings_levine(dt: float, w_jk: Matrix,
 
     # Components E
     w_lj = np.sqrt(1 - (w_jj ** 2) - (w_kj ** 2))
-    w_lk = -(w_jk * w_jj + w_kk * w_jj) / w_lj
+    w_lk = -(w_jk * w_jj + w_kk * w_kj) / w_lj
 
     asin_w_lj = np.arcsin(w_lj)
     asin_w_lk = np.arcsin(w_lk)
 
-    E = 2 * sin(t) / (asin_w_lj ** 2) = 
-    
-
+    t1 = w_lj * w_lk * asin_w_lj
+    x1 = np.sqrt((1 - w_lj ** 2) * (1 - w_lk ** 2)) - 1
+    t2 = x1 * asin_w_lk
+    t = t1 + t2
+    E = 2 * np.arcsin(t) / ((asin_w_lj ** 2) - (asin_w_lk ** 2))
 
     cte = 1 / 2 * dt
     return cte * np.arccos(w_jj) * (A + B) + np.arcsin(w_kj) * (C + D) + E
-
 
 
 def correct_phases(overlaps: Tensor3D, mtx_phases: Matrix) -> List:
