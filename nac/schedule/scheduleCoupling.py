@@ -98,7 +98,7 @@ def calculate_couplings(
         ps = overlaps[j: j + 2]
 
         # Correct the Phase of the Molecular orbitals
-        fixed_phase_overlaps = correct_phases(ps, mtx_phases[i: i + 3])
+        fixed_phase_overlaps = correct_phases(ps, mtx_phases[i: i + 2])
 
         # Compute the couplings with the phase corrected overlaps
         couplings = calculate_couplings_levine(dt_au, *fixed_phase_overlaps)

@@ -19,10 +19,47 @@ Tensor3D = np.ndarray
 # =====================================<>======================================
 
 
-def calculate_couplings_levine(dt, mtx_sji_t0, mtx_sij_t0):
+def calculate_couplings_levine(dt: float, w_jk: Matrix,
+                               w_kj: Matrix) -> Matrix:
     """
+    Compute the non-adiabatic coupling according to:
+    `Evaluation of the Time-Derivative Coupling for Accurate Electronic
+    State Transition Probabilities from Numerical Simulations`.
+    Garrett A. Meek and Benjamin G. Levine.
+    dx.doi.org/10.1021/jz5009449 | J. Phys. Chem. Lett. 2014, 5, 2351−2356
     """
-    pass
+    # Diagonal matrix
+    w_jj = np.diag(np.diag(w_jk))
+    w_kk = np.diag(np.diag(w_kk))
+
+    # Components A + B
+    acos_w_jj = np.arccos(w_jj)
+    asin_w_jk = np.arcsin(w_jk)
+
+    A = - np.sin(acos_w_jj - asin_w_jk) / (acos_w_jj - asin_w_jk)
+    B = np.sin(acos_w_jj + asin_w_jk) / (acos_w_jj + asin_w_jk)
+
+    # Components C + D
+    acos_w_kk = np.arccos(w_kk)
+    asin_w_kj = np.arcsin(w_kj)
+
+    C = np.sin(acos_w_kk - asin_w_kj) / (acos_w_kk - asin_w_kj)
+    D = np.sin(acos_w_kk + asin_w_kj) / (acos_w_kk + asin_w_kj)
+
+    # Components E
+    w_lj = np.sqrt(1 - (w_jj ** 2) - (w_kj ** 2))
+    w_lk = -(w_jk * w_jj + w_kk * w_jj) / w_lj
+
+    asin_w_lj = np.arcsin(w_lj)
+    asin_w_lk = np.arcsin(w_lk)
+
+    E = 2 * sin(t) / (asin_w_lj ** 2) = 
+    
+
+
+    cte = 1 / 2 * dt
+    return cte * np.arccos(w_jj) * (A + B) + np.arcsin(w_kj) * (C + D) + E
+
 
 
 def correct_phases(overlaps: Tensor3D, mtx_phases: Matrix) -> List:
@@ -31,19 +68,18 @@ def correct_phases(overlaps: Tensor3D, mtx_phases: Matrix) -> List:
     """
     dim = overlaps.shape[1]
     # Reshape phases vector to matrix
-    phases_t0, phases_t1, phases_t2 = [
-        mtx_phases[i].reshape(dim, 1) for i in range(3)]
+    phases_t0 = mtx_phases[0].reshape(dim, 1)
+    phases_t1 = mtx_phases[1].reshape(dim, 1)
 
     # Matrices containing the phases resulting from multipling
     # the phases of state_i * state_j
-    mtx_phases_Sji_t0_t1 = np.dot(phases_t0, phases_t1.transpose())
-    mtx_phases_Sji_t1_t2 = np.dot(phases_t1, phases_t2.transpose())
-    mtx_phases_Sij_t1_t0 = np.transpose(mtx_phases_Sji_t0_t1)
-    mtx_phases_Sij_t2_t1 = np.transpose(mtx_phases_Sji_t1_t2)
+    mtx_phases_Sjk = np.dot(phases_t0, phases_t1.transpose())
+    mtx_phases_Skj = np.transpose(mtx_phases_Sjk)
 
-    return [overlaps[i] * phases for i, phases in
-            enumerate([mtx_phases_Sji_t0_t1, mtx_phases_Sij_t1_t0,
-                       mtx_phases_Sji_t1_t2, mtx_phases_Sij_t2_t1])]
+    t1 = overlaps[0] * mtx_phases_Sjk
+    t2 = overlaps[1] * mtx_phases_Skj
+
+    return t1, t2
 
 
 def compute_overlaps_for_coupling(
