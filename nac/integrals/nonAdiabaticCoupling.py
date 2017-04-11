@@ -36,6 +36,10 @@ def calculate_couplings_levine(i: int, dt: float, w_jk: Matrix,
     w_jj = np.diag(np.diag(w_jk))
     w_kk = np.diag(np.diag(w_kj))
 
+    # remove the values from the diagonal
+    np.fill_diagonal(w_jk, 0)
+    np.fill_diagonal(w_kj, 0)
+
     # Components A + B
     acos_w_jj = np.arccos(w_jj)
     asin_w_jk = np.arcsin(w_jk)
@@ -68,6 +72,7 @@ def calculate_couplings_levine(i: int, dt: float, w_jk: Matrix,
     t = t1 + t2
     E_nonzero = 2 * asin_w_lj * t / (asin_w_lj2 - asin_w_lk2)
 
+    # Check whether w_lj is different of zero
     E1 = np.where(np.abs(w_lj) > 1e-8, E_nonzero, np.zeros(A.shape))
 
     E = np.where(np.isclose(asin_w_lj2, asin_w_lk2), w_lj ** 2, E1)
