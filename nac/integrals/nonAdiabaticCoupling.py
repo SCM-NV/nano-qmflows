@@ -19,7 +19,7 @@ Tensor3D = np.ndarray
 # =====================================<>======================================
 
 
-def calculate_couplings_levine(dt: float, w_jk: Matrix,
+def calculate_couplings_levine(i: int, dt: float, w_jk: Matrix,
                                w_kj: Matrix) -> Matrix:
     """
     Compute the non-adiabatic coupling according to:
@@ -42,8 +42,8 @@ def calculate_couplings_levine(dt: float, w_jk: Matrix,
 
     a = acos_w_jj - asin_w_jk
     b = acos_w_jj + asin_w_jk
-    A = - np.sin(np.sinc(a / np.pi))
-    B = np.sin(np.sinc(b / np.pi))
+    A = - np.sin(np.sinc(a))
+    B = np.sin(np.sinc(b))
 
     # Components C + D
     acos_w_kk = np.arccos(w_kk)
@@ -51,8 +51,8 @@ def calculate_couplings_levine(dt: float, w_jk: Matrix,
 
     c = acos_w_kk - asin_w_kj
     d = acos_w_kk + asin_w_kj
-    C = np.sin(np.sinc(c / np.pi))
-    D = np.sin(np.sinc(d / np.pi))
+    C = np.sin(np.sinc(c))
+    D = np.sin(np.sinc(d))
 
     # Components E
     w_lj = np.sqrt(1 - (w_jj ** 2) - (w_kj ** 2))
@@ -71,6 +71,12 @@ def calculate_couplings_levine(dt: float, w_jk: Matrix,
     E_test = 2 * asin_w_lj * t / (asin_w_lj2 - asin_w_lk2)
 
     E = np.where(np.isclose(asin_w_lj2, asin_w_lk2), w_lj ** 2, E_test)
+
+    np.save('A_{}'.format(i), A)
+    np.save('B_{}'.format(i), B)
+    np.save('C_{}'.format(i), C)
+    np.save('D_{}'.format(i), D)
+    np.save('E_{}'.format(i), E)
 
     cte = 1 / 2 * dt
     return cte * np.arccos(w_jj) * (A + B) + np.arcsin(w_kj) * (C + D) + E

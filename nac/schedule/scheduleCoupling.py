@@ -101,7 +101,7 @@ def calculate_couplings(
         fixed_phase_overlaps = correct_phases(ps, mtx_phases[i: i + 2])
 
         # Compute the couplings with the phase corrected overlaps
-        couplings = calculate_couplings_levine(dt_au, *fixed_phase_overlaps)
+        couplings = calculate_couplings_levine(i, dt_au, *fixed_phase_overlaps)
 
         # Store the Coupling in the HDF5
         with h5py.File(path_hdf5, 'r+') as f5:
