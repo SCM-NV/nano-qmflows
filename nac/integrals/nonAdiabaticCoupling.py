@@ -68,7 +68,7 @@ def calculate_couplings_levine(dt: float, w_jk: Matrix,
     t2 = x1 * asin_w_lk
     t = t1 + t2
 
-    E_test = 2 * np.arcsin(t) / (asin_w_lj2 - asin_w_lk2)
+    E_test = 2 * asin_w_lj * t / (asin_w_lj2 - asin_w_lk2)
 
     E = np.where(np.isclose(asin_w_lj2, asin_w_lk2), w_lj ** 2, E_test)
 
