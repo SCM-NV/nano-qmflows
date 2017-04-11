@@ -28,6 +28,10 @@ def calculate_couplings_levine(dt: float, w_jk: Matrix,
     Garrett A. Meek and Benjamin G. Levine.
     dx.doi.org/10.1021/jz5009449 | J. Phys. Chem. Lett. 2014, 5, 2351−2356
     """
+    # Orthonormalize the Overlap matrices
+    w_jk = np.linalg.qr(w_jk)[0]
+    w_kj = np.linalg.qr(w_kj)[0]
+
     # Diagonal matrix
     w_jj = np.diag(np.diag(w_jk))
     w_kk = np.diag(np.diag(w_kj))
@@ -36,15 +40,19 @@ def calculate_couplings_levine(dt: float, w_jk: Matrix,
     acos_w_jj = np.arccos(w_jj)
     asin_w_jk = np.arcsin(w_jk)
 
-    A = - np.sin(acos_w_jj - asin_w_jk) / (acos_w_jj - asin_w_jk)
-    B = np.sin(acos_w_jj + asin_w_jk) / (acos_w_jj + asin_w_jk)
+    a = acos_w_jj - asin_w_jk
+    b = acos_w_jj + asin_w_jk
+    A = - np.sin(np.sinc(a / np.pi))
+    B = np.sin(np.sinc(b / np.pi))
 
     # Components C + D
     acos_w_kk = np.arccos(w_kk)
     asin_w_kj = np.arcsin(w_kj)
 
-    C = np.sin(acos_w_kk - asin_w_kj) / (acos_w_kk - asin_w_kj)
-    D = np.sin(acos_w_kk + asin_w_kj) / (acos_w_kk + asin_w_kj)
+    c = acos_w_kk - asin_w_kj
+    d = acos_w_kk + asin_w_kj
+    C = np.sin(np.sinc(c / np.pi))
+    D = np.sin(np.sinc(d / np.pi))
 
     # Components E
     w_lj = np.sqrt(1 - (w_jj ** 2) - (w_kj ** 2))
@@ -52,12 +60,17 @@ def calculate_couplings_levine(dt: float, w_jk: Matrix,
 
     asin_w_lj = np.arcsin(w_lj)
     asin_w_lk = np.arcsin(w_lk)
+    asin_w_lj2 = asin_w_lj ** 2
+    asin_w_lk2 = asin_w_lk ** 2
 
     t1 = w_lj * w_lk * asin_w_lj
     x1 = np.sqrt((1 - w_lj ** 2) * (1 - w_lk ** 2)) - 1
     t2 = x1 * asin_w_lk
     t = t1 + t2
-    E = 2 * np.arcsin(t) / ((asin_w_lj ** 2) - (asin_w_lk ** 2))
+
+    E_test = 2 * np.arcsin(t) / (asin_w_lj2 - asin_w_lk2)
+
+    E = np.where(np.isclose(asin_w_lj2, asin_w_lk2), w_lj ** 2, E_test)
 
     cte = 1 / 2 * dt
     return cte * np.arccos(w_jj) * (A + B) + np.arcsin(w_kj) * (C + D) + E
