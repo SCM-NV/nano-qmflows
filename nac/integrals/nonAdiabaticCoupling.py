@@ -57,7 +57,6 @@ def calculate_couplings_levine(i: int, dt: float, w_jk: Matrix,
     # Components E
     w_lj = np.sqrt(1 - (w_jj ** 2) - (w_kj ** 2))
     w_lk = -(w_jk * w_jj + w_kk * w_kj) / w_lj
-
     asin_w_lj = np.arcsin(w_lj)
     asin_w_lk = np.arcsin(w_lk)
     asin_w_lj2 = asin_w_lj ** 2
@@ -67,19 +66,14 @@ def calculate_couplings_levine(i: int, dt: float, w_jk: Matrix,
     x1 = np.sqrt((1 - w_lj ** 2) * (1 - w_lk ** 2)) - 1
     t2 = x1 * asin_w_lk
     t = t1 + t2
+    E_nonzero = 2 * asin_w_lj * t / (asin_w_lj2 - asin_w_lk2)
 
-    E_test = 2 * asin_w_lj * t / (asin_w_lj2 - asin_w_lk2)
-
-    E = np.where(np.isclose(asin_w_lj2, asin_w_lk2), w_lj ** 2, E_test)
-
-    np.save('A_{}'.format(i), A)
-    np.save('B_{}'.format(i), B)
-    np.save('C_{}'.format(i), C)
-    np.save('D_{}'.format(i), D)
+    E = np.where(np.abs(w_lj) > 1e-8, E_nonzero, np.zeros(A.shape))
+            
     np.save('E_{}'.format(i), E)
 
-    cte = 1 / 2 * dt
-    return cte * np.arccos(w_jj) * (A + B) + np.arcsin(w_kj) * (C + D) + E
+    cte = 1 / (2 * dt)
+    return cte * (np.arccos(w_jj) * (A + B) + np.arcsin(w_kj) * (C + D) + E)
 
 
 def correct_phases(overlaps: Tensor3D, mtx_phases: Matrix) -> List:
