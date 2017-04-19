@@ -66,19 +66,21 @@ def lazy_couplings(paths_overlaps: List, path_hdf5: str, project_name: str,
     logger.debug("Computing the phases of the MOs")
     mtx_phases = compute_phases(overlaps, nCouplings, dim)
 
+    # Fixed the phases of the whole set of overlap matrices
+    fixed_phase_overlaps = correct_phases(overlaps, mtx_phases)
+
     # Compute the couplings using the four matrices previously calculated
     # Together with the phases
     couplings = [calculate_couplings(
-        i, project_name, overlaps, mtx_phases,
+        i, project_name, fixed_phase_overlaps,
         path_hdf5, enumerate_from, dt_au) for i in range(nCouplings)]
 
     return swaps, couplings
 
 
 def calculate_couplings(
-        i: int, project_name: str, overlaps: Tensor3D,
-        mtx_phases: Matrix, path_hdf5: str,
-        enumerate_from: int, dt_au: float) -> str:
+        i: int, project_name: str, fixed_phase_overlaps: Tensor3D,
+        path_hdf5: str, enumerate_from: int, dt_au: float) -> str:
     """
     Search for the ith Coupling in the HDF5, if it is not available compute it
     using the 3 points approximation.
@@ -95,10 +97,7 @@ def calculate_couplings(
         logger.info("Computing coupling: {}".format(path))
         # Extract the 4 overlap matrices involved in the coupling computation
         j = 2 * i
-        ps = overlaps[j: j + 4]
-
-        # Correct the Phase of the Molecular orbitals
-        fixed_phase_overlaps = correct_phases(ps, mtx_phases[i: i + 3])
+        fixed_phase_overlaps[j: j + 4]
 
         # Compute the couplings with the phase corrected overlaps
         couplings = calculateCoupling3Points(dt_au, *fixed_phase_overlaps)

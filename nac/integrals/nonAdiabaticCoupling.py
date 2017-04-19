@@ -33,23 +33,22 @@ def calculateCoupling3Points(
 
 def correct_phases(overlaps: Tensor3D, mtx_phases: Matrix) -> List:
     """
-    Correct the phases of the overlap matrices
+    Correct the phases for all the overlaps
     """
-    dim = overlaps.shape[1]
-    # Reshape phases vector to matrix
-    phases_t0, phases_t1, phases_t2 = [
-        mtx_phases[i].reshape(dim, 1) for i in range(3)]
+    nFrames = overlaps.shape[0]  # total number of overlap matrices
 
-    # Matrices containing the phases resulting from multipling
-    # the phases of state_i * state_j
-    mtx_phases_Sji_t0_t1 = np.dot(phases_t0, phases_t1.transpose())
-    mtx_phases_Sji_t1_t2 = np.dot(phases_t1, phases_t2.transpose())
-    mtx_phases_Sij_t1_t0 = np.transpose(mtx_phases_Sji_t0_t1)
-    mtx_phases_Sij_t2_t1 = np.transpose(mtx_phases_Sji_t1_t2)
+    for k in (nFrames // 2):
+        m = 2 * k
+        # Extract phases
+        phases_t0, phases_t1 = mtx_phases[k: k + 2]
+        mtx_phases_Sji_t0_t1 = np.outer(phases_t0, phases_t1)
+        mtx_phases_Sij_t1_t0 = np.transpose(mtx_phases_Sji_t0_t1)
 
-    return [overlaps[i] * phases for i, phases in
-            enumerate([mtx_phases_Sji_t0_t1, mtx_phases_Sij_t1_t0,
-                       mtx_phases_Sji_t1_t2, mtx_phases_Sij_t2_t1])]
+        # Update array with the fixed phases
+        overlaps[m] *= mtx_phases_Sji_t0_t1
+        overlaps[m + 1] *= mtx_phases_Sij_t1_t0
+
+    return overlaps
 
 
 def compute_overlaps_for_coupling(
