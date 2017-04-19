@@ -8,6 +8,7 @@ from scipy.optimize import linear_sum_assignment
 import h5py
 import logging
 import numpy as np
+import os
 # ==================> Internal modules <==========
 from nac.integrals import (calculate_couplings_levine,
                            compute_overlaps_for_coupling,
@@ -68,6 +69,11 @@ def lazy_couplings(paths_overlaps: List, path_hdf5: str, project_name: str,
 
     # Fixed the phases of the whole set of overlap matrices
     fixed_phase_overlaps = correct_phases(overlaps, mtx_phases)
+
+    # Compute all the phases taking into account the unavoided crossings
+    logger.debug("Writing down the overlaps in ascii format")
+
+    write_overlaps_in_ascii(fixed_phase_overlaps)
 
     # Compute the couplings using the four matrices previously calculated
     # Together with the phases
@@ -290,7 +296,7 @@ def write_hamiltonians(path_hdf5: str, mo_paths: List,
 
         # Swap the energies of the states that are crossing
         energies = energies[swaps[i]]
-            
+
         # FileNames
         file_ham_im = join(path_dir_results, 'Ham_{}_im'.format(j))
         file_ham_re = join(path_dir_results, 'Ham_{}_re'.format(j))
@@ -342,3 +348,22 @@ def validate_crossings(overlaps: Matrix) -> None:
             msg = " the following MOs has a overlap Sii < 0.5: {}\
             at time {}".format(indexes, k)
             logger.warning(msg)
+
+
+def write_overlaps_in_ascii(overlaps: Tensor3D) -> None:
+    """
+    Write the corrected overlaps in text files.
+    """
+    if not os.path.isdir('overlaps'):
+        os.mkdir('overlaps')
+
+    # write overlaps
+    nFrames = overlaps.shape[0]
+    for k in nFrames:
+        m = 2 * k
+        mtx_Sji, mtx_Sij = overlaps[m + 2]
+        path_Sji = 'overlaps/mtx_Sji_{}'.format(m)
+        path_Sij = 'overlaps/mtx_Sij_{}'.format(m)
+
+        np.savetxt(path_Sji, mtx_Sji, fmt='%10.5e', delimiter='  ')
+        np.savetxt(path_Sij, mtx_Sij, fmt='%10.5e', delimiter='  ')
