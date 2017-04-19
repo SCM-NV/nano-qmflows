@@ -189,8 +189,6 @@ def track_unavoided_crossings(overlaps: Tensor3D, nHOMO: int) -> Tuple:
         acc = acc[indexes[i + 1]]
         arr[i + 1] = acc
 
-    np.save("swapings_fold", arr)
-    # return indexes
     return overlaps, arr
 
 
