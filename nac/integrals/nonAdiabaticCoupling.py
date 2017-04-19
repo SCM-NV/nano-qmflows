@@ -87,7 +87,7 @@ def correct_phases(overlaps: Tensor3D, mtx_phases: Matrix) -> List:
     """
     nFrames = overlaps.shape[0]  # total number of overlap matrices
 
-    for k in (nFrames // 2):
+    for k in range(nFrames // 2):
         m = 2 * k
         # Extract phases
         phases_t0, phases_t1 = mtx_phases[k: k + 2]
