@@ -83,22 +83,22 @@ def calculate_couplings_levine(i: int, dt: float, w_jk: Matrix,
 
 def correct_phases(overlaps: Tensor3D, mtx_phases: Matrix) -> List:
     """
-    Correct the phases of the overlap matrices
+    Correct the phases for all the overlaps
     """
-    dim = overlaps.shape[1]
-    # Reshape phases vector to matrix
-    phases_t0 = mtx_phases[0].reshape(dim, 1)
-    phases_t1 = mtx_phases[1].reshape(dim, 1)
+    nFrames = overlaps.shape[0]  # total number of overlap matrices
 
-    # Matrices containing the phases resulting from multipling
-    # the phases of state_i * state_j
-    mtx_phases_Sjk = np.dot(phases_t0, phases_t1.transpose())
-    mtx_phases_Skj = np.transpose(mtx_phases_Sjk)
+    for k in (nFrames // 2):
+        m = 2 * k
+        # Extract phases
+        phases_t0, phases_t1 = mtx_phases[k: k + 2]
+        mtx_phases_Sji_t0_t1 = np.outer(phases_t0, phases_t1)
+        mtx_phases_Sij_t1_t0 = np.transpose(mtx_phases_Sji_t0_t1)
 
-    t1 = overlaps[0] * mtx_phases_Sjk
-    t2 = overlaps[1] * mtx_phases_Skj
+        # Update array with the fixed phases
+        overlaps[m] *= mtx_phases_Sji_t0_t1
+        overlaps[m + 1] *= mtx_phases_Sij_t1_t0
 
-    return t1, t2
+    return overlaps
 
 
 def compute_overlaps_for_coupling(
