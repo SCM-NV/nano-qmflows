@@ -40,39 +40,57 @@ def lazy_couplings(paths_overlaps: List, path_hdf5: str, project_name: str,
     such crossing must be track. see:
     J. Chem. Phys. 137, 014512 (2012); doi: 10.1063/1.4732536
     """
-    # time in atomic units
-    dt_au = dt * femtosec2au
+    number_of_frames = len(paths_overlaps)
 
-    # Compute the dimension of the coupling matrix
-    mtx_0 = retrieve_hdf5_data(path_hdf5, paths_overlaps[0][0])
-    _, dim = mtx_0.shape
+    # Pasth to the overlap matrices after the tracking
+    # and phase correction
+    matrices_names = ['mtx_sji_t0_corrected', 'mtx_sij_t0_corrected']
+    roots = [join(project_name, 'overlaps_{}'.format(i))
+             for i in range(number_of_frames + enumerate_from)]
+    paths_corrected_overlaps = [join(r, m) for r in roots
+                                for m in matrices_names]
 
-    # Read all the Overlaps
-    concat_paths = chain(*paths_overlaps)
-    overlaps = np.stack([retrieve_hdf5_data(path_hdf5, ps)
-                         for ps in concat_paths])
+    # Compute the corrected overlaps if not avaialable in the HDF5
+    if not search_data_in_hdf5(path_hdf5, paths_corrected_overlaps[0]):
+        # time in atomic units
+        dt_au = dt * femtosec2au
 
-    # Number of couplings to compute
-    nCouplings = overlaps.shape[0] // 2
+        # Compute the dimension of the coupling matrix
+        mtx_0 = retrieve_hdf5_data(path_hdf5, paths_overlaps[0][0])
+        _, dim = mtx_0.shape
 
-    # Compute the unavoided crossing using the Overlap matrix
-    # and correct the swaps between Molecular Orbitals
-    logger.debug("Computing the Unavoided crossings")
-    overlaps, swaps = track_unavoided_crossings(overlaps, nHOMO)
+        # Read all the Overlaps
+        concat_paths = chain(*paths_overlaps)
+        overlaps = np.stack([retrieve_hdf5_data(path_hdf5, ps)
+                             for ps in concat_paths])
 
-    # Track the crossings bewtween MOs
-    logger.debug("Tracking the crossings between MOs")
+        # Number of couplings to compute
+        nCouplings = overlaps.shape[0] // 2
 
-    # Compute all the phases taking into account the unavoided crossings
-    logger.debug("Computing the phases of the MOs")
-    mtx_phases = compute_phases(overlaps, nCouplings, dim)
+        # Compute the unavoided crossing using the Overlap matrix
+        # and correct the swaps between Molecular Orbitals
+        logger.debug("Computing the Unavoided crossings")
+        overlaps, swaps = track_unavoided_crossings(overlaps, nHOMO)
 
-    # Fixed the phases of the whole set of overlap matrices
-    fixed_phase_overlaps = correct_phases(overlaps, mtx_phases)
+        # Track the crossings bewtween MOs
+        logger.debug("Tracking the crossings between MOs")
 
-    # Compute all the phases taking into account the unavoided crossings
+        # Compute all the phases taking into account the unavoided crossings
+        logger.debug("Computing the phases of the MOs")
+        mtx_phases = compute_phases(overlaps, nCouplings, dim)
+
+        # Fixed the phases of the whole set of overlap matrices
+        fixed_phase_overlaps = correct_phases(overlaps, mtx_phases)
+
+        # Store corrected overlaps in the HDF5
+        store_corrected_overlaps(path_hdf5, paths_corrected_overlaps,
+                                 fixed_phase_overlaps)
+    else:
+        fixed_phase_overlaps = np.stack(
+            retrieve_hdf5_data(path_hdf5, paths_corrected_overlaps))
+
+    # Write the overlaps in text format
     logger.debug("Writing down the overlaps in ascii format")
-
     write_overlaps_in_ascii(fixed_phase_overlaps)
 
     # Compute the couplings using the four matrices previously calculated
@@ -365,3 +383,14 @@ def write_overlaps_in_ascii(overlaps: Tensor3D) -> None:
 
         np.savetxt(path_Sji, mtx_Sji, fmt='%10.5e', delimiter='  ')
         np.savetxt(path_Sij, mtx_Sij, fmt='%10.5e', delimiter='  ')
+
+
+def store_corrected_overlaps(path_hdf5: str, paths_corrected_overlaps: List,
+                             fixed_phase_overlaps: Tensor3D) -> None:
+    """
+    Store the corrected overlaps in the HDF5 file
+    """
+    with h5py.File(path_hdf5, 'r+') as f5:
+        store = StoreasHDF5(f5, 'cp2k')
+        for k, path in enumerate(paths_corrected_overlaps):
+            store.funHDF5(path, fixed_phase_overlaps[k])
