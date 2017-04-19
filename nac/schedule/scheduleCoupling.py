@@ -357,7 +357,7 @@ def write_overlaps_in_ascii(overlaps: Tensor3D) -> None:
 
     # write overlaps
     nFrames = overlaps.shape[0]
-    for k in range(nFrames):
+    for k in range(nFrames // 2):
         m = 2 * k
         mtx_Sji, mtx_Sij = overlaps[m: m + 2]
         path_Sji = 'overlaps/mtx_Sji_{}'.format(m)
