@@ -7,7 +7,7 @@ from .common import (AtomBasisData, AtomBasisKey, AtomData, AtomXYZ,
                      retrieve_hdf5_data, search_data_in_hdf5, triang2mtx)
 
 from .integrals import (calcMtxMultipoleP, calcMtxOverlapP, calc_transf_matrix,
-                        calculateCoupling3Points, general_multipole_matrix,
+                        calculate_couplings_levine, general_multipole_matrix,
                         photoExcitationRate)
 
 from .schedule import (calculate_mos, create_dict_CGFs, create_point_folder,
@@ -21,7 +21,7 @@ from .workflows.workflow_coupling import generate_pyxaid_hamiltonians
 
 __all__ = ['AtomBasisData', 'AtomBasisKey', 'AtomData', 'AtomXYZ', 'CGF',
            'InfoMO', 'InputKey', 'MO', 'calcMtxMultipoleP', 'calcMtxOverlapP',
-           'calc_transf_matrix', 'calculateCoupling3Points',
+           'calc_transf_matrix', 'calculate_couplings_levine',
            'calculate_mos',
            'change_mol_units', 'createNormalizedCGFs', 'createUniqueCGF',
            'create_dict_CGFs', 'create_point_folder', 'expandBasisOneCGF',
