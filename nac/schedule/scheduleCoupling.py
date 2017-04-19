@@ -97,10 +97,10 @@ def calculate_couplings(
         logger.info("Computing coupling: {}".format(path))
         # Extract the 4 overlap matrices involved in the coupling computation
         j = 2 * i
-        fixed_phase_overlaps[j: j + 4]
+        ps = fixed_phase_overlaps[j: j + 4]
 
         # Compute the couplings with the phase corrected overlaps
-        couplings = calculateCoupling3Points(dt_au, *fixed_phase_overlaps)
+        couplings = calculateCoupling3Points(dt_au, *ps)
 
         # Store the Coupling in the HDF5
         with h5py.File(path_hdf5, 'r+') as f5:
