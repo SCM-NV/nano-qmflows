@@ -76,13 +76,9 @@ def generate_pyxaid_hamiltonians(
         package_args, guess_args, calc_new_wf_guess_on_points,
         enumerate_from, package_config=package_config)
 
-    # Inplace scheduling of calculate_overlap function
-    # Equivalent to add @schedule on top of the function
-    schedule_overlaps = schedule(calculate_overlap)
-
     # Calculate Non-Adiabatic Coupling
     # Number of Coupling points calculated with the MD trajectory
-    promised_overlaps = schedule_overlaps(
+    promised_overlaps = calculate_overlap(
         project_name, path_hdf5, dictCGFs, geometries, mo_paths_hdf5,
         hdf5_trans_mtx, enumerate_from, nHOMO=nHOMO,
         couplings_range=couplings_range)
@@ -151,6 +147,10 @@ def calculate_overlap(project_name: str, path_hdf5: str, dictCGFs: Dict,
     """
     nPoints = len(geometries) - 1
 
+    # Inplace scheduling of calculate_overlap function
+    # Equivalent to add @schedule on top of the function
+    schedule_overlaps = schedule(lazy_overlaps)
+
     # Compute the Overlaps
     paths_overlaps = []
     for i in range(nPoints):
@@ -164,7 +164,7 @@ def calculate_overlap(project_name: str, path_hdf5: str, dictCGFs: Dict,
             molecules = tuple(map(change_mol_units, molecules))
 
         # Compute the coupling
-        overlaps = lazy_overlaps(
+        overlaps = schedule_overlaps(
             i, project_name, path_hdf5, dictCGFs, molecules, mo_paths_hdf5,
             hdf5_trans_mtx=hdf5_trans_mtx, enumerate_from=enumerate_from,
             nHOMO=nHOMO, couplings_range=couplings_range)
