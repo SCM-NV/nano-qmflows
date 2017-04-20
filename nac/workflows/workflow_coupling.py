@@ -33,8 +33,8 @@ def generate_pyxaid_hamiltonians(
         package_config: Dict=None, dt: float=1,
         traj_folders: List=None, work_dir: str=None,
         basisname: str=None, hdf5_trans_mtx: str=None,
-        nHOMO: int=None,
-        couplings_range: Tuple=None) -> None:
+        nHOMO: int=None, couplings_range: Tuple=None,
+        algorithm='levine') -> None:
     """
     Use a md trajectory to generate the hamiltonian components to run PYXAID
     nonadiabatic molecular dynamics.
@@ -86,7 +86,8 @@ def generate_pyxaid_hamiltonians(
     # Compute the Couplings
     schedule_couplings = schedule(lazy_couplings)
     promised_crossing_and_couplings = schedule_couplings(
-        promised_overlaps, path_hdf5, project_name, enumerate_from, nHOMO, dt)
+        promised_overlaps, path_hdf5, project_name, enumerate_from, nHOMO, dt,
+        algorithm=algorithm)
 
     # Write the results in PYXAID format
     path_hamiltonians = join(work_dir, 'hamiltonians')

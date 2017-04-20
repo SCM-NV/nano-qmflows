@@ -45,7 +45,8 @@ def lazy_couplings(paths_overlaps: List, path_hdf5: str, project_name: str,
     such crossing must be track. see:
     J. Chem. Phys. 137, 014512 (2012); doi: 10.1063/1.4732536
     """
-    fixed_phase_overlaps, swaps = compute_the_fixed_phase_overlaps()
+    fixed_phase_overlaps, swaps = compute_the_fixed_phase_overlaps(
+        paths_overlaps, path_hdf5, project_name, enumerate_from, nHOMO)
 
     # Compute the couplings using either the levine method
     # or the 3Points approximation
@@ -62,7 +63,7 @@ def lazy_couplings(paths_overlaps: List, path_hdf5: str, project_name: str,
 
     couplings = [calculate_couplings(
         fun_coupling, step, i, project_name, fixed_phase_overlaps, path_hdf5,
-        enumerate_from, dt_au, algorithm) for i in range(nCouplings)]
+        enumerate_from, dt_au) for i in range(nCouplings)]
 
     return swaps, couplings
 
@@ -408,8 +409,8 @@ def write_overlaps_in_ascii(overlaps: Tensor3D) -> None:
     for k in range(nFrames // 2):
         m = 2 * k
         mtx_Sji, mtx_Sij = overlaps[m: m + 2]
-        path_Sji = 'overlaps/mtx_Sji_{}'.format(m)
-        path_Sij = 'overlaps/mtx_Sij_{}'.format(m)
+        path_Sji = 'overlaps/mtx_Sji_{}'.format(k)
+        path_Sij = 'overlaps/mtx_Sij_{}'.format(k)
 
         np.savetxt(path_Sji, mtx_Sji, fmt='%10.5e', delimiter='  ')
         np.savetxt(path_Sij, mtx_Sij, fmt='%10.5e', delimiter='  ')
