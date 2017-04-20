@@ -14,7 +14,6 @@ from nac.integrals import (
     calculate_couplings_levine, calculate_couplings_3points,
     compute_overlaps_for_coupling, correct_phases)
 from nac.common import (femtosec2au, retrieve_hdf5_data, search_data_in_hdf5)
-from qmworks.hdf5.quantumHDF5 import StoreasHDF5
 
 # Types hint
 from typing import (Callable, Dict, List, Tuple)
@@ -120,7 +119,7 @@ def compute_the_fixed_phase_overlaps(
                              fixed_phase_overlaps)
 
         # Store the Swaps tracking the crossing
-        store_arrays_in_hdf5(path_hdf5, path_swaps, swaps)
+        store_arrays_in_hdf5(path_hdf5, path_swaps, swaps, dtype=np.int32)
     else:
         # Read the corrected overlaps and the swaps from the HDF5
         fixed_phase_overlaps = np.stack(
@@ -416,14 +415,17 @@ def write_overlaps_in_ascii(overlaps: Tensor3D) -> None:
         np.savetxt(path_Sij, mtx_Sij, fmt='%10.5e', delimiter='  ')
 
 
-def store_arrays_in_hdf5(path_hdf5: str, paths, tensor: Array)-> None:
+def store_arrays_in_hdf5(path_hdf5: str, paths, tensor: Array,
+                         dtype=np.float32)-> None:
     """
     Store the corrected overlaps in the HDF5 file
     """
     with h5py.File(path_hdf5, 'r+') as f5:
-        store = StoreasHDF5(f5, 'cp2k')
         if isinstance(paths, list):
             for k, path in enumerate(paths):
-                store.funHDF5(path, tensor[k])
+                data = tensor[k]
+                f5.require_dataset(path, shape=np.shape(data),
+                                   data=data, dtype=dtype)
         else:
-            store.funHDF5(paths, tensor)
+            f5.require_dataset(path, shape=np.shape(tensor),
+                               data=tensor, dtype=dtype)
