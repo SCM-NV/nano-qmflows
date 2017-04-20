@@ -97,12 +97,15 @@ def correct_phases(overlaps: Tensor3D, mtx_phases: Matrix) -> List:
     Correct the phases for all the overlaps
     """
     nFrames = overlaps.shape[0]  # total number of overlap matrices
-
+    dim = overlaps.shape[1]  # Size of the square matrix
+    
     for k in range(nFrames // 2):
         m = 2 * k
         # Extract phases
         phases_t0, phases_t1 = mtx_phases[k: k + 2]
-        mtx_phases_Sji_t0_t1 = np.outer(phases_t0, phases_t1)
+        phases_t0 = phases_t0.reshape(dim, 1)
+        phases_t1 = phases_t0.reshape(1, dim)
+        mtx_phases_Sji_t0_t1 = np.dot(phases_t0, phases_t1)
         mtx_phases_Sij_t1_t0 = np.transpose(mtx_phases_Sji_t0_t1)
 
         # Update array with the fixed phases
