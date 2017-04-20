@@ -224,7 +224,7 @@ def track_unavoided_crossings(overlaps: Tensor3D, nHOMO: int) -> Tuple:
 
         # update the overlaps at times > t with the previous swaps
         if k != (dim_x - 1):  # last element
-            k2 = 2 * (k + 1)
+            k2 = 2 * k
             overlaps[k2:] = swap_forward(overlaps[k2:], total_swaps)
 
     # Accumulate the swaps
