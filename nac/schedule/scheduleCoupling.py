@@ -13,7 +13,8 @@ import os
 from nac.integrals import (
     calculate_couplings_levine, calculate_couplings_3points,
     compute_overlaps_for_coupling, correct_phases)
-from nac.common import (femtosec2au, retrieve_hdf5_data, search_data_in_hdf5)
+from nac.common import (femtosec2au, retrieve_hdf5_data, search_data_in_hdf5,
+                        store_arrays_in_hdf5)
 
 # Types hint
 from typing import (Callable, Dict, List, Tuple)
@@ -413,19 +414,3 @@ def write_overlaps_in_ascii(overlaps: Tensor3D) -> None:
 
         np.savetxt(path_Sji, mtx_Sji, fmt='%10.5e', delimiter='  ')
         np.savetxt(path_Sij, mtx_Sij, fmt='%10.5e', delimiter='  ')
-
-
-def store_arrays_in_hdf5(path_hdf5: str, paths, tensor: Array,
-                         dtype=np.float32)-> None:
-    """
-    Store the corrected overlaps in the HDF5 file
-    """
-    with h5py.File(path_hdf5, 'r+') as f5:
-        if isinstance(paths, list):
-            for k, path in enumerate(paths):
-                data = tensor[k]
-                f5.require_dataset(path, shape=np.shape(data),
-                                   data=data, dtype=dtype)
-        else:
-            f5.require_dataset(path, shape=np.shape(tensor),
-                               data=tensor, dtype=dtype)
