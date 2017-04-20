@@ -5,7 +5,6 @@ from itertools import chain
 from os.path import join
 from scipy.optimize import linear_sum_assignment
 
-import h5py
 import logging
 import numpy as np
 import os
