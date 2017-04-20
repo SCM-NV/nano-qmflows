@@ -104,7 +104,7 @@ def correct_phases(overlaps: Tensor3D, mtx_phases: Matrix) -> List:
         # Extract phases
         phases_t0, phases_t1 = mtx_phases[k: k + 2]
         phases_t0 = phases_t0.reshape(dim, 1)
-        phases_t1 = phases_t0.reshape(1, dim)
+        phases_t1 = phases_t1.reshape(1, dim)
         mtx_phases_Sji_t0_t1 = np.dot(phases_t0, phases_t1)
         mtx_phases_Sij_t1_t0 = np.transpose(mtx_phases_Sji_t0_t1)
 
