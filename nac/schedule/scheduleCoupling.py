@@ -56,7 +56,7 @@ def lazy_couplings(paths_overlaps: List, path_hdf5: str, project_name: str,
     fun_coupling, step = coupling_algorithms[algorithm]
 
     # Number of couplings to compute
-    nCouplings = fixed_phase_overlaps.shape[0] // 2
+    nCouplings = (fixed_phase_overlaps.shape[0] // 2) - 1
 
     # time in atomic units
     dt_au = dt * femtosec2au
