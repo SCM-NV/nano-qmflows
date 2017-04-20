@@ -30,7 +30,7 @@ def calculate_couplings_3points(
     return cte * (3 * (mtx_sji_t1 - mtx_sij_t1) + (mtx_sij_t0 - mtx_sji_t0))
 
 
-def calculate_couplings_levine(i: int, dt: float, w_jk: Matrix,
+def calculate_couplings_levine(dt: float, w_jk: Matrix,
                                w_kj: Matrix) -> Matrix:
     """
     Compute the non-adiabatic coupling according to:
