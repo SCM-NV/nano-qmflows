@@ -301,10 +301,8 @@ def lazy_overlaps(i: int, project_name: str, path_hdf5: str, dictCGFs: Dict,
             couplings_range, hdf5_trans_mtx)
 
         # Store the matrices in the HDF5 file
-        with h5py.File(path_hdf5, 'r+') as f5:
-            store = StoreasHDF5(f5, 'cp2k')
-            for p, mtx in zip(overlaps_paths_hdf5, overlaps):
-                store.funHDF5(p, mtx)
+        store_arrays_in_hdf5(path_hdf5, overlaps_paths_hdf5[0], overlaps[0])
+        store_arrays_in_hdf5(path_hdf5, overlaps_paths_hdf5[1], overlaps[1])
 
     return overlaps_paths_hdf5
 

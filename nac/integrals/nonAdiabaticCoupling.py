@@ -98,7 +98,7 @@ def correct_phases(overlaps: Tensor3D, mtx_phases: Matrix) -> List:
     """
     nFrames = overlaps.shape[0]  # total number of overlap matrices
     dim = overlaps.shape[1]  # Size of the square matrix
-    
+
     for k in range(nFrames // 2):
         m = 2 * k
         # Extract phases
@@ -119,7 +119,7 @@ def compute_overlaps_for_coupling(
         geometries: Tuple, path_hdf5: str,
         mo_paths: Tuple, dictCGFs: Dict,
         nHOMO: int, couplings_range: Tuple,
-        hdf5_trans_mtx: str=None) -> Matrix:
+        hdf5_trans_mtx: str=None) -> Tuple:
     """
     Compute the Overlap matrices used to compute the couplings
 
