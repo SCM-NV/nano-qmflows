@@ -193,9 +193,12 @@ def compute_phases(overlaps: Tensor3D, nCouplings: int,
 
 def track_unavoided_crossings(overlaps: Tensor3D, nHOMO: int) -> Tuple:
     """
-    Track the index of the states if there is a crossing using the algorithm
-    at J. Chem. Phys. 137, 014512 (2012); doi: 10.1063/1.4732536.
+    Track the index of the states if there is a crossing using the
+    algorithm  described at:
+    J. Chem. Phys. 137, 014512 (2012); doi: 10.1063/1.4732536.
     """
+    # Original data
+    track_overlaps = np.copy(overlaps)
     # 3D array containing the costs
     # Notice that the cost is compute on half of the overlap matrices
     # correspoding to Sji_t, the other half corresponds to Sij_t
@@ -224,7 +227,7 @@ def track_unavoided_crossings(overlaps: Tensor3D, nHOMO: int) -> Tuple:
 
         # update the overlaps at times > t with the previous swaps
         if k != (dim_x - 1):  # last element
-            k2 = 2 * k
+            k2 = 2 * (k + 1)
             overlaps[k2:] = swap_forward(overlaps[k2:], total_swaps)
 
     # Accumulate the swaps
@@ -237,7 +240,13 @@ def track_unavoided_crossings(overlaps: Tensor3D, nHOMO: int) -> Tuple:
         acc = acc[indexes[i + 1]]
         arr[i + 1] = acc
 
-    return overlaps, arr
+    # Track the crossings in the original data
+    for k in range(dim_x):
+        k2 = 2 * k
+        track_overlaps[k2] = swap_indexes(track_overlaps[k2], arr[k])
+        track_overlaps[k2 + 1] = swap_indexes(track_overlaps[k2 + 1], arr[k])
+
+    return track_overlaps, arr
 
 
 def swap_forward(overlaps: Tensor3D, swaps: Vector) -> Tensor3D:
