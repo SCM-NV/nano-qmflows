@@ -243,8 +243,9 @@ def track_unavoided_crossings(overlaps: Tensor3D, nHOMO: int) -> Tuple:
     # Track the crossings in the original data
     for k in range(dim_x):
         k2 = 2 * k
-        track_overlaps[k2] = swap_indexes(track_overlaps[k2], arr[k])
-        track_overlaps[k2 + 1] = swap_indexes(track_overlaps[k2 + 1], arr[k])
+        track_overlaps[k2] = swap_indexes(track_overlaps[k2], arr[k + 1])
+        track_overlaps[k2 + 1] = swap_indexes(track_overlaps[k2 + 1],
+                                              arr[k + 1])
 
     return track_overlaps, arr
 
