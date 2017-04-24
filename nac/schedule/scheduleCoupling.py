@@ -229,7 +229,8 @@ def track_unavoided_crossings(overlaps: Tensor3D, nHOMO: int) -> Tuple:
         if k != (dim_x - 1):  # last element
             k2 = 2 * (k + 1)
             overlaps[k2:] = swap_forward(overlaps[k2:], total_swaps)
-
+            overlaps[2 * k] = swap_columns(overlaps[2 * k], total_swaps)
+            overlaps[(2 * k) + 1] =  overlaps[(2 * k) + 1][total_swaps]
     # Accumulate the swaps
     acc = indexes[0]
     arr = np.empty(indexes.shape, dtype=np.int)
@@ -241,13 +242,14 @@ def track_unavoided_crossings(overlaps: Tensor3D, nHOMO: int) -> Tuple:
         arr[i + 1] = acc
 
     # Track the crossings in the original data
-    for k in range(dim_x):
-        k2 = 2 * k
-        track_overlaps[k2] = swap_indexes(track_overlaps[k2], arr[k + 1])
-        track_overlaps[k2 + 1] = swap_indexes(track_overlaps[k2 + 1],
-                                              arr[k + 1])
+#    for k in range(dim_x):
+#        k2 = 2 * k
+#        track_overlaps[k2] = swap_columns(track_overlaps[k2], arr[k + 1])
+#        track_overlaps[k2 + 1] = swap_columns(track_overlaps[k2 + 1],
+#                                              arr[k + 1])
 
-    return track_overlaps, arr
+#    return track_overlaps, arr
+    return overlaps, arr
 
 
 def swap_forward(overlaps: Tensor3D, swaps: Vector) -> Tensor3D:
@@ -388,6 +390,13 @@ def swap_indexes(arr: Matrix, swaps_t: Vector) -> Matrix:
         brr[k] = arr[indexes]
 
     return brr
+
+def swap_columns(arr: Matrix, swaps_t: Vector) -> Matrix:
+    """
+    Swap only columns at t+dt to reconstruct the original overlap matrix
+    """
+    return np.transpose(np.transpose(arr)[swaps_t])
+
 
 
 def validate_crossings(overlaps: Matrix) -> None:
