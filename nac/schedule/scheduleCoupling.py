@@ -197,8 +197,6 @@ def track_unavoided_crossings(overlaps: Tensor3D, nHOMO: int) -> Tuple:
     algorithm  described at:
     J. Chem. Phys. 137, 014512 (2012); doi: 10.1063/1.4732536.
     """
-    # Original data
-    track_overlaps = np.copy(overlaps)
     # 3D array containing the costs
     # Notice that the cost is compute on half of the overlap matrices
     # correspoding to Sji_t, the other half corresponds to Sij_t
@@ -228,9 +226,13 @@ def track_unavoided_crossings(overlaps: Tensor3D, nHOMO: int) -> Tuple:
         # update the overlaps at times > t with the previous swaps
         if k != (dim_x - 1):  # last element
             k2 = 2 * (k + 1)
+            dk = 2 * k
+            # Update the matrix Sji at time t
+            overlaps[dk] = swap_columns(overlaps[dk], total_swaps)
+            # Update the matrix Sij at time t
+            overlaps[dk + 1] = overlaps[dk + 1][total_swaps]
+            # Update all the matrices Sji and Sij at time > t
             overlaps[k2:] = swap_forward(overlaps[k2:], total_swaps)
-            overlaps[2 * k] = swap_columns(overlaps[2 * k], total_swaps)
-            overlaps[(2 * k) + 1] =  overlaps[(2 * k) + 1][total_swaps]
     # Accumulate the swaps
     acc = indexes[0]
     arr = np.empty(indexes.shape, dtype=np.int)
@@ -241,14 +243,6 @@ def track_unavoided_crossings(overlaps: Tensor3D, nHOMO: int) -> Tuple:
         acc = acc[indexes[i + 1]]
         arr[i + 1] = acc
 
-    # Track the crossings in the original data
-#    for k in range(dim_x):
-#        k2 = 2 * k
-#        track_overlaps[k2] = swap_columns(track_overlaps[k2], arr[k + 1])
-#        track_overlaps[k2 + 1] = swap_columns(track_overlaps[k2 + 1],
-#                                              arr[k + 1])
-
-#    return track_overlaps, arr
     return overlaps, arr
 
 
@@ -391,26 +385,12 @@ def swap_indexes(arr: Matrix, swaps_t: Vector) -> Matrix:
 
     return brr
 
+
 def swap_columns(arr: Matrix, swaps_t: Vector) -> Matrix:
     """
     Swap only columns at t+dt to reconstruct the original overlap matrix
     """
     return np.transpose(np.transpose(arr)[swaps_t])
-
-
-
-def validate_crossings(overlaps: Matrix) -> None:
-    """
-    Warn the user about crossings that do not have physical meaning
-    or points entering/leaving the active space.
-    """
-    for k, mtx in enumerate(overlaps[1:-1:2]):
-        diag = np.abs(np.diag(mtx))
-        indexes = np.argwhere(diag < 0.5).flatten()
-        if indexes.size != 0:
-            msg = " the following MOs has a overlap Sii < 0.5: {}\
-            at time {}".format(indexes, k)
-            logger.warning(msg)
 
 
 def write_overlaps_in_ascii(overlaps: Tensor3D) -> None:
