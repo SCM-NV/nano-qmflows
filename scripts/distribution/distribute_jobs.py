@@ -150,8 +150,9 @@ def cp2k_input(range_orbitals, cell_parameters, cell_angles,
 
 
 def distribute_computations(scratch, project_name, basisCP2K, potCP2K,
-                            cp2k_main, cp2k_guess, path_to_trajectory,
-                            blocks, slurm, cwd, nHOMO, couplings_range):
+                            cp2k_main, cp2k_guess, path_to_trajectory, blocks,
+                            slurm, cwd, nHOMO, couplings_range,
+                            algorithm='levine'):
 
     script_name = "script_remote_function.py"
     # Split the trajectory in Chunks and move each chunk to its corresponding
@@ -169,10 +170,11 @@ def distribute_computations(scratch, project_name, basisCP2K, potCP2K,
         path_hdf5 = join(scratch, '{}.hdf5'.format(folder))
         hamiltonians_dir = join(scratch, 'hamiltonians')
         # function to be execute remotely
+        scratch = join(scratch, 'batch_{}'.format(i))
         write_python_script(scratch, folder, file_xyz, project_name,
                             basisCP2K, potCP2K, cp2k_main,
                             cp2k_guess, enumerate_from, script_name,
-                            path_hdf5, nHOMO, couplings_range)
+                            path_hdf5, nHOMO, couplings_range, algorithm)
 
         # number of geometries per batch
         dim_batch = number_of_geometries(join(folder, file_xyz))
@@ -185,7 +187,8 @@ def distribute_computations(scratch, project_name, basisCP2K, potCP2K,
 
 def write_python_script(scratch, folder, file_xyz, project_name, basisCP2K,
                         potCP2K, cp2k_main, cp2k_guess, enumerate_from,
-                        script_name, path_hdf5, nHOMO, couplings_range):
+                        script_name, path_hdf5, nHOMO, couplings_range,
+                        algorithm):
     """ Write the python script to compute the PYXAID hamiltonians"""
     path = join(scratch, project_name)
     if not os.path.exists(path):
@@ -194,6 +197,10 @@ def write_python_script(scratch, folder, file_xyz, project_name, basisCP2K,
 from nac.workflows.workflow_coupling import generate_pyxaid_hamiltonians
 from nac.workflows.initialization import initialize
 from qmworks.utils import dict2Setting
+import plams
+
+
+plams.init(folder='{}')
 
 project_name = '{}'
 path_basis = '{}'
@@ -217,12 +224,14 @@ cp2k_guess = dict2Setting({})
 generate_pyxaid_hamiltonians('cp2k', project_name, cp2k_main,
                              guess_args=cp2k_guess,
                              nHOMO={},
+                             algorithm='{}',
                              couplings_range=({},{}),
                              **initial_config)
- """.format(enumerate_from, project_name, basisCP2K, potCP2K,
+plams.finish()
+ """.format(scratch, project_name, basisCP2K, potCP2K,
             path_hdf5, file_xyz, cp2k_main.basis, enumerate_from, scratch,
             settings2Dict(cp2k_main), settings2Dict(cp2k_guess), nHOMO,
-            *couplings_range)
+            algorithm, *couplings_range)
 
     with open(join(folder, script_name), 'w') as f:
         f.write(xs)

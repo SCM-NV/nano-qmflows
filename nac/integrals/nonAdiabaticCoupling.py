@@ -1,4 +1,5 @@
-_author__ = "Felipe Zapata"
+__all__ = ['calculate_couplings_3points', 'calculate_couplings_levine',
+           'compute_overlaps_for_coupling', 'correct_phases']
 
 # ================> Python Standard  and third-party <==========
 # from multipoleObaraSaika import sab_unfolded
@@ -16,12 +17,10 @@ Vector = np.ndarray
 Matrix = np.ndarray
 Tensor3D = np.ndarray
 
-# =====================================<>======================================
 
-
-def calculateCoupling3Points(
-        dt,
-        mtx_sji_t0, mtx_sij_t0, mtx_sji_t1, mtx_sij_t1):
+def calculate_couplings_3points(
+        dt: float, mtx_sji_t0: Matrix, mtx_sij_t0: Matrix,
+        mtx_sji_t1: Matrix, mtx_sij_t1: Matrix) -> None:
     """
     Calculate the non-adiabatic interaction matrix using 3 geometries,
     the CGFs for the atoms and molecular orbitals coefficients read
@@ -31,32 +30,96 @@ def calculateCoupling3Points(
     return cte * (3 * (mtx_sji_t1 - mtx_sij_t1) + (mtx_sij_t0 - mtx_sji_t0))
 
 
+def calculate_couplings_levine(dt: float, w_jk: Matrix,
+                               w_kj: Matrix) -> Matrix:
+    """
+    Compute the non-adiabatic coupling according to:
+    `Evaluation of the Time-Derivative Coupling for Accurate Electronic
+    State Transition Probabilities from Numerical Simulations`.
+    Garrett A. Meek and Benjamin G. Levine.
+    dx.doi.org/10.1021/jz5009449 | J. Phys. Chem. Lett. 2014, 5, 2351−2356
+    """
+    # Orthonormalize the Overlap matrices
+    w_jk = np.linalg.qr(w_jk)[0]
+    w_kj = np.linalg.qr(w_kj)[0]
+
+    # Diagonal matrix
+    w_jj = np.diag(np.diag(w_jk))
+    w_kk = np.diag(np.diag(w_kj))
+
+    # remove the values from the diagonal
+    np.fill_diagonal(w_jk, 0)
+    np.fill_diagonal(w_kj, 0)
+
+    # Components A + B
+    acos_w_jj = np.arccos(w_jj)
+    asin_w_jk = np.arcsin(w_jk)
+
+    a = acos_w_jj - asin_w_jk
+    b = acos_w_jj + asin_w_jk
+    A = - np.sin(np.sinc(a))
+    B = np.sin(np.sinc(b))
+
+    # Components C + D
+    acos_w_kk = np.arccos(w_kk)
+    asin_w_kj = np.arcsin(w_kj)
+
+    c = acos_w_kk - asin_w_kj
+    d = acos_w_kk + asin_w_kj
+    C = np.sin(np.sinc(c))
+    D = np.sin(np.sinc(d))
+
+    # Components E
+    w_lj = np.sqrt(1 - (w_jj ** 2) - (w_kj ** 2))
+    w_lk = -(w_jk * w_jj + w_kk * w_kj) / w_lj
+    asin_w_lj = np.arcsin(w_lj)
+    asin_w_lk = np.arcsin(w_lk)
+    asin_w_lj2 = asin_w_lj ** 2
+    asin_w_lk2 = asin_w_lk ** 2
+
+    t1 = w_lj * w_lk * asin_w_lj
+    x1 = np.sqrt((1 - w_lj ** 2) * (1 - w_lk ** 2)) - 1
+    t2 = x1 * asin_w_lk
+    t = t1 + t2
+    E_nonzero = 2 * asin_w_lj * t / (asin_w_lj2 - asin_w_lk2)
+
+    # Check whether w_lj is different of zero
+    E1 = np.where(np.abs(w_lj) > 1e-8, E_nonzero, np.zeros(A.shape))
+
+    E = np.where(np.isclose(asin_w_lj2, asin_w_lk2), w_lj ** 2, E1)
+
+    cte = 1 / (2 * dt)
+    return cte * (np.arccos(w_jj) * (A + B) + np.arcsin(w_kj) * (C + D) + E)
+
+
 def correct_phases(overlaps: Tensor3D, mtx_phases: Matrix) -> List:
     """
-    Correct the phases of the overlap matrices
+    Correct the phases for all the overlaps
     """
-    dim = overlaps.shape[1]
-    # Reshape phases vector to matrix
-    phases_t0, phases_t1, phases_t2 = [
-        mtx_phases[i].reshape(dim, 1) for i in range(3)]
+    nFrames = overlaps.shape[0]  # total number of overlap matrices
+    dim = overlaps.shape[1]  # Size of the square matrix
 
-    # Matrices containing the phases resulting from multipling
-    # the phases of state_i * state_j
-    mtx_phases_Sji_t0_t1 = np.dot(phases_t0, phases_t1.transpose())
-    mtx_phases_Sji_t1_t2 = np.dot(phases_t1, phases_t2.transpose())
-    mtx_phases_Sij_t1_t0 = np.transpose(mtx_phases_Sji_t0_t1)
-    mtx_phases_Sij_t2_t1 = np.transpose(mtx_phases_Sji_t1_t2)
+    for k in range(nFrames // 2):
+        m = 2 * k
+        # Extract phases
+        phases_t0, phases_t1 = mtx_phases[k: k + 2]
+        phases_t0 = phases_t0.reshape(dim, 1)
+        phases_t1 = phases_t1.reshape(1, dim)
+        mtx_phases_Sji_t0_t1 = np.dot(phases_t0, phases_t1)
+        mtx_phases_Sij_t1_t0 = np.transpose(mtx_phases_Sji_t0_t1)
 
-    return [overlaps[i] * phases for i, phases in
-            enumerate([mtx_phases_Sji_t0_t1, mtx_phases_Sij_t1_t0,
-                       mtx_phases_Sji_t1_t2, mtx_phases_Sij_t2_t1])]
+        # Update array with the fixed phases
+        overlaps[m] *= mtx_phases_Sji_t0_t1
+        overlaps[m + 1] *= mtx_phases_Sij_t1_t0
+
+    return overlaps
 
 
 def compute_overlaps_for_coupling(
         geometries: Tuple, path_hdf5: str,
         mo_paths: Tuple, dictCGFs: Dict,
         nHOMO: int, couplings_range: Tuple,
-        hdf5_trans_mtx: str=None) -> Matrix:
+        hdf5_trans_mtx: str=None) -> Tuple:
     """
     Compute the Overlap matrices used to compute the couplings
 
@@ -98,7 +161,8 @@ def compute_overlaps_for_coupling(
     return mtx_sji_t0, mtx_sij_t0
 
 
-def read_overlap_data(path_hdf5, mo_paths, hdf5_trans_mtx, nHOMO, couplings_range):
+def read_overlap_data(path_hdf5: str, mo_paths: str, hdf5_trans_mtx: str,
+                      nHOMO: int, couplings_range: tuple) -> None:
     """
     Read the Molecular orbital coefficients and the transformation matrix
     """
@@ -156,8 +220,8 @@ def calc_overlap_row(dictCGFs: Dict, mol1: List, dim: int,
     """
     Calculate the k-th row of the overlap integral using
     2 CGFs  and 2 different atomic coordinates.
-    This function only computes the upper triangular matrix since for the atomic
-    basis, the folliwng condition is fulfill
+    This function only computes the upper triangular matrix since for the
+    atomic basis, the folliwng condition is fulfill
     <f(t-dt) | f(t) > = <f(t) | f(t - dt) >
     """
     row = np.zeros(dim)
@@ -204,6 +268,7 @@ def lookup_cgf(atoms: List, dictCGFs: Dict, i: int) -> Tuple:
     t = xyz, dictCGFs[s][index]
 
     return t
+
 
 def compute_range_orbitals(mtx: Matrix, nHOMO: int,
                            couplings_range: Tuple) -> Tuple:

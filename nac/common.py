@@ -3,7 +3,7 @@ __all__ = ['AtomBasisData', 'AtomBasisKey', 'AtomData', 'AtomXYZ', 'CGF',
            'InfoMO', 'InputKey', 'MO',
            'binomial', 'change_mol_units', 'even',
            'fac', 'getmass', 'odd', 'product', 'retrieve_hdf5_data',
-           'search_data_in_hdf5', 'triang2mtx']
+           'search_data_in_hdf5', 'store_arrays_in_hdf5', 'triang2mtx']
 
 # ================> Python Standard  and third-party <==========
 from collections import namedtuple
@@ -28,8 +28,11 @@ MO = namedtuple("MO", ("coordinates", "cgfs", "coefficients"))
 angs2au = 1 / 0.529177249  # Angstrom to a.u
 femtosec2au = 1 / 2.41888432e-2  # from femtoseconds to au
 
+# Numpy type hints
+Array = np.ndarray  # Generic Array
 
-def getmass(s):
+
+def getmass(s: str):
     d = {'h': 1, 'he': 2, 'li': 3, 'be': 4, 'b': 5, 'c': 6, 'n': 7, 'o': 8,
          'f': 9, 'ne': 10, 'na': 11, 'mg': 12, 'al': 13, 'si': 14, 'p': 15,
          's': 16, 'cl': 17, 'ar': 18, 'k': 19, 'ca': 20, 'sc': 21, 'ti': 22,
@@ -77,6 +80,22 @@ def search_data_in_hdf5(path_hdf5, xs):
                 return xs in f5
     else:
         return False
+
+
+def store_arrays_in_hdf5(path_hdf5: str, paths, tensor: Array,
+                         dtype=np.float32)-> None:
+    """
+    Store the corrected overlaps in the HDF5 file
+    """
+    with h5py.File(path_hdf5, 'r+') as f5:
+        if isinstance(paths, list):
+            for k, path in enumerate(paths):
+                data = tensor[k]
+                f5.require_dataset(path, shape=np.shape(data),
+                                   data=data, dtype=dtype)
+        else:
+            f5.require_dataset(paths, shape=np.shape(tensor),
+                               data=tensor, dtype=dtype)
 
 
 def fromIndex(ixs, shape):

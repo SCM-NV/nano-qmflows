@@ -33,8 +33,8 @@ def generate_pyxaid_hamiltonians(
         package_config: Dict=None, dt: float=1,
         traj_folders: List=None, work_dir: str=None,
         basisname: str=None, hdf5_trans_mtx: str=None,
-        nHOMO: int=None,
-        couplings_range: Tuple=None) -> None:
+        nHOMO: int=None, couplings_range: Tuple=None,
+        algorithm='levine') -> None:
     """
     Use a md trajectory to generate the hamiltonian components to run PYXAID
     nonadiabatic molecular dynamics.
@@ -76,13 +76,9 @@ def generate_pyxaid_hamiltonians(
         package_args, guess_args, calc_new_wf_guess_on_points,
         enumerate_from, package_config=package_config)
 
-    # Inplace scheduling of calculate_overlap function
-    # Equivalent to add @schedule on top of the function
-    schedule_overlaps = schedule(calculate_overlap)
-
     # Calculate Non-Adiabatic Coupling
     # Number of Coupling points calculated with the MD trajectory
-    promised_overlaps = schedule_overlaps(
+    promised_overlaps = calculate_overlap(
         project_name, path_hdf5, dictCGFs, geometries, mo_paths_hdf5,
         hdf5_trans_mtx, enumerate_from, nHOMO=nHOMO,
         couplings_range=couplings_range)
@@ -90,7 +86,8 @@ def generate_pyxaid_hamiltonians(
     # Compute the Couplings
     schedule_couplings = schedule(lazy_couplings)
     promised_crossing_and_couplings = schedule_couplings(
-        promised_overlaps, path_hdf5, project_name, enumerate_from, nHOMO, dt)
+        promised_overlaps, path_hdf5, project_name, enumerate_from, nHOMO, dt,
+        algorithm=algorithm)
 
     # Write the results in PYXAID format
     path_hamiltonians = join(work_dir, 'hamiltonians')
@@ -119,9 +116,9 @@ def generate_pyxaid_hamiltonians(
 
 
 def calculate_overlap(project_name: str, path_hdf5: str, dictCGFs: Dict,
-                      geometries: List, mo_paths_hdf5: List, hdf5_trans_mtx: str,
-                      enumerate_from: int, nHOMO: int=None,
-                      couplings_range: Tuple=None,
+                      geometries: List, mo_paths_hdf5: List,
+                      hdf5_trans_mtx: str, enumerate_from: int,
+                      nHOMO: int=None, couplings_range: Tuple=None,
                       units: str='angstrom') -> List:
     """
     Calculate the Overlap matrices before computing the non-adiabatic
@@ -135,12 +132,9 @@ def calculate_overlap(project_name: str, path_hdf5: str, dictCGFs: Dict,
               CGF = ([Primitives], AngularMomentum),
               Primitive = (Coefficient, Exponent)
     :param geometries: list of molecular geometries
-    :type geometries: [String]
     :param mo_paths: Path to the MO coefficients and energies in the
     HDF5 file.
-    :type mo_paths: [String]
     :param hdf5_trans_mtx: path to the transformation matrix in the HDF5 file.
-    :type hdf5_trans_mtx: String
     :param enumerate_from: Number from where to start enumerating the folders
     create for each point in the MD
     :type enumerate_from: Int
@@ -150,6 +144,10 @@ def calculate_overlap(project_name: str, path_hdf5: str, dictCGFs: Dict,
     :returns: paths to the Overlap matrices inside the HDF5.
     """
     nPoints = len(geometries) - 1
+
+    # Inplace scheduling of calculate_overlap function
+    # Equivalent to add @schedule on top of the function
+    schedule_overlaps = schedule(lazy_overlaps)
 
     # Compute the Overlaps
     paths_overlaps = []
@@ -164,7 +162,7 @@ def calculate_overlap(project_name: str, path_hdf5: str, dictCGFs: Dict,
             molecules = tuple(map(change_mol_units, molecules))
 
         # Compute the coupling
-        overlaps = lazy_overlaps(
+        overlaps = schedule_overlaps(
             i, project_name, path_hdf5, dictCGFs, molecules, mo_paths_hdf5,
             hdf5_trans_mtx=hdf5_trans_mtx, enumerate_from=enumerate_from,
             nHOMO=nHOMO, couplings_range=couplings_range)
