@@ -59,10 +59,6 @@ def main():
 
     range_orbitals = Lower_Index, Highest_Index
 
-    # The number of LUMOs to print must be equal to the added_mos variable
-    # in CP2K. We are printing 20 by default.
-    cp2k_main, cp2k_guess = cp2k_input(range_orbitals, cell_parameters,
-                                       cell_angles)
 
     # In relation to the above range
     # The store orbitals store in the HDF5 are going to be reindex in
@@ -87,6 +83,9 @@ def main():
     # Lowest Unoccupied Molecular Orbitals
     coupling_range = None
 
+    # The keyword added_mos takes as input the number of LUMOs that are needed to compute the desired number of couplings 
+    added_mos = coupling_range[1] 
+
     # Trajectory splitting
     path_to_trajectory = "<Path/to/the/trajectory/in/xyz/format"
 
@@ -101,6 +100,10 @@ def main():
         name="namd"
     )
 
+    # Generate the CP2K inputs that will be then broadcasted to different nodes
+    cp2k_main, cp2k_guess = cp2k_input(range_orbitals, cell_parameters,
+                                       cell_angles, added_mos)
+
     # Path where the data will be copy back
     cwd = os.getcwd()
 
@@ -110,7 +113,7 @@ def main():
 
 
 def cp2k_input(range_orbitals, cell_parameters, cell_angles,
-               added_mos=20):
+               added_mos):
     """
     # create ``Settings`` for the Cp2K Jobs.
     """
@@ -123,7 +126,7 @@ def cp2k_input(range_orbitals, cell_parameters, cell_angles,
     main_dft = cp2k_args.specific.cp2k.force_eval.dft
     main_dft.scf.added_mos = added_mos
     main_dft.scf.max_scf = 200
-    main_dft.scf.eps_scf = 1e-4
+    main_dft.scf.eps_scf = 5e-4
     main_dft['print']['mo']['mo_index_range'] = "{} {}".format(*range_orbitals)
     cp2k_args.specific.cp2k.force_eval.subsys.cell.periodic = 'None'
 
@@ -139,7 +142,7 @@ def cp2k_input(range_orbitals, cell_parameters, cell_angles,
     ot_dft.scf.ot.n_diis = 7
     ot_dft.scf.ot.preconditioner = 'FULL_SINGLE_INVERSE'
     ot_dft.scf.added_mos = 0
-    ot_dft.scf.eps_scf = 1e-04
+    ot_dft.scf.eps_scf = 1e-06
     ot_dft.scf.scf_guess = 'restart'
     cp2k_OT.specific.cp2k.force_eval.subsys.cell.periodic = 'None'
 
