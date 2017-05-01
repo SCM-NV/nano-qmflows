@@ -3,7 +3,7 @@ from .basisSet import (createNormalizedCGFs, createUniqueCGF,
                        expandBasis_turbomole)
 
 from .common import (AtomBasisData, AtomBasisKey, AtomData, AtomXYZ,
-                     CGF, InfoMO, InputKey, MO, change_mol_units, getmass, hbar, nyq_to_cm, r2meV,
+                     CGF, InfoMO, InputKey, MO, change_mol_units, getmass, hbar, fs_to_cm, fs_to_nm, r2meV,
                      retrieve_hdf5_data, search_data_in_hdf5,
                      store_arrays_in_hdf5, triang2mtx)
 
