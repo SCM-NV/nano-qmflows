@@ -345,7 +345,7 @@ def write_hamiltonians(path_hdf5: str, mo_paths: List,
             energies = energies[lowest: highest]
 
         # Swap the energies of the states that are crossing
-        energies = energies[swaps[i]]
+        energies = energies[swaps[i+1]]
 
         # FileNames
         file_ham_im = join(path_dir_results, 'Ham_{}_im'.format(j))

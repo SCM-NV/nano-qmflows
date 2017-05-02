@@ -27,7 +27,11 @@ MO = namedtuple("MO", ("coordinates", "cgfs", "coefficients"))
 # ================> Constants <================
 angs2au = 1 / 0.529177249  # Angstrom to a.u
 femtosec2au = 1 / 2.41888432e-2  # from femtoseconds to au
-
+r2meV = 13605.698  # conversion from rydberg to meV
+fs_to_cm = 33356.40952 # conversion from fs to cm-1 
+fs_to_nm = 299.79246 # conversion from fs to nm 
+hbar = 0.6582119 # planck constant in eV * fs
+ 
 # Numpy type hints
 Array = np.ndarray  # Generic Array
 
