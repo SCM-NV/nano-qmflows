@@ -54,7 +54,7 @@ def lazy_couplings(paths_overlaps: List, path_hdf5: str, project_name: str,
     fun_coupling, step = coupling_algorithms[algorithm]
 
     # Number of couplings to compute
-    nCouplings = (fixed_phase_overlaps.shape[0] // 2) - 1
+    nCouplings = fixed_phase_overlaps.shape[0] - step + 1
 
     # time in atomic units
     dt_au = dt * femtosec2au
@@ -148,12 +148,10 @@ def calculate_couplings(
     else:
         logger.info("Computing coupling: {}".format(path))
         # Extract the overlap matrices involved in the coupling computation
-        j = 2 * i
-        ps = fixed_phase_overlaps[j: j + step]
+        ps = fixed_phase_overlaps[i: i + step]
 
         # Compute the couplings with the phase corrected overlaps
-        raise NotImplementedError
-        couplings = FIXME  # fun_coupling(dt_au, *ps)
+        couplings = fun_coupling(dt_au, *ps)
 
         # Store the Coupling in the HDF5
         store_arrays_in_hdf5(path_hdf5, path, couplings)
