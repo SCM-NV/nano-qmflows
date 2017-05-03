@@ -16,12 +16,15 @@ from .schedule import (calculate_mos, create_dict_CGFs, create_point_folder,
                        prepare_job_cp2k, split_file_geometries,
                        write_hamiltonians)
 
+from .analysis import (autocorrelate, dephasing, gauss_function, 
+                       read_couplings, read_energies, spectral_density)
+
 from .workflows.initialization import (initialize, store_transf_matrix)
 
 from .workflows.workflow_coupling import generate_pyxaid_hamiltonians
 
-__all__ = ['AtomBasisData', 'AtomBasisKey', 'AtomData', 'AtomXYZ', 'CGF',
-           'InfoMO', 'InputKey', 'MO', 'calcMtxMultipoleP', 'calcMtxOverlapP',
+__all__ = ['AtomBasisData', 'AtomBasisKey', 'AtomData', 'AtomXYZ', 'autocorrelate', 'CGF',
+           'dephasing', 'gauss_function', 'InfoMO', 'InputKey', 'MO', 'calcMtxMultipoleP', 'calcMtxOverlapP',
            'calc_transf_matrix', 'calculate_couplings_levine',
            'calculate_mos',
            'change_mol_units', 'createNormalizedCGFs', 'createUniqueCGF',
@@ -30,6 +33,6 @@ __all__ = ['AtomBasisData', 'AtomBasisKey', 'AtomData', 'AtomXYZ', 'CGF',
            'general_multipole_matrix', 'generate_pyxaid_hamiltonians',
            'getmass', 'initialize', 'lazy_couplings',
            'photoExcitationRate', 'prepare_cp2k_settings',
-           'prepare_job_cp2k', 'retrieve_hdf5_data', 'search_data_in_hdf5',
-           'split_file_geometries', 'store_arrays_in_hdf5',
+           'prepare_job_cp2k', 'read_couplings', 'read_energies', 'retrieve_hdf5_data', 'search_data_in_hdf5',
+           'spectral_density', 'split_file_geometries', 'store_arrays_in_hdf5',
            'store_transf_matrix', 'triang2mtx', 'write_hamiltonians']

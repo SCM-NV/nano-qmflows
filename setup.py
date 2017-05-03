@@ -10,7 +10,7 @@ if shutil.which('icc') is not None:
     os.environ['LDSHARED'] = 'icc -shared'
 
 setup(
-    name='NonAdiabaticCouling',
+    name='qmworks-namd',
     version='0.1.7',
     description='Automation of computations in quantum chemistry',
     license='MIT',
@@ -18,7 +18,7 @@ setup(
     author='Felipe Zapata',
     author_email='tifonzafel_gmail.com',
     keywords='chemistry Photochemistry Simulation',
-    packages=["nac", "nac.basisSet", "nac.integrals", "nac.schedule",
+    packages=["nac", "nac.analysis", "nac.basisSet", "nac.integrals", "nac.schedule",
               "nac.workflows"],
     classifiers=[
         'License :: OSI Approved :: MIT License',

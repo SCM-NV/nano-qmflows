@@ -5,7 +5,7 @@ import glob
 import argparse
 import os
 from nac.common import (hbar, r2meV, fs_to_cm, fs_to_nm)
-from scipy.optimize import curve_fit
+from nac.analysis import (autocorrelate, dephasing, gauss_function, read_couplings, read_energies, spectral_density) 
 
 
 def plot_stuff(ens, coupls, acf, sd, deph, rate, s1, s2, ts, wsd, wdeph):
@@ -31,87 +31,41 @@ def plot_stuff(ens, coupls, acf, sd, deph, rate, s1, s2, ts, wsd, wdeph):
 
     ax3 = plt.subplot(324)
     ax3.set_xlabel('Time (fs)')
-    ax3.set_ylabel('Dephasing (arbitrary units)')
-    ax3.set_xlim(0, wdeph)
-    ax3.plot(dim_x, deph[:, 0], c='r')
-    ax3.plot(dim_x, deph[:, 1], c='b')
+    ax3.set_ylabel('Un-normalized AUF')
+#    ax3.plot(ts, acf[:, 1, 0], c='r')
+#    ax3.plot(ts, acf[:, 1, 1], c='b')
+    ax3.plot(dim_x, acf[:, 0, 2], c='g')
+    ax3.axhline(0, c="black")
 
-    ax4 = plt.subplot(325)
-    ax4.set_xlabel('Frequency (cm-1)')
-    ax4.set_ylabel('Spectral Density (arbitrary units)')
-    ax4.set_xlim(0, wsd)
-#    ax4.plot(sd[:, 1, 0], sd[:, 0, 0], c='r')
-#    ax4.plot(sd[:, 1, 1], sd[:, 0, 1], c='b')
-    ax4.plot(sd[:, 1, 2], sd[:, 0, 2], c='g')
-    print('The dephasing rate is : {:f} fs'.format(rate))
+    ax4 = plt.subplot(326)
+    ax4.set_xlabel('Time (fs)')
+    ax4.set_ylabel('Dephasing (arbitrary units)')
+    ax4.set_xlim(0, wdeph)
+    ax4.plot(dim_x, deph[:, 0], c='r')
+    ax4.plot(dim_x, deph[:, 1], c='b')
+
+    ax5 = plt.subplot(325)
+    ax5.set_xlabel('Frequency (cm-1)')
+    ax5.set_ylabel('Spectral Density (arbitrary units)')
+    ax5.set_xlim(0, wsd)
+#    ax5.plot(sd[:, 1, 0], sd[:, 0, 0], c='r')
+#    ax5.plot(sd[:, 1, 1], sd[:, 0, 1], c='b')
+    ax5.plot(sd[:, 1, 2], sd[:, 0, 2], c='g')
+    print('The dephasing time is : {:f} fs'.format(rate))
     print('The homogenous line broadening is  : {:f} nm'.format(1 / rate * fs_to_nm))
 
-    ax5 = plt.subplot(322)
-    ax5.set_xlabel('Time (fs)')
-    ax5.set_ylabel('Coupling (meV)')
-    ax5.plot(dim_x, coupls[:, s1, s2], c='b')
+    ax6 = plt.subplot(322)
+    ax6.set_xlabel('Time (fs)')
+    ax6.set_ylabel('Coupling (meV)')
+    ax6.plot(dim_x, coupls[:, s1, s2], c='b')
     av_coupl = np.average(abs(coupls[:, s1, s2]))
-    ax5.axhline(av_coupl, c="black")
+    ax6.axhline(av_coupl, c="black")
     print('The average coupling strength is : {:f} meV'.format(av_coupl))
 
     fileName = "MOs.png"
     plt.savefig(fileName, format='png', dpi=300)
 
     plt.show()
-
-
-def gauss_function(x, a, x0, sigma):
-    return a * np.exp(-(x - x0) ** 2 / (2 * sigma ** 2))
-
-
-def dephasing(f):
-    ts = np.arange(f.shape[0])
-    cumu_ii = np.stack(np.sum(f[0:i]) for i in range(ts.size)) / hbar
-    cumu_i = np.stack(np.sum(cumu_ii[0:i]) for i in range(ts.size)) / hbar
-    deph = np.exp(-cumu_i)
-    np.seterr(over='ignore')
-    popt, pcov = curve_fit(gauss_function, ts, deph)
-    xs = popt[0] * np.exp(-(ts - popt[1]) ** 2 / (2 * popt[2] ** 2))
-    deph = np.column_stack((deph, xs))
-    rate = popt[2]
-    return deph, rate
-
-
-def autocorrelate(f):
-    """
-    Compute delta_E for each state vs the mean
-    """
-    d_f = f - f.mean()
-    # Compute the autocorrelation function
-    uacf = np.correlate(d_f, d_f, "full")[-d_f.size:] / d_f.size
-    # Compute the normalized autocorrelation function
-    nacf = uacf / uacf[0]
-    return uacf, nacf
-
-
-def spectral_density(f):
-    """
-    Fourier Transform of the nacf using a dense grid with 100000 points
-    """
-    f_fft = abs(1 / np.sqrt(2 * np.pi) * np.fft.fft(f, 100000)) ** 2
-    # Fourier Transform of the time axis
-    freq = np.fft.fftfreq(len(f_fft), 1)
-    # Conversion of the x axis (given in cycles/fs) to cm-1
-    freq = freq * fs_to_cm
-    return f_fft, freq
-
-
-def read_couplings(path_hams, ts):
-    files_im = [os.path.join(path_hams, 'Ham_{}_im'.format(i)) for i in range(ts)]
-    xs = np.stack(np.loadtxt(fn) for fn in files_im)
-    return xs * r2meV  # return energies in meV
-
-
-def read_energies(path_hams, ts):
-    files_re = [os.path.join(path_hams, 'Ham_{}_re'.format(i)) for i in range(ts)]
-    xs = np.stack(np.diag(np.loadtxt(fn)) for fn in files_re)
-    return xs * r2meV / 1000  # return energies in eV
-
 
 def main(path_hams, s1, s2, ts, wsd, wdeph):
     if ts == 'All':
