@@ -13,7 +13,7 @@ NonAdiabaticCoupling
 ====================
 
 This library contains some funcionality to carry out a numerical approximation
-to the *nonadibatic coupling". see http://felipez.github.io/nonAdiabaticCoupling/ for more information.
+to the *nonadibatic coupling". see http://scm-nv.github.io/qmworks-namd/ for more information.
  
 Installation
 ============
