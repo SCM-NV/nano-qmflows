@@ -48,8 +48,8 @@ def lazy_couplings(paths_overlaps: List, path_hdf5: str, project_name: str,
 
     # Compute the couplings using either the levine method
     # or the 3Points approximation
-    coupling_algorithms = {'levine': (calculate_couplings_levine, 2),
-                           '3points': (calculate_couplings_3points, 4)}
+    coupling_algorithms = {'levine': calculate_couplings_levine,
+                           '3points': calculate_couplings_3points}
     # Choose an algorithm to compute the couplings
     fun_coupling, step = coupling_algorithms[algorithm]
 
@@ -60,8 +60,8 @@ def lazy_couplings(paths_overlaps: List, path_hdf5: str, project_name: str,
     dt_au = dt * femtosec2au
 
     couplings = [calculate_couplings(
-        fun_coupling, step, i, project_name, fixed_phase_overlaps, path_hdf5,
-        enumerate_from, dt_au) for i in range(nCouplings)]
+        fun_coupling, algorithm, i, project_name, fixed_phase_overlaps,
+        path_hdf5, enumerate_from, dt_au) for i in range(nCouplings)]
 
     return swaps, couplings
 
@@ -130,7 +130,7 @@ def compute_the_fixed_phase_overlaps(
 
 
 def calculate_couplings(
-        fun_coupling: Callable, step: int, i: int,
+        fun_coupling: Callable, algorithm: str, i: int,
         project_name: str, fixed_phase_overlaps: Tensor3D,
         path_hdf5: str, enumerate_from: int, dt_au: float) -> str:
     """
@@ -147,13 +147,17 @@ def calculate_couplings(
         return path
     else:
         logger.info("Computing coupling: {}".format(path))
-        # Extract the overlap matrices involved in the coupling computation
-        ps = fixed_phase_overlaps[i: i + step]
+        if algorithm == 'levine':
+            # Extract the overlap matrices involved in the coupling computation
+            sji_t0, sji_t1 = fixed_phase_overlaps[i: i + 2]
+            # Compute the couplings with the phase corrected overlaps
+            couplings = fun_coupling(dt_au, sji_t0, sji_t1.transpose())
+        elif algorithm == '3points':
+            sji_t0, sji_t1, sji_t2, sji_t3 = fixed_phase_overlaps[i: i + 4]
+            couplings = fun_coupling(dt_au, sji_t0, sji_t1.transpose(), sji_t2,
+                                     sji_t3.transpose())
 
-        # Compute the couplings with the phase corrected overlaps
-        couplings = fun_coupling(dt_au, *ps)
-
-        # Store the Coupling in the HDF5
+            # Store the Coupling in the HDF5
         store_arrays_in_hdf5(path_hdf5, path, couplings)
 
         return path
