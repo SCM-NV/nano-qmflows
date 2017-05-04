@@ -207,8 +207,8 @@ def track_unavoided_crossings(overlaps: Tensor3D, nHOMO: int) -> Tuple:
     for k in range(nOverlaps):
         # Cost matrix to track the corssings
         logger.info("Tracking crossings at time: {}".format(k))
-        cost_mtx_homos = np.negative(overlaps[2 * k, :nHOMO, :nHOMO] ** 2)
-        cost_mtx_lumos = np.negative(overlaps[2 * k, nHOMO:, nHOMO:] ** 2)
+        cost_mtx_homos = np.negative(overlaps[k, :nHOMO, :nHOMO] ** 2)
+        cost_mtx_lumos = np.negative(overlaps[k, nHOMO:, nHOMO:] ** 2)
 
         # Compute the swap at time t + dt using two set of Orbitals:
         # HOMOs and LUMOS
@@ -219,11 +219,11 @@ def track_unavoided_crossings(overlaps: Tensor3D, nHOMO: int) -> Tuple:
 
         # update the overlaps at times > t with the previous swaps
         if k != (nOverlaps - 1):  # last element
-            k2 = k + 1
+            k1 = k + 1
             # Update the matrix Sji at time t
             overlaps[k] = swap_columns(overlaps[k], total_swaps)
             # Update all the matrices Sji at time > t
-            overlaps[k2:] = swap_forward(overlaps[k2:], total_swaps)
+            overlaps[k1:] = swap_forward(overlaps[k1:], total_swaps)
     # Accumulate the swaps
     acc = indexes[0]
     arr = np.empty(indexes.shape, dtype=np.int)
