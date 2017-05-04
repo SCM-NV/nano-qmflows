@@ -51,7 +51,7 @@ def lazy_couplings(paths_overlaps: List, path_hdf5: str, project_name: str,
     coupling_algorithms = {'levine': calculate_couplings_levine,
                            '3points': calculate_couplings_3points}
     # Choose an algorithm to compute the couplings
-    fun_coupling, step = coupling_algorithms[algorithm]
+    fun_coupling = coupling_algorithms[algorithm]
 
     # Number of couplings to compute
     nCouplings = fixed_phase_overlaps.shape[0] - step + 1
