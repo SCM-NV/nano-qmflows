@@ -329,7 +329,11 @@ def write_hamiltonians(path_hdf5: str, mo_paths: List,
         # Extract the energy values at time t
         # The first coupling is compute at time t + dt
         # Then I'm shifting the energies dt to get the correct value
-        energies = retrieve_hdf5_data(path_hdf5, mo_paths[i + 1][0])
+        energies_t0 = retrieve_hdf5_data(path_hdf5, mo_paths[i][0])
+        energies_t1 = retrieve_hdf5_data(path_hdf5, mo_paths[i + 1][0])
+
+        # Return the average between time t and t + dt
+        energies = np.average((energies_t0, energies_t1), axis=0)
 
         # Print Energies in the range given by the user
         if all(x is not None for x in [nHOMO, couplings_range]):
@@ -338,7 +342,7 @@ def write_hamiltonians(path_hdf5: str, mo_paths: List,
             energies = energies[lowest: highest]
 
         # Swap the energies of the states that are crossing
-        energies = energies[swaps[i+1]]
+        energies = energies[swaps[i + 1]]
 
         # FileNames
         file_ham_im = join(path_dir_results, 'Ham_{}_im'.format(j))
