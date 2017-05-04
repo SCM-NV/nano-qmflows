@@ -48,8 +48,8 @@ def lazy_couplings(paths_overlaps: List, path_hdf5: str, project_name: str,
 
     # Compute the couplings using either the levine method
     # or the 3Points approximation
-    coupling_algorithms = {'levine': (calculate_couplings_levine, 2),
-                           '3points': (calculate_couplings_3points, 4)}
+    coupling_algorithms = {'levine': (calculate_couplings_levine, 1),
+                           '3points': (calculate_couplings_3points, 2)}
     # Choose an algorithm to compute the couplings
     fun_coupling, step = coupling_algorithms[algorithm]
 
@@ -149,13 +149,13 @@ def calculate_couplings(
         logger.info("Computing coupling: {}".format(path))
         if algorithm == 'levine':
             # Extract the overlap matrices involved in the coupling computation
-            sji_t0, sji_t1 = fixed_phase_overlaps[i: i + 2]
+            sji_t0 = fixed_phase_overlaps[i]
             # Compute the couplings with the phase corrected overlaps
-            couplings = fun_coupling(dt_au, sji_t0, sji_t1.transpose())
+            couplings = fun_coupling(dt_au, sji_t0, sji_t0.transpose())
         elif algorithm == '3points':
-            sji_t0, sji_t1, sji_t2, sji_t3 = fixed_phase_overlaps[i: i + 4]
-            couplings = fun_coupling(dt_au, sji_t0, sji_t1.transpose(), sji_t2,
-                                     sji_t3.transpose())
+            sji_t0, sji_t1 = fixed_phase_overlaps[i: i + 2]
+            couplings = fun_coupling(dt_au, sji_t0, sji_t0.transpose(), sji_t1,
+                                     sji_t1.transpose())
 
             # Store the Coupling in the HDF5
         store_arrays_in_hdf5(path_hdf5, path, couplings)
