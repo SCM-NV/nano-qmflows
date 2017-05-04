@@ -391,11 +391,8 @@ def write_overlaps_in_ascii(overlaps: Tensor3D) -> None:
 
     # write overlaps
     nFrames = overlaps.shape[0]
-    for k in range(nFrames // 2):
-        m = 2 * k
-        mtx_Sji, mtx_Sij = overlaps[m: m + 2]
+    for k in range(nFrames):
+        mtx_Sji = overlaps[k]
         path_Sji = 'overlaps/mtx_Sji_{}'.format(k)
-        path_Sij = 'overlaps/mtx_Sij_{}'.format(k)
 
         np.savetxt(path_Sji, mtx_Sji, fmt='%10.5e', delimiter='  ')
-        np.savetxt(path_Sij, mtx_Sij, fmt='%10.5e', delimiter='  ')
