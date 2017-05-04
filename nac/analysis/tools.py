@@ -3,6 +3,8 @@ __author__ = "Ivan Infante and Felipe Zapata"
 # ================> Python Standard  and third-party <==========
 import numpy as np
 import os
+import argparse 
+import pyparsing as pa
 from scipy.optimize import curve_fit
 # ==================> Internal modules <==========
 from nac.common import (hbar, r2meV, fs_to_cm, fs_to_nm)
@@ -14,9 +16,9 @@ def autocorrelate(f):
     """
     d_f = f - f.mean()
     # Compute the autocorrelation function
-    uacf = np.correlate(d_f, d_f, "full")[-d_f.size:] / d_f.size
+    uacf = np.correlate(d_f, d_f, "full")[-d_f.size:] / d_f.size 
     # Compute the normalized autocorrelation function
-    nacf = uacf / uacf[0]
+    nacf = uacf / uacf[0]    
     return uacf, nacf
 
 def gauss_function(x, sigma):
@@ -71,6 +73,22 @@ def read_energies(path_hams, ts):
     files_re = [os.path.join(path_hams, 'Ham_{}_re'.format(i)) for i in range(ts)]
     xs = np.stack(np.diag(np.loadtxt(fn)) for fn in files_re)
     return xs * r2meV / 1000  # return energies in eV
+
+def parse_list_of_lists(xs):
+    """
+    Parse a list of list of integers using pyparsing
+    """
+    enclosed = pa.Forward()  # Parser to be defined later
+    natural = pa.Word(pa.nums)  # Natural Number
+    # Nested Grammar
+    nestedBrackets = pa.nestedExpr(pa.Suppress('['), pa.Suppress(']'), content=enclosed)
+    enclosed << (natural | pa.Suppress(',') | nestedBrackets)
+    try:
+        rs = enclosed.parseString(xs).asList()[0]
+        return list(map(lambda x: list(map(int, x)), rs))
+    except pa.ParseException:
+        raise RuntimeError("Invalid Macro states Specification")
+
 
 
 
