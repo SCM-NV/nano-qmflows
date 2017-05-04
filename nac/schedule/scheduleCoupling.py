@@ -1,7 +1,6 @@
 __author__ = "Felipe Zapata"
 
 # ================> Python Standard  and third-party <==========
-from itertools import chain
 from os.path import join
 from scipy.optimize import linear_sum_assignment
 
@@ -49,20 +48,20 @@ def lazy_couplings(paths_overlaps: List, path_hdf5: str, project_name: str,
 
     # Compute the couplings using either the levine method
     # or the 3Points approximation
-    coupling_algorithms = {'levine': (calculate_couplings_levine, 2),
-                           '3points': (calculate_couplings_3points, 4)}
+    coupling_algorithms = {'levine': (calculate_couplings_levine, 1),
+                           '3points': (calculate_couplings_3points, 2)}
     # Choose an algorithm to compute the couplings
     fun_coupling, step = coupling_algorithms[algorithm]
 
     # Number of couplings to compute
-    nCouplings = (fixed_phase_overlaps.shape[0] // 2) - 1
+    nCouplings = fixed_phase_overlaps.shape[0] - step + 1
 
     # time in atomic units
     dt_au = dt * femtosec2au
 
     couplings = [calculate_couplings(
-        fun_coupling, step, i, project_name, fixed_phase_overlaps, path_hdf5,
-        enumerate_from, dt_au) for i in range(nCouplings)]
+        fun_coupling, algorithm, i, project_name, fixed_phase_overlaps,
+        path_hdf5, enumerate_from, dt_au) for i in range(nCouplings)]
 
     return swaps, couplings
 
@@ -77,11 +76,9 @@ def compute_the_fixed_phase_overlaps(
     number_of_frames = len(paths_overlaps)
     # Pasth to the overlap matrices after the tracking
     # and phase correction
-    matrices_names = ['mtx_sji_t0_corrected', 'mtx_sij_t0_corrected']
     roots = [join(project_name, 'overlaps_{}'.format(i))
              for i in range(number_of_frames + enumerate_from)]
-    paths_corrected_overlaps = [join(r, m) for r in roots
-                                for m in matrices_names]
+    paths_corrected_overlaps = [join(r, 'mtx_sji_t0_corrected') for r in roots]
     # Paths inside the HDF5 to the array containing the tracking of the
     # unavoided crossings
     path_swaps = join(project_name, 'swaps')
@@ -90,16 +87,15 @@ def compute_the_fixed_phase_overlaps(
     if not search_data_in_hdf5(path_hdf5, paths_corrected_overlaps[0]):
 
         # Compute the dimension of the coupling matrix
-        mtx_0 = retrieve_hdf5_data(path_hdf5, paths_overlaps[0][0])
+        mtx_0 = retrieve_hdf5_data(path_hdf5, paths_overlaps[0])
         _, dim = mtx_0.shape
 
         # Read all the Overlaps
-        concat_paths = chain(*paths_overlaps)
         overlaps = np.stack([retrieve_hdf5_data(path_hdf5, ps)
-                             for ps in concat_paths])
+                             for ps in paths_overlaps])
 
         # Number of couplings to compute
-        nCouplings = overlaps.shape[0] // 2
+        nCouplings = overlaps.shape[0]
 
         # Compute the unavoided crossing using the Overlap matrix
         # and correct the swaps between Molecular Orbitals
@@ -134,7 +130,7 @@ def compute_the_fixed_phase_overlaps(
 
 
 def calculate_couplings(
-        fun_coupling: Callable, step: int, i: int,
+        fun_coupling: Callable, algorithm: str, i: int,
         project_name: str, fixed_phase_overlaps: Tensor3D,
         path_hdf5: str, enumerate_from: int, dt_au: float) -> str:
     """
@@ -151,14 +147,17 @@ def calculate_couplings(
         return path
     else:
         logger.info("Computing coupling: {}".format(path))
-        # Extract the overlap matrices involved in the coupling computation
-        j = 2 * i
-        ps = fixed_phase_overlaps[j: j + step]
+        if algorithm == 'levine':
+            # Extract the overlap matrices involved in the coupling computation
+            sji_t0 = fixed_phase_overlaps[i]
+            # Compute the couplings with the phase corrected overlaps
+            couplings = fun_coupling(dt_au, sji_t0, sji_t0.transpose())
+        elif algorithm == '3points':
+            sji_t0, sji_t1 = fixed_phase_overlaps[i: i + 2]
+            couplings = fun_coupling(dt_au, sji_t0, sji_t0.transpose(), sji_t1,
+                                     sji_t1.transpose())
 
-        # Compute the couplings with the phase corrected overlaps
-        couplings = fun_coupling(dt_au, *ps)
-
-        # Store the Coupling in the HDF5
+            # Store the Coupling in the HDF5
         store_arrays_in_hdf5(path_hdf5, path, couplings)
 
         return path
@@ -181,7 +180,7 @@ def compute_phases(overlaps: Tensor3D, nCouplings: int,
     print(overlaps.shape)
     # Compute the phases at times t + dt using the phases at time t
     for i in range(nCouplings):
-        Sji_t = overlaps[2 * i].reshape(dim, dim)
+        Sji_t = overlaps[i].reshape(dim, dim)
 
         # Compute the phase at time t
         phases = np.sign(np.diag(Sji_t)) * references
@@ -201,20 +200,19 @@ def track_unavoided_crossings(overlaps: Tensor3D, nHOMO: int) -> Tuple:
     # Notice that the cost is compute on half of the overlap matrices
     # correspoding to Sji_t, the other half corresponds to Sij_t
     nOverlaps, nOrbitals, _ = overlaps.shape
-    dim_x = nOverlaps // 2
 
     # Indexes taking into account the crossing
     # There are 2 Overlap matrices at each time t
-    indexes = np.empty((dim_x + 1, nOrbitals), dtype=np.int)
+    indexes = np.empty((nOverlaps + 1, nOrbitals), dtype=np.int)
     indexes[0] = np.arange(nOrbitals, dtype=np.int)
 
     # Track the crossing using the overlap matrices
 
-    for k in range(dim_x):
+    for k in range(nOverlaps):
         # Cost matrix to track the corssings
         logger.info("Tracking crossings at time: {}".format(k))
-        cost_mtx_homos = np.negative(overlaps[2 * k, :nHOMO, :nHOMO] ** 2)
-        cost_mtx_lumos = np.negative(overlaps[2 * k, nHOMO:, nHOMO:] ** 2)
+        cost_mtx_homos = np.negative(overlaps[k, :nHOMO, :nHOMO] ** 2)
+        cost_mtx_lumos = np.negative(overlaps[k, nHOMO:, nHOMO:] ** 2)
 
         # Compute the swap at time t + dt using two set of Orbitals:
         # HOMOs and LUMOS
@@ -224,22 +222,19 @@ def track_unavoided_crossings(overlaps: Tensor3D, nHOMO: int) -> Tuple:
         indexes[k + 1] = total_swaps
 
         # update the overlaps at times > t with the previous swaps
-        if k != (dim_x - 1):  # last element
-            k2 = 2 * (k + 1)
-            dk = 2 * k
+        if k != (nOverlaps - 1):  # last element
+            k1 = k + 1
             # Update the matrix Sji at time t
-            overlaps[dk] = swap_columns(overlaps[dk], total_swaps)
-            # Update the matrix Sij at time t
-            overlaps[dk + 1] = overlaps[dk + 1][total_swaps]
-            # Update all the matrices Sji and Sij at time > t
-            overlaps[k2:] = swap_forward(overlaps[k2:], total_swaps)
+            overlaps[k] = swap_columns(overlaps[k], total_swaps)
+            # Update all the matrices Sji at time > t
+            overlaps[k1:] = swap_forward(overlaps[k1:], total_swaps)
     # Accumulate the swaps
     acc = indexes[0]
     arr = np.empty(indexes.shape, dtype=np.int)
     arr[0] = acc
 
     # Fold accumulating the crossings
-    for i in range(dim_x):
+    for i in range(nOverlaps):
         acc = acc[indexes[i + 1]]
         arr[i + 1] = acc
 
@@ -287,8 +282,7 @@ def lazy_overlaps(i: int, project_name: str, path_hdf5: str, dictCGFs: Dict,
     """
     # Path inside the HDF5 where the overlaps are stored
     root = join(project_name, 'overlaps_{}'.format(i + enumerate_from))
-    names_matrices = ['mtx_sji_t0', 'mtx_sij_t0']
-    overlaps_paths_hdf5 = [join(root, name) for name in names_matrices]
+    overlaps_paths_hdf5 = join(root, 'mtx_sji_t0')
 
     # If the Overlaps are not in the HDF5 file compute them
     if search_data_in_hdf5(path_hdf5, overlaps_paths_hdf5):
@@ -306,8 +300,7 @@ def lazy_overlaps(i: int, project_name: str, path_hdf5: str, dictCGFs: Dict,
             couplings_range, hdf5_trans_mtx)
 
         # Store the matrices in the HDF5 file
-        store_arrays_in_hdf5(path_hdf5, overlaps_paths_hdf5[0], overlaps[0])
-        store_arrays_in_hdf5(path_hdf5, overlaps_paths_hdf5[1], overlaps[1])
+        store_arrays_in_hdf5(path_hdf5, overlaps_paths_hdf5, overlaps)
 
     return overlaps_paths_hdf5
 
@@ -402,11 +395,8 @@ def write_overlaps_in_ascii(overlaps: Tensor3D) -> None:
 
     # write overlaps
     nFrames = overlaps.shape[0]
-    for k in range(nFrames // 2):
-        m = 2 * k
-        mtx_Sji, mtx_Sij = overlaps[m: m + 2]
+    for k in range(nFrames):
+        mtx_Sji = overlaps[k]
         path_Sji = 'overlaps/mtx_Sji_{}'.format(k)
-        path_Sij = 'overlaps/mtx_Sij_{}'.format(k)
 
         np.savetxt(path_Sji, mtx_Sji, fmt='%10.5e', delimiter='  ')
-        np.savetxt(path_Sij, mtx_Sij, fmt='%10.5e', delimiter='  ')
