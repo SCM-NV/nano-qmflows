@@ -1,12 +1,4 @@
 #! /usr/bin/env python
-import numpy as np
-import matplotlib.pyplot as plt
-import glob
-import argparse
-import os
-from nac.common import fs_to_nm
-from nac.analysis import (autocorrelate, dephasing, read_couplings, read_energies, spectral_density)
-
 """
 This program plots several properties related to the interaction of a pair of states s1 and s2.
 1. The energies of the two states along the MD trajectory
@@ -28,6 +20,14 @@ the MD trajectory.
 Note that you have to provide the location of the folder where the NAMD hamiltonian
  elements are stored using the -p flag.
 """
+
+import numpy as np
+import matplotlib.pyplot as plt
+import glob
+import argparse
+import os
+from nac.common import fs_to_nm
+from nac.analysis import (autocorrelate, dephasing, read_couplings, read_energies, spectral_density)
 
 
 def plot_stuff(ens, coupls, acf, sd, deph, rate, s1, s2, ts, wsd, wdeph):

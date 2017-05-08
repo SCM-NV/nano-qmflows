@@ -1,17 +1,17 @@
 #! /usr/bin/env python
-import numpy as np
-import matplotlib.pyplot as plt
-import glob
-import argparse
-import os
-from nac.analysis import read_energies
-
 """
 This program plots the energies of each kohn-sham state along the MD trajectory
 
 Note that you have to provide the location of the folder where the NAMD
 hamiltonian elements are stored using the -p flag
 """
+
+import numpy as np
+import matplotlib.pyplot as plt
+import glob
+import argparse
+import os
+from nac.analysis import read_energies
 
 
 def plot_stuff(energies, ts, ihomo, nhomos, nlumos):

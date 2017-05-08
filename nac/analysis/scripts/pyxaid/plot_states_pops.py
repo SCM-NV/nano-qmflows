@@ -1,10 +1,4 @@
 #! /usr/bin/env python
-import numpy as np
-import os
-import matplotlib.pyplot as plt
-import argparse
-from nac.analysis import parse_list_of_lists
-
 """
 This program reads the ouput files, out and me_pop,
 from a NAMD simulation run with pyxaid.
@@ -26,6 +20,12 @@ The macrostates are defined as a list of lists. The [0] is the ground state, [1,
 form a macrostate of states 1 and 3 indexed as in pyxaid, [4,6] forms
 a macrostates of states 4 and 6.
 """
+
+import numpy as np
+import os
+import matplotlib.pyplot as plt
+import argparse
+from nac.analysis import parse_list_of_lists
 
 
 def plot_stuff(outs, pops):
@@ -65,8 +65,8 @@ def main(path_output, ms, nconds):
     outs = read_populations(path_output, 'out', nconds, ms)
     pops = read_populations(path_output, 'me_pop', nconds, ms)
 
-    outs_avg, pops_avg = [np.average(out, axis=0) for out in outs],
-    [np.average(pop, axis=0) for pop in pops]
+    outs_avg = [np.average(out, axis=0) for out in outs]
+    pops_avg = [np.average(pop, axis=0) for pop in pops]
 
     outs_fin, pops_fin = [], []
 

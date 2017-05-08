@@ -1,9 +1,4 @@
 #! /usr/bin/env python
-import numpy as np
-import os
-import matplotlib.pyplot as plt
-import argparse
-
 """
 This program plots the average electronic energy during a NAMD simulatons
 averaged over several initial conditions.
@@ -16,6 +11,11 @@ Example:
 Note that the number of states is the same as given in the pyxaid output.
  It must include the ground state as well.
 """
+
+import numpy as np
+import os
+import matplotlib.pyplot as plt
+import argparse
 
 
 def plot_stuff(outs, pops):
