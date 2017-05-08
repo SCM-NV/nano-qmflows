@@ -6,7 +6,7 @@ import os
 import shutil
 
 if shutil.which('icc') is not None:
-    os.environ['CC'] ='icc'
+    os.environ['CC'] = 'icc'
     os.environ['LDSHARED'] = 'icc -shared'
 
 setup(
@@ -15,7 +15,7 @@ setup(
     description='Automation of computations in quantum chemistry',
     license='MIT',
     url='https://github.com/SCM-NV/qmworks-namd',
-    author=['Felipe Zapata', 'Ivan Infante'], 
+    author=['Felipe Zapata', 'Ivan Infante'],
     author_email='tifonzafel_gmail.com',
     keywords='chemistry Photochemistry Simulation',
     packages=["nac", "nac.analysis", "nac.basisSet", "nac.integrals", "nac.schedule",
@@ -28,7 +28,7 @@ setup(
         'intended audience :: science/research',
         'topic :: scientific/engineering :: chemistry'
     ],
-    install_requires=['cython', 'numpy', 'h5py', 'noodles', 'pandas','qmworks',
+    install_requires=['cython', 'numpy', 'h5py', 'noodles', 'pandas', 'qmworks',
                       'pymonad', 'scipy'],
     cmdclass={'build_ext': build_ext},
     ext_modules=[Extension('multipoleObaraSaika', ['nac/integrals/multipoleObaraSaika.pyx'])],

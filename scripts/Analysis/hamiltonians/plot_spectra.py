@@ -4,24 +4,31 @@ import matplotlib.pyplot as plt
 import glob
 import argparse
 import os
-from nac.common import (hbar, r2meV, fs_to_cm, fs_to_nm)
-from nac.analysis import (autocorrelate, dephasing, gauss_function, read_couplings, read_energies, spectral_density) 
+from nac.common import fs_to_nm
+from nac.analysis import (autocorrelate, dephasing, read_couplings, read_energies, spectral_density)
 
 """
-This program plots several properties related to the interaction of a pair of states s1 and s2. 
+This program plots several properties related to the interaction of a pair of states s1 and s2.
 1. The energies of the two states along the MD trajectory
 2. The non-adiabatic coupling between the two states (in meV)
-3. The normalized autocorrelation function (NAUF) of a pair of entangled states during the MD trajectory. 
-   It describes how the interaction between two states depend on earlier time. 
-   The AUF of poorly correlated states goes rapidly to zero. 
-4. The unnormalized autocorrelation function. It provides similar infos than NAUF, but the starting value is average oscillation at t=0 (in eV**2) 
-5. The spectral density computed from the fourier transform of the NAUF. It identifies which phonones coupled to the electronic subsystem. 
-   In this case, it tells which phonons are involved in the coupling between the pair of entangles states. 
-6. The dephasing function. It indicates how the two entangled states decohere over time. 
-   The inverse of the decoherence rate is related to the homogenoues line broadening of emission lines when computed between HOMO and LUMO states.      
+3. The normalized autocorrelation function (NAUF) of a pair of entangled states during
+the MD trajectory.
+   It describes how the interaction between two states depend on earlier time.
+   The AUF of poorly correlated states goes rapidly to zero.
+4. The unnormalized autocorrelation function. It provides similar infos than NAUF,
+ but the starting value is average oscillation at t=0 (in eV**2)
+5. The spectral density computed from the fourier transform of the NAUF.
+ It identifies which phonones coupled to the electronic subsystem.
+ In this case, it tells which phonons are involved in the coupling between
+ the pair of entangles states.
+6. The dephasing function. It indicates how the two entangled states decohere over time.
+   The inverse of the decoherence rate is related to the homogenoues line broadening of
+   emission lines when computed between HOMO and LUMO states.
 
-Note that you have to provide the location of the folder where the NAMD hamiltonian elements are stored using the -p flag. 
+Note that you have to provide the location of the folder where the NAMD hamiltonian
+ elements are stored using the -p flag.
 """
+
 
 def plot_stuff(ens, coupls, acf, sd, deph, rate, s1, s2, ts, wsd, wdeph):
     """
@@ -39,7 +46,7 @@ def plot_stuff(ens, coupls, acf, sd, deph, rate, s1, s2, ts, wsd, wdeph):
     ax2 = plt.subplot(323)
     ax2.set_xlabel('Time (fs)')
     ax2.set_ylabel('Normalized AUF')
-    ax2.set_ylim(-1, 1) 
+    ax2.set_ylim(-1, 1)
 #    ax2.plot(ts, acf[:, 1, 0], c='r')
 #    ax2.plot(ts, acf[:, 1, 1], c='b')
     ax2.plot(dim_x, acf[:, 1, 2], c='g')
@@ -83,6 +90,7 @@ def plot_stuff(ens, coupls, acf, sd, deph, rate, s1, s2, ts, wsd, wdeph):
 
     plt.show()
 
+
 def main(path_hams, s1, s2, ts, wsd, wdeph):
     if ts == 'All':
         files = glob.glob(os.path.join(path_hams, 'Ham_*_re'))
@@ -118,7 +126,10 @@ def read_cmd_line(parser):
 # ============<>===============
 if __name__ == "__main__":
 
-    msg = " plot_decho -p <path/to/hamiltonians> -s1 <State 1> -s2 <State 2> -ts <time window for analysis> -wsd <energy window for spectral density plot in cm-1> -wdeph <time window for dephasing time in fs>"
+    msg = """ plot_decho -p <path/to/hamiltonians> -s1 <State 1> -s2 <State 2>
+     -ts <time window for analysis>
+     -wsd <energy window for spectral density plot in cm-1>
+      -wdeph <time window for dephasing time in fs>"""
 
     parser = argparse.ArgumentParser(description=msg)
     parser.add_argument('-p', required=True, help='path to the Hamiltonian files in Pyxaid format')
