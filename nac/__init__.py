@@ -16,7 +16,7 @@ from .schedule import (calculate_mos, create_dict_CGFs, create_point_folder,
                        prepare_job_cp2k, split_file_geometries,
                        write_hamiltonians)
 
-from .analysis import (autocorrelate, dephasing, gauss_function, 
+from .analysis import (autocorrelate, dephasing, gauss_function, parse_list_of_lists,  
                        read_couplings, read_energies, spectral_density)
 
 from .workflows.initialization import (initialize, store_transf_matrix)
@@ -31,7 +31,7 @@ __all__ = ['AtomBasisData', 'AtomBasisKey', 'AtomData', 'AtomXYZ', 'autocorrelat
            'create_dict_CGFs', 'create_point_folder', 'expandBasisOneCGF',
            'expandBasis_cp2k', 'expandBasis_turbomole',
            'general_multipole_matrix', 'generate_pyxaid_hamiltonians',
-           'getmass', 'initialize', 'lazy_couplings',
+           'getmass', 'initialize', 'lazy_couplings', 'parse_list_of_lists', 
            'photoExcitationRate', 'prepare_cp2k_settings',
            'prepare_job_cp2k', 'read_couplings', 'read_energies', 'retrieve_hdf5_data', 'search_data_in_hdf5',
            'spectral_density', 'split_file_geometries', 'store_arrays_in_hdf5',

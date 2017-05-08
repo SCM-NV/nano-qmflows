@@ -96,21 +96,18 @@ def correct_phases(overlaps: Tensor3D, mtx_phases: Matrix) -> List:
     """
     Correct the phases for all the overlaps
     """
-    nFrames = overlaps.shape[0]  # total number of overlap matrices
+    nOverlaps = overlaps.shape[0]  # total number of overlap matrices
     dim = overlaps.shape[1]  # Size of the square matrix
 
-    for k in range(nFrames // 2):
-        m = 2 * k
+    for k in range(nOverlaps):
         # Extract phases
         phases_t0, phases_t1 = mtx_phases[k: k + 2]
         phases_t0 = phases_t0.reshape(dim, 1)
         phases_t1 = phases_t1.reshape(1, dim)
         mtx_phases_Sji_t0_t1 = np.dot(phases_t0, phases_t1)
-        mtx_phases_Sij_t1_t0 = np.transpose(mtx_phases_Sji_t0_t1)
 
         # Update array with the fixed phases
-        overlaps[m] *= mtx_phases_Sji_t0_t1
-        overlaps[m + 1] *= mtx_phases_Sij_t1_t0
+        overlaps[k] *= mtx_phases_Sji_t0_t1
 
     return overlaps
 
@@ -143,7 +140,6 @@ def compute_overlaps_for_coupling(
 
     # Atomic orbitals overlap
     suv_0 = calcOverlapMtx(dictCGFs, dim, mol0, mol1)
-    suv_0_t = np.transpose(suv_0)
 
     css0, css1, trans_mtx = read_overlap_data(
         path_hdf5, mo_paths, hdf5_trans_mtx, nHOMO, couplings_range)
@@ -156,9 +152,8 @@ def compute_overlaps_for_coupling(
 
     # Overlap matrix for different times in Spherical coordinates
     mtx_sji_t0 = spherical_fun(suv_0, css0, css1)
-    mtx_sij_t0 = spherical_fun(suv_0_t, css1, css0)
 
-    return mtx_sji_t0, mtx_sij_t0
+    return mtx_sji_t0
 
 
 def read_overlap_data(path_hdf5: str, mo_paths: str, hdf5_trans_mtx: str,
