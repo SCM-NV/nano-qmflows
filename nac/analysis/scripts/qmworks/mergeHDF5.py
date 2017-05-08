@@ -1,8 +1,17 @@
-
+#! /usr/bin/env python
 from os.path import join
-
 import argparse
 import h5py
+
+"""""
+This program merges the HDF5 files obtained from the SCF calculations when the MD trajectory has been split in more than one block. 
+Example:
+
+mergeHDF5.py -i chunk_a.hdf5 chunk_b.hdf5 chunk_c.hdf5 -o total.hdf5 
+
+An empty total.hdf5 file should be already available before using the script. 
+"""""
+
 # ====================================<>=======================================
 msg = " script -i <Path(s)/to/source/hdf5> -o <path/to/destiny/hdf5>"
 
