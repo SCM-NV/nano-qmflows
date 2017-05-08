@@ -6,19 +6,19 @@ import os
 import shutil
 
 if shutil.which('icc') is not None:
-    os.environ['CC'] ='icc'
+    os.environ['CC'] = 'icc'
     os.environ['LDSHARED'] = 'icc -shared'
 
 setup(
-    name='NonAdiabaticCouling',
+    name='qmworks-namd',
     version='0.1.7',
     description='Automation of computations in quantum chemistry',
     license='MIT',
-    url='https://github.com/felipeZ/nonAdiabaticCoupling',
-    author='Felipe Zapata',
+    url='https://github.com/SCM-NV/qmworks-namd',
+    author=['Felipe Zapata', 'Ivan Infante'],
     author_email='tifonzafel_gmail.com',
     keywords='chemistry Photochemistry Simulation',
-    packages=["nac", "nac.basisSet", "nac.integrals", "nac.schedule",
+    packages=["nac", "nac.analysis", "nac.basisSet", "nac.integrals", "nac.schedule",
               "nac.workflows"],
     classifiers=[
         'License :: OSI Approved :: MIT License',
@@ -28,10 +28,15 @@ setup(
         'intended audience :: science/research',
         'topic :: scientific/engineering :: chemistry'
     ],
-    install_requires=['cython', 'numpy', 'h5py', 'noodles', 'pandas','qmworks',
+    install_requires=['cython', 'numpy', 'h5py', 'noodles', 'pandas', 'qmworks',
                       'pymonad', 'scipy'],
     cmdclass={'build_ext': build_ext},
     ext_modules=[Extension('multipoleObaraSaika', ['nac/integrals/multipoleObaraSaika.pyx'])],
     include_dirs=[np.get_include()],
-    extras_require={'test': ['nose', 'coverage']}
+    extras_require={'test': ['nose', 'coverage']},
+    scripts=[
+        'scripts/hamiltonians/plot_mos_energies.py', 'scripts/hamiltonians/plot_spectra.py',
+        'scripts/pyxaid/plot_average_energy.py', 'scripts/pyxaid/plot_spectra_pyxaid.py',
+        'scripts/pyxaid/plot_states_pops.py', 'scripts/qmworks/mergeHDF5.py',
+        'scripts/qmworks/removeCouplings.py']
 )

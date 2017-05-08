@@ -59,6 +59,9 @@ target/
 # emacs
 *~
 
+#vi
+*.swp 
+
 #Profiling
 *.lprof
 *.prof
