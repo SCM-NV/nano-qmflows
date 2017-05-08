@@ -100,9 +100,9 @@ def read_cmd_line(parser):
 
 # ============<>===============
 if __name__ == "__main__":
-    msg = """
-    plot_states_pops -p <path/to/output> -ms <list of microstates state indexes>
-    -nconds <number of initial conditions>"""
+    msg = "plot_states_pops -p <path/to/output>\
+    -ms <list of microstates state indexes>\
+    -nconds <number of initial conditions>"
 
     parser = argparse.ArgumentParser(description=msg)
     parser.add_argument('-p', required=True,
@@ -114,10 +114,3 @@ if __name__ == "__main__":
 
     p, ms, nconds = read_cmd_line(parser)
     main(p, parse_list_of_lists(ms), nconds)
-
-
-
-    
-
-
-

@@ -130,11 +130,10 @@ def read_cmd_line(parser):
 # ============<>===============
 if __name__ == "__main__":
 
-    msg = """
-    plot_decho -p <path/to/hamiltonians> -s1 <State 1> -s2 <State 2>
-    -ts <time window for analysis> -nconds <number of initial conditions>
-    -wsd <energy window for spectral density plot in cm-1>
-    -wdeph <time window for dephasing time in fs>"""
+    msg = "plot_decho -p <path/to/hamiltonians> -s1 <State 1> -s2 <State 2>\
+    -ts <time window for analysis> -nconds <number of initial conditions>\
+    -wsd <energy window for spectral density plot in cm-1>\
+    -wdeph <time window for dephasing time in fs>"
 
     parser = argparse.ArgumentParser(description=msg)
     parser.add_argument('-p', required=True,

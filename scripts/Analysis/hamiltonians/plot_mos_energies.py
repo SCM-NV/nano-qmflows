@@ -53,9 +53,9 @@ def read_cmd_line(parser):
 # ============<>===============
 if __name__ == "__main__":
 
-    msg = """plot_decho -p <path/to/hamiltonians> -ts <time window for analysis>
-    -nhomos <number of homo states to be plotted>
-    -nlumos <number of lumo states to be plotted"""
+    msg = "plot_decho -p <path/to/hamiltonians> -ts <time window for analysis>\
+    -nhomos <number of homo states to be plotted>\
+    -nlumos <number of lumo states to be plotted"
 
     parser = argparse.ArgumentParser(description=msg)
     parser.add_argument('-p', required=True, help='path to the Hamiltonian files in Pyxaid format')

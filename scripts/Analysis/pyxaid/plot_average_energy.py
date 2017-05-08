@@ -83,9 +83,9 @@ def read_cmd_line(parser):
 
 # ============<>===============
 if __name__ == "__main__":
-    msg = """plot_states_pops -p <path/to/output>
-     -nstates <number of states computed>
-      -nconds <number of initial conditions>"""
+    msg = "plot_states_pops -p <path/to/output>\
+     -nstates <number of states computed>\
+      -nconds <number of initial conditions>"
 
     parser = argparse.ArgumentParser(description=msg)
     parser.add_argument('-p', required=True,

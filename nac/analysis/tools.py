@@ -46,7 +46,7 @@ def dephasing(f):
     cumu_i = np.stack(np.sum(cumu_ii[0:i]) for i in range(ts.size)) / hbar
     deph = np.exp(-cumu_i)
     np.seterr(over='ignore')
-    popt, pcov = curve_fit(gauss_function, ts, deph)
+    popt = curve_fit(gauss_function, ts, deph)[0]
     xs = np.exp(-0.5 * (-ts / popt[0]) ** 2)
     deph = np.column_stack((deph, xs))
     rate = popt[0]
