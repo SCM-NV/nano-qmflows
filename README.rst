@@ -23,12 +23,13 @@ QMWorks-NAMD is based on the approximation that all excited states are represent
 
 QMWorks-NAMD has been designed mostly to be an interface to Pyxaid, a python program that performs non-adiabatic molecular dynamic (NAMD) simulations using the classical path approximation (CPA). The CPA is based on the assumption that nuclear dynamics of the system remains unaffected by the dynamics of the electronic degrees of freedom. Hence, the electronic dynamics remains driven by the ground state nuclear dynamics. CPA is usually valid for extended materials or cluster materials of nanometric size. 
 
-In this framework, QMWorks-NAMD requires as input the coordinates of a pre-computed trajectory (at a lower level or at the same level of theory) in xyz format and the input parameters of the SCF code (HF and DFT). QMWorks-NAMD will then calculate the overlap matrix between different MOs by correcting their phase and will also track the nature of each state at the crossing seam using a min-cost algorithm to avoid spikes in the calculations of the coupling. The NACVs are computed using the Hamann-Tully 2-point approximation and the recent Meek-Levine approach.    
+In this framework, QMWorks-NAMD requires as input the coordinates of a pre-computed trajectory (at a lower level or at the same level of theory) in xyz format and the input parameters of the SCF code (HF and DFT). QMWorks-NAMD will then calculate the overlap matrix between different MOs by correcting their phase and will also track the nature of each state at the crossing seam using a min-cost algorithm . The NACVs are computed using the Hamann-Tully 2-point approximation and the recent Meek-Levine approach. The NACVs are then written in Pyxaid format for subsequent NAMD simulations.     
 
 Finally, QMWorks-NAMD can be used in benchmarks studies to test new code developments by providing a platform that uses all the functionalities of QMWorks.    
 
 For further information on the theory behind QMWorks-NAMD and how to use it, you can visit the following webpage:
-http://scm-nv.github.io/qmworks-namd/ for more information.
+
+http://scm-nv.github.io/qmworks-namd/ 
  
 Installation
 ============
