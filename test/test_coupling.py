@@ -1,3 +1,4 @@
+from functools import partial
 from nac.common import retrieve_hdf5_data
 from nac.workflows.workflow_coupling import generate_pyxaid_hamiltonians
 from nac.workflows.initialization import initialize
@@ -9,6 +10,30 @@ import h5py
 import numpy as np
 import os
 import shutil
+
+
+cp2k_main = dict2Setting({
+    'cell_parameters': 28.0, 'potential': 'GTH-PBE',
+    'basis': 'DZVP-MOLOPT-SR-GTH', 'specific':
+    {'cp2k': {'force_eval':
+              {'subsys': {'cell': {'periodic': 'None'}}, 'dft':
+               {'print': {'mo': {'mo_index_range': '248 327'}},
+                'scf': {'eps_scf': 0.0005, 'max_scf': 200,
+                        'added_mos': 30}}}}},
+    'cell_angles': [90.0, 90.0, 90.0]})
+
+cp2k_guess = dict2Setting({
+    'cell_parameters': 28.0, 'potential': 'GTH-PBE',
+    'basis': 'DZVP-MOLOPT-SR-GTH', 'specific':
+    {'cp2k': {'force_eval':
+              {'subsys': {'cell': {'periodic': 'None'}},
+               'dft': {'scf': {'eps_scf': 1e-06, 'ot':
+                               {'minimizer': 'DIIS',
+                                'n_diis': 7, 'preconditioner':
+                                'FULL_SINGLE_INVERSE'},
+                               'scf_guess': 'restart',
+                               'added_mos': 0}}}}},
+    'cell_angles': [90.0, 90.0, 90.0]})
 
 
 @attr('slow')
@@ -32,11 +57,10 @@ def test_couplings():
                                 project_name)
         calculate_couplings(scratch_path, path_test_hdf5, project_name)
         check_properties(project_name, path_original_hdf5, path_test_hdf5)
-        
+
     finally:
         # remove tmp data and clean global config
-        print('DONE')
-        # shutil.rmtree(scratch_path)
+        shutil.rmtree(scratch_path)
 
 
 def calculate_couplings(scratch_path, path_test_hdf5, project_name):
@@ -48,34 +72,18 @@ def calculate_couplings(scratch_path, path_test_hdf5, project_name):
     path_traj_xyz = 'test/test_files/Cd33Se33_fivePoints.xyz'
     path_basis = join(scratch_path, 'BASIS_MOLOPT')
     path_potential = join(scratch_path, 'GTH_POTENTIALS')
-    
-    initial_config = initialize(project_name, path_traj_xyz,
-    				basisname=basisname,
-    				path_basis=path_basis,
-    				path_potential=path_potential,
-    				enumerate_from=0,
-    				calculate_guesses='first',
-    				path_hdf5=path_test_hdf5,
-                                scratch_path=scratch_path)    
-                
-    cp2k_main = dict2Setting({'cell_parameters': 28.0, 'potential': 'GTH-PBE', 'basis': 'DZVP-MOLOPT-SR-GTH', 'specific':
-                              {'cp2k': {'force_eval': {'subsys': {'cell': {'periodic': 'None'}}, 'dft':
-                                                       {'print': {'mo': {'mo_index_range': '248 327'}},
-                                                        'scf': {'eps_scf': 0.0005, 'max_scf': 200, 'added_mos': 30}}}}},
-                              'cell_angles': [90.0, 90.0, 90.0]})
 
-    cp2k_guess = dict2Setting({'cell_parameters': 28.0, 'potential': 'GTH-PBE', 'basis': 'DZVP-MOLOPT-SR-GTH', 'specific':
-                               {'cp2k': {'force_eval':
-                                         {'subsys': {'cell': {'periodic': 'None'}}, 'dft':
-                                          {'scf': {'eps_scf': 1e-06, 'ot': {'minimizer': 'DIIS', 'n_diis': 7,
-                                                                            'preconditioner': 'FULL_SINGLE_INVERSE'},
-                                                   'scf_guess': 'restart', 'added_mos': 0}}}}}, 'cell_angles': [90.0, 90.0, 90.0]})
+    initial_config = initialize(
+        project_name, path_traj_xyz,
+        basisname=basisname, path_basis=path_basis,
+        path_potential=path_potential, enumerate_from=0,
+        calculate_guesses='first', path_hdf5=path_test_hdf5,
+        scratch_path=scratch_path)
 
-    generate_pyxaid_hamiltonians('cp2k', project_name, cp2k_main,
-    				 guess_args=cp2k_guess,
-    				 nHOMO=50,
-    				 couplings_range=(50,30),
-    				 **initial_config)
+    generate_pyxaid_hamiltonians(
+        'cp2k', project_name, cp2k_main,
+        guess_args=cp2k_guess, nHOMO=50,
+        couplings_range=(50, 30), **initial_config)
 
 
 def check_properties(project_name, original, test):
@@ -88,33 +96,42 @@ def check_properties(project_name, original, test):
     name_Sji_fixed = 'overlaps_{}/mtx_sji_t0_corrected'
     path_overlaps = [join(project_name, name_Sji.format(i)) for i in range(4)]
     path_fixed_overlaps = [join(project_name, name_Sji_fixed.format(i))
-                                for i in range(4)]
+                           for i in range(4)]
     path_couplings = [join(project_name, 'coupling_{}'.format(i))
                       for i in range(4)]
+
+    # Define partial func
+    fun_original = partial(stack_retrieve, original)
+    fun_test = partial(stack_retrieve, test)
 
     # Read data from the HDF5
     swaps_original = retrieve_hdf5_data(original, path_swaps)
     swaps_test = retrieve_hdf5_data(test, path_swaps)
 
-    overlaps_original = np.stack(retrieve_hdf5_data(original, path_overlaps))
-    overlaps_test = np.stack(retrieve_hdf5_data(test, path_overlaps))
+    overlaps_original = fun_original(path_overlaps)
+    overlaps_test = fun_test(path_overlaps)
 
-    fixed_overlaps_original = np.stack(retrieve_hdf5_data(original,
-                                                          path_fixed_overlaps))
-    fixed_overlaps_test = np.stack(retrieve_hdf5_data(test, path_fixed_overlaps))
+    fixed_overlaps_original = fun_original(path_fixed_overlaps)
+    fixed_overlaps_test = fun_test(path_fixed_overlaps)
 
-    css_original = np.stack(retrieve_hdf5_data(original, path_couplings))
-    css_test = np.stack(retrieve_hdf5_data(test, path_couplings))
+    css_original = fun_original(path_couplings)
+    css_test = fun_test(path_couplings)
 
-    
     # Test data
     b1 = np.allclose(swaps_original, swaps_test)
     b2 = np.allclose(overlaps_original, overlaps_test)
     b3 = np.allclose(fixed_overlaps_original, fixed_overlaps_test)
     b4 = np.allclose(css_original, css_test)
-    
+
     assert all((b1, b2, b3, b4))
-    
+
+
+def stack_retrieve(path_hdf5, path_prop):
+    """
+    Retrieve a list of Numpy arrays and create a tensor out of it
+    """
+    return np.stack(retrieve_hdf5_data(path_hdf5, path_prop))
+
 
 def copy_basis_and_orbitals(source, dest, project_name):
     """
@@ -127,6 +144,6 @@ def copy_basis_and_orbitals(source, dest, project_name):
             if k not in g5:
                 g5.create_group(k)
             for l in f5[k].keys():
-                if not any(x in l for x in  excluded):
+                if not any(x in l for x in excluded):
                     path = join(k, l)
                     f5.copy(path, g5[k])
