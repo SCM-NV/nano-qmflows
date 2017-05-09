@@ -72,8 +72,8 @@ def generate_pyxaid_hamiltonians(
                         datefmt='%m/%d/%Y %I:%M:%S %p')
 
     # Log initial config information
-    log_config(work_dir, algorithm)
-    
+    log_config(work_dir, path_hdf5, algorithm)
+
     # prepare Cp2k Jobs
     # Point calculations Using CP2K
     mo_paths_hdf5 = calculate_mos(
