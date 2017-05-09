@@ -30,6 +30,10 @@ def main():
 
     # Basis
     basis = "DZVP-MOLOPT-SR-GTH"
+
+    # Algorithm to compute the NAC
+    algorithm = 'levine'
+
     # ============== End of User definitions ===================================
 
     cp2k_args = Settings()
@@ -48,7 +52,7 @@ def main():
 
     write_python_script(scratch, 'total_results', path_to_trajectory, project_name,
                         basisCP2K, potCP2K, cp2k_args, Settings(), 0, script_name,
-                        file_hdf5, nHOMO, couplings_range)
+                        file_hdf5, nHOMO, couplings_range, algorithm)
 
     # Script using SLURM
     write_slurm_script(scratch, results_dir, script_name)

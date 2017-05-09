@@ -59,7 +59,6 @@ def main():
 
     range_orbitals = Lower_Index, Highest_Index
 
-
     # In relation to the above range
     # The store orbitals store in the HDF5 are going to be reindex in
     # such way tha the Molecular corresponding with Lower_Index
@@ -83,8 +82,9 @@ def main():
     # Lowest Unoccupied Molecular Orbitals
     coupling_range = None
 
-    # The keyword added_mos takes as input the number of LUMOs that are needed to compute the desired number of couplings 
-    added_mos = coupling_range[1] 
+    # The keyword added_mos takes as input the number of LUMOs that are needed
+    # to compute the desired number of couplings
+    added_mos = coupling_range[1]
 
     # Trajectory splitting
     path_to_trajectory = "<Path/to/the/trajectory/in/xyz/format"
@@ -273,7 +273,7 @@ def format_slurm_parameters(slurm):
     """
     Format as a string some SLURM parameters
     """
-    sbatch = lambda x, y: "#SBATCH -{} {}\n".format(x, y)
+    sbatch = "#SBATCH -{} {}\n".format
 
     header = "#! /bin/bash\n"
     modules = "\nmodule load cp2k/3.0\nsource activate qmworks\n\n"
