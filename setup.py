@@ -11,7 +11,7 @@ if shutil.which('icc') is not None:
 
 setup(
     name='qmworks-namd',
-    version='0.1.7',
+    version='0.2.0',
     description='Automation of computations in quantum chemistry',
     license='MIT',
     url='https://github.com/SCM-NV/qmworks-namd',

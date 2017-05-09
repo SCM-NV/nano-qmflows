@@ -14,6 +14,8 @@ from qmworks import run
 from qmworks.parsers import parse_string_xyz
 
 import logging
+import pkg_resources
+import nac
 import os
 import shutil
 
@@ -69,6 +71,9 @@ def generate_pyxaid_hamiltonians(
                         format='%(levelname)s:%(message)s  %(asctime)s\n',
                         datefmt='%m/%d/%Y %I:%M:%S %p')
 
+    # Log initial config information
+    log_config(work_dir, algorithm)
+    
     # prepare Cp2k Jobs
     # Point calculations Using CP2K
     mo_paths_hdf5 = calculate_mos(
@@ -180,3 +185,20 @@ def remove_folders(folders):
     for f in folders:
         if os.path.exists(f):
             shutil.rmtree(f)
+
+
+def log_config(work_dir, path_hdf5, algorithm):
+    """
+    Print initial configuration
+    """
+    # Get logger
+    logger = logging.getLogger(__name__)
+
+    version = pkg_resources.get_distribution('qmworks-namd').version
+    path = nac.__path__
+
+    logger.info("Using qmworks-namd version: {} ".format(version))
+    logger.info("qmworks-namd path is: {}".format(path))
+    logger.info("Working directory is: {}".format(work_dir))
+    logger.info("Data will be stored in HDF5 file: {}".format(path_hdf5))
+    logger.info("The chosen algorithm to compute the coupling is: {}\n".format(algorithm))
