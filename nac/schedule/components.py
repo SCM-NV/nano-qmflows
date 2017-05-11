@@ -16,6 +16,7 @@ import os
 # ==================> Internal modules <==========
 from nac.basisSet.basisNormalization import createNormalizedCGFs
 from nac.schedule.scheduleCp2k import prepare_job_cp2k
+from nac.schedule.scheduleOrca import prepare_job_orca
 from nac.common import search_data_in_hdf5
 from qmworks.common import InputKey
 from qmworks.hdf5 import dump_to_hdf5
@@ -81,7 +82,7 @@ def calculate_mos(package_name: str, all_geometries: List, project_name: str,
             logger.info("point_{} has already been calculated".format(k))
             orbitals.append(hdf5_orb_path)
         else:
-            logger.info("Computing Molecular orbitals of: point_{}".format(k))
+            logger.info("point_{} has been scheduled".format(k))
 
             # Path to I/O files
             point_dir = folders[j]
@@ -142,7 +143,7 @@ def compute_orbitals(
     the nonadiabatic coupling. When finish store the MOs in the HdF5 and
     returns a new guess.
     """
-    prepare_and_schedule = {'cp2k': prepare_job_cp2k}
+    prepare_and_schedule = {'cp2k': prepare_job_cp2k, 'orca': prepare_job_orca}
 
     call_schedule_qm = prepare_and_schedule[package_name]
 
