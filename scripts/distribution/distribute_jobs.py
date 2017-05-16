@@ -152,7 +152,7 @@ def cp2k_input(range_orbitals, cell_parameters, cell_angles,
 # ============================> Distribution <=================================
 
 
-def distribute_computations(scratch, project_name, basisCP2K, potCP2K,
+def distribute_computations(scratch_path, project_name, basisCP2K, potCP2K,
                             cp2k_main, cp2k_guess, path_to_trajectory, blocks,
                             slurm, cwd, nHOMO, couplings_range,
                             algorithm='levine'):
@@ -170,11 +170,11 @@ def distribute_computations(scratch, project_name, basisCP2K, potCP2K,
         shutil.move(file_xyz, folder)
 
         # HDF5 file where both the Molecular orbitals and coupling are stored
-        path_hdf5 = join(scratch, '{}.hdf5'.format(folder))
-        hamiltonians_dir = join(scratch, 'hamiltonians')
+        path_hdf5 = join(scratch_path, '{}.hdf5'.format(folder))
+        hamiltonians_dir = join(scratch_path, 'hamiltonians')
         # function to be execute remotely
-        scratch = join(scratch, 'batch_{}'.format(i))
-        write_python_script(scratch, folder, file_xyz, project_name,
+        work_dir = join(scratch_path, 'batch_{}'.format(i))
+        write_python_script(work_dir, folder, file_xyz, project_name,
                             basisCP2K, potCP2K, cp2k_main,
                             cp2k_guess, enumerate_from, script_name,
                             path_hdf5, nHOMO, couplings_range, algorithm)

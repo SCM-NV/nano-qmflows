@@ -12,6 +12,7 @@ import fnmatch
 import h5py
 import logging
 import os
+import shutil
 
 # ==================> Internal modules <==========
 from nac.basisSet.basisNormalization import createNormalizedCGFs
@@ -219,8 +220,9 @@ def create_point_folder(work_dir, n, enumerate_from):
     folders = []
     for k in range(enumerate_from, n + enumerate_from):
         new_dir = join(work_dir, 'point_{}'.format(k))
-        if not os.path.exists(new_dir):
-            os.makedirs(new_dir)
+        if os.path.exists(new_dir):
+            shutil.rmtree(new_dir)
+        os.makedirs(new_dir)
         folders.append(new_dir)
 
     return folders
