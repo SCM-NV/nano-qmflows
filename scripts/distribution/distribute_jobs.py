@@ -200,7 +200,7 @@ def write_python_script(scratch, folder, file_xyz, project_name, basisCP2K,
 from nac.workflows.workflow_coupling import generate_pyxaid_hamiltonians
 from nac.workflows.initialization import initialize
 from qmworks.utils import dict2Setting
-import plams
+from scm import plams
 
 
 plams.init(folder='{}')
