@@ -36,7 +36,7 @@ def generate_pyxaid_hamiltonians(
         traj_folders: List=None, work_dir: str=None,
         basisname: str=None, hdf5_trans_mtx: str=None,
         nHOMO: int=None, couplings_range: Tuple=None,
-        algorithm='levine') -> None:
+        algorithm='levine', ignore_warnings=False) -> None:
     """
     Use a md trajectory to generate the hamiltonian components to run PYXAID
     nonadiabatic molecular dynamics.
@@ -79,7 +79,8 @@ def generate_pyxaid_hamiltonians(
     mo_paths_hdf5 = calculate_mos(
         package_name, geometries, project_name, path_hdf5, traj_folders,
         package_args, guess_args, calc_new_wf_guess_on_points,
-        enumerate_from, package_config=package_config)
+        enumerate_from, package_config=package_config,
+        ignore_warnings=ignore_warnings)
 
     # Calculate Non-Adiabatic Coupling
     # Number of Coupling points calculated with the MD trajectory

@@ -4,18 +4,19 @@ matplotlib.use('Agg')
 # ================> Python Standard  and third-party <==========
 from functools import partial
 from noodles import schedule
-from nac.common import (retrieve_hdf5_data, triang2mtx)
+from nac.common import (change_mol_units, retrieve_hdf5_data, triang2mtx)
 from nac.integrals.multipoleIntegrals import calcMtxMultipoleP
 from nac.integrals.overlapIntegral import calcMtxOverlapP
 from nac.schedule.components import calculate_mos
 from qmworks import run
+from qmworks.parsers import parse_string_xyz
 
 import logging
 import matplotlib.pyplot as plt
 import numpy as np
 
 # Type hints
-from typing import (Dict, List)
+from typing import (Dict, List, Tuple)
 
 # ==============================> Main <==================================
 h2ev = 27.2114  # hartrees to electronvolts
@@ -29,7 +30,7 @@ def simulate_absoprtion_spectrum(
         calc_new_wf_guess_on_points: str=None,
         path_hdf5: str=None, package_config: Dict=None,
         traj_folders: List=None, hdf5_trans_mtx: str=None,
-        geometry_units='angstrom'):
+        nHOMO: int=None, couplings_range: Tuple=None) -> None:
     """
     Compute the oscillator strength
 
@@ -66,12 +67,12 @@ def simulate_absoprtion_spectrum(
     # Schedule the function the compute the Oscillator Strenghts
     scheduleOscillator = schedule(calcOscillatorStrenghts)
 
-    first_geometry = None
+    molecules_au = [change_mol_units(parse_string_xyz(gs)) for gs in geometries]
 
-    oscillators = scheduleOscillator(
-        project_name, mo_paths_hdf5, dictCGFs, first_geometry, path_hdf5,
+    oscillators = [scheduleOscillator(
+        project_name, mo_paths_hdf5, dictCGFs, mol, path_hdf5,
         hdf5_trans_mtx=hdf5_trans_mtx, initial_states=initial_states,
-        final_states=final_states)
+        final_states=final_states) for mol in molecules_au]
 
     run(oscillators)
     print("Calculation Done")

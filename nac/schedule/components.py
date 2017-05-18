@@ -40,7 +40,8 @@ logger = logging.getLogger(__name__)
 def calculate_mos(package_name: str, all_geometries: List, project_name: str,
                   path_hdf5: str, folders: List, package_args: Dict,
                   guess_args: Dict=None, calc_new_wf_guess_on_points: List=None,
-                  enumerate_from: int=0, package_config: Dict=None) -> List:
+                  enumerate_from: int=0, package_config: Dict=None,
+                  ignore_warnings=False) -> List:
     """
     Look for the MO in the HDF5 file if they do not exists calculate them by
     splitting the jobs in batches given by the ``restart_chunk`` variables.
@@ -99,7 +100,8 @@ def calculate_mos(package_name: str, all_geometries: List, project_name: str,
             # Check if the job finishes succesfully
             promise_qm = schedule_check(
                 promise_qm, job_name, package_name, project_name, path_hdf5,
-                package_args, guess_args, package_config, point_dir, job_files, k, gs)
+                package_args, guess_args, package_config, point_dir, job_files,
+                k, gs, ignore_warnings=ignore_warnings)
 
             # Store the computation
             path_MOs = store_in_hdf5(project_name, path_hdf5, promise_qm,
@@ -177,7 +179,8 @@ def compute_orbitals(
 def schedule_check(promise_qm, job_name: str, package_name: str,
                    project_name: str, path_hdf5: str, package_args: Dict,
                    guess_args: Dict, package_config: Dict, point_dir: str,
-                   job_files: Tuple, k: int, gs: List):
+                   job_files: Tuple, k: int, gs: List,
+                   ignore_warnings=False):
     """
     Check wether a calculation finishes succesfully otherwise run a new guess.
     """
@@ -185,7 +188,7 @@ def schedule_check(promise_qm, job_name: str, package_name: str,
     warnings = promise_qm.warnings
 
     # Check for SCF convergence errors
-    if warnings is not None and any(
+    if not ignore_warnings and warnings is not None and any(
             w == SCF_Convergence_Warning for msg, w in warnings.items()):
         # Report the failure
         msg = "Job: {} Finished with Warnings: {}".format(job_name, warnings)
