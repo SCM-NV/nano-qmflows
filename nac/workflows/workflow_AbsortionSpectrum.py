@@ -3,12 +3,13 @@ matplotlib.use('Agg')
 
 # ================> Python Standard  and third-party <==========
 from functools import partial
-from noodles import schedule
-from nac.common import (retrieve_hdf5_data, triang2mtx)
+from noodles import (gather, schedule)
+from nac.common import (change_mol_units, retrieve_hdf5_data, triang2mtx)
 from nac.integrals.multipoleIntegrals import calcMtxMultipoleP
 from nac.integrals.overlapIntegral import calcMtxOverlapP
 from nac.schedule.components import calculate_mos
 from qmworks import run
+from qmworks.parsers import parse_string_xyz
 
 import logging
 import matplotlib.pyplot as plt
@@ -66,19 +67,21 @@ def simulate_absoprtion_spectrum(
     # Schedule the function the compute the Oscillator Strenghts
     scheduleOscillator = schedule(calcOscillatorStrenghts)
 
-    first_geometry = None
+    molecules_au = [change_mol_units(parse_string_xyz(gs))
+                    for gs in geometries]
 
-    oscillators = scheduleOscillator(
-        project_name, mo_paths_hdf5, dictCGFs, first_geometry, path_hdf5,
+    oscillators = [scheduleOscillator(
+        project_name, mo_path, dictCGFs, mol, path_hdf5,
         hdf5_trans_mtx=hdf5_trans_mtx, initial_states=initial_states,
         final_states=final_states)
+        for mo_path, mol in zip(mo_paths_hdf5, molecules_au)]
 
-    run(oscillators)
+    run(gather(*oscillators))
     print("Calculation Done")
 
 
 def calcOscillatorStrenghts(
-        project_name: str, mo_paths_hdf5: List, dictCGFs: Dict,
+        project_name: str, mo_path: str, dictCGFs: Dict,
         atoms: List, path_hdf5: str, hdf5_trans_mtx: str=None,
         initial_states: List=None, final_states: List=None):
 
@@ -111,7 +114,7 @@ def calcOscillatorStrenghts(
     # Contracted Gaussian functions normalized
     cgfsN = [dictCGFs[x.symbol] for x in atoms]
 
-    es, coeffs = retrieve_hdf5_data(path_hdf5, mo_paths_hdf5[0])
+    es, coeffs = retrieve_hdf5_data(path_hdf5, mo_path)
 
     # If the MO orbitals are given in Spherical Coordinates transform then to
     # Cartesian Coordinates.
