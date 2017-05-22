@@ -34,6 +34,11 @@ def main():
     """
     # USER DEFINED CONFIGURATION
 
+    # Algorithm use to compute the derivative coupling
+    # Either levine or 3points
+    algorithm='levine'
+    
+    
     # Varaible to define the Path ehere the Cp2K jobs will be computed
     scratch = "<Path/where/the/Molecular Orbitals/and/Couplings/are/computed>"
     project_name = 'replace_with_Name_of_the_Project'  # name use to create folders
@@ -92,6 +97,10 @@ def main():
     # Number of chunks to split the trajectory
     blocks = 5
 
+    # Time step in femtoseconds use to compute the derivative coupling.
+    # It corresponds with the integration step of the MD.
+    dt = 1  # 1 femtosecond
+    
     # SLURM Configuration
     slurm = SLURM(
         nodes=2,
@@ -109,7 +118,7 @@ def main():
 
     distribute_computations(scratch, project_name, basisCP2K, potCP2K,
                             cp2k_main, cp2k_guess, path_to_trajectory, blocks,
-                            slurm, cwd, nHOMO, coupling_range)
+                            slurm, cwd, nHOMO, coupling_range, algorithm, dt)
 
 
 def cp2k_input(range_orbitals, cell_parameters, cell_angles,
@@ -155,7 +164,7 @@ def cp2k_input(range_orbitals, cell_parameters, cell_angles,
 def distribute_computations(scratch_path, project_name, basisCP2K, potCP2K,
                             cp2k_main, cp2k_guess, path_to_trajectory, blocks,
                             slurm, cwd, nHOMO, couplings_range,
-                            algorithm='levine'):
+                            algorithm, dt):
 
     script_name = "script_remote_function.py"
     # Split the trajectory in Chunks and move each chunk to its corresponding
@@ -177,7 +186,7 @@ def distribute_computations(scratch_path, project_name, basisCP2K, potCP2K,
         write_python_script(work_dir, folder, file_xyz, project_name,
                             basisCP2K, potCP2K, cp2k_main,
                             cp2k_guess, enumerate_from, script_name,
-                            path_hdf5, nHOMO, couplings_range, algorithm)
+                            path_hdf5, nHOMO, couplings_range, algorithm, dt)
 
         # number of geometries per batch
         dim_batch = number_of_geometries(join(folder, file_xyz))
@@ -191,7 +200,7 @@ def distribute_computations(scratch_path, project_name, basisCP2K, potCP2K,
 def write_python_script(scratch, folder, file_xyz, project_name, basisCP2K,
                         potCP2K, cp2k_main, cp2k_guess, enumerate_from,
                         script_name, path_hdf5, nHOMO, couplings_range,
-                        algorithm):
+                        algorithm, dt):
     """ Write the python script to compute the PYXAID hamiltonians"""
     path = join(scratch, project_name)
     if not os.path.exists(path):
@@ -228,13 +237,14 @@ generate_pyxaid_hamiltonians('cp2k', project_name, cp2k_main,
                              guess_args=cp2k_guess,
                              nHOMO={},
                              algorithm='{}',
+                             dt={},
                              couplings_range=({},{}),
                              **initial_config)
 plams.finish()
  """.format(scratch, project_name, basisCP2K, potCP2K,
             path_hdf5, file_xyz, cp2k_main.basis, enumerate_from, scratch,
             settings2Dict(cp2k_main), settings2Dict(cp2k_guess), nHOMO,
-            algorithm, *couplings_range)
+            algorithm, dt, *couplings_range)
 
     with open(join(folder, script_name), 'w') as f:
         f.write(xs)
