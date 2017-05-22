@@ -8,6 +8,8 @@ from nac.common import (change_mol_units, retrieve_hdf5_data, triang2mtx)
 from nac.integrals.multipoleIntegrals import calcMtxMultipoleP
 from nac.integrals.overlapIntegral import calcMtxOverlapP
 from nac.schedule.components import calculate_mos
+from nac.schedule.scheduleCoupling import (
+    calculate_overlap, compute_the_fixed_phase_overlaps, swap_indexes)
 from qmworks import run
 from qmworks.parsers import parse_string_xyz
 
@@ -16,7 +18,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 # Type hints
-from typing import (Dict, List)
+from typing import (Dict, List, Tuple)
+Matrix = np.ndarray
 
 # ==============================> Main <==================================
 h2ev = 27.2114  # hartrees to electronvolts
@@ -30,6 +33,7 @@ def simulate_absoprtion_spectrum(
         calc_new_wf_guess_on_points: str=None,
         path_hdf5: str=None, package_config: Dict=None,
         traj_folders: List=None, hdf5_trans_mtx: str=None,
+        nHOMO: int=None, couplings_range: Tuple=None,
         geometry_units='angstrom'):
     """
     Compute the oscillator strength
@@ -57,31 +61,64 @@ def simulate_absoprtion_spectrum(
                         format='%(levelname)s:%(message)s  %(asctime)s\n',
                         datefmt='%m/%d/%Y %I:%M:%S %p')
 
-    # prepare Cp2k Jobs
     # Point calculations Using CP2K
     mo_paths_hdf5 = calculate_mos(
         package_name, geometries, project_name, path_hdf5, traj_folders,
         package_args, guess_args, calc_new_wf_guess_on_points,
         enumerate_from, package_config=package_config)
 
-    # Schedule the function the compute the Oscillator Strenghts
-    scheduleOscillator = schedule(calcOscillatorStrenghts)
+    # Overlap matrix at two different times
+    promised_overlaps = calculate_overlap(
+        project_name, path_hdf5, dictCGFs, geometries, mo_paths_hdf5,
+        hdf5_trans_mtx, enumerate_from, nHOMO=nHOMO,
+        couplings_range=couplings_range)
 
+    # track the orbitals duringh the MD
+    schedule_compute_swaps = schedule(compute_swapped_indexes)
+
+    swaps = schedule_compute_swaps(
+        promised_overlaps, path_hdf5, project_name, enumerate_from, nHOMO)
+
+    # geometries in atomic units
     molecules_au = [change_mol_units(parse_string_xyz(gs))
                     for gs in geometries]
 
+    # Contracted Gaussian functions normalized
+    cgfsN = [dictCGFs[x.symbol] for x in molecules_au[0]]
+
+    # Schedule the function the compute the Oscillator Strenghts
+    scheduleOscillator = schedule(calcOscillatorStrenghts)
+
     oscillators = [scheduleOscillator(
-        project_name, mo_path, dictCGFs, mol, path_hdf5,
-        hdf5_trans_mtx=hdf5_trans_mtx, initial_states=initial_states,
-        final_states=final_states)
-        for mo_path, mol in zip(mo_paths_hdf5, molecules_au)]
+        i, swaps, project_name, mo_path, cgfsN, mol,
+        path_hdf5, hdf5_trans_mtx=hdf5_trans_mtx,
+        initial_states=initial_states, final_states=final_states)
+        for i, (mo_path, mol) in enumerate(zip(mo_paths_hdf5, molecules_au))]
 
     run(gather(*oscillators))
     print("Calculation Done")
 
 
+def compute_swapped_indexes(promised_overlaps, path_hdf5, project_name,
+                            enumerate_from, nHOMO):
+    """
+    Track the swap between the Molecular orbitals during the
+    Molecular dynamics
+    """
+    # Overlaps and swaps
+    fixed_overlaps_and_swaps = compute_the_fixed_phase_overlaps(
+        promised_overlaps, path_hdf5, project_name, enumerate_from, nHOMO)
+
+    swaps = fixed_overlaps_and_swaps[1]
+
+    accumulated_swaps = FIXME
+
+    return accumulated_swaps
+
+
 def calcOscillatorStrenghts(
-        project_name: str, mo_path: str, dictCGFs: Dict,
+        i: int, fixed_overlaps_and_swaps: Tuple, project_name: str,
+        mo_path: str, cgfsN: List,
         atoms: List, path_hdf5: str, hdf5_trans_mtx: str=None,
         initial_states: List=None, final_states: List=None):
 
@@ -89,6 +126,7 @@ def calcOscillatorStrenghts(
     Use the Molecular orbital Energies and Coefficients to compute the
     oscillator_strength.
 
+    :param i: time frame
     :param project_name: Folder name where the computations
     are going to be stored.
     :param mo_paths_hdf5: Path to the MO coefficients and energies in the
@@ -111,23 +149,26 @@ def calcOscillatorStrenghts(
     # Get logger
     logger = logging.getLogger(__name__)
 
-    # Contracted Gaussian functions normalized
-    cgfsN = [dictCGFs[x.symbol] for x in atoms]
-
+    # Energy and coefficients at time t
     es, coeffs = retrieve_hdf5_data(path_hdf5, mo_path)
+
+    # Apply the swap that took place during the MD
+    swapped_initial_states = track_swaps(swaps, i, initial_states)
+    swapped_final_states = track_swaps(swaps, i, final_states)
 
     # If the MO orbitals are given in Spherical Coordinates transform then to
     # Cartesian Coordinates.
     if hdf5_trans_mtx is not None:
         trans_mtx = retrieve_hdf5_data(path_hdf5, hdf5_trans_mtx)
 
-    overlap_CGFS = calcOverlapCGFS(atoms, cgfsN, trans_mtx)
+    # Overlap matrix
+    overlaps = calcOverlapCGFS(atoms, cgfsN, trans_mtx)
 
     oscillators = []
-    for initialS, fs in zip(initial_states, final_states):
+    for initialS, fs in zip(swapped_initial_states, swapped_final_states):
         css_i = coeffs[:, initialS]
         energy_i = es[initialS]
-        sum_overlap = np.dot(css_i, np.dot(overlap_CGFS, css_i))
+        sum_overlap = np.dot(css_i, np.dot(overlaps, css_i))
         rc = calculateDipoleCenter(atoms, cgfsN, css_i, trans_mtx, sum_overlap)
         mtx_integrals_spher = calcDipoleCGFS(atoms, cgfsN, rc, trans_mtx)
         logger.info("Dipole center is: {}".format(rc))
@@ -137,23 +178,35 @@ def calcOscillatorStrenghts(
             energy_j = es[finalS]
             deltaE = energy_j - energy_i
 
-            print("Calculating Fij between ", initialS, " and ", finalS)
+            msg = "Calculating Fij between {} and  {}".format(initialS, finalS)
+            logger.info(msg)
             fij = oscillator_strength(css_i, css_j, deltaE, trans_mtx,
                                       mtx_integrals_spher)
             xs.append(fij)
-            with open("oscillator_strengths.out", 'a') as f:
-                x = 'transition {:d} -> {:d} f_ij = {:f}\n'.format(initialS,
-                                                                   finalS, fij)
-                f.write(x)
+            st = 'transition {:d} -> {:d} f_ij = {:f}\n'.format(
+                initialS, finalS, fij)
+            logger.info(st)
         oscillators.append(xs)
 
     return oscillators
 
 
-def transform2Spherical(trans_mtx, matrix):
+def track_swaps(overlaps, swaps, i):
+    """
+    Swap the rows of the overlaps matrix correspoding with the
+    states that are swapped during the MD
+    """
+    track_swaps(swaps, i, initial_states)
+    for i in range(i + 1):
+        overlaps = swap_indexes(overlaps, swaps[0])
+
+    return overlaps
+
+
+def transform2Spherical(trans_mtx: Matrix, matrix: Matrix) -> Matrix:
     """ Transform from spherical to cartesians"""
-    return np.dot(trans_mtx, np.dot(matrix,
-                                    np.transpose(trans_mtx)))
+    return np.dot(
+        trans_mtx, np.dot(matrix, np.transpose(trans_mtx)))
 
 
 def computeIntegralSum(v1, v2, mtx):
@@ -177,7 +230,7 @@ def calcOverlapCGFS(atoms, cgfsN, trans_mtx):
     to Sphericals.
     :type trans_mtx: Numpy Matrix
     """
-    _, dimCart = trans_mtx.shape
+    dimCart = trans_mtx.shape[1]
     # Overlap matrix calculated as a flatten triangular matrix
     overlap_triang = calcMtxOverlapP(atoms, cgfsN)
     # Expand the flatten triangular array to a matrix
@@ -265,45 +318,44 @@ def oscillator_strength(css_i, css_j, energy, trans_mtx,
     return (2 / 3) * energy * sum_integrals
 
 
-def graphicResult(rs, project_name, path_hdf5, mo_paths_hdf5,
-                  initial_states=None, final_states=None, deviation=0.1):
-    """
-    """
-    def distribution(x, mu=0, sigma=1):
-        """
-        Normal Gaussian distribution
-        """
-        return 1 / (sigma * np.sqrt(2 * np.pi)) * \
-            np.exp(-(x - mu) ** 2 / (2 * sigma ** 2))
+# def graphicResult(rs, project_name, path_hdf5, mo_paths_hdf5,
+#                   initial_states=None, final_states=None, deviation=0.1):
+#     """
+#     """
+#     def distribution(x, mu=0, sigma=1):
+#         """
+#         Normal Gaussian distribution
+#         """
+#         return 1 / (sigma * np.sqrt(2 * np.pi)) * \
+#             np.exp(-(x - mu) ** 2 / (2 * sigma ** 2))
 
-    def calcDistribution(npoints, mu=0, sigma=1):
-        """
-        """
-        xs = np.linspace(mu - 2, mu + 2, num=npoints)
-        ys = np.apply_along_axis(lambda x:
-                                 distribution(x, mu, sigma), 0, xs)
-        return xs, ys
+#     def calcDistribution(npoints, mu=0, sigma=1):
+#         """
+#         """
+#         xs = np.linspace(mu - 2, mu + 2, num=npoints)
+#         ys = np.apply_along_axis(lambda x:
+#                                  distribution(x, mu, sigma), 0, xs)
+#         return xs, ys
 
-    oscillators = [[x * h2ev for x in ys] for ys in rs]
-    es = retrieve_hdf5_data(path_hdf5, mo_paths_hdf5[0][0])
+#     oscillators = [[x * h2ev for x in ys] for ys in rs]
+#     es = retrieve_hdf5_data(path_hdf5, mo_paths_hdf5[0][0])
 
-    initialEs = es[initial_states]
-    finalEs = [es[v] for v in final_states]
-    deltas = [[h2ev * (x - e_i) for x in es_f] for (e_i, es_f) in
-              zip(initialEs, finalEs)]
+#     initialEs = es[initial_states]
+#     finalEs = [es[v] for v in final_states]
+#     deltas = [[h2ev * (x - e_i) for x in es_f] for (e_i, es_f) in
+#               zip(initialEs, finalEs)]
 
-    print('oscillators: ', oscillators)
-    print('Energies: ', deltas)
-    plt.title('Absorption Spectrum')
-    plt.ylabel('Intensity [au]')
-    plt.xlabel('Energy [ev]')
-    plt.xlim([1, 3.5])
-    plt.tick_params(axis='y', which='both', left='off', labelleft='off')
-    colors = ['g', 'r', 'b', 'y']
-    for k, (es, fs) in enumerate(zip(deltas, oscillators)):
-        for e, f in zip(es, fs):
-            xs, ys = calcDistribution(1000, mu=e, sigma=deviation)
-            plt.plot(xs, ys * f, colors[k])
-    plt.savefig('spectrum.pdf', format='pdf')
-    plt.show()
-
+#     print('oscillators: ', oscillators)
+#     print('Energies: ', deltas)
+#     plt.title('Absorption Spectrum')
+#     plt.ylabel('Intensity [au]')
+#     plt.xlabel('Energy [ev]')
+#     plt.xlim([1, 3.5])
+#     plt.tick_params(axis='y', which='both', left='off', labelleft='off')
+#     colors = ['g', 'r', 'b', 'y']
+#     for k, (es, fs) in enumerate(zip(deltas, oscillators)):
+#         for e, f in zip(es, fs):
+#             xs, ys = calcDistribution(1000, mu=e, sigma=deviation)
+#             plt.plot(xs, ys * f, colors[k])
+#     plt.savefig('spectrum.pdf', format='pdf')
+#     plt.show()

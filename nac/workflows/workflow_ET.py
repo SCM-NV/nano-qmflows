@@ -21,19 +21,6 @@ import os
 # ==============================> Main <==================================
 
 
-def search_data_in_hdf5(path_hdf5, path_to_prop):
-    """
-    Search if the node exists in the HDF5 file.
-    """
-    with h5py.File(path_hdf5, 'r') as f5:
-        if isinstance(path_to_prop, list):
-            pred = all(path in f5 for path in path_to_prop)
-        else:
-            pred = path_to_prop in f5
-
-    return pred
-
-
 def calculate_ETR(package_name, project_name, package_args, geometries=None,
                   pathTimeCoeffs=None, initial_conditions=None,
                   path_hdf5=None, enumerate_from=0, package_config=None,
