@@ -168,18 +168,17 @@ def calcOscillatorStrenghts(
 
     logger.info("Computing the oscillator strength at time: {}".format(i))
     # Overlap matrix
-    overlaps = calcOverlapCGFS(atoms, cgfsN, trans_mtx)
 
     oscillators = [
         compute_oscillator_strength(
-            atoms, cgfsN, overlaps, es, coeffs, trans_mtx, initialS, fs)
+            atoms, cgfsN, es, coeffs, trans_mtx, initialS, fs)
         for initialS, fs in zip(swapped_initial_states, swapped_final_states)]
 
     return oscillators
 
 
 def compute_oscillator_strength(
-        atoms: List, cgfsN: List, overlaps: Matrix, es: Vector, coeffs: Matrix,
+        atoms: List, cgfsN: List, es: Vector, coeffs: Matrix,
         trans_mtx: Matrix, initialS: int, fs: List):
     """
     Compute the oscillator strenght using the matrix elements of the position
@@ -197,16 +196,14 @@ def compute_oscillator_strength(
     css_i = coeffs[:, initialS]
     energy_i = es[initialS]
 
+    # Origin of the dipole
+    rc = (0, 0, 0)
+    
     xs = []
     for finalS in fs:
         css_j = coeffs[:, finalS]
         energy_j = es[finalS]
         deltaE = energy_j - energy_i
-
-        # Compute the dipole center
-        rc = calculateDipoleCenter(
-            atoms, cgfsN, css_i, css_j, trans_mtx, overlaps)
-        logger.info("Dipole center is: {}".format(rc))
 
         # Dipole matrix element in spherical coordinates
         mtx_integrals_spher = calcDipoleCGFS(atoms, cgfsN, rc, trans_mtx)
