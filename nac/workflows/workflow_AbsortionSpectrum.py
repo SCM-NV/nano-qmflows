@@ -5,7 +5,8 @@ matplotlib.use('Agg')
 from functools import partial
 from noodles import (gather, schedule)
 from nac.common import (
-    Matrix, Vector, change_mol_units, retrieve_hdf5_data, triang2mtx)
+    Matrix, Vector, change_mol_units, getmass, retrieve_hdf5_data,
+    triang2mtx)
 from nac.integrals.multipoleIntegrals import calcMtxMultipoleP
 from nac.integrals.overlapIntegral import calcMtxOverlapP
 from nac.schedule.components import calculate_mos
@@ -197,8 +198,8 @@ def compute_oscillator_strength(
     energy_i = es[initialS]
 
     # Origin of the dipole
-    rc = (0, 0, 0)
-    
+    rc = compute_center_of_mass(atoms)
+
     xs = []
     for finalS in fs:
         css_j = coeffs[:, finalS]
@@ -335,6 +336,21 @@ def oscillator_strength(css_i: Matrix, css_j: Matrix, energy: float,
 
     return (2 / 3) * energy * sum_integrals
 
+
+def compute_center_of_mass(atoms: List) -> Tuple:
+    """
+    Compute the center of mass of a molecule
+    """
+    # Get the masses of the atoms
+    symbols = map(lambda at: at.symbol, atoms)
+    masses = np.array([getmass(s) for s in symbols])
+    total_mass = np.sum(masses)
+
+    # Multiple the mass by the coordinates
+    mrs = [getmass(at.symbol) * np.array(at.xyz) for at in atoms]
+    xs = np.sum(mrs, axis=0)
+
+    return xs / total_mass
 
 # def graphicResult(rs, project_name, path_hdf5, mo_paths_hdf5,
 #                   initial_states=None, final_states=None, deviation=0.1):
