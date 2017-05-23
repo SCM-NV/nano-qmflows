@@ -100,7 +100,9 @@ def simulate_absoprtion_spectrum(
         initial_states=initial_states, final_states=final_states)
         for i, mol in enumerate(molecules_au)]
 
-    run(gather(*oscillators), folder=work_dir)
+    results = run(gather(*oscillators), folder=work_dir)
+    np.savetxt('oscillators.txt', results, fmt='%.8e')
+
     print("Calculation Done")
 
 
@@ -286,36 +288,6 @@ def calcDipoleCGFS(
                  in mtx_integrals_cart)
 
 
-def calculateDipoleCenter(
-        atoms: List, cgfsN: List, css_i: Matrix, css_j: Matrix,
-        trans_mtx: Matrix, overlaps: Matrix) -> Matrix:
-    """
-    Calculate the point where the dipole is centered.
-
-    :param atoms: Atomic label and cartesian coordinates
-    type atoms: List of namedTuples
-    :param cgfsN: Contracted gauss functions normalized, represented as
-    a list of tuples of coefficients and Exponents.
-    type cgfsN: [(Coeff, Expo)]
-    :param overlap: Integral <ψi | ψj>
-    :type overlap: Float
-    To calculate the origin of the dipole we use the following property,
-
-    ..math::
-      <ψi | x_0 | ψj> = - <ψi | x | ψj>
-    """
-    rc = (0, 0, 0)
-
-    # Compute the scalar value of the integral <phi_i | phi_j>
-    S_ij = np.dot(css_i, np.dot(overlaps, css_j))
-
-    mtx_integrals_spher = calcDipoleCGFS(atoms, cgfsN, rc, trans_mtx)
-    xs_sum = list(map(partial(computeIntegralSum, css_i, css_j),
-                      mtx_integrals_spher))
-
-    return tuple(map(lambda x: - x / S_ij, xs_sum))
-
-
 def oscillator_strength(css_i: Matrix, css_j: Matrix, energy: float,
                         mtx_integrals_spher: Matrix) -> float:
     """
@@ -331,7 +303,8 @@ def oscillator_strength(css_i: Matrix, css_j: Matrix, energy: float,
     :returns: Oscillator strength
     """
     sum_integrals = sum(x ** 2 for x in
-                        map(partial(computeIntegralSum, css_i, css_j),
+                        map(lambda mtx:
+                            np.dot(css_i, np.dot(mtx, css_j)),
                             mtx_integrals_spher))
 
     return (2 / 3) * energy * sum_integrals
