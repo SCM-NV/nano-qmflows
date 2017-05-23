@@ -215,8 +215,7 @@ def compute_oscillator_strength(
 
         msg = "Calculating Fij between {} and  {}".format(initialS, finalS)
         logger.info(msg)
-        fij = oscillator_strength(css_i, css_j, deltaE, trans_mtx,
-                                  mtx_integrals_spher)
+        fij = oscillator_strength(css_i, css_j, deltaE, mtx_integrals_spher)
         xs.append(fij)
         st = 'transition {:d} -> {:d} Fij = {:f}\n'.format(
             initialS, finalS, fij)
