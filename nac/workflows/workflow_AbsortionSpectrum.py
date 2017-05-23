@@ -94,10 +94,10 @@ def simulate_absoprtion_spectrum(
     scheduleOscillator = schedule(calcOscillatorStrenghts)
 
     oscillators = [scheduleOscillator(
-        i, swaps, project_name, mo_path, cgfsN, mol,
+        i, swaps, project_name, mo_paths_hdf5, cgfsN, mol,
         path_hdf5, hdf5_trans_mtx=hdf5_trans_mtx,
         initial_states=initial_states, final_states=final_states)
-        for i, (mo_path, mol) in enumerate(zip(mo_paths_hdf5, molecules_au))]
+        for i, mol in enumerate(molecules_au)]
 
     run(gather(*oscillators), folder=work_dir)
     print("Calculation Done")
@@ -125,7 +125,7 @@ def compute_swapped_indexes(promised_overlaps, path_hdf5, project_name,
 
 def calcOscillatorStrenghts(
         i: int, swaps: Matrix, project_name: str,
-        mo_path: str, cgfsN: List,
+        mo_paths_hdf5: str, cgfsN: List,
         atoms: List, path_hdf5: str, hdf5_trans_mtx: str=None,
         initial_states: List=None, final_states: List=None):
 
@@ -154,7 +154,7 @@ def calcOscillatorStrenghts(
     :type final_states: [[Int]]
     """
     # Energy and coefficients at time t
-    es, coeffs = retrieve_hdf5_data(path_hdf5, mo_path)
+    es, coeffs = retrieve_hdf5_data(path_hdf5, mo_paths_hdf5[i])
 
     # Apply the swap that took place during the MD
     swapped_initial_states = swaps[i, initial_states]
