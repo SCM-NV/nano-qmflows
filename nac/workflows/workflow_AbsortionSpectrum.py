@@ -4,12 +4,13 @@ matplotlib.use('Agg')
 # ================> Python Standard  and third-party <==========
 from functools import partial
 from noodles import (gather, schedule)
-from nac.common import (change_mol_units, retrieve_hdf5_data, triang2mtx)
+from nac.common import (
+    Matrix, Vector, change_mol_units, retrieve_hdf5_data, triang2mtx)
 from nac.integrals.multipoleIntegrals import calcMtxMultipoleP
 from nac.integrals.overlapIntegral import calcMtxOverlapP
 from nac.schedule.components import calculate_mos
 from nac.schedule.scheduleCoupling import (
-    calculate_overlap, compute_the_fixed_phase_overlaps, swap_indexes)
+    calculate_overlap, compute_the_fixed_phase_overlaps)
 from qmworks import run
 from qmworks.parsers import parse_string_xyz
 
@@ -19,7 +20,9 @@ import numpy as np
 
 # Type hints
 from typing import (Dict, List, Tuple)
-Matrix = np.ndarray
+
+# Get logger
+logger = logging.getLogger(__name__)
 
 # ==============================> Main <==================================
 h2ev = 27.2114  # hartrees to electronvolts
@@ -110,14 +113,17 @@ def compute_swapped_indexes(promised_overlaps, path_hdf5, project_name,
         promised_overlaps, path_hdf5, project_name, enumerate_from, nHOMO)
 
     swaps = fixed_overlaps_and_swaps[1]
+    dim = swaps.shape[0]
 
-    accumulated_swaps = FIXME
+    # Accumulate the swaps
+    for i in range(1, dim):
+        swaps[i] = swaps[i, swaps[i - 1]]
 
-    return accumulated_swaps
+    return swaps
 
 
 def calcOscillatorStrenghts(
-        i: int, fixed_overlaps_and_swaps: Tuple, project_name: str,
+        i: int, swaps: Matrix, project_name: str,
         mo_path: str, cgfsN: List,
         atoms: List, path_hdf5: str, hdf5_trans_mtx: str=None,
         initial_states: List=None, final_states: List=None):
@@ -146,15 +152,12 @@ def calcOscillatorStrenghts(
     states.
     :type final_states: [[Int]]
     """
-    # Get logger
-    logger = logging.getLogger(__name__)
-
     # Energy and coefficients at time t
     es, coeffs = retrieve_hdf5_data(path_hdf5, mo_path)
 
     # Apply the swap that took place during the MD
-    swapped_initial_states = track_swaps(swaps, i, initial_states)
-    swapped_final_states = track_swaps(swaps, i, final_states)
+    swapped_initial_states = swaps[i, initial_states]
+    swapped_final_states = swaps[i, final_states]
 
     # If the MO orbitals are given in Spherical Coordinates transform then to
     # Cartesian Coordinates.
@@ -164,43 +167,59 @@ def calcOscillatorStrenghts(
     # Overlap matrix
     overlaps = calcOverlapCGFS(atoms, cgfsN, trans_mtx)
 
-    oscillators = []
-    for initialS, fs in zip(swapped_initial_states, swapped_final_states):
-        css_i = coeffs[:, initialS]
-        energy_i = es[initialS]
-        sum_overlap = np.dot(css_i, np.dot(overlaps, css_i))
-        rc = calculateDipoleCenter(atoms, cgfsN, css_i, trans_mtx, sum_overlap)
-        mtx_integrals_spher = calcDipoleCGFS(atoms, cgfsN, rc, trans_mtx)
-        logger.info("Dipole center is: {}".format(rc))
-        xs = []
-        for finalS in fs:
-            css_j = coeffs[:, finalS]
-            energy_j = es[finalS]
-            deltaE = energy_j - energy_i
-
-            msg = "Calculating Fij between {} and  {}".format(initialS, finalS)
-            logger.info(msg)
-            fij = oscillator_strength(css_i, css_j, deltaE, trans_mtx,
-                                      mtx_integrals_spher)
-            xs.append(fij)
-            st = 'transition {:d} -> {:d} f_ij = {:f}\n'.format(
-                initialS, finalS, fij)
-            logger.info(st)
-        oscillators.append(xs)
+    oscillators = [
+        compute_oscillator_strength(
+            atoms, cgfsN, overlaps, es, coeffs, trans_mtx, initialS, fs)
+        for initialS, fs in zip(swapped_initial_states, swapped_final_states)]
 
     return oscillators
 
 
-def track_swaps(overlaps, swaps, i):
+def compute_oscillator_strength(
+        atoms: List, cgfsN: List, overlaps: Matrix, es: Vector, coeffs: Matrix,
+        trans_mtx: Matrix, initialS: int, fs: List):
     """
-    Swap the rows of the overlaps matrix correspoding with the
-    states that are swapped during the MD
-    """
-    track_swaps(swaps, i, initial_states)
-    for i in range(i + 1):
-        overlaps = swap_indexes(overlaps, swaps[0])
+    Compute the oscillator strenght using the matrix elements of the position
+    operator:
 
-    return overlaps
+    .. math:
+    f_i->j = 2/3 * E_i->j * ∑^3_u=1 [ <ψi | r_u | ψj> ]^2
+
+    where Ei→j is the single particle energy difference of the transition
+    from the Kohn-Sham state ψi to state ψj and rμ = x,y,z is the position
+    operator.
+    """
+
+    # Retrieve the molecular orbital coefficients and energies
+    css_i = coeffs[:, initialS]
+    energy_i = es[initialS]
+
+    # Compute the scalar value of the integral <phi_i | phi_i>
+    sum_overlap = np.dot(css_i, np.dot(overlaps, css_i))
+
+    # Compute the dipole center
+    rc = calculateDipoleCenter(atoms, cgfsN, css_i, trans_mtx, sum_overlap)
+    logger.info("Dipole center is: {}".format(rc))
+
+    # Dipole matrix element in spherical coordinates
+    mtx_integrals_spher = calcDipoleCGFS(atoms, cgfsN, rc, trans_mtx)
+
+    xs = []
+    for finalS in fs:
+        css_j = coeffs[:, finalS]
+        energy_j = es[finalS]
+        deltaE = energy_j - energy_i
+
+        msg = "Calculating Fij between {} and  {}".format(initialS, finalS)
+        logger.info(msg)
+        fij = oscillator_strength(css_i, css_j, deltaE, trans_mtx,
+                                  mtx_integrals_spher)
+        xs.append(fij)
+        st = 'transition {:d} -> {:d} Fij = {:f}\n'.format(
+            initialS, finalS, fij)
+        logger.info(st)
+
+    return xs
 
 
 def transform2Spherical(trans_mtx: Matrix, matrix: Matrix) -> Matrix:
@@ -252,8 +271,7 @@ def calcDipoleCGFS(atoms, cgfsN, rc, trans_mtx):
     :param trans_mtx: Transformation matrix to translate from Cartesian
     to Sphericals.
     :type trans_mtx: Numpy Matrix
-    :returns: tuple(<\Psi_i | x | \Psi_j>, <\Psi_i | y | \Psi_j>,
-              <\Psi_i | z | \Psi_j>)
+    :returns: tuple(<ψi | x | ψj>, <ψi | y | ψj>, <ψi | z | ψj> )
     """
     # x,y,z exponents value for the dipole
     exponents = [{'e': 1, 'f': 0, 'g': 0}, {'e': 0, 'f': 1, 'g': 0},
@@ -277,13 +295,12 @@ def calculateDipoleCenter(atoms, cgfsN, css, trans_mtx, overlap):
     :param cgfsN: Contracted gauss functions normalized, represented as
     a list of tuples of coefficients and Exponents.
     type cgfsN: [(Coeff, Expo)]
-    :param overlap: Integral < \Psi_i | \Psi_i >.
+    :param overlap: Integral <ψi | ψj>
     :type overlap: Float
     To calculate the origin of the dipole we use the following property,
 
     ..math::
-    \braket{\Psi_i \mid \hat{x_0} \mid \Psi_i} =
-                       - \braket{\Psi_i \mid \hat{x} \mid \Psi_i}
+      <ψi | x_0 | ψi> = - <ψi | x | ψj>
     """
     rc = (0, 0, 0)
 
@@ -294,8 +311,8 @@ def calculateDipoleCenter(atoms, cgfsN, css, trans_mtx, overlap):
     return tuple(map(lambda x: - x / overlap, xs_sum))
 
 
-def oscillator_strength(css_i, css_j, energy, trans_mtx,
-                        mtx_integrals_spher):
+def oscillator_strength(css_i: Matrix, css_j: Matrix, energy: float,
+                        mtx_integrals_spher: Matrix) -> float:
     """
     Calculate the oscillator strength between two state i and j using a
     molecular geometry in atomic units, a set of contracted gauss functions
@@ -304,12 +321,9 @@ def oscillator_strength(css_i, css_j, energy, trans_mtx,
     coordinates in case the coefficients are given in cartesian coordinates.
 
     :param css_i: MO coefficients of initial state
-    :type coeffs: Numpy Matrix.
     :param css_j: MO coefficients of final state
-    :type coeffs: Numpy Matrix.
     :param energy: energy difference i -> j.
-    :type energy: Double
-    :returns: Oscillator strength (float)
+    :returns: Oscillator strength
     """
     sum_integrals = sum(x ** 2 for x in
                         map(partial(computeIntegralSum, css_i, css_j),

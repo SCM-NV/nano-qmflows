@@ -1,6 +1,6 @@
 
-__all__ = ['AtomBasisData', 'AtomBasisKey', 'AtomData', 'AtomXYZ', 'CGF',
-           'InfoMO', 'InputKey', 'MO',
+__all__ = ['Array', 'AtomBasisData', 'AtomBasisKey', 'AtomData', 'AtomXYZ',
+           'CGF', 'InfoMO', 'InputKey', 'Matrix', 'MO', 'Tensor3D', 'Vector',
            'binomial', 'change_mol_units', 'even',
            'fac', 'getmass', 'odd', 'product', 'retrieve_hdf5_data',
            'search_data_in_hdf5', 'store_arrays_in_hdf5', 'triang2mtx']
@@ -34,6 +34,9 @@ hbar = 0.6582119  # planck constant in eV * fs
 
 # Numpy type hints
 Array = np.ndarray  # Generic Array
+Vector = np.ndarray
+Matrix = np.ndarray
+Tensor3D = np.ndarray
 
 
 def getmass(s: str):

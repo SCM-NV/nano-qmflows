@@ -11,20 +11,16 @@ import os
 from nac.integrals import (
     calculate_couplings_levine, calculate_couplings_3points,
     compute_overlaps_for_coupling, correct_phases)
-from nac.common import (change_mol_units, femtosec2au, retrieve_hdf5_data,
-                        search_data_in_hdf5, store_arrays_in_hdf5)
+from nac.common import (
+    Matrix, Vector, Tensor3D,
+    change_mol_units, femtosec2au, retrieve_hdf5_data,
+    search_data_in_hdf5, store_arrays_in_hdf5)
 
 from noodles import (gather, schedule)
 from qmworks.parsers import parse_string_xyz
 
 # Types hint
 from typing import (Callable, Dict, List, Tuple)
-
-# Numpy type hints
-Array = np.ndarray  # Generic Array
-Vector = np.ndarray
-Matrix = np.ndarray
-Tensor3D = np.ndarray
 
 # Starting logger
 logger = logging.getLogger(__name__)

@@ -5,17 +5,12 @@ __all__ = ['calculate_couplings_3points', 'calculate_couplings_levine',
 # from multipoleObaraSaika import sab_unfolded
 from functools import partial
 from multiprocessing import Pool
-from nac.common import retrieve_hdf5_data
+from nac.common import (Matrix, Vector, Tensor3D, retrieve_hdf5_data)
 from nac.integrals.overlapIntegral import sijContracted
 from scipy import sparse
 from typing import Dict, List, Tuple
 
 import numpy as np
-
-# Numpy type hints
-Vector = np.ndarray
-Matrix = np.ndarray
-Tensor3D = np.ndarray
 
 
 def calculate_couplings_3points(
