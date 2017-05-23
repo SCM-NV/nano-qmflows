@@ -197,21 +197,19 @@ def compute_oscillator_strength(
     css_i = coeffs[:, initialS]
     energy_i = es[initialS]
 
-    # Compute the scalar value of the integral <phi_i | phi_i>
-    sum_overlap = np.dot(css_i, np.dot(overlaps, css_i))
-
-    # Compute the dipole center
-    rc = calculateDipoleCenter(atoms, cgfsN, css_i, trans_mtx, sum_overlap)
-    logger.info("Dipole center is: {}".format(rc))
-
-    # Dipole matrix element in spherical coordinates
-    mtx_integrals_spher = calcDipoleCGFS(atoms, cgfsN, rc, trans_mtx)
-
     xs = []
     for finalS in fs:
         css_j = coeffs[:, finalS]
         energy_j = es[finalS]
         deltaE = energy_j - energy_i
+
+        # Compute the dipole center
+        rc = calculateDipoleCenter(
+            atoms, cgfsN, css_i, css_j, trans_mtx, overlaps)
+        logger.info("Dipole center is: {}".format(rc))
+
+        # Dipole matrix element in spherical coordinates
+        mtx_integrals_spher = calcDipoleCGFS(atoms, cgfsN, rc, trans_mtx)
 
         msg = "Calculating Fij between {} and  {}".format(initialS, finalS)
         logger.info(msg)
@@ -237,7 +235,8 @@ def computeIntegralSum(v1, v2, mtx):
     return np.dot(v1, np.dot(mtx, v2))
 
 
-def calcOverlapCGFS(atoms, cgfsN, trans_mtx):
+def calcOverlapCGFS(
+        atoms: List, cgfsN: List, trans_mtx: Matrix) -> Matrix:
     """
     Calculate the Matrix containining the overlap integrals bewtween
     contracted Gauss functions and transform it to spherical coordinates.
@@ -260,7 +259,8 @@ def calcOverlapCGFS(atoms, cgfsN, trans_mtx):
     return transform2Spherical(trans_mtx, overlap_cart)
 
 
-def calcDipoleCGFS(atoms, cgfsN, rc, trans_mtx):
+def calcDipoleCGFS(
+        atoms: List, cgfsN: List, rc: Tuple, trans_mtx: Matrix) -> Matrix:
     """
     Compute the Multipole matrix in cartesian coordinates and
     expand it to a matrix and finally convert it to spherical coordinates.
@@ -288,7 +288,9 @@ def calcDipoleCGFS(atoms, cgfsN, rc, trans_mtx):
                  in mtx_integrals_cart)
 
 
-def calculateDipoleCenter(atoms, cgfsN, css, trans_mtx, overlap):
+def calculateDipoleCenter(
+        atoms: List, cgfsN: List, css_i: Matrix, css_j: Matrix,
+        trans_mtx: Matrix, overlaps: Matrix) -> Matrix:
     """
     Calculate the point where the dipole is centered.
 
@@ -302,15 +304,18 @@ def calculateDipoleCenter(atoms, cgfsN, css, trans_mtx, overlap):
     To calculate the origin of the dipole we use the following property,
 
     ..math::
-      <ψi | x_0 | ψi> = - <ψi | x | ψj>
+      <ψi | x_0 | ψj> = - <ψi | x | ψj>
     """
     rc = (0, 0, 0)
 
+    # Compute the scalar value of the integral <phi_i | phi_j>
+    S_ij = np.dot(css_i, np.dot(overlaps, css_j))
+
     mtx_integrals_spher = calcDipoleCGFS(atoms, cgfsN, rc, trans_mtx)
-    xs_sum = list(map(partial(computeIntegralSum, css, css),
+    xs_sum = list(map(partial(computeIntegralSum, css_i, css_j),
                       mtx_integrals_spher))
 
-    return tuple(map(lambda x: - x / overlap, xs_sum))
+    return tuple(map(lambda x: - x / S_ij, xs_sum))
 
 
 def oscillator_strength(css_i: Matrix, css_j: Matrix, energy: float,
