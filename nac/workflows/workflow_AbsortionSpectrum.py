@@ -109,6 +109,7 @@ def compute_swapped_indexes(promised_overlaps, path_hdf5, project_name,
     Track the swap between the Molecular orbitals during the
     Molecular dynamics
     """
+    logger.info("Tracking the swaps between Molecular orbitals")
     # Overlaps and swaps
     fixed_overlaps_and_swaps = compute_the_fixed_phase_overlaps(
         promised_overlaps, path_hdf5, project_name, enumerate_from, nHOMO)
@@ -165,6 +166,7 @@ def calcOscillatorStrenghts(
     if hdf5_trans_mtx is not None:
         trans_mtx = retrieve_hdf5_data(path_hdf5, hdf5_trans_mtx)
 
+    logger.info("Computing the oscillator strength at time: {}".format(i))
     # Overlap matrix
     overlaps = calcOverlapCGFS(atoms, cgfsN, trans_mtx)
 
