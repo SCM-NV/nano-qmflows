@@ -350,7 +350,10 @@ def compute_center_of_mass(atoms: List) -> Tuple:
     mrs = [getmass(at.symbol) * np.array(at.xyz) for at in atoms]
     xs = np.sum(mrs, axis=0)
 
-    return xs / total_mass
+    # Center of mass
+    cm = xs / total_mass
+
+    return tuple(cm)
 
 # def graphicResult(rs, project_name, path_hdf5, mo_paths_hdf5,
 #                   initial_states=None, final_states=None, deviation=0.1):
