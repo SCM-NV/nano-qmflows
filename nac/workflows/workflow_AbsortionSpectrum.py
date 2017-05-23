@@ -2,7 +2,6 @@ import matplotlib
 matplotlib.use('Agg')
 
 # ================> Python Standard  and third-party <==========
-from functools import partial
 from noodles import (gather, schedule)
 from nac.common import (
     Matrix, Vector, change_mol_units, getmass, retrieve_hdf5_data,
@@ -102,8 +101,8 @@ def simulate_absoprtion_spectrum(
 
     results = run(gather(*oscillators), folder=work_dir)
 
-    with open('oscillators.txt', 'w') as f:
-        np.savetxt(f, results)
+    # Store data as a numpy array
+    np.savetxt('oscillators.txt', np.array(results), fmt='%.8e')
 
     print("Calculation Done")
 
