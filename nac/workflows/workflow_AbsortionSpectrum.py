@@ -101,7 +101,7 @@ def simulate_absoprtion_spectrum(
         for i, mol in enumerate(molecules_au)]
 
     results = run(gather(*oscillators), folder=work_dir)
-    np.savetxt('oscillators.txt', results, fmt='%.8e')
+    np.savetxt('oscillators.txt', results)
 
     print("Calculation Done")
 
