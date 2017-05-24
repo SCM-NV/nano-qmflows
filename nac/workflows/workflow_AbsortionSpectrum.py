@@ -101,9 +101,9 @@ def simulate_absoprtion_spectrum(
         for i, mol in enumerate(molecules_au) if i % calculate_oscillator_every == 0]
 
     results = run(gather(*oscillators), folder=work_dir)
-
+    
     # Store data as a numpy array
-    np.savetxt('oscillators.txt', np.array(results), fmt='%.8e')
+    np.savetxt('oscillators.txt', np.squeeze(results, axis=1), fmt='%.4e')
 
     print("Calculation Done")
 
