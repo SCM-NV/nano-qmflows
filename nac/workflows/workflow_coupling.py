@@ -3,15 +3,13 @@ __author__ = "Felipe Zapata"
 __all__ = ['generate_pyxaid_hamiltonians']
 
 # ================> Python Standard  and third-party <==========
-from noodles import (gather, schedule)
 
-from nac.common import change_mol_units
 from nac.schedule.components import calculate_mos
 from nac.schedule.scheduleCoupling import (
-    lazy_overlaps, lazy_couplings, write_hamiltonians)
+    calculate_overlap, lazy_couplings, write_hamiltonians)
+from noodles import schedule
 from os.path import join
 from qmworks import run
-from qmworks.parsers import parse_string_xyz
 
 import logging
 import pkg_resources
@@ -21,7 +19,6 @@ import shutil
 
 # Type Hints
 from typing import (Dict, List, Tuple)
-
 
 # ==============================> Main <==================================
 
@@ -82,14 +79,13 @@ def generate_pyxaid_hamiltonians(
         enumerate_from, package_config=package_config,
         ignore_warnings=ignore_warnings)
 
-    # Calculate Non-Adiabatic Coupling
-    # Number of Coupling points calculated with the MD trajectory
+    # Overlap matrix at two different times
     promised_overlaps = calculate_overlap(
         project_name, path_hdf5, dictCGFs, geometries, mo_paths_hdf5,
         hdf5_trans_mtx, enumerate_from, nHOMO=nHOMO,
         couplings_range=couplings_range)
 
-    # Compute the Couplings
+    # Calculate Non-Adiabatic Coupling
     schedule_couplings = schedule(lazy_couplings)
     promised_crossing_and_couplings = schedule_couplings(
         promised_overlaps, path_hdf5, project_name, enumerate_from, nHOMO, dt,
@@ -117,66 +113,6 @@ def generate_pyxaid_hamiltonians(
     run(promise_files, folder=work_dir)
 
     remove_folders(traj_folders)
-
-# ==============================> Tasks <=====================================
-
-
-def calculate_overlap(project_name: str, path_hdf5: str, dictCGFs: Dict,
-                      geometries: List, mo_paths_hdf5: List,
-                      hdf5_trans_mtx: str, enumerate_from: int,
-                      nHOMO: int=None, couplings_range: Tuple=None,
-                      units: str='angstrom') -> List:
-    """
-    Calculate the Overlap matrices before computing the non-adiabatic
-    coupling using 3 consecutive set of MOs in a molecular dynamic.
-
-    :param path_hdf5: Path to the HDF5 file that contains the
-    numerical results.
-    :type path_hdf5: String
-    :paramter dictCGFS: Dictionary from Atomic Label to basis set
-    :type     dictCGFS: Dict String [CGF],
-              CGF = ([Primitives], AngularMomentum),
-              Primitive = (Coefficient, Exponent)
-    :param geometries: list of molecular geometries
-    :param mo_paths: Path to the MO coefficients and energies in the
-    HDF5 file.
-    :param hdf5_trans_mtx: path to the transformation matrix in the HDF5 file.
-    :param enumerate_from: Number from where to start enumerating the folders
-    create for each point in the MD
-    :type enumerate_from: Int
-    :param nHOMO: index of the HOMO orbital in the HDF5
-    :param couplings_range: range of Molecular orbitals used to compute the
-    coupling.
-    :returns: paths to the Overlap matrices inside the HDF5.
-    """
-    nPoints = len(geometries) - 1
-
-    # Inplace scheduling of calculate_overlap function
-    # Equivalent to add @schedule on top of the function
-    schedule_overlaps = schedule(lazy_overlaps)
-
-    # Compute the Overlaps
-    paths_overlaps = []
-    for i in range(nPoints):
-
-        # extract 3 molecular geometries to compute the overlaps
-        molecules = tuple(map(lambda idx: parse_string_xyz(geometries[idx]),
-                              [i, i + 1]))
-
-        # If units are Angtrom convert then to a.u.
-        if 'angstrom' in units.lower():
-            molecules = tuple(map(change_mol_units, molecules))
-
-        # Compute the coupling
-        overlaps = schedule_overlaps(
-            i, project_name, path_hdf5, dictCGFs, molecules, mo_paths_hdf5,
-            hdf5_trans_mtx=hdf5_trans_mtx, enumerate_from=enumerate_from,
-            nHOMO=nHOMO, couplings_range=couplings_range)
-
-        paths_overlaps.append(overlaps)
-
-    # Gather all the promised paths
-    return gather(*paths_overlaps)
 
 
 def remove_folders(folders):

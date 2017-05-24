@@ -8,10 +8,13 @@ import numpy as np
 # ==================> Internal modules <====================
 from multipoleObaraSaika import sab_efg  # compiled with cython
 
+from typing import (Callable, List, Tuple)
+
 # ==================================<>======================================
 
 
-def general_multipole_matrix(atoms, cgfsN, calcMatrixEntry=None):
+def general_multipole_matrix(
+        atoms: List, cgfsN: List, calcMatrixEntry: Callable=None):
     """
     Generic function to calculate a matrix using a Gaussian basis set and
     the molecular geometry.
@@ -43,7 +46,8 @@ def general_multipole_matrix(atoms, cgfsN, calcMatrixEntry=None):
     return run(calcMatrixEntry)
 
 
-def dipoleContracted(t1, t2, rc, e, f, g):
+def dipoleContracted(
+        t1: Tuple, t2: Tuple, rc: Tuple, e: int, f: int, g: int):
     """
     Matrix entry calculation between two Contracted Gaussian functions.
     Equivalent to < t1| t2 >.
@@ -64,7 +68,8 @@ def dipoleContracted(t1, t2, rc, e, f, g):
     return sum(sab_efg(g1, g2, rc, e, f, g) for g1 in gs1 for g2 in gs2)
 
 
-def calcMatrixEntry(rc, e, f, g, xyz_cgfs, ixs):
+def calcMatrixEntry(
+        rc: Tuple, e: int, f: int, g: int, xyz_cgfs: int, ixs: Tuple) -> float:
     """
     Computed each matrix element using an index a tuple containing the
     cartesian coordinates and the primitives gauss functions.
@@ -84,7 +89,7 @@ def calcMatrixEntry(rc, e, f, g, xyz_cgfs, ixs):
     return dipoleContracted(t1, t2, rc, e, f, g)
 
 
-def calcMtxMultipoleP(atoms, cgfsN, rc, e=0, f=0, g=0):
+def calcMtxMultipoleP(atoms: List, cgfsN: List, rc, e=0, f=0, g=0):
     """
     Multipole matrix entry calculation between two Contracted Gaussian functions.
     It uses a partial applied function to pass the center of the multipole `rc`
