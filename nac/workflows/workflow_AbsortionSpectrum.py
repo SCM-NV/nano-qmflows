@@ -179,7 +179,7 @@ def calcOscillatorStrenghts(
 
     # Dipole matrix element in spherical coordinates
     mtx_integrals_spher = calcDipoleCGFS(atoms, cgfsN, rc, trans_mtx)
-    
+
     oscillators = [
         compute_oscillator_strength(
             rc, atoms, cgfsN, es, coeffs, mtx_integrals_spher, initialS, fs)

@@ -37,8 +37,8 @@ def main():
     # Algorithm use to compute the derivative coupling
     # Either levine or 3points
     algorithm='levine'
-    
-    
+
+
     # Varaible to define the Path ehere the Cp2K jobs will be computed
     scratch = "<Path/where/the/Molecular Orbitals/and/Couplings/are/computed>"
     project_name = 'replace_with_Name_of_the_Project'  # name use to create folders
@@ -100,7 +100,7 @@ def main():
     # Time step in femtoseconds use to compute the derivative coupling.
     # It corresponds with the integration step of the MD.
     dt = 1  # 1 femtosecond
-    
+
     # SLURM Configuration
     slurm = SLURM(
         nodes=2,
