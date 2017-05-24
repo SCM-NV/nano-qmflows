@@ -39,6 +39,7 @@ def simulate_absoprtion_spectrum(
         initial_states: List=None, final_states: List=None,
         traj_folders: List=None, hdf5_trans_mtx: str=None,
         nHOMO: int=None, couplings_range: Tuple=None,
+        calculate_oscillator_every: int=50,
         geometry_units='angstrom', **kwargs):
     """
     Compute the oscillator strength
@@ -98,7 +99,7 @@ def simulate_absoprtion_spectrum(
         i, swaps, project_name, mo_paths_hdf5, cgfsN, mol,
         path_hdf5, hdf5_trans_mtx=hdf5_trans_mtx,
         initial_states=initial_states, final_states=final_states)
-        for i, mol in enumerate(molecules_au)]
+        for i, mol in enumerate(molecules_au) if i % calculate_oscillator_every == 0]
 
     results = run(gather(*oscillators), folder=work_dir)
 
