@@ -176,7 +176,7 @@ def calcOscillatorStrenghts(
         compute_oscillator_strength(
             atoms, cgfsN, es, coeffs, trans_mtx, initialS, fs)
         for initialS, fs in zip(swapped_initial_states, swapped_final_states)]
-    
+
     return oscillators
 
 
@@ -215,7 +215,6 @@ def compute_oscillator_strength(
         logger.info(msg)
         fij, components = oscillator_strength(
             css_i, css_j, deltaE, mtx_integrals_spher)
-        xs.append(fij)
         st = 'transition {:d} -> {:d} Fij = {:f}\n'.format(
             initialS, finalS, fij)
         logger.info(st)
@@ -298,7 +297,7 @@ def calcDipoleCGFS(
 
 
 def oscillator_strength(css_i: Matrix, css_j: Matrix, energy: float,
-                        mtx_integrals_spher: Matrix) -> float:
+                        mtx_integrals_spher: Matrix) -> Tuple:
     """
     Calculate the oscillator strength between two state i and j using a
     molecular geometry in atomic units, a set of contracted gauss functions
