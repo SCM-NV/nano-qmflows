@@ -107,6 +107,8 @@ def workflow_oscillator_strength(
 
     print("Calculation Done")
 
+    return data
+
 
 def compute_swapped_indexes(promised_overlaps, path_hdf5, project_name,
                             enumerate_from, nHOMO):

@@ -1,6 +1,8 @@
 from functools import partial
+from itertools import chain
 from nac.common import retrieve_hdf5_data
 from nac.workflows.workflow_coupling import generate_pyxaid_hamiltonians
+from nac.workflows.workflow_AbsortionSpectrum import workflow_oscillator_strength
 from nac.workflows.initialization import initialize
 from nose.plugins.attrib import attr
 from os.path import join
@@ -35,17 +37,20 @@ cp2k_guess = dict2Setting({
                                'added_mos': 0}}}}},
     'cell_angles': [90.0, 90.0, 90.0]})
 
+# Environment data
+basisname = 'DZVP-MOLOPT-SR-GTH'
+path_traj_xyz = 'test/test_files/Cd33Se33_fivePoints.xyz'
+scratch_path = 'scratch'
+path_original_hdf5 = 'test/test_files/Cd33Se33.hdf5'
+path_test_hdf5 = join(scratch_path, 'test.hdf5')
+project_name = 'Cd33Se33'
+
 
 @attr('slow')
-def test_couplings():
+def test_couplings_and_oscillators():
     """
-    Test couplings for Cd33Se33
+    Test couplings and oscillator strength for Cd33Se33
     """
-    scratch_path = 'scratch'
-    path_original_hdf5 = 'test/test_files/Cd33Se33.hdf5'
-    path_test_hdf5 = join(scratch_path, 'test.hdf5')
-    project_name = 'Cd33Se33'
-
     if not os.path.exists(scratch_path):
         os.makedirs(scratch_path)
     try:
@@ -55,28 +60,27 @@ def test_couplings():
         # Run the actual test
         copy_basis_and_orbitals(path_original_hdf5, path_test_hdf5,
                                 project_name)
-        calculate_couplings(scratch_path, path_test_hdf5, project_name)
-        check_properties(project_name, path_original_hdf5, path_test_hdf5)
+        data = calculate_couplings_and_oscillators()
+        # Check couplings
+        check_properties()
+        # Check oscillator
+        fij = list(*chain(*data[0]))[3]
+        assert abs(fij - 0.13074798204116347) < 1e-8
 
     finally:
         # remove tmp data and clean global config
         shutil.rmtree(scratch_path)
 
 
-def calculate_couplings(scratch_path, path_test_hdf5, project_name):
+def calculate_couplings_and_oscillators():
     """
     Compute a couple of couplings with the Levine algorithm
     using precalculated MOs.
     """
-    basisname = 'DZVP-MOLOPT-SR-GTH'
-    path_traj_xyz = 'test/test_files/Cd33Se33_fivePoints.xyz'
-    path_basis = join(scratch_path, 'BASIS_MOLOPT')
-    path_potential = join(scratch_path, 'GTH_POTENTIALS')
-
     initial_config = initialize(
         project_name, path_traj_xyz,
-        basisname=basisname, path_basis=path_basis,
-        path_potential=path_potential, enumerate_from=0,
+        basisname=basisname, path_basis=None,
+        path_potential=None, enumerate_from=0,
         calculate_guesses='first', path_hdf5=path_test_hdf5,
         scratch_path=scratch_path)
 
@@ -85,8 +89,15 @@ def calculate_couplings(scratch_path, path_test_hdf5, project_name):
         guess_args=cp2k_guess, nHOMO=50,
         couplings_range=(50, 30), **initial_config)
 
+    data = workflow_oscillator_strength(
+        'cp2k', project_name, cp2k_main, guess_args=cp2k_guess,
+        nHOMO=50, couplings_range=(50, 30), initial_states=[49],
+        final_states=[[51]], **initial_config)
 
-def check_properties(project_name, original, test):
+    return data
+
+
+def check_properties():
     """
     Test if the coupling coupling by the Levine method is correct
     """
@@ -101,12 +112,12 @@ def check_properties(project_name, original, test):
                       for i in range(4)]
 
     # Define partial func
-    fun_original = partial(stack_retrieve, original)
-    fun_test = partial(stack_retrieve, test)
+    fun_original = partial(stack_retrieve, path_original_hdf5)
+    fun_test = partial(stack_retrieve, path_test_hdf5)
 
     # Read data from the HDF5
-    swaps_original = retrieve_hdf5_data(original, path_swaps)
-    swaps_test = retrieve_hdf5_data(test, path_swaps)
+    swaps_original = retrieve_hdf5_data(path_original_hdf5, path_swaps)
+    swaps_test = retrieve_hdf5_data(path_test_hdf5, path_swaps)
 
     overlaps_original = fun_original(path_overlaps)
     overlaps_test = fun_test(path_overlaps)
@@ -139,7 +150,7 @@ def copy_basis_and_orbitals(source, dest, project_name):
     """
     keys = [project_name, 'cp2k']
     excluded = ['coupling', 'overlaps', 'swaps']
-    with h5py.File(source, 'r') as f5,  h5py.File(dest, 'w') as g5:
+    with h5py.File(source, 'r') as f5, h5py.File(dest, 'w') as g5:
         for k in keys:
             if k not in g5:
                 g5.create_group(k)
