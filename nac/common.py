@@ -1,8 +1,8 @@
 
 __all__ = ['Array', 'AtomBasisData', 'AtomBasisKey', 'AtomData', 'AtomXYZ',
            'CGF', 'InfoMO', 'InputKey', 'Matrix', 'MO', 'Tensor3D', 'Vector',
-           'binomial', 'change_mol_units', 'even',
-           'fac', 'getmass', 'odd', 'product', 'retrieve_hdf5_data',
+           'binomial', 'change_mol_units', 'even', 'fac', 'getmass', 'h2ev',
+           'odd', 'product', 'retrieve_hdf5_data',
            'search_data_in_hdf5', 'store_arrays_in_hdf5', 'triang2mtx']
 
 # ================> Python Standard  and third-party <==========
@@ -31,6 +31,7 @@ r2meV = 13605.698  # conversion from rydberg to meV
 fs_to_cm = 33356.40952  # conversion from fs to cm-1
 fs_to_nm = 299.79246  # conversion from fs to nm
 hbar = 0.6582119  # planck constant in eV * fs
+h2ev = 27.2114  # hartrees to electronvolts
 
 # Numpy type hints
 Array = np.ndarray  # Generic Array

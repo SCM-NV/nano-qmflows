@@ -1,10 +1,11 @@
 
 __all__ = ['workflow_oscillator_strength']
 
+from itertools import chain
 from noodles import (gather, schedule)
 from nac.common import (
-    Matrix, Vector, change_mol_units, getmass, retrieve_hdf5_data,
-    triang2mtx)
+    Matrix, Vector, change_mol_units, getmass, h2ev,
+    retrieve_hdf5_data, triang2mtx)
 from nac.integrals.multipoleIntegrals import calcMtxMultipoleP
 from nac.integrals.overlapIntegral import calcMtxOverlapP
 from nac.schedule.components import calculate_mos
@@ -23,7 +24,6 @@ from typing import (Dict, List, Tuple)
 logger = logging.getLogger(__name__)
 
 # ==============================> Main <==================================
-h2ev = 27.2114  # hartrees to electronvolts
 
 
 def workflow_oscillator_strength(
@@ -98,10 +98,10 @@ def workflow_oscillator_strength(
         initial_states=initial_states, final_states=final_states)
         for i, mol in enumerate(molecules_au) if i % calculate_oscillator_every == 0]
 
-    results = run(gather(*oscillators), folder=work_dir)
+    data = run(gather(*oscillators), folder=work_dir)
 
-    # Store data as a numpy array
-    np.savetxt('oscillators.txt', np.squeeze(results, axis=1), fmt='%.4e')
+    for xs in chain(*data):
+        write_information(*xs)
 
     print("Calculation Done")
 
@@ -176,7 +176,7 @@ def calcOscillatorStrenghts(
         compute_oscillator_strength(
             atoms, cgfsN, es, coeffs, trans_mtx, initialS, fs)
         for initialS, fs in zip(swapped_initial_states, swapped_final_states)]
-
+    
     return oscillators
 
 
@@ -213,13 +213,29 @@ def compute_oscillator_strength(
 
         msg = "Calculating Fij between {} and  {}".format(initialS, finalS)
         logger.info(msg)
-        fij = oscillator_strength(css_i, css_j, deltaE, mtx_integrals_spher)
+        fij, components = oscillator_strength(
+            css_i, css_j, deltaE, mtx_integrals_spher)
         xs.append(fij)
         st = 'transition {:d} -> {:d} Fij = {:f}\n'.format(
             initialS, finalS, fij)
         logger.info(st)
+        xs.append((initialS, finalS, deltaE, fij, components))
 
     return xs
+
+
+def write_information(initialS: int, finalS: int, deltaE: float, fij: float,
+                      components: Tuple) -> None:
+    """
+    Write oscillator strenght information in one file
+    """
+    label = '_'.join((initialS, finalS))
+    energy = deltaE * h2ev
+    fmt = '{} {:.4e} {:.4e} {:.4e} {:.4e} {:.4e}'.format(
+        label, energy, fij, *components)
+
+    with open('oscillators.txt', 'w') as f:
+        f.write(fmt)
 
 
 def transform2Spherical(trans_mtx: Matrix, matrix: Matrix) -> Matrix:
@@ -295,12 +311,15 @@ def oscillator_strength(css_i: Matrix, css_j: Matrix, energy: float,
     :param energy: energy difference i -> j.
     :returns: Oscillator strength
     """
-    sum_integrals = sum(x ** 2 for x in
-                        map(lambda mtx:
-                            np.dot(css_i, np.dot(mtx, css_j)),
-                            mtx_integrals_spher))
+    components = tuple(
+        map(lambda mtx: np.dot(css_i, np.dot(mtx, css_j)),
+            mtx_integrals_spher))
 
-    return (2 / 3) * energy * sum_integrals
+    sum_integrals = sum(x ** 2 for x in components)
+
+    fij = (2 / 3) * energy * sum_integrals
+
+    return fij, components
 
 
 def compute_center_of_mass(atoms: List) -> Tuple:
