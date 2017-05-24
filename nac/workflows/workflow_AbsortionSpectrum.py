@@ -1,4 +1,5 @@
 
+
 __all__ = ['workflow_oscillator_strength']
 
 from itertools import chain
@@ -100,8 +101,9 @@ def workflow_oscillator_strength(
 
     data = run(gather(*oscillators), folder=work_dir)
 
-    for xs in chain(*data):
-        write_information(*xs)
+    for xs in list(chain(*data)):
+        for args in xs:
+            write_information(*args)
 
     print("Calculation Done")
 
@@ -172,17 +174,23 @@ def calcOscillatorStrenghts(
     logger.info("Computing the oscillator strength at time: {}".format(i))
     # Overlap matrix
 
+    # Origin of the dipole
+    rc = compute_center_of_mass(atoms)
+
+    # Dipole matrix element in spherical coordinates
+    mtx_integrals_spher = calcDipoleCGFS(atoms, cgfsN, rc, trans_mtx)
+    
     oscillators = [
         compute_oscillator_strength(
-            atoms, cgfsN, es, coeffs, trans_mtx, initialS, fs)
+            rc, atoms, cgfsN, es, coeffs, mtx_integrals_spher, initialS, fs)
         for initialS, fs in zip(swapped_initial_states, swapped_final_states)]
 
     return oscillators
 
 
 def compute_oscillator_strength(
-        atoms: List, cgfsN: List, es: Vector, coeffs: Matrix,
-        trans_mtx: Matrix, initialS: int, fs: List):
+        rc: Tuple, atoms: List, cgfsN: List, es: Vector, coeffs: Matrix,
+        mtx_integrals_spher: Matrix, initialS: int, fs: List):
     """
     Compute the oscillator strenght using the matrix elements of the position
     operator:
@@ -194,27 +202,22 @@ def compute_oscillator_strength(
     from the Kohn-Sham state ψi to state ψj and rμ = x,y,z is the position
     operator.
     """
-
     # Retrieve the molecular orbital coefficients and energies
     css_i = coeffs[:, initialS]
     energy_i = es[initialS]
 
-    # Origin of the dipole
-    rc = compute_center_of_mass(atoms)
-
+    # Compute the oscillator strength
     xs = []
     for finalS in fs:
+        # Get the molecular orbitals coefficients and energies
         css_j = coeffs[:, finalS]
         energy_j = es[finalS]
         deltaE = energy_j - energy_i
 
-        # Dipole matrix element in spherical coordinates
-        mtx_integrals_spher = calcDipoleCGFS(atoms, cgfsN, rc, trans_mtx)
-
-        msg = "Calculating Fij between {} and  {}".format(initialS, finalS)
-        logger.info(msg)
+        # compute the oscillator strength and the transition dipole components
         fij, components = oscillator_strength(
             css_i, css_j, deltaE, mtx_integrals_spher)
+
         st = 'transition {:d} -> {:d} Fij = {:f}\n'.format(
             initialS, finalS, fij)
         logger.info(st)
@@ -228,12 +231,11 @@ def write_information(initialS: int, finalS: int, deltaE: float, fij: float,
     """
     Write oscillator strenght information in one file
     """
-    label = '_'.join((initialS, finalS))
     energy = deltaE * h2ev
-    fmt = '{} {:.4e} {:.4e} {:.4e} {:.4e} {:.4e}'.format(
-        label, energy, fij, *components)
+    fmt = '{}_{} {:.4e} {:.4e} {:.4e} {:.4e} {:.4e}\n'.format(
+        initialS, finalS, energy, fij, *components)
 
-    with open('oscillators.txt', 'w') as f:
+    with open('oscillators.txt', 'a') as f:
         f.write(fmt)
 
 
