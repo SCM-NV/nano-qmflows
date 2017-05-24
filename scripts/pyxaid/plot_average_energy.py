@@ -30,9 +30,9 @@ def plot_stuff(outs, pops):
     plt.plot(dim_x, plot[:, 0:])
 
     fileName = "Average_Energy.png"
-    plt.savefig(fileName, format='png', dpi=300)
 
     plt.show()
+    plt.savefig(fileName, format='png', dpi=300)
 
 
 def read_energies(path, fn, nstates, nconds):
@@ -94,3 +94,4 @@ if __name__ == "__main__":
                         help='Number of states')
     parser.add_argument('-nconds', type=int, required=True,
                         help='Number of initial conditions')
+    main(*read_cmd_line(parser))

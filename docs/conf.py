@@ -53,9 +53,8 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = 'nonadiabaticCoupling'
-copyright = '2016, Felipe Z.'
-author = 'felipeZ'
+project = 'qmworks-namd'
+author = 'felipeZ, iinfante76'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the

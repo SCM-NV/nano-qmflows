@@ -12,10 +12,12 @@ import fnmatch
 import h5py
 import logging
 import os
+import shutil
 
 # ==================> Internal modules <==========
 from nac.basisSet.basisNormalization import createNormalizedCGFs
 from nac.schedule.scheduleCp2k import prepare_job_cp2k
+from nac.schedule.scheduleOrca import prepare_job_orca
 from nac.common import search_data_in_hdf5
 from qmworks.common import InputKey
 from qmworks.hdf5 import dump_to_hdf5
@@ -38,7 +40,8 @@ logger = logging.getLogger(__name__)
 def calculate_mos(package_name: str, all_geometries: List, project_name: str,
                   path_hdf5: str, folders: List, package_args: Dict,
                   guess_args: Dict=None, calc_new_wf_guess_on_points: List=None,
-                  enumerate_from: int=0, package_config: Dict=None) -> List:
+                  enumerate_from: int=0, package_config: Dict=None,
+                  ignore_warnings=False) -> List:
     """
     Look for the MO in the HDF5 file if they do not exists calculate them by
     splitting the jobs in batches given by the ``restart_chunk`` variables.
@@ -81,7 +84,7 @@ def calculate_mos(package_name: str, all_geometries: List, project_name: str,
             logger.info("point_{} has already been calculated".format(k))
             orbitals.append(hdf5_orb_path)
         else:
-            logger.info("Computing Molecular orbitals of: point_{}".format(k))
+            logger.info("point_{} has been scheduled".format(k))
 
             # Path to I/O files
             point_dir = folders[j]
@@ -97,7 +100,8 @@ def calculate_mos(package_name: str, all_geometries: List, project_name: str,
             # Check if the job finishes succesfully
             promise_qm = schedule_check(
                 promise_qm, job_name, package_name, project_name, path_hdf5,
-                package_args, guess_args, package_config, point_dir, job_files, k, gs)
+                package_args, guess_args, package_config, point_dir, job_files,
+                k, gs, ignore_warnings=ignore_warnings)
 
             # Store the computation
             path_MOs = store_in_hdf5(project_name, path_hdf5, promise_qm,
@@ -142,7 +146,7 @@ def compute_orbitals(
     the nonadiabatic coupling. When finish store the MOs in the HdF5 and
     returns a new guess.
     """
-    prepare_and_schedule = {'cp2k': prepare_job_cp2k}
+    prepare_and_schedule = {'cp2k': prepare_job_cp2k, 'orca': prepare_job_orca}
 
     call_schedule_qm = prepare_and_schedule[package_name]
 
@@ -175,7 +179,8 @@ def compute_orbitals(
 def schedule_check(promise_qm, job_name: str, package_name: str,
                    project_name: str, path_hdf5: str, package_args: Dict,
                    guess_args: Dict, package_config: Dict, point_dir: str,
-                   job_files: Tuple, k: int, gs: List):
+                   job_files: Tuple, k: int, gs: List,
+                   ignore_warnings=False):
     """
     Check wether a calculation finishes succesfully otherwise run a new guess.
     """
@@ -183,7 +188,7 @@ def schedule_check(promise_qm, job_name: str, package_name: str,
     warnings = promise_qm.warnings
 
     # Check for SCF convergence errors
-    if warnings is not None and any(
+    if not ignore_warnings and warnings is not None and any(
             w == SCF_Convergence_Warning for msg, w in warnings.items()):
         # Report the failure
         msg = "Job: {} Finished with Warnings: {}".format(job_name, warnings)
@@ -218,8 +223,9 @@ def create_point_folder(work_dir, n, enumerate_from):
     folders = []
     for k in range(enumerate_from, n + enumerate_from):
         new_dir = join(work_dir, 'point_{}'.format(k))
-        if not os.path.exists(new_dir):
-            os.makedirs(new_dir)
+        if os.path.exists(new_dir):
+            shutil.rmtree(new_dir)
+        os.makedirs(new_dir)
         folders.append(new_dir)
 
     return folders

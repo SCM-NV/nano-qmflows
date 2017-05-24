@@ -11,7 +11,7 @@ if shutil.which('icc') is not None:
 
 setup(
     name='qmworks-namd',
-    version='0.1.7',
+    version='0.2.0',
     description='Automation of computations in quantum chemistry',
     license='MIT',
     url='https://github.com/SCM-NV/qmworks-namd',
@@ -38,5 +38,6 @@ setup(
         'scripts/hamiltonians/plot_mos_energies.py', 'scripts/hamiltonians/plot_spectra.py',
         'scripts/pyxaid/plot_average_energy.py', 'scripts/pyxaid/plot_spectra_pyxaid.py',
         'scripts/pyxaid/plot_states_pops.py', 'scripts/qmworks/mergeHDF5.py',
-        'scripts/qmworks/removeCouplings.py']
+        'scripts/qmworks/removeCouplings.py', 'scripts/distribution/distribute_jobs.py',
+        'scripts/distribution/merge_job.py']
 )

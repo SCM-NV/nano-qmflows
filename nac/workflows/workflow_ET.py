@@ -1,37 +1,24 @@
 __author__ = "Felipe Zapata"
 
 # ================> Python Standard  and third-party <==========
-from os.path import join
 
-import fnmatch
-import h5py
-import numpy as np
-import os
-import plams
-
-# ==============================> Internal modules <===========================
 from .components import calculate_mos
 from nac.common import (change_mol_units, retrieve_hdf5_data)
 from nac.integrals.electronTransfer import photoExcitationRate
 from nac.workflows import initialize
 from noodles import gather
+from os.path import join
 from qmworks import run
 from qmworks.parsers import parse_string_xyz
+from scm import plams
+
+import fnmatch
+import h5py
+import numpy as np
+import os
+
 
 # ==============================> Main <==================================
-
-
-def search_data_in_hdf5(path_hdf5, path_to_prop):
-    """
-    Search if the node exists in the HDF5 file.
-    """
-    with h5py.File(path_hdf5, 'r') as f5:
-        if isinstance(path_to_prop, list):
-            pred = all(path in f5 for path in path_to_prop)
-        else:
-            pred = path_to_prop in f5
-
-    return pred
 
 
 def calculate_ETR(package_name, project_name, package_args, geometries=None,
