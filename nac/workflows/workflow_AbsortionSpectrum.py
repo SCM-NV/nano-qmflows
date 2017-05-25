@@ -72,16 +72,21 @@ def workflow_oscillator_strength(
         enumerate_from, package_config=package_config)
 
     # Overlap matrix at two different times
-    promised_overlaps = calculate_overlap(
-        project_name, path_hdf5, dictCGFs, geometries, mo_paths_hdf5,
-        hdf5_trans_mtx, enumerate_from, nHOMO=nHOMO,
-        couplings_range=couplings_range)
+    if len(geometries) > 1:
+        promised_overlaps = calculate_overlap(
+            project_name, path_hdf5, dictCGFs, geometries, mo_paths_hdf5,
+            hdf5_trans_mtx, enumerate_from, nHOMO=nHOMO,
+            couplings_range=couplings_range)
 
-    # track the orbitals duringh the MD
-    schedule_compute_swaps = schedule(compute_swapped_indexes)
+        # track the orbitals duringh the MD
+        schedule_compute_swaps = schedule(compute_swapped_indexes)
 
-    swaps = schedule_compute_swaps(
-        promised_overlaps, path_hdf5, project_name, enumerate_from, nHOMO)
+        swaps = schedule_compute_swaps(
+            promised_overlaps, path_hdf5, project_name, enumerate_from, nHOMO)
+    else:
+        # Use only the first point to compute the oscillator strength
+        dim = sum(couplings_range)
+        swaps = np.arange(dim).reshape(1, dim)
 
     # geometries in atomic units
     molecules_au = [change_mol_units(parse_string_xyz(gs))
@@ -97,7 +102,8 @@ def workflow_oscillator_strength(
         i, swaps, project_name, mo_paths_hdf5, cgfsN, mol,
         path_hdf5, hdf5_trans_mtx=hdf5_trans_mtx,
         initial_states=initial_states, final_states=final_states)
-        for i, mol in enumerate(molecules_au) if i % calculate_oscillator_every == 0]
+        for i, mol in enumerate(molecules_au)
+        if i % calculate_oscillator_every == 0]
 
     data = run(gather(*oscillators), folder=work_dir)
 
