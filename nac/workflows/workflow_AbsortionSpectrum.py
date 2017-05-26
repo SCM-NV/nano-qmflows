@@ -14,6 +14,7 @@ from nac.schedule.scheduleCoupling import (
     calculate_overlap, compute_the_fixed_phase_overlaps)
 from qmworks import run
 from qmworks.parsers import parse_string_xyz
+from scipy import sparse
 
 import logging
 import numpy as np
@@ -248,9 +249,13 @@ def write_information(initialS: int, finalS: int, deltaE: float, fij: float,
 
 
 def transform2Spherical(trans_mtx: Matrix, matrix: Matrix) -> Matrix:
-    """ Transform from spherical to cartesians"""
-    return np.dot(
-        trans_mtx, np.dot(matrix, np.transpose(trans_mtx)))
+    """
+    Transform from spherical to cartesians using the sparse representation
+    """
+    trans_mtx = sparse.csr_matrix(trans_mtx)
+    transpose = trans_mtx.transpose()
+
+    return trans_mtx.dot(sparse.csr_matrix.dot(matrix, transpose))
 
 
 def calcOverlapCGFS(
