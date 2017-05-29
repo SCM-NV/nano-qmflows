@@ -1,5 +1,5 @@
 
-from nac.common import (binomial, fac, fromIndex, odd, product,
+from nac.common import (binomial, fac, odd, product,
                         retrieve_hdf5_data, triang2mtx)
 from os.path import join
 
@@ -28,27 +28,6 @@ def test_binomial():
     """Test binomial function """
     assert all([binomial(7, 4) == 35, binomial(8, 4) == 70,
                 binomial(8, 3) == 56])
-
-
-def test_triangular_from_index():
-    """
-    Test the convertion from a symmetric 2-dimensional matrix to a flattern
-    upper triangular representation as shown in the following scheme:
-
-    (0,0) 0  (0, 1) 1 (0, 2) 2 .... (0, n) n
-             (1, 1) n+1.............(1, n) 2*n - 1
-                                    (n, n) (n^2 + n) / 6
-    """
-    shape = (4, 4)
-    fun = lambda x: fromIndex(x, shape)
-    x0_3 = fun((0, 3)) == 3
-    x1_1 = fun((1, 1)) == 4
-    x2_2 = fun((2, 2)) == 7
-    x2_3 = fun((2, 3)) == 8
-    x3_3 = fun((3, 3)) == 9
-
-    xs = [x0_3, x1_1, x2_2, x2_3, x3_3]
-    assert all(xs)
 
 
 def test_triang_to_dim2():
