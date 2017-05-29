@@ -112,31 +112,21 @@ def store_arrays_in_hdf5(path_hdf5: str, paths, tensor: Array,
                                data=tensor, dtype=dtype)
 
 
-def fromIndex(ixs, shape):
-    """
-    calculate the equivalent index from a two dimensional array to a flat array
-    containing the upper triangular elements of a matrix.
-    """
-    i, j = ixs
-    if j >= i:
-        k = sum(m * k for m, k in zip(shape[1:], ixs)) + ixs[-1]
-        r = (((i * i + i) // 2) if i else 0)
-        return k - r
-    else:
-        return fromIndex([j, i], shape)
-
-
-def triang2mtx(arr, dim):
+def triang2mtx(xs: Vector, dim: int) -> Matrix:
     """
     Transform a symmetric matrix represented as a flatten upper triangular
     matrix to the correspoding 2-dimensional array.
     """
-    rss = np.empty((dim, dim))
-    for i in range(dim):
-        for j in range(dim):
-            k = fromIndex([i, j], [dim, dim])
-            rss[i, j] = arr[k]
-    return rss
+    # New array
+    mtx = np.zeros((dim, dim))
+    # indexes of the upper triangular
+    inds = np.triu_indices_from(mtx)
+    # Fill the upper triangular of the new array
+    mtx[inds] = xs
+    # Fill the lower triangular
+    mtx[(inds[1], inds[0])] = xs
+
+    return mtx
 
 
 def change_mol_units(mol, factor=angs2au):
