@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 def initialize(project_name, path_traj_xyz, basisname, enumerate_from=0,
                calculate_guesses='first', path_hdf5=None,
                scratch_path=None, path_basis=None, path_potential=None,
-               dt=1, geometry_units='angstrom'):
+               geometry_units='angstrom'):
     """
     Initialize all the data required to schedule the workflows associated with
     the nonadaibatic coupling
@@ -87,7 +87,7 @@ def initialize(project_name, path_traj_xyz, basisname, enumerate_from=0,
     d = {'package_config': cp2k_config, 'path_hdf5': path_hdf5,
          'calc_new_wf_guess_on_points': points_guess,
          'geometries': geometries, 'enumerate_from': enumerate_from,
-         'dt': 1, 'dictCGFs': dictCGFs, 'work_dir': scratch_path,
+         'dictCGFs': dictCGFs, 'work_dir': scratch_path,
          'traj_folders': traj_folders, 'basisname': basisname,
          'hdf5_trans_mtx': hdf5_trans_mtx}
 

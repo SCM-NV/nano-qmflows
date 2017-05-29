@@ -1,7 +1,7 @@
 
-
 __all__ = ['workflow_oscillator_strength']
 
+from collections import namedtuple  
 from itertools import chain
 from noodles import (gather, schedule)
 from nac.common import (
@@ -25,6 +25,9 @@ from typing import (Dict, List, Tuple)
 # Get logger
 logger = logging.getLogger(__name__)
 
+# Named tupel
+OScillator = namedtuple("Oscillator", "FIXME")
+
 # ==============================> Main <==================================
 
 
@@ -39,6 +42,7 @@ def workflow_oscillator_strength(
         traj_folders: List=None, hdf5_trans_mtx: str=None,
         nHOMO: int=None, couplings_range: Tuple=None,
         calculate_oscillator_every: int=50,
+        convolution='gaussian',
         geometry_units='angstrom', **kwargs):
     """
     Compute the oscillator strength
@@ -99,14 +103,27 @@ def workflow_oscillator_strength(
     # Schedule the function the compute the Oscillator Strenghts
     scheduleOscillator = schedule(calcOscillatorStrenghts)
 
-    oscillators = [scheduleOscillator(
-        i, swaps, project_name, mo_paths_hdf5, cgfsN, mol,
-        path_hdf5, hdf5_trans_mtx=hdf5_trans_mtx,
-        initial_states=initial_states, final_states=final_states)
-        for i, mol in enumerate(molecules_au)
-        if i % calculate_oscillator_every == 0]
+    oscillators = gather(
+        *[scheduleOscillator(
+            i, swaps, project_name, mo_paths_hdf5, cgfsN, mol,
+            path_hdf5, hdf5_trans_mtx=hdf5_trans_mtx,
+            initial_states=initial_states, final_states=final_states)
+          for i, mol in enumerate(molecules_au)
+          if i % calculate_oscillator_every == 0])
 
-    data = run(gather(*oscillators), folder=work_dir)
+    if len(geometries) > 1:
+        # Compute the cross section
+        schedule_cross_section = schedule(compute_cross_section)
+
+        promised_cross_section = schedule_cross_section(
+            oscillators, path_hdf5, mo_paths_hdf5, convolution,
+            calculate_oscillator_every)
+
+        cross_section, data = run(
+            gather(promised_cross_section, oscillators), folder=work_dir)
+    else:
+        data = run(oscillators, folder=work_dir)
+        cross_section = None
 
     for xs in list(chain(*data)):
         for args in xs:
@@ -114,7 +131,44 @@ def workflow_oscillator_strength(
 
     print("Calculation Done")
 
-    return data
+    return cross_section, data
+
+
+def compute_cross_section_function(
+        oscillators: List, path_hdf5: str, mo_paths_hdf5: List, convolution: str,
+        calculate_oscillator_every: int) -> float:
+    """
+    Compute the photoabsorption cross section as a function of the energy.
+    See: The UV absorption of nucleobases: semi-classical ab initio spectra
+    simulations. Phys. Chem. Chem. Phys., 2010, 12, 4959–4967
+    """
+    pass
+    # # speed of light in a.u.
+    # c = 137
+    # # Constant
+    # cte = 2 * (np.pi ** 2) / c
+
+    # # rearrange oscillator strengths by initial states
+    # def fun_cross_section(energy: float) -> float:
+    #     return cte * sum(sum(sum() / len(ws) for ws in zip(*arr))
+    #                      for arr in zip(*oscillators))
+
+
+def gaussian_distribution(center, delta: float, size: int=1) -> Vector:
+    """
+    Return gaussian as described at:
+    Phys. Chem. Chem. Phys., 2010, 12, 4959–4967
+    """
+    return np.random.normal(loc=center, scale=delta / 2, size=size)
+
+
+def lorentzian_distribution(center: float, parameter: float, size: int=1) -> Vector:
+    """
+    Return a Lorentzian as described at:
+    Phys. Chem. Chem. Phys., 2010, 12, 4959–4967
+    """
+    pass
+    # c = delta / 2 * np.pi
 
 
 def compute_swapped_indexes(promised_overlaps, path_hdf5, project_name,
