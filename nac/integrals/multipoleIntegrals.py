@@ -28,7 +28,7 @@ def general_multipole_matrix(
     :type calcMatrixEntry: Function
     :returns: Numpy Array representing a flatten triangular matrix.
     """
-    def run(fun_calc_entry):
+    def run():
         """
         Build a matrix using a pool of worker and a function takes nuclear
         corrdinates and a Contracted Gauss function and compute a number.
@@ -39,11 +39,11 @@ def general_multipole_matrix(
         # Number of non-zero entries of a triangular mtx
         indexes = calcIndexTriang(nOrbs)
         with Pool() as p:
-            rss = p.map(partial(fun_calc_entry, xyz_cgfs), indexes)
+            rss = p.map(partial(calcMatrixEntry, xyz_cgfs), indexes)
 
         return np.array(list(rss))
 
-    return run(calcMatrixEntry)
+    return run()
 
 
 def dipoleContracted(
@@ -172,4 +172,4 @@ def calcIndexTriang(n):
 
 def createTupleXYZ_CGF(atom, cgfs):
     xyz = atom.xyz
-    return [(xyz, cs) for cs in cgfs]
+    return map(lambda cs: (xyz, cs), cgfs)
