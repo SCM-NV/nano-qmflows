@@ -1,7 +1,7 @@
 
 __all__ = ['workflow_oscillator_strength']
 
-from collections import namedtuple  
+from collections import namedtuple
 from itertools import chain
 from noodles import (gather, schedule)
 from nac.common import (
@@ -113,7 +113,7 @@ def workflow_oscillator_strength(
 
     if len(geometries) > 1:
         # Compute the cross section
-        schedule_cross_section = schedule(compute_cross_section)
+        schedule_cross_section = schedule(compute_cross_section_function)
 
         promised_cross_section = schedule_cross_section(
             oscillators, path_hdf5, mo_paths_hdf5, convolution,
