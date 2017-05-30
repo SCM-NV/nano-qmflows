@@ -25,10 +25,9 @@ from typing import (Dict, List, Tuple)
 # Get logger
 logger = logging.getLogger(__name__)
 
-# Named tupel
-OScillator = namedtuple("Oscillator", "FIXME")
-
-# ==============================> Main <==================================
+# Named tuple
+Oscillator = namedtuple("Oscillator",
+                        ('initialS', 'finalS', 'deltaE', 'fij', 'components'))
 
 
 def workflow_oscillator_strength(
@@ -141,16 +140,34 @@ def compute_cross_section_function(
     See: The UV absorption of nucleobases: semi-classical ab initio spectra
     simulations. Phys. Chem. Chem. Phys., 2010, 12, 4959–4967
     """
-    pass
-    # # speed of light in a.u.
-    # c = 137
-    # # Constant
-    # cte = 2 * (np.pi ** 2) / c
+    # speed of light in a.u.
+    c = 137
+    # Constant
+    cte = 2 * (np.pi ** 2) / c
 
-    # # rearrange oscillator strengths by initial states
-    # def fun_cross_section(energy: float) -> float:
-    #     return cte * sum(sum(sum() / len(ws) for ws in zip(*arr))
-    #                      for arr in zip(*oscillators))
+    # Constants use for the convo
+    sigma = None
+    gamma = None
+
+    # convulation functions for the intensity
+    convolution_functions = {'gaussian': (gaussian_distribution, sigma),
+                             'lorentzian': (lorentzian_distribution, gamma)}
+
+    # rearrange oscillator strengths by initial states
+    def fun_cross_section(energy: float) -> float:
+        """
+        Create a function that compute the photoabsorption cross section as
+        function of the energy
+        """
+        fun_convolution, parameter = convolution_functions[convolution]
+
+        return cte * sum(
+            sum(
+                sum(lambda osc: osc.fij *
+                    fun_convolution(osc.deltaE, parameter) / len(ws)
+                    for ws in zip(*arr)) for arr in zip(*oscillators)))
+
+    return fun_cross_section
 
 
 def gaussian_distribution(center, delta: float, size: int=1) -> Vector:
@@ -161,7 +178,8 @@ def gaussian_distribution(center, delta: float, size: int=1) -> Vector:
     return np.random.normal(loc=center, scale=delta / 2, size=size)
 
 
-def lorentzian_distribution(center: float, parameter: float, size: int=1) -> Vector:
+def lorentzian_distribution(
+        center: float, parameter: float, size: int=1) -> Vector:
     """
     Return a Lorentzian as described at:
     Phys. Chem. Chem. Phys., 2010, 12, 4959–4967
@@ -283,7 +301,8 @@ def compute_oscillator_strength(
         st = 'transition {:d} -> {:d} Fij = {:f}\n'.format(
             initialS, finalS, fij)
         logger.info(st)
-        xs.append((initialS, finalS, deltaE, fij, components))
+        osc = Oscillator(initialS, finalS, deltaE, fij, components)
+        xs.append(osc)
 
     return xs
 
