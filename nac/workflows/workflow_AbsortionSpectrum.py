@@ -111,22 +111,18 @@ def workflow_oscillator_strength(
           for i, mol in enumerate(molecules_au)
           if i % calculate_oscillator_every == 0])
 
-    if len(geometries) > 1:
-        # Compute the cross section
-        schedule_cross_section = schedule(compute_cross_section_function)
+    # if len(geometries) > 1:
+    #     # Compute the cross section
+    #     schedule_cross_section = schedule(compute_cross_section_function)
 
-        promised_cross_section = schedule_cross_section(
-            oscillators, path_hdf5, mo_paths_hdf5, convolution,
-            calculate_oscillator_every)
+    #     promised_cross_section = schedule_cross_section(
+    #         oscillators, path_hdf5, mo_paths_hdf5, convolution,
+    #         calculate_oscillator_every)
 
-        data = run(
-            gather(oscillators), folder=work_dir)
-        
-        # data = run(
-        #     gather(promised_cross_section, oscillators), folder=work_dir)
-    else:
-        data = run(oscillators, folder=work_dir)
-        # cross_section = None
+    #     # data = run(
+    #     #     gather(promised_cross_section, oscillators), folder=work_dir)
+    data = run(oscillators, folder=work_dir)
+    # cross_section = None
 
     for xs in list(chain(*data)):
         for args in xs:
