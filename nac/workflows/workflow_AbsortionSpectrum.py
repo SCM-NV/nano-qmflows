@@ -119,11 +119,14 @@ def workflow_oscillator_strength(
             oscillators, path_hdf5, mo_paths_hdf5, convolution,
             calculate_oscillator_every)
 
-        cross_section, data = run(
-            gather(promised_cross_section, oscillators), folder=work_dir)
+        data = run(
+            gather(oscillators), folder=work_dir)
+        
+        # data = run(
+        #     gather(promised_cross_section, oscillators), folder=work_dir)
     else:
         data = run(oscillators, folder=work_dir)
-        cross_section = None
+        # cross_section = None
 
     for xs in list(chain(*data)):
         for args in xs:
@@ -131,12 +134,12 @@ def workflow_oscillator_strength(
 
     print("Calculation Done")
 
-    return cross_section, data
+    return data
 
 
 def compute_cross_section_function(
-        oscillators: List, path_hdf5: str, mo_paths_hdf5: List, convolution: str,
-        calculate_oscillator_every: int) -> float:
+        oscillators: List, path_hdf5: str, mo_paths_hdf5: List,
+        convolution: str, calculate_oscillator_every: int) -> float:
     """
     Compute the photoabsorption cross section as a function of the energy.
     See: The UV absorption of nucleobases: semi-classical ab initio spectra
