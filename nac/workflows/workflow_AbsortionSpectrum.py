@@ -41,7 +41,7 @@ def workflow_oscillator_strength(
         traj_folders: List=None, hdf5_trans_mtx: str=None,
         nHOMO: int=None, couplings_range: Tuple=None,
         calculate_oscillator_every: int=50,
-        convolution='gaussian',
+        convolution: str='gaussian', broadening: float=0.1,  # eV
         geometry_units='angstrom', **kwargs):
     """
     Compute the oscillator strength
@@ -61,6 +61,8 @@ def workflow_oscillator_strength(
     :param calc_new_wf_guess_on_points: Points where the guess wave functions
     are calculated.
     :param package_config: Parameters required by the Package.
+    :param  convolution: gaussian | lorentzian
+    :param calculate_oscillator_every: step to compute the oscillator strengths
     :returns: None
     """
     # Start logging event
@@ -117,11 +119,11 @@ def workflow_oscillator_strength(
     #     promised_cross_section = schedule_cross_section(
     #         oscillators, path_hdf5, mo_paths_hdf5, convolution,
     #         calculate_oscillator_every)
-
-    #     # data = run(
-    #     #     gather(promised_cross_section, oscillators), folder=work_dir)
+    # function_cross_section, data = run(
+    #     gather(promised_cross_section, oscillators), folder=work_dir)
+    # else:
     data = run(oscillators, folder=work_dir)
-    # cross_section = None
+    # function_cross_section = None
 
     for xs in list(chain(*data)):
         for args in xs:
@@ -134,7 +136,8 @@ def workflow_oscillator_strength(
 
 def compute_cross_section_function(
         oscillators: List, path_hdf5: str, mo_paths_hdf5: List,
-        convolution: str, calculate_oscillator_every: int) -> float:
+        convolution: str, broadening: float,
+        calculate_oscillator_every: int) -> float:
     """
     Compute the photoabsorption cross section as a function of the energy.
     See: The UV absorption of nucleobases: semi-classical ab initio spectra
@@ -145,47 +148,51 @@ def compute_cross_section_function(
     # Constant
     cte = 2 * (np.pi ** 2) / c
 
-    # Constants use for the convo
-    sigma = None
-    gamma = None
-
     # convulation functions for the intensity
-    convolution_functions = {'gaussian': (gaussian_distribution, sigma),
-                             'lorentzian': (lorentzian_distribution, gamma)}
+    convolution_functions = {'gaussian': gaussian_distribution,
+                             'lorentzian': lorentzian_distribution}
+
+    # broadening in atomic units
+    broad_au = broadening / h2ev
 
     # rearrange oscillator strengths by initial states
-    def fun_cross_section(energy: float) -> float:
+    def fun_cross_section(energies: Vector) -> Vector:
         """
         Create a function that compute the photoabsorption cross section as
         function of the energy
         """
-        fun_convolution, parameter = convolution_functions[convolution]
+        fun_convolution = convolution_functions[convolution]
 
         return cte * sum(
             sum(
                 sum(lambda osc: osc.fij *
-                    fun_convolution(osc.deltaE, parameter) / len(ws)
+                    fun_convolution(energies, osc.deltaE, broad_au) / len(ws)
                     for ws in zip(*arr)) for arr in zip(*oscillators)))
 
     return fun_cross_section
 
 
-def gaussian_distribution(center, delta: float, size: int=1) -> Vector:
+def gaussian_distribution(xs: Vector, center: float, delta: float) -> Vector:
     """
     Return gaussian as described at:
     Phys. Chem. Chem. Phys., 2010, 12, 4959–4967
     """
-    return np.random.normal(loc=center, scale=delta / 2, size=size)
+    pre_expo = np.sqrt(2 / np.pi) / delta
+    expo = np.exp(2 * ((xs - center) / delta) ** 2)
+
+    return pre_expo * expo
 
 
 def lorentzian_distribution(
-        center: float, parameter: float, size: int=1) -> Vector:
+        xs: Vector, center: float, delta: float) -> Vector:
     """
     Return a Lorentzian as described at:
     Phys. Chem. Chem. Phys., 2010, 12, 4959–4967
     """
-    pass
-    # c = delta / 2 * np.pi
+    cte = delta / (2 * np.pi)
+    denominator = (xs - center) ** 2  + (delta / 2) ** 2
+
+    return cte * (1 / denominator)
 
 
 def compute_swapped_indexes(promised_overlaps, path_hdf5, project_name,
