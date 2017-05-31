@@ -42,6 +42,7 @@ def workflow_oscillator_strength(
         nHOMO: int=None, couplings_range: Tuple=None,
         calculate_oscillator_every: int=50,
         convolution: str='gaussian', broadening: float=0.1,  # eV
+        energy_range: Tuple=None,  # eV
         geometry_units='angstrom', **kwargs):
     """
     Compute the oscillator strength
@@ -114,7 +115,7 @@ def workflow_oscillator_strength(
 
     # if len(geometries) > 1:
     #     # Compute the cross section
-    #     schedule_cross_section = schedule(compute_cross_section_function)
+    #     schedule_cross_section = schedule(compute_cross_section_grid)
 
     #     promised_cross_section = schedule_cross_section(
     #         oscillators, path_hdf5, mo_paths_hdf5, convolution,
@@ -134,9 +135,9 @@ def workflow_oscillator_strength(
     return data
 
 
-def compute_cross_section_function(
+def compute_cross_section_grid(
         oscillators: List, path_hdf5: str, mo_paths_hdf5: List,
-        convolution: str, broadening: float,
+        convolution: str, broadening: float, energy_range: Tuple,
         calculate_oscillator_every: int) -> float:
     """
     Compute the photoabsorption cross section as a function of the energy.
@@ -151,25 +152,26 @@ def compute_cross_section_function(
     # convulation functions for the intensity
     convolution_functions = {'gaussian': gaussian_distribution,
                              'lorentzian': lorentzian_distribution}
+    fun_convolution = convolution_functions[convolution]
 
     # broadening in atomic units
     broad_au = broadening / h2ev
 
-    # rearrange oscillator strengths by initial states
-    def fun_cross_section(energies: Vector) -> Vector:
-        """
-        Create a function that compute the photoabsorption cross section as
-        function of the energy
-        """
-        fun_convolution = convolution_functions[convolution]
+    # Energy grid in  hartrees
+    initial_energy = energy_range[0] * h2ev
+    final_energy = energy_range[1] * h2ev
+    npoints = int((final_energy - initial_energy) / broad_au)
+    energies = np.linspace(initial_energy, final_energy, npoints) / h2ev
 
-        return cte * sum(
-            sum(
-                sum(lambda osc: osc.fij *
-                    fun_convolution(energies, osc.deltaE, broad_au) / len(ws)
-                    for ws in zip(*arr)) for arr in zip(*oscillators)))
+    # rearrange oscillator strengths by initial states and perform the summation
+    grid_au = cte * sum(
+        sum(
+            sum(lambda osc: osc.fij *
+                fun_convolution(energies, osc.deltaE, broad_au) / len(ws)
+                for ws in zip(*arr)) for arr in zip(*oscillators)))
 
-    return fun_cross_section
+    # Cross section in atomic units
+    return grid_au
 
 
 def gaussian_distribution(xs: Vector, center: float, delta: float) -> Vector:

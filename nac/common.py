@@ -8,6 +8,8 @@ __all__ = ['Array', 'AtomBasisData', 'AtomBasisKey', 'AtomData', 'AtomXYZ',
 # ================> Python Standard  and third-party <==========
 from collections import namedtuple
 from functools import reduce
+from scipy.constants import physical_constants
+
 import h5py
 import numpy as np
 import operator as op
@@ -25,13 +27,17 @@ InputKey = namedtuple("InpuKey", ("name", "args"))
 MO = namedtuple("MO", ("coordinates", "cgfs", "coefficients"))
 
 # ================> Constants <================
-angs2au = 1 / 0.529177249  # Angstrom to a.u
-femtosec2au = 1 / 2.41888432e-2  # from femtoseconds to au
+# Angstrom to a.u
+angs2au = 1e-10 / physical_constants['atomic unit of length'][0]
+# from femtoseconds to au
+femtosec2au = 1e-15 / physical_constants['atomic unit of time'][0]
+# hartrees to electronvolts
+h2ev = physical_constants['Hartree energy in eV'][0]
 r2meV = 13605.698  # conversion from rydberg to meV
 fs_to_cm = 33356.40952  # conversion from fs to cm-1
 fs_to_nm = 299.79246  # conversion from fs to nm
-hbar = 0.6582119  # planck constant in eV * fs
-h2ev = 27.2114  # hartrees to electronvolts
+# planck constant in eV * fs
+hbar = 1e15 * physical_constants['Planck constant over 2 pi in eV s'][0]
 
 # Numpy type hints
 Array = np.ndarray  # Generic Array
