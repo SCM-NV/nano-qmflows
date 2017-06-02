@@ -78,8 +78,78 @@ def workflow_oscillator_strength(
         package_args, guess_args, calc_new_wf_guess_on_points,
         enumerate_from, package_config=package_config)
 
-    # Overlap matrix at two different times
+    # geometries in atomic units
+    molecules_au = [change_mol_units(parse_string_xyz(gs))
+                    for gs in geometries]
+
+    # Contracted Gaussian functions normalized
+    cgfsN = [dictCGFs[x.symbol] for x in molecules_au[0]]
+
+    # track the trivial crossing during the dynamics
+    swaps = compute_swaps()
+
+    # Schedule the function the compute the Oscillator Strenghts
+    scheduleOscillator = schedule(calcOscillatorStrenghts)
+
+    oscillators = gather(
+        *[scheduleOscillator(
+            i, swaps, project_name, mo_paths_hdf5, cgfsN, mol,
+            path_hdf5, hdf5_trans_mtx=hdf5_trans_mtx,
+            initial_states=initial_states, final_states=final_states)
+          for i, mol in enumerate(molecules_au)
+          if i % calculate_oscillator_every == 0])
+
     if len(geometries) > 1:
+        promised_cross_section = create_promised_cross_section()
+
+        cross_section, data = run(
+            gather(promised_cross_section, oscillators), folder=work_dir)
+    else:
+        data = run(oscillators, folder=work_dir)
+
+    print("Calculation Done")
+
+    # Write data in human readable format
+    write_information(data)
+
+    return data
+
+
+def create_promised_cross_section(
+        path_hdf5: str, mo_paths_hdf5: List, oscillators: List,
+        broadening: float, energy_range: Tuple, convolution: str,
+        calculate_oscillator_every: int):
+    """
+    Create the function call that schedule the computation of the
+    photoabsorption cross section
+    """
+    # broadening in atomic units
+    broad_au = broadening / h2ev
+
+    # Energy grid in  hartrees
+    initial_energy = energy_range[0] * h2ev
+    final_energy = energy_range[1] * h2ev
+    npoints = int((final_energy - initial_energy) / broad_au)
+    energies = np.linspace(initial_energy, final_energy, npoints) / h2ev
+
+    # Compute the cross section
+    schedule_cross_section = schedule(compute_cross_section_grid)
+
+    return schedule_cross_section(
+        oscillators, path_hdf5, mo_paths_hdf5, convolution, energies,
+        broadening, calculate_oscillator_every)
+
+
+def compute_swaps(
+        geometries: List, project_name: str, path_hdf5: str, dictCGFs: Dict,
+        mo_paths_hdf5: List, hdf5_trans_mtx: str, enumerate_from, nHOMO,
+        couplings_range) -> Vector:
+    """
+    Track the triviail crossing between the molecular orbitals during
+    the molecular dynamics.
+    """
+    if len(geometries) > 1:
+        # Overlap matrix at two different times
         promised_overlaps = calculate_overlap(
             project_name, path_hdf5, dictCGFs, geometries, mo_paths_hdf5,
             hdf5_trans_mtx, enumerate_from, nHOMO=nHOMO,
@@ -95,49 +165,12 @@ def workflow_oscillator_strength(
         dim = sum(couplings_range)
         swaps = np.arange(dim).reshape(1, dim)
 
-    # geometries in atomic units
-    molecules_au = [change_mol_units(parse_string_xyz(gs))
-                    for gs in geometries]
-
-    # Contracted Gaussian functions normalized
-    cgfsN = [dictCGFs[x.symbol] for x in molecules_au[0]]
-
-    # Schedule the function the compute the Oscillator Strenghts
-    scheduleOscillator = schedule(calcOscillatorStrenghts)
-
-    oscillators = gather(
-        *[scheduleOscillator(
-            i, swaps, project_name, mo_paths_hdf5, cgfsN, mol,
-            path_hdf5, hdf5_trans_mtx=hdf5_trans_mtx,
-            initial_states=initial_states, final_states=final_states)
-          for i, mol in enumerate(molecules_au)
-          if i % calculate_oscillator_every == 0])
-
-    # if len(geometries) > 1:
-    #     # Compute the cross section
-    #     schedule_cross_section = schedule(compute_cross_section_grid)
-
-    #     promised_cross_section = schedule_cross_section(
-    #         oscillators, path_hdf5, mo_paths_hdf5, convolution,
-    #         calculate_oscillator_every)
-    # function_cross_section, data = run(
-    #     gather(promised_cross_section, oscillators), folder=work_dir)
-    # else:
-    data = run(oscillators, folder=work_dir)
-    # function_cross_section = None
-
-    for xs in list(chain(*data)):
-        for args in xs:
-            write_information(*args)
-
-    print("Calculation Done")
-
-    return data
+    return swaps
 
 
 def compute_cross_section_grid(
         oscillators: List, path_hdf5: str, mo_paths_hdf5: List,
-        convolution: str, broadening: float, energy_range: Tuple,
+        convolution: str, energies: Vector, broadening: float,
         calculate_oscillator_every: int) -> float:
     """
     Compute the photoabsorption cross section as a function of the energy.
@@ -154,20 +187,11 @@ def compute_cross_section_grid(
                              'lorentzian': lorentzian_distribution}
     fun_convolution = convolution_functions[convolution]
 
-    # broadening in atomic units
-    broad_au = broadening / h2ev
-
-    # Energy grid in  hartrees
-    initial_energy = energy_range[0] * h2ev
-    final_energy = energy_range[1] * h2ev
-    npoints = int((final_energy - initial_energy) / broad_au)
-    energies = np.linspace(initial_energy, final_energy, npoints) / h2ev
-
     # rearrange oscillator strengths by initial states and perform the summation
     grid_au = cte * sum(
         sum(
             sum(lambda osc: osc.fij *
-                fun_convolution(energies, osc.deltaE, broad_au) / len(ws)
+                fun_convolution(energies, osc.deltaE, broadening) / len(ws)
                 for ws in zip(*arr)) for arr in zip(*oscillators)))
 
     # Cross section in atomic units
@@ -316,8 +340,18 @@ def compute_oscillator_strength(
     return xs
 
 
-def write_information(initialS: int, finalS: int, deltaE: float, fij: float,
-                      components: Tuple) -> None:
+def write_information(data: Tuple) -> None:
+    """
+    Write to a file the oscillator strenght information
+    """
+    for xs in list(chain(*data)):
+        for args in xs:
+            write_oscillator(*args)
+
+
+def write_oscillator(
+        initialS: int, finalS: int, deltaE: float, fij: float,
+        components: Tuple) -> None:
     """
     Write oscillator strenght information in one file
     """
