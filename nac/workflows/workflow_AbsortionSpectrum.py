@@ -186,6 +186,7 @@ def compute_cross_section_grid(
     See: The UV absorption of nucleobases: semi-classical ab initio spectra
     simulations. Phys. Chem. Chem. Phys., 2010, 12, 4959–4967
     """
+    print(oscillators)
     # speed of light in a.u.
     c = 137
     # Constant
@@ -196,15 +197,23 @@ def compute_cross_section_grid(
                              'lorentzian': lorentzian_distribution}
     fun_convolution = convolution_functions[convolution]
 
-    # rearrange oscillator strengths by initial states and perform the summation
-    grid_au = cte * sum(
-        sum(
-            sum(lambda osc: osc.fij *
-                fun_convolution(energies, osc.deltaE, broadening) / len(ws)
-                for ws in zip(*arr)) for arr in zip(*oscillators)))
+    def compute_cross_section(energy: float) -> Vector:
+        """
+        compute a single value of the photoabsorption cross section by
+        rearranging oscillator strengths by initial states and perform
+        the summation.
+        """
+        grid_au = cte * sum(
+            sum(
+                sum(lambda osc: osc.fij *
+                    fun_convolution(energy, osc.deltaE, broadening) / len(ws)
+                    for ws in zip(*arr)) for arr in zip(*oscillators)))
 
-    # Cross section in atomic units
-    return grid_au
+        return grid_au
+
+    vectorized_cross_section = np.vectorize(compute_cross_section)
+
+    return vectorized_cross_section(energies)
 
 
 def gaussian_distribution(xs: Vector, center: float, delta: float) -> Vector:
