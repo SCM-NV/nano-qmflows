@@ -100,10 +100,17 @@ def workflow_oscillator_strength(
           if i % calculate_oscillator_every == 0])
 
     if len(geometries) > 1:
-        promised_cross_section = create_promised_cross_section()
+        energies, promised_cross_section = create_promised_cross_section(
+            path_hdf5, mo_paths_hdf5, oscillators, broadening, energy_range,
+            convolution, calculate_oscillator_every)
 
         cross_section, data = run(
             gather(promised_cross_section, oscillators), folder=work_dir)
+
+        # Save cross section
+        np.savetxt('cross_section_au.txt',
+                   np.stack((energies, cross_section), axis=1))
+
     else:
         data = run(oscillators, folder=work_dir)
 
@@ -135,7 +142,7 @@ def create_promised_cross_section(
     # Compute the cross section
     schedule_cross_section = schedule(compute_cross_section_grid)
 
-    return schedule_cross_section(
+    return energies, schedule_cross_section(
         oscillators, path_hdf5, mo_paths_hdf5, convolution, energies,
         broadening, calculate_oscillator_every)
 
