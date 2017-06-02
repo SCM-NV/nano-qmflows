@@ -86,7 +86,9 @@ def workflow_oscillator_strength(
     cgfsN = [dictCGFs[x.symbol] for x in molecules_au[0]]
 
     # track the trivial crossing during the dynamics
-    swaps = compute_swaps()
+    swaps = compute_swaps(
+        geometries, project_name, path_hdf5, dictCGFs, mo_paths_hdf5,
+        hdf5_trans_mtx, enumerate_from, nHOMO, couplings_range)
 
     # Schedule the function the compute the Oscillator Strenghts
     scheduleOscillator = schedule(calcOscillatorStrenghts)
@@ -149,8 +151,8 @@ def create_promised_cross_section(
 
 def compute_swaps(
         geometries: List, project_name: str, path_hdf5: str, dictCGFs: Dict,
-        mo_paths_hdf5: List, hdf5_trans_mtx: str, enumerate_from, nHOMO,
-        couplings_range) -> Vector:
+        mo_paths_hdf5: List, hdf5_trans_mtx: str, enumerate_from: int,
+        nHOMO: int, couplings_range: Tuple) -> Vector:
     """
     Track the triviail crossing between the molecular orbitals during
     the molecular dynamics.
