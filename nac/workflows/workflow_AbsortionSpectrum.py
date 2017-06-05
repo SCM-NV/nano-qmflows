@@ -15,6 +15,7 @@ from nac.schedule.scheduleCoupling import (
 from qmworks import run
 from qmworks.parsers import parse_string_xyz
 from scipy import sparse
+from scipy.constants import physical_constants
 
 import logging
 import numpy as np
@@ -28,6 +29,8 @@ logger = logging.getLogger(__name__)
 # Named tuple
 Oscillator = namedtuple("Oscillator",
                         ('initialS', 'finalS', 'deltaE', 'fij', 'components'))
+
+au_energy_to_ev = physical_constants['atomic unit of energy'][0] / physical_constants['electron volt'][0]
 
 
 def workflow_oscillator_strength(
@@ -109,10 +112,21 @@ def workflow_oscillator_strength(
         cross_section, data = run(
             gather(promised_cross_section, oscillators), folder=work_dir)
 
+        # Transform the energy to eV
+        energies *= au_energy_to_ev
+        
         # Save cross section
-        np.savetxt('cross_section_au.txt',
-                   np.stack((energies, cross_section), axis=1))
+        np.savetxt('cross_section_cm.txt',
+                   np.stack((energies, cross_section), axis=1),
+                   header='Energy [eV] photoabsorption cross section [cm^2]')
 
+        # molar extinction coefficients (e in M-1 cm-1)
+        nA = physical_constants['Avogadro constant'][0]
+        cte = np.log(10) * 1e3 / nA
+        extinction_coefficients = cross_section / cte
+        np.savetxt('molar_extinction_coefficients.txt',
+                   np.stack((energies, extinction_coefficients), axis=1),
+                   header='Energy [eV] Extinction coefficients [M^-1 cm^-1]')
     else:
         data = run(oscillators, folder=work_dir)
 
@@ -136,10 +150,10 @@ def create_promised_cross_section(
     broad_au = broadening / h2ev
 
     # Energy grid in  hartrees
-    initial_energy = energy_range[0] * h2ev
-    final_energy = energy_range[1] * h2ev
+    initial_energy = energy_range[0] / h2ev
+    final_energy = energy_range[1] / h2ev
     npoints = int((final_energy - initial_energy) / broad_au)
-    energies = np.linspace(initial_energy, final_energy, npoints) / h2ev
+    energies = np.linspace(initial_energy, final_energy, npoints)
 
     # Compute the cross section
     schedule_cross_section = schedule(compute_cross_section_grid)
@@ -188,7 +202,7 @@ def compute_cross_section_grid(
     """
     print(oscillators)
     # speed of light in a.u.
-    c = 137
+    c = 137.036
     # Constant
     cte = 2 * (np.pi ** 2) / c
 
@@ -203,38 +217,42 @@ def compute_cross_section_grid(
         rearranging oscillator strengths by initial states and perform
         the summation.
         """
+        # Photo absorption in length a.u.^2
         grid_au = cte * sum(
             sum(
-                sum(lambda osc: osc.fij *
-                    fun_convolution(energy, osc.deltaE, broadening) / len(ws)
-                    for ws in zip(*arr)) for arr in zip(*oscillators)))
+                sum(osc.fij * fun_convolution(energy, osc.deltaE, broadening)
+                    for osc in ws) / len(ws)
+                    for ws in zip(*arr)) for arr in zip(*oscillators))
 
-        return grid_au
+        # convert the cross section to cm^2
+        au_length = physical_constants['atomic unit of length'][0]
+        
+        return grid_au * (au_length * 100) ** 2
 
     vectorized_cross_section = np.vectorize(compute_cross_section)
 
     return vectorized_cross_section(energies)
 
 
-def gaussian_distribution(xs: Vector, center: float, delta: float) -> Vector:
+def gaussian_distribution(x: float, center: float, delta: float) -> Vector:
     """
     Return gaussian as described at:
     Phys. Chem. Chem. Phys., 2010, 12, 4959–4967
     """
     pre_expo = np.sqrt(2 / np.pi) / delta
-    expo = np.exp(2 * ((xs - center) / delta) ** 2)
+    expo = np.exp(-2 * ((x - center) / delta) ** 2)
 
     return pre_expo * expo
 
 
 def lorentzian_distribution(
-        xs: Vector, center: float, delta: float) -> Vector:
+        x: float, center: float, delta: float) -> Vector:
     """
     Return a Lorentzian as described at:
     Phys. Chem. Chem. Phys., 2010, 12, 4959–4967
     """
     cte = delta / (2 * np.pi)
-    denominator = (xs - center) ** 2  + (delta / 2) ** 2
+    denominator = (x - center) ** 2  + (delta / 2) ** 2
 
     return cte * (1 / denominator)
 
