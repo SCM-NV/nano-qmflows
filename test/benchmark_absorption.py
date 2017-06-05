@@ -1,7 +1,3 @@
-from functools import partial
-from itertools import chain
-from nac.common import retrieve_hdf5_data
-from nac.workflows.workflow_coupling import generate_pyxaid_hamiltonians
 from nac.workflows.workflow_AbsortionSpectrum import workflow_oscillator_strength
 from nac.workflows.initialization import initialize
 from nose.plugins.attrib import attr
@@ -9,7 +5,6 @@ from os.path import join
 from qmworks.utils import dict2Setting
 
 import h5py
-import numpy as np
 import os
 import shutil
 
@@ -62,7 +57,7 @@ def test_couplings_and_oscillators():
                                 project_name)
         data = calculate_oscillators()
         print(data)
-        
+
     finally:
         # remove tmp data and clean global config
         shutil.rmtree(scratch_path)
