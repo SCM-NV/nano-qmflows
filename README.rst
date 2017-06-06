@@ -47,7 +47,7 @@ In order to install the *QMWorks-NAMD* library you need to install first the **Q
 
 Then,  to install the **QMWorks-NAMD** library type the following command inside the conda environment::
 
-  (qmworks) user@server> pip install https://github.com/felipeZ/qmworks-namd/tarball/master#egg=nac --upgrade
+  (qmworks) user@server> pip install https://github.com/SCM-NV/qmworks-namd/tarball/master#egg=nac --upgrade
 
 Overview
 ========
