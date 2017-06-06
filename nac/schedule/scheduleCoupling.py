@@ -76,7 +76,7 @@ def compute_the_fixed_phase_overlaps(
     # Pasth to the overlap matrices after the tracking
     # and phase correction
     roots = [join(project_name, 'overlaps_{}'.format(i))
-             for i in range(number_of_frames + enumerate_from)]
+             for i in range(enumerate_from, number_of_frames + enumerate_from)]
     paths_corrected_overlaps = [join(r, 'mtx_sji_t0_corrected') for r in roots]
     # Paths inside the HDF5 to the array containing the tracking of the
     # unavoided crossings

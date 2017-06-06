@@ -114,7 +114,7 @@ def workflow_oscillator_strength(
 
         # Transform the energy to eV
         energies *= au_energy_to_ev
-        
+
         # Save cross section
         np.savetxt('cross_section_cm.txt',
                    np.stack((energies, cross_section), axis=1),
@@ -222,11 +222,11 @@ def compute_cross_section_grid(
             sum(
                 sum(osc.fij * fun_convolution(energy, osc.deltaE, broadening)
                     for osc in ws) / len(ws)
-                    for ws in zip(*arr)) for arr in zip(*oscillators))
+                for ws in zip(*arr)) for arr in zip(*oscillators))
 
         # convert the cross section to cm^2
         au_length = physical_constants['atomic unit of length'][0]
-        
+
         return grid_au * (au_length * 100) ** 2
 
     vectorized_cross_section = np.vectorize(compute_cross_section)
