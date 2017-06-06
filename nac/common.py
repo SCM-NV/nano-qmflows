@@ -8,6 +8,8 @@ __all__ = ['Array', 'AtomBasisData', 'AtomBasisKey', 'AtomData', 'AtomXYZ',
 # ================> Python Standard  and third-party <==========
 from collections import namedtuple
 from functools import reduce
+from scipy.constants import physical_constants
+
 import h5py
 import numpy as np
 import operator as op
@@ -25,13 +27,17 @@ InputKey = namedtuple("InpuKey", ("name", "args"))
 MO = namedtuple("MO", ("coordinates", "cgfs", "coefficients"))
 
 # ================> Constants <================
-angs2au = 1 / 0.529177249  # Angstrom to a.u
-femtosec2au = 1 / 2.41888432e-2  # from femtoseconds to au
+# Angstrom to a.u
+angs2au = 1e-10 / physical_constants['atomic unit of length'][0]
+# from femtoseconds to au
+femtosec2au = 1e-15 / physical_constants['atomic unit of time'][0]
+# hartrees to electronvolts
+h2ev = physical_constants['Hartree energy in eV'][0]
 r2meV = 13605.698  # conversion from rydberg to meV
 fs_to_cm = 33356.40952  # conversion from fs to cm-1
 fs_to_nm = 299.79246  # conversion from fs to nm
-hbar = 0.6582119  # planck constant in eV * fs
-h2ev = 27.2114  # hartrees to electronvolts
+# planck constant in eV * fs
+hbar = 1e15 * physical_constants['Planck constant over 2 pi in eV s'][0]
 
 # Numpy type hints
 Array = np.ndarray  # Generic Array
@@ -46,10 +52,16 @@ def getmass(s: str):
          's': 16, 'cl': 17, 'ar': 18, 'k': 19, 'ca': 20, 'sc': 21, 'ti': 22,
          'v': 23, 'cr': 24, 'mn': 25, 'fe': 26, 'co': 27, 'ni': 28, 'cu': 29,
          'zn': 30, 'ga': 31, 'ge': 32, 'as': 33, 'se': 34, 'br': 35, 'kr': 36,
-         'rb': 37, 'sr': 38, 'Y': 39, 'zr': 40, 'nb': 41, 'mo': 42,
-         'tc': 43, 'ru': 44, 'rh': 45, 'pd': 46, 'ag': 47, 'cd': 48,
-         'in': 49, 'sn': 50, 'sb': 51, 'te': 52, 'i': 53, 'xe': 54, 'cs': 55}
-
+         'rb': 37, 'sr': 38, 'y': 39, 'zr': 40, 'nb': 41, 'mo': 42, 'tc': 43,
+         'ru': 44, 'rh': 45, 'pd': 46, 'ag': 47, 'cd': 48, 'in': 49, 'sn': 50,
+         'sb': 51, 'te': 52, 'i': 53, 'xe': 54, 'cs': 55, 'ba': 56, 'la': 57,
+         'ce': 58, 'pr': 59, 'nd': 60, 'pm': 61, 'sm': 62, 'eu': 63, 'gd': 64,
+         'tb': 65, 'dy': 66, 'ho': 67, 'er': 68, 'tm': 69, 'yb': 70, 'lu': 71,
+         'hf': 72, 'ta': 73, 'w': 74, 're': 75, 'os': 76, 'ir': 77, 'pt': 78,
+         'au': 79, 'hg': 80, 'tl': 81, 'pb': 82, 'bi': 83, 'po': 84, 'at': 85,
+         'rn': 86, 'fr': 87, 'ra': 88, 'ac': 89, 'th': 90, 'pa': 91, 'u': 92,
+         'np': 93, 'pu': 94, 'am': 95, 'cm': 96, 'bk': 97, 'cf': 98, 'es': 99,
+         'fm': 100, 'md': 101, 'no': 102, 'lr': 103, 'rf': 104, 'db': 105}
     return d[s]
 
 
@@ -106,31 +118,21 @@ def store_arrays_in_hdf5(path_hdf5: str, paths, tensor: Array,
                                data=tensor, dtype=dtype)
 
 
-def fromIndex(ixs, shape):
-    """
-    calculate the equivalent index from a two dimensional array to a flat array
-    containing the upper triangular elements of a matrix.
-    """
-    i, j = ixs
-    if j >= i:
-        k = sum(m * k for m, k in zip(shape[1:], ixs)) + ixs[-1]
-        r = (((i * i + i) // 2) if i else 0)
-        return k - r
-    else:
-        return fromIndex([j, i], shape)
-
-
-def triang2mtx(arr, dim):
+def triang2mtx(xs: Vector, dim: int) -> Matrix:
     """
     Transform a symmetric matrix represented as a flatten upper triangular
     matrix to the correspoding 2-dimensional array.
     """
-    rss = np.empty((dim, dim))
-    for i in range(dim):
-        for j in range(dim):
-            k = fromIndex([i, j], [dim, dim])
-            rss[i, j] = arr[k]
-    return rss
+    # New array
+    mtx = np.zeros((dim, dim))
+    # indexes of the upper triangular
+    inds = np.triu_indices_from(mtx)
+    # Fill the upper triangular of the new array
+    mtx[inds] = xs
+    # Fill the lower triangular
+    mtx[(inds[1], inds[0])] = xs
+
+    return mtx
 
 
 def change_mol_units(mol, factor=angs2au):
