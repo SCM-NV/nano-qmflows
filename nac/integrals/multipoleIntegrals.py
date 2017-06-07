@@ -8,35 +8,42 @@ import numpy as np
 # ==================> Internal modules <====================
 from multipoleObaraSaika import sab_efg  # compiled with cython
 
-from typing import (Callable, Dict, List, Tuple)
+from typing import (Callable, List, Tuple)
 
 # ==================================<>======================================
 
 
 def general_multipole_matrix(
-        molecule: List, dictCGFs: Dict, calcMatrixEntry: Callable=None):
+        atoms: List, cgfsN: List, calcMatrixEntry: Callable=None):
     """
     Generic function to calculate a matrix using a Gaussian basis set and
     the molecular geometry.
-    Build a matrix using a pool of worker and a function takes nuclear
-    corrdinates and a Contracted Gauss function and compute a number.
 
-    :param molecule: Atomic label and cartesian coordinates
-    :param dictCGFs: Contracted gauss functions normalized, represented as
+    :param atoms: Atomic label and cartesian coordinates
+    type atoms: List of namedTuples
+    :param cgfsN: Contracted gauss functions normalized, represented as
     a list of tuples of coefficients and Exponents.
+    type cgfsN: [(Coeff, Expo)]
     :param calcMatrixEntry: Function to compute the matrix elements.
     :type calcMatrixEntry: Function
     :returns: Numpy Array representing a flatten triangular matrix.
     """
-    xyz_cgfs = concatMap(lambda at: createTupleXYZ_CGF(
-        at.xyz, dictCGFs[at.symbol]), molecule)
-    nOrbs = len(xyz_cgfs)
-    # Number of non-zero entries of a triangular mtx
-    indexes = calcIndexTriang(nOrbs)
-    with Pool() as p:
-        rss = p.map(partial(calcMatrixEntry, xyz_cgfs), indexes)
+    def run():
+        """
+        Build a matrix using a pool of worker and a function takes nuclear
+        corrdinates and a Contracted Gauss function and compute a number.
+        """
+        xyz_cgfs = concatMap(lambda rs: createTupleXYZ_CGF(*rs),
+                             zip(atoms, cgfsN))
+        nOrbs = len(xyz_cgfs)
+        # Number of non-zero entries of a triangular mtx
+        indexes = calcIndexTriang(nOrbs)
+        with Pool() as p:
+            rss = p.map(partial(calcMatrixEntry, xyz_cgfs), indexes)
 
-    return np.array(list(rss))
+        return np.array(list(rss))
+
+    return run()
 
 
 def dipoleContracted(
@@ -151,7 +158,7 @@ def build_primitives_gaussian(t):
     r, cgf = t
     cs, es = cgf.primitives
     l = cgf.orbType
-    return tuple(map(lambda rs: (r, l, rs), zip(cs, es)))
+    return list(map(lambda rs: (r, l, rs), zip(cs, es)))
 
 
 def calcIndexTriang(n):
@@ -163,5 +170,6 @@ def calcIndexTriang(n):
     return np.reshape(xss, (flatDim, 2))
 
 
-def createTupleXYZ_CGF(xyz, cgfs):
+def createTupleXYZ_CGF(atom, cgfs):
+    xyz = atom.xyz
     return map(lambda cs: (xyz, cs), cgfs)
