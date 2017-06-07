@@ -85,9 +85,6 @@ def workflow_oscillator_strength(
     molecules_au = [change_mol_units(parse_string_xyz(gs))
                     for gs in geometries]
 
-    # Contracted Gaussian functions normalized
-    cgfsN = [dictCGFs[x.symbol] for x in molecules_au[0]]
-
     # track the trivial crossing during the dynamics
     swaps = compute_swaps(
         geometries, project_name, path_hdf5, dictCGFs, mo_paths_hdf5,
@@ -98,7 +95,7 @@ def workflow_oscillator_strength(
 
     oscillators = gather(
         *[scheduleOscillator(
-            i, swaps, project_name, mo_paths_hdf5, cgfsN, mol,
+            i, swaps, project_name, mo_paths_hdf5, dictCGFs, mol,
             path_hdf5, hdf5_trans_mtx=hdf5_trans_mtx,
             initial_states=initial_states, final_states=final_states)
           for i, mol in enumerate(molecules_au)
@@ -280,7 +277,7 @@ def compute_swapped_indexes(promised_overlaps, path_hdf5, project_name,
 
 def calcOscillatorStrenghts(
         i: int, swaps: Matrix, project_name: str,
-        mo_paths_hdf5: str, cgfsN: List,
+        mo_paths_hdf5: str, dictCGFs: Dict,
         atoms: List, path_hdf5: str, hdf5_trans_mtx: str=None,
         initial_states: List=None, final_states: List=None):
 
@@ -327,18 +324,18 @@ def calcOscillatorStrenghts(
     rc = compute_center_of_mass(atoms)
 
     # Dipole matrix element in spherical coordinates
-    mtx_integrals_spher = calcDipoleCGFS(atoms, cgfsN, rc, trans_mtx)
+    mtx_integrals_spher = calcDipoleCGFS(atoms, dictCGFs, rc, trans_mtx)
 
     oscillators = [
         compute_oscillator_strength(
-            rc, atoms, cgfsN, es, coeffs, mtx_integrals_spher, initialS, fs)
+            rc, atoms, es, coeffs, mtx_integrals_spher, initialS, fs)
         for initialS, fs in zip(swapped_initial_states, swapped_final_states)]
 
     return oscillators
 
 
 def compute_oscillator_strength(
-        rc: Tuple, atoms: List, cgfsN: List, es: Vector, coeffs: Matrix,
+        rc: Tuple, atoms: List, es: Vector, coeffs: Matrix,
         mtx_integrals_spher: Matrix, initialS: int, fs: List):
     """
     Compute the oscillator strenght using the matrix elements of the position
@@ -434,16 +431,15 @@ def calcOverlapCGFS(
 
 
 def calcDipoleCGFS(
-        atoms: List, cgfsN: List, rc: Tuple, trans_mtx: Matrix) -> Matrix:
+        atoms: List, dictCGFs: Dict, rc: Tuple, trans_mtx: Matrix) -> Matrix:
     """
     Compute the Multipole matrix in cartesian coordinates and
     expand it to a matrix and finally convert it to spherical coordinates.
 
     :param atoms: Atomic label and cartesian coordinates in au.
     type atoms: List of namedTuples
-    :param cgfsN: Contracted gauss functions normalized, represented as
-    a list of tuples of coefficients and Exponents.
-    type cgfsN: [(Coeff, Expo)]
+    :param dictCGFs: Contracted gauss functions normalized, represented as
+    a dict of tuples of coefficients and Exponents for each atom and CGFs.
     :param trans_mtx: Transformation matrix to translate from Cartesian
     to Sphericals.
     :type trans_mtx: Numpy Matrix
@@ -454,7 +450,7 @@ def calcDipoleCGFS(
                  {'e': 0, 'f': 0, 'g': 1}]
 
     dimCart = trans_mtx.shape[1]
-    mtx_integrals_triang = tuple(calcMtxMultipoleP(atoms, cgfsN, rc, **kw)
+    mtx_integrals_triang = tuple(calcMtxMultipoleP(atoms, dictCGFs, rc, **kw)
                                  for kw in exponents)
     mtx_integrals_cart = tuple(triang2mtx(xs, dimCart)
                                for xs in mtx_integrals_triang)

@@ -1,6 +1,6 @@
 
 from nac.common import (
-    Matrix, change_mol_units, getmass, retrieve_hdf5_data)
+    Matrix, change_mol_units, getmass, retrieve_hdf5_data, triang2mtx)
 from nac.integrals.multipoleIntegrals import calcMtxMultipoleP
 from nac.workflows.initialization import initialize
 from os.path import join
@@ -13,7 +13,7 @@ import os
 import shutil
 
 
-from typing import (List, Tuple)
+from typing import (Dict, List, Tuple)
 
 basisname = 'DZVP-MOLOPT-SR-GTH'
 path_traj_xyz = 'test/test_files/Cd33Se33_fivePoints.xyz'
@@ -50,19 +50,15 @@ def main():
         geometries = config['geometries']
         molecule_at_t0 = change_mol_units(parse_string_xyz(geometries[0]))
 
-        # Contracted Gaussian functions normalized
-        cgfsN = [dictCGFs[x.symbol] for x in molecule_at_t0]
-
         # Origin of the dipole
         rc = compute_center_of_mass(molecule_at_t0)
-        mtx_integrals_spher = calcDipoleCGFS(molecule_at_t0, cgfsN, rc, trans_mtx)
+        mtx_integrals_spher = calcDipoleCGFS(molecule_at_t0, dictCGFs, rc, trans_mtx)
 
         print(tuple(map(lambda mtx: mtx.shape, mtx_integrals_spher)))
     finally:
         # remove tmp data and clean global config
         shutil.rmtree(scratch_path)
 
-    
 
 def copy_files():
     if not os.path.exists(scratch_path):
@@ -72,7 +68,7 @@ def copy_files():
 
 @profile
 def calcDipoleCGFS(
-        atoms: List, cgfsN: List, rc: Tuple, trans_mtx: Matrix) -> Matrix:
+        atoms: List, dictCGFs: Dict, rc: Tuple, trans_mtx: Matrix) -> Matrix:
     """
     """
     # x,y,z exponents value for the dipole
@@ -80,7 +76,7 @@ def calcDipoleCGFS(
                  {'e': 0, 'f': 0, 'g': 1}]
 
     dimCart = trans_mtx.shape[1]
-    mtx_integrals_triang = tuple(calcMtxMultipoleP(atoms, cgfsN, rc, **kw)
+    mtx_integrals_triang = tuple(calcMtxMultipoleP(atoms, dictCGFs, rc, **kw)
                                  for kw in exponents)
     mtx_integrals_cart = tuple(triang2mtx(xs, dimCart)
                                for xs in mtx_integrals_triang)
@@ -88,25 +84,6 @@ def calcDipoleCGFS(
                  in mtx_integrals_cart)
 
 
-@profile
-def triang2mtx(xs: Vector, dim: int) -> Matrix:
-    """
-    Transform a symmetric matrix represented as a flatten upper triangular
-    matrix to the correspoding 2-dimensional array.
-    """
-    # New array
-    mtx = np.zeros((dim, dim))
-    # indexes of the upper triangular
-    inds = np.triu_indices_from(mtx)
-    # Fill the upper triangular of the new array
-    mtx[inds] = xs
-    # Fill the lower triangular
-    mtx[(inds[1], inds[0])] = xs
-
-    return mtx
-
-
-@profile
 def transform2Spherical(trans_mtx: Matrix, matrix: Matrix) -> Matrix:
     """
     Transform from spherical to cartesians using the sparse representation
