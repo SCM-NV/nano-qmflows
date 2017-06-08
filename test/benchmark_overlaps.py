@@ -1,6 +1,7 @@
 
+from functools import partial
 from nac.common import (
-    Matrix, change_mol_units, getmass, retrieve_hdf5_data)
+    Matrix, change_mol_units, getmass, retrieve_hdf5_data, triang2mtx)
 from nac.integrals.multipoleIntegrals import calcMtxMultipoleP
 from nac.workflows.initialization import initialize
 from os.path import join
@@ -23,6 +24,7 @@ path_test_hdf5 = join(scratch_path, 'test.hdf5')
 project_name = 'Cd33Se33'
 
 
+@profile
 def main():
     if not os.path.exists(scratch_path):
         os.makedirs(scratch_path)
@@ -62,7 +64,6 @@ def main():
         # remove tmp data and clean global config
         shutil.rmtree(scratch_path)
 
-    
 
 def copy_files():
     if not os.path.exists(scratch_path):
@@ -80,7 +81,12 @@ def calcDipoleCGFS(
                  {'e': 0, 'f': 0, 'g': 1}]
 
     dimCart = trans_mtx.shape[1]
-    mtx_integrals_triang = tuple(calcMtxMultipoleP(atoms, cgfsN, rc, **kw)
+
+    # Partial application
+    partial_multipole = partial(calcMtxMultipoleP, atoms, cgfsN, rc)
+
+    # mtx_integrals_triang = tuple(calcMtxMultipoleP(atoms, cgfsN, rc, **kw)
+    mtx_integrals_triang = tuple(partial_multipole(**kw)
                                  for kw in exponents)
     mtx_integrals_cart = tuple(triang2mtx(xs, dimCart)
                                for xs in mtx_integrals_triang)
@@ -88,25 +94,6 @@ def calcDipoleCGFS(
                  in mtx_integrals_cart)
 
 
-@profile
-def triang2mtx(xs: Vector, dim: int) -> Matrix:
-    """
-    Transform a symmetric matrix represented as a flatten upper triangular
-    matrix to the correspoding 2-dimensional array.
-    """
-    # New array
-    mtx = np.zeros((dim, dim))
-    # indexes of the upper triangular
-    inds = np.triu_indices_from(mtx)
-    # Fill the upper triangular of the new array
-    mtx[inds] = xs
-    # Fill the lower triangular
-    mtx[(inds[1], inds[0])] = xs
-
-    return mtx
-
-
-@profile
 def transform2Spherical(trans_mtx: Matrix, matrix: Matrix) -> Matrix:
     """
     Transform from spherical to cartesians using the sparse representation

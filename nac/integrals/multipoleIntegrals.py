@@ -14,13 +14,14 @@ from typing import (Callable, List, Tuple)
 
 
 def general_multipole_matrix(
-        atoms: List, cgfsN: List, calcMatrixEntry: Callable=None):
+        molecule: List, cgfsN: List, calcMatrixEntry: Callable=None):
     """
     Generic function to calculate a matrix using a Gaussian basis set and
     the molecular geometry.
+    Build a matrix using a pool of worker and a function takes nuclear
+    corrdinates and a Contracted Gauss function and compute a number.
 
-    :param atoms: Atomic label and cartesian coordinates
-    type atoms: List of namedTuples
+    :param molecule: Atomic label and cartesian coordinates.
     :param cgfsN: Contracted gauss functions normalized, represented as
     a list of tuples of coefficients and Exponents.
     type cgfsN: [(Coeff, Expo)]
@@ -28,22 +29,18 @@ def general_multipole_matrix(
     :type calcMatrixEntry: Function
     :returns: Numpy Array representing a flatten triangular matrix.
     """
-    def run():
-        """
-        Build a matrix using a pool of worker and a function takes nuclear
-        corrdinates and a Contracted Gauss function and compute a number.
-        """
-        xyz_cgfs = concatMap(lambda rs: createTupleXYZ_CGF(*rs),
-                             zip(atoms, cgfsN))
-        nOrbs = len(xyz_cgfs)
-        # Number of non-zero entries of a triangular mtx
-        indexes = calcIndexTriang(nOrbs)
-        with Pool() as p:
-            rss = p.map(partial(calcMatrixEntry, xyz_cgfs), indexes)
+    xyz_cgfs = concatMap(lambda rs: createTupleXYZ_CGF(*rs),
+                         zip(molecule, cgfsN))
 
-        return np.array(list(rss))
+    # Dimension of the square overlap matrix
+    nOrbs = len(xyz_cgfs)
 
-    return run()
+    # Number of non-zero entries of a triangular mtx
+    indexes = calcIndexTriang(nOrbs)
+    with Pool() as p:
+        rss = p.map(partial(calcMatrixEntry, xyz_cgfs), indexes)
+
+    return np.array(list(rss))
 
 
 def dipoleContracted(
