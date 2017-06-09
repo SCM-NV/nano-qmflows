@@ -1,20 +1,21 @@
 
 # ==========> Standard libraries and third-party <===============
 from functools import partial
-from multiprocessing import Pool
-from qmworks.utils import concatMap
+from multiprocessing import (cpu_count, Pool)
+from nac.common import (Matrix, Vector)
 
 import numpy as np
 # ==================> Internal modules <====================
 from multipoleObaraSaika import sab_efg  # compiled with cython
 
-from typing import (Callable, List, Tuple)
+from typing import (Callable, Dict, List, Tuple)
 
 # ==================================<>======================================
 
 
 def general_multipole_matrix(
-        molecule: List, cgfsN: List, calcMatrixEntry: Callable=None):
+        molecule: List, dictCGFs: List,
+        calculator: Callable=None) -> Vector:
     """
     Generic function to calculate a matrix using a Gaussian basis set and
     the molecular geometry.
@@ -22,25 +23,22 @@ def general_multipole_matrix(
     corrdinates and a Contracted Gauss function and compute a number.
 
     :param molecule: Atomic label and cartesian coordinates.
-    :param cgfsN: Contracted gauss functions normalized, represented as
-    a list of tuples of coefficients and Exponents.
-    type cgfsN: [(Coeff, Expo)]
-    :param calcMatrixEntry: Function to compute the matrix elements.
-    :type calcMatrixEntry: Function
+    :param dictCGFs: Contracted gauss functions normalized, represented as
+    a dict of list containing the Contracted Gauss primitives
+    :param calculator: Function to compute the matrix elements.
     :returns: Numpy Array representing a flatten triangular matrix.
     """
-    xyz_cgfs = concatMap(lambda rs: createTupleXYZ_CGF(*rs),
-                         zip(molecule, cgfsN))
+    # Indices of the cartesian coordinates and corresponding CGFs
+    indices, nOrbs = compute_CGFs_indices(molecule, dictCGFs)
 
-    # Dimension of the square overlap matrix
-    nOrbs = len(xyz_cgfs)
-
-    # Number of non-zero entries of a triangular mtx
-    indexes = calcIndexTriang(nOrbs)
+    # Create a list of indices of a triangular matrix to distribute
+    # the computation of the matrix uniformly among the available CPUs
+    block_triang_indices = compute_block_triang_indices(nOrbs)
     with Pool() as p:
-        rss = p.map(partial(calcMatrixEntry, xyz_cgfs), indexes)
+        rss = p.map(partial(calculator, molecule, dictCGFs, indices),
+                    block_triang_indices)
 
-    return np.array(list(rss))
+    return np.concatenate(rss)
 
 
 def dipoleContracted(
@@ -66,7 +64,8 @@ def dipoleContracted(
 
 
 def calcMatrixEntry(
-        rc: Tuple, e: int, f: int, g: int, xyz_cgfs: int, ixs: Tuple) -> float:
+        rc: Tuple, e: int, f: int, g: int, molecule: List, dictCGFs: Dict,
+        indices_cgfs: Matrix, indices_triang: Matrix) -> Vector:
     """
     Computed each matrix element using an index a tuple containing the
     cartesian coordinates and the primitives gauss functions.
@@ -80,23 +79,38 @@ def calcMatrixEntry(
     :type ixs: (Int, Int)
     :returns: float
     """
-    i, j = ixs
-    t1 = xyz_cgfs[i]
-    t2 = xyz_cgfs[j]
-    return dipoleContracted(t1, t2, rc, e, f, g)
+    # Number of total orbitals
+    result = np.empty(indices_triang.shape[0])
+
+    for k, (i, j) in enumerate(indices_triang):
+        # Extract contracted and atom indices
+        at_i, cgfs_i_idx = indices_cgfs[i]
+        at_j, cgfs_j_idx = indices_cgfs[j]
+
+        # Extract atom
+        atom_i = molecule[at_i]
+        atom_j = molecule[at_j]
+        # Extract CGFs
+        cgf_i = dictCGFs[atom_i.symbol.lower()][cgfs_i_idx]
+        cgf_j = dictCGFs[atom_j.symbol.lower()][cgfs_j_idx]
+
+        # Contracted Gauss functions and nuclear coordinates
+        ti = atom_i.xyz, cgf_i
+        tj = atom_j.xyz, cgf_j
+        result[i] = dipoleContracted(ti, tj, rc, e, f, g)
+
+    return result
 
 
-def calcMtxMultipoleP(atoms: List, cgfsN: List, rc, e=0, f=0, g=0):
+def calcMtxMultipoleP(atoms: List, dictCGFs: Dict, rc, e=0, f=0, g=0):
     """
     Multipole matrix entry calculation between two Contracted Gaussian functions.
     It uses a partial applied function to pass the center of the multipole `rc`
     and the coefficients of the operator x^e y^f z^g.
 
     :param atoms: Atomic label and cartesian coordinates
-    type atoms: List of namedTuples
     :param cgfsN: Contracted gauss functions normalized, represented as
-    a list of tuples of coefficients and Exponents.
-    type cgfsN: [(Coeff, Expo)]
+    a dictionary list of tuples of coefficients and Exponents.
     :param calcMatrixEntry: Function to compute the matrix elements.
     :type calcMatrixEntry: Function
     :param rc: Multipole center
@@ -105,7 +119,7 @@ def calcMtxMultipoleP(atoms: List, cgfsN: List, rc, e=0, f=0, g=0):
     """
     curriedFun = partial(calcMatrixEntry, rc, e, f, g)
 
-    return general_multipole_matrix(atoms, cgfsN, calcMatrixEntry=curriedFun)
+    return general_multipole_matrix(atoms, dictCGFs, calculator=curriedFun)
 
 
 # ==================================<>=========================================
@@ -170,3 +184,60 @@ def calcIndexTriang(n):
 def createTupleXYZ_CGF(atom, cgfs):
     xyz = atom.xyz
     return map(lambda cs: (xyz, cs), cgfs)
+
+
+def compute_CGFs_indices(mol: List, dictCGFs: Dict) -> Tuple:
+    """
+    Create a matrix of indices of dimension nOrbs x 2.
+    Where the first column contains the index atom and the second
+    the index of the CGFs relative to the atom
+    """
+    # List of the length for each atom in the molecule
+    lens = [len(dictCGFs[at.symbol.lower()]) for at in mol]
+    nOrbs = sum(lens)
+
+    # Array containing the index of both atoms and CGFs
+    indices = np.empty((nOrbs, 2), dtype=np.int32)
+
+    acc = 0
+    for i, at in enumerate(mol):
+        nContracted = lens[i]
+        slices  = acc + nContracted
+        # indices of the CGFs
+        indices[acc: slices, 1] = np.arange(nContracted)
+        # index of the atom
+        indices[acc: slices, 0] = i
+        acc += nContracted
+
+    return indices, nOrbs
+
+
+def compute_block_triang_indices(nOrbs: int) -> List:
+    """
+    Create the list of indices of the triangular matrix to be
+    distribute approximately uniform among the available CPUs.
+    """
+    # Indices of the triangular matrix
+    indices = np.stack(np.triu_indices(nOrbs), axis=1)
+
+    # Number of entries in a triangular matrix
+    dim_triang = indices.shape[0]
+
+    # Available CPUs
+    nCPUs = cpu_count()
+
+    # Number of entries to compute for each CPU
+    chunk = dim_triang // nCPUs
+
+    # Remaining entries
+    rest = dim_triang % nCPUs
+
+    xs = []
+    acc = 0
+    for i in range(nCPUs):
+        b = 1 if i < rest else 0
+        upper = acc + chunk + b
+        xs.append(indices[acc: upper])
+        acc = upper
+
+    return xs
