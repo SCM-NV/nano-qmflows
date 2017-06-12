@@ -120,8 +120,7 @@ def test_compare_with_cp2k():
     # Molecular geometry in a.u.
     atoms = change_mol_units(parse_string_xyz(ethylene_str))
     dictCGFs = create_dict_CGFs(path_hdf5, basisname, atoms)
-    cgfsN = [dictCGFs[at.symbol] for at in atoms]
-    rs = calcMtxOverlapP(atoms, cgfsN)
+    rs = calcMtxOverlapP(atoms, dictCGFs)
     mtx_overlap = triang2mtx(rs, 48)  # there are 48 Cartesian basis CGFs
 
     transf_matrix = retrieve_hdf5_data(path_hdf5, ['ethylene/trans_mtx'])[0]
