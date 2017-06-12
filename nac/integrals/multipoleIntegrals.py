@@ -97,7 +97,7 @@ def calcMatrixEntry(
         # Contracted Gauss functions and nuclear coordinates
         ti = atom_i.xyz, cgf_i
         tj = atom_j.xyz, cgf_j
-        result[i] = dipoleContracted(ti, tj, rc, e, f, g)
+        result[k] = dipoleContracted(ti, tj, rc, e, f, g)
 
     return result
 

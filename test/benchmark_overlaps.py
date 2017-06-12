@@ -1,4 +1,3 @@
-
 from functools import partial
 from nac.common import (
     Matrix, change_mol_units, getmass, retrieve_hdf5_data, triang2mtx)
@@ -7,14 +6,12 @@ from nac.workflows.initialization import initialize
 from os.path import join
 from qmworks.parsers import parse_string_xyz
 from scipy import sparse
+from typing import (List, Tuple)
 
 import h5py
 import numpy as np
 import os
 import shutil
-
-
-from typing import (List, Tuple)
 
 basisname = 'DZVP-MOLOPT-SR-GTH'
 path_traj_xyz = 'test/test_files/Cd33Se33_fivePoints.xyz'
@@ -24,7 +21,6 @@ path_test_hdf5 = join(scratch_path, 'test.hdf5')
 project_name = 'Cd33Se33'
 
 
-# @profile
 def main():
     if not os.path.exists(scratch_path):
         os.makedirs(scratch_path)
@@ -48,29 +44,19 @@ def main():
         trans_mtx = retrieve_hdf5_data(path_test_hdf5, config['hdf5_trans_mtx'])
         dictCGFs = config['dictCGFs']
 
-        # print(dictCGFs)
-
         # Molecular geometries
         geometries = config['geometries']
         molecule_at_t0 = change_mol_units(parse_string_xyz(geometries[0]))
-
-        # Contracted Gaussian functions normalized
-        # cgfsN = [dictCGFs[x.symbol] for x in molecule_at_t0]
 
         # Origin of the dipole
         rc = compute_center_of_mass(molecule_at_t0)
         mtx_integrals_spher = calcDipoleCGFS(molecule_at_t0, dictCGFs, rc, trans_mtx)
 
+        print(mtx_integrals_spher[0])
         print(tuple(map(lambda mtx: mtx.shape, mtx_integrals_spher)))
     finally:
         # remove tmp data and clean global config
         shutil.rmtree(scratch_path)
-
-
-def copy_files():
-    if not os.path.exists(scratch_path):
-        os.makedirs(scratch_path)
-        shutil.copy(path_original_hdf5, path_test_hdf5)
 
 
 # @profile
