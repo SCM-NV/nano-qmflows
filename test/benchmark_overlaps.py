@@ -52,7 +52,6 @@ def main():
         rc = compute_center_of_mass(molecule_at_t0)
         mtx_integrals_spher = calcDipoleCGFS(molecule_at_t0, dictCGFs, rc, trans_mtx)
 
-        print(mtx_integrals_spher[0])
         print(tuple(map(lambda mtx: mtx.shape, mtx_integrals_spher)))
     finally:
         # remove tmp data and clean global config
