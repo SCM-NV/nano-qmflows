@@ -1,7 +1,7 @@
 # ===============================<>============================================
 from math import sqrt
 from nac.common import (AtomXYZ, change_mol_units, retrieve_hdf5_data, triang2mtx)
-from nac.integrals import (calcMtxOverlapP, calc_transf_matrix)
+from nac.integrals import (calcMtxMultipoleP, calc_transf_matrix)
 from nac.schedule.components import create_dict_CGFs
 from qmworks.parsers import parse_string_xyz
 
@@ -120,7 +120,9 @@ def test_compare_with_cp2k():
     # Molecular geometry in a.u.
     atoms = change_mol_units(parse_string_xyz(ethylene_str))
     dictCGFs = create_dict_CGFs(path_hdf5, basisname, atoms)
-    rs = calcMtxOverlapP(atoms, dictCGFs)
+    # Compute the overlap matrix using the general multipole expression
+    rc = (0, 0, 0)
+    rs = calcMtxMultipoleP(atoms, dictCGFs, rc)
     mtx_overlap = triang2mtx(rs, 48)  # there are 48 Cartesian basis CGFs
 
     transf_matrix = retrieve_hdf5_data(path_hdf5, ['ethylene/trans_mtx'])[0]
