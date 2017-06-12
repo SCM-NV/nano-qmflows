@@ -49,12 +49,9 @@ def main():
         geometries = config['geometries']
         molecule_at_t0 = change_mol_units(parse_string_xyz(geometries[0]))
 
-        # Contracted Gaussian functions normalized
-        cgfsN = [dictCGFs[x.symbol] for x in molecule_at_t0]
-
         # Origin of the dipole
         rc = compute_center_of_mass(molecule_at_t0)
-        mtx_integrals_spher = calcDipoleCGFS(molecule_at_t0, cgfsN, rc, trans_mtx)
+        mtx_integrals_spher = calcDipoleCGFS(molecule_at_t0, dictCGFs, rc, trans_mtx)
 
         print(tuple(map(lambda mtx: mtx.shape, mtx_integrals_spher)))
     finally:

@@ -49,4 +49,4 @@ def calcMtxOverlapP(atoms, cgfsN):
     Overlap matrix entry calculation between two Contracted Gaussian functions
     """
 
-    return general_multipole_matrix(atoms, cgfsN, calcMatrixEntry=calcMatrixEntry)
+    return general_multipole_matrix(atoms, cgfsN, calculator=calcMatrixEntry)
