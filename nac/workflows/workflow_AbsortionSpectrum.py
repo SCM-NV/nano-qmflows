@@ -316,9 +316,9 @@ def write_information(data: Tuple) -> None:
     """
     header = "Transition Energy[eV] Energy[nm^-1] fi3j Transition_dipole_components [a.u.]\n"
     filename = 'oscillators.txt'
+    with open(filename, 'w') as f:
+        f.write(header)
     for xs in list(chain(*data)):
-        with open(filename, 'w') as f:
-            f.write(header)
         for args in xs:
             write_oscillator(filename, *args)
 
@@ -330,7 +330,7 @@ def write_oscillator(
     Write oscillator strenght information in one file
     """
     energy = deltaE * h2ev
-    energy_nm = deltaE * 1240  # a.u. to cm^-1 to nm^-1
+    energy_nm = 1240 / energy
     fmt = '{}->{} {:12.5f} {:12.5f} {:12.5f} {:11.5f} {:11.5f} {:11.5f}\n'.format(
         initialS, finalS, energy, energy_nm, fij, *components)
 
