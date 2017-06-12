@@ -139,7 +139,7 @@ def create_promised_cross_section(
     # Energy grid in  hartrees
     initial_energy = energy_range[0] / h2ev
     final_energy = energy_range[1] / h2ev
-    npoints = int((final_energy - initial_energy) / broad_au)
+    npoints = 10 * (final_energy - initial_energy) // broad_au
     energies = np.linspace(initial_energy, final_energy, npoints)
 
     # Compute the cross section
@@ -314,7 +314,7 @@ def write_information(data: Tuple) -> None:
     """
     Write to a file the oscillator strenght information
     """
-    header = "Transition Energy[eV] Energy[nm^-1] fij Transition_dipole_components [a.u.]\n"
+    header = "Transition Energy[eV] Energy[nm^-1] fi3j Transition_dipole_components [a.u.]\n"
     filename = 'oscillators.txt'
     for xs in list(chain(*data)):
         with open(filename, 'w') as f:
