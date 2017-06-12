@@ -102,19 +102,20 @@ def workflow_oscillator_strength(
 
     # Transform the energy to eV
     energies *= au_energy_to_ev
+    energies_nm = energies * 1240
 
     # Save cross section
     np.savetxt('cross_section_cm.txt',
-               np.stack((energies, cross_section), axis=1),
-               header='Energy [eV] photoabsorption_cross_section [cm^2]')
+               np.stack((energies, energies_nm, cross_section), axis=1),
+               header='Energy[eV] Energy[nm^-1] photoabsorption_cross_section[cm^2]')
 
     # molar extinction coefficients (e in M-1 cm-1)
     nA = physical_constants['Avogadro constant'][0]
     cte = np.log(10) * 1e3 / nA
     extinction_coefficients = cross_section / cte
     np.savetxt('molar_extinction_coefficients.txt',
-               np.stack((energies, extinction_coefficients), axis=1),
-               header='Energy [eV] Extinction_coefficients [M^-1 cm^-1]')
+               np.stack((energies, energies_nm, extinction_coefficients), axis=1),
+               header='Energy[eV] Energy[nm^-1] Extinction_coefficients[M^-1 cm^-1]')
 
     print("Calculation Done")
 
@@ -329,8 +330,8 @@ def write_oscillator(
     Write oscillator strenght information in one file
     """
     energy = deltaE * h2ev
-    energy_nm = deltaE * 2.19475e5 * 1e7  # a.u. to cm^-1 to nm^-1
-    fmt = '{}->{} {:12.5f} {:12.5e} {:12.5f} {:11.5f} {:11.5f} {:11.5f}\n'.format(
+    energy_nm = deltaE * 1240  # a.u. to cm^-1 to nm^-1
+    fmt = '{}->{} {:12.5f} {:12.5f} {:12.5f} {:11.5f} {:11.5f} {:11.5f}\n'.format(
         initialS, finalS, energy, energy_nm, fij, *components)
 
     with open(filename, 'a') as f:
