@@ -314,7 +314,7 @@ def write_information(data: Tuple) -> None:
     """
     Write to a file the oscillator strenght information
     """
-    header = "Transition Energy[eV] Energy[nm^-1] Oscillator Transition_dipole_components [a.u.]\n"
+    header = "Transition Energy[eV] Energy[nm^-1] fij Transition_dipole_components [a.u.]\n"
     filename = 'oscillators.txt'
     for xs in list(chain(*data)):
         with open(filename, 'w') as f:
