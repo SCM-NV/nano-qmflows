@@ -13,6 +13,7 @@ import numpy as np
 import os
 import shutil
 
+
 basisname = 'DZVP-MOLOPT-SR-GTH'
 path_traj_xyz = 'test/test_files/Cd33Se33_fivePoints.xyz'
 scratch_path = 'scratch'
