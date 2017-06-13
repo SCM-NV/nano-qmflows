@@ -181,7 +181,7 @@ def compute_cross_section_grid(
         # Photo absorption in length
         grid_ev = cte * sum(
             sum(
-                sum(osc.fij * fun_convolution(energy, osc.deltaE, broadening)
+                sum(osc.fij * fun_convolution(energy, osc.deltaE * h2ev, broadening)
                     for osc in ws) / len(ws)
                 for ws in zip(*arr)) for arr in zip(*oscillators))
 
