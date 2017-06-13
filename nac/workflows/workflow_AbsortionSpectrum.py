@@ -27,7 +27,8 @@ logger = logging.getLogger(__name__)
 Oscillator = namedtuple("Oscillator",
                         ('initialS', 'finalS', 'deltaE', 'fij', 'components'))
 
-au_energy_to_ev = physical_constants['atomic unit of energy'][0] / physical_constants['electron volt'][0]
+# Planck constant in ev . s
+hbar_evs = physical_constants['Planck constant over 2 pi in eV s'][0]
 
 
 def workflow_oscillator_strength(
@@ -100,8 +101,7 @@ def workflow_oscillator_strength(
     cross_section, data = run(
         gather(promised_cross_section, oscillators), folder=work_dir)
 
-    # Transform the energy to eV
-    energies *= au_energy_to_ev
+    # Transform the energy to nm^-1
     energies_nm = energies * 1240
 
     # Save cross section
@@ -133,13 +133,10 @@ def create_promised_cross_section(
     Create the function call that schedule the computation of the
     photoabsorption cross section
     """
-    # broadening in atomic units
-    broad_au = broadening / h2ev
-
     # Energy grid in  hartrees
-    initial_energy = energy_range[0] / h2ev
-    final_energy = energy_range[1] / h2ev
-    npoints = 10 * (final_energy - initial_energy) // broad_au
+    initial_energy = energy_range[0]
+    final_energy = energy_range[1]
+    npoints = 10 * (final_energy - initial_energy) // broadening
     energies = np.linspace(initial_energy, final_energy, npoints)
 
     # Compute the cross section
@@ -159,11 +156,17 @@ def compute_cross_section_grid(
     See: The UV absorption of nucleobases: semi-classical ab initio spectra
     simulations. Phys. Chem. Chem. Phys., 2010, 12, 4959–4967
     """
-    print(oscillators)
-    # speed of light in a.u.
-    c = 137.036
-    # Constant
-    cte = 2 * (np.pi ** 2) / c
+    # speed of light in m s^-1
+    c =  physical_constants['speed of light in vacuum'][0]
+    # Mass of the electron in Kg
+    m = physical_constants['electron mass'][0]
+    # Charge of the electron in C
+    e = physical_constants['elementary charge'][0]
+    # Vacuum permitivity in C^2 N^-1 m^-2
+    e0 = 8.854187817620e-12
+
+    # Constant in cm^2
+    cte = np.pi * (e **2) / (2 * m * c * e0) * 1e4  # m^2 to cm^2
 
     # convulation functions for the intensity
     convolution_functions = {'gaussian': gaussian_distribution,
@@ -176,17 +179,16 @@ def compute_cross_section_grid(
         rearranging oscillator strengths by initial states and perform
         the summation.
         """
-        # Photo absorption in length a.u.^2
-        grid_au = cte * sum(
+        # Photo absorption in length 
+        grid_ev = cte * sum(
             sum(
                 sum(osc.fij * fun_convolution(energy, osc.deltaE, broadening)
                     for osc in ws) / len(ws)
                 for ws in zip(*arr)) for arr in zip(*oscillators))
 
         # convert the cross section to cm^2
-        au_length = physical_constants['atomic unit of length'][0]
 
-        return grid_au * (au_length * 100) ** 2
+        return grid_ev
 
     vectorized_cross_section = np.vectorize(compute_cross_section)
 
@@ -198,10 +200,10 @@ def gaussian_distribution(x: float, center: float, delta: float) -> Vector:
     Return gaussian as described at:
     Phys. Chem. Chem. Phys., 2010, 12, 4959–4967
     """
-    pre_expo = np.sqrt(2 / np.pi) / delta
+    pre_expo = np.sqrt(2 / np.pi) *  (hbar_evs / delta)
     expo = np.exp(-2 * ((x - center) / delta) ** 2)
 
-    return pre_expo * expo
+    return expo
 
 
 def lorentzian_distribution(
@@ -295,7 +297,7 @@ def compute_oscillator_strength(
         # Get the molecular orbitals coefficients and energies
         css_j = coeffs[:, finalS]
         energy_j = es[finalS]
-        deltaE = energy_j - energy_i
+        deltaE = (energy_j - energy_i) * h2ev
 
         # compute the oscillator strength and the transition dipole components
         fij, components = oscillator_strength(
@@ -314,7 +316,7 @@ def write_information(data: Tuple) -> None:
     """
     Write to a file the oscillator strenght information
     """
-    header = "Transition Energy[eV] Energy[nm^-1] fi3j Transition_dipole_components [a.u.]\n"
+    header = "Transition Energy[eV] Energy[nm^-1] fij Transition_dipole_components [a.u.]\n"
     filename = 'oscillators.txt'
     with open(filename, 'w') as f:
         f.write(header)
@@ -329,10 +331,9 @@ def write_oscillator(
     """
     Write oscillator strenght information in one file
     """
-    energy = deltaE * h2ev
-    energy_nm = 1240 / energy
+    energy_nm = 1240 / deltaE
     fmt = '{}->{} {:12.5f} {:12.5f} {:12.5f} {:11.5f} {:11.5f} {:11.5f}\n'.format(
-        initialS, finalS, energy, energy_nm, fij, *components)
+        initialS, finalS, deltaE, energy_nm, fij, *components)
 
     with open(filename, 'a') as f:
         f.write(fmt)
