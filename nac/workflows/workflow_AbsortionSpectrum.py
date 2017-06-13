@@ -106,8 +106,8 @@ def workflow_oscillator_strength(
 
     # Save cross section
     np.savetxt('cross_section_cm.txt',
-               np.stack((energies, energies_nm, cross_section), axis=1),
-               header='Energy[eV] Energy[nm^-1] photoabsorption_cross_section[cm^2]')
+               np.stack((energies, energies_nm, cross_section, cross_section * 1e16), axis=1),
+               header='Energy[eV] Energy[nm^-1] photoabsorption_cross_section[cm^2] photoabsorption_cross_section[^2]')
 
     # molar extinction coefficients (e in M-1 cm-1)
     nA = physical_constants['Avogadro constant'][0]
