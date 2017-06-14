@@ -264,7 +264,7 @@ def calc_overlap_row(dictCGFs: Dict, xyz_0: List, cgf_i: List,
     nOrbs = indices_cgfs.shape[0]
     row = np.empty(nOrbs)
 
-    for k, (at_j, cgfs_j_idx) in np.rollaxis(indices_cgfs, axis=0):
+    for k, (at_j, cgfs_j_idx) in enumerate(np.rollaxis(indices_cgfs, axis=0)):
         # Extract atom and  CGFs
         atom_j = mol1[at_j]
         cgf_j = dictCGFs[atom_j.symbol.lower()][cgfs_j_idx]
