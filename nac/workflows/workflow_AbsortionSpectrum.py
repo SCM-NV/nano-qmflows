@@ -8,10 +8,7 @@ from nac.common import (
     Matrix, Vector, change_mol_units, getmass, h2ev,
     retrieve_hdf5_data, triang2mtx)
 from nac.integrals.multipoleIntegrals import calcMtxMultipoleP
-from nac.integrals.overlapIntegral import calcMtxOverlapP
 from nac.schedule.components import calculate_mos
-from nac.schedule.scheduleCoupling import (
-    calculate_overlap, compute_the_fixed_phase_overlaps)
 from qmworks import run
 from qmworks.parsers import parse_string_xyz
 from scipy import sparse
@@ -30,7 +27,8 @@ logger = logging.getLogger(__name__)
 Oscillator = namedtuple("Oscillator",
                         ('initialS', 'finalS', 'deltaE', 'fij', 'components'))
 
-au_energy_to_ev = physical_constants['atomic unit of energy'][0] / physical_constants['electron volt'][0]
+# Planck constant in ev . s
+hbar_evs = physical_constants['Planck constant over 2 pi in eV s'][0]
 
 
 def workflow_oscillator_strength(
@@ -85,48 +83,41 @@ def workflow_oscillator_strength(
     molecules_au = [change_mol_units(parse_string_xyz(gs))
                     for gs in geometries]
 
-    # track the trivial crossing during the dynamics
-    swaps = compute_swaps(
-        geometries, project_name, path_hdf5, dictCGFs, mo_paths_hdf5,
-        hdf5_trans_mtx, enumerate_from, nHOMO, couplings_range)
-
     # Schedule the function the compute the Oscillator Strenghts
     scheduleOscillator = schedule(calcOscillatorStrenghts)
 
     oscillators = gather(
         *[scheduleOscillator(
-            i, swaps, project_name, mo_paths_hdf5, dictCGFs, mol,
+            i, project_name, mo_paths_hdf5, dictCGFs, mol,
             path_hdf5, hdf5_trans_mtx=hdf5_trans_mtx,
             initial_states=initial_states, final_states=final_states)
           for i, mol in enumerate(molecules_au)
           if i % calculate_oscillator_every == 0])
 
-    if len(geometries) > 1:
-        energies, promised_cross_section = create_promised_cross_section(
-            path_hdf5, mo_paths_hdf5, oscillators, broadening, energy_range,
-            convolution, calculate_oscillator_every)
+    energies, promised_cross_section = create_promised_cross_section(
+        oscillators, broadening, energy_range,
+        convolution, calculate_oscillator_every)
 
-        cross_section, data = run(
-            gather(promised_cross_section, oscillators), folder=work_dir)
+    cross_section, data = run(
+        gather(promised_cross_section, oscillators), folder=work_dir)
 
-        # Transform the energy to eV
-        energies *= au_energy_to_ev
+    # Transform the energy to nm^-1
+    energies_nm = energies * 1240
 
-        # Save cross section
-        np.savetxt('cross_section_cm.txt',
-                   np.stack((energies, cross_section), axis=1),
-                   header='Energy [eV] photoabsorption cross section [cm^2]')
+    # Save cross section
+    np.savetxt('cross_section_cm.txt',
+               np.stack((energies, energies_nm, cross_section, cross_section * 1e16), axis=1),
+               header='Energy[eV] Energy[nm^-1] photoabsorption_cross_section[cm^2] photoabsorption_cross_section[^2]')
 
-        # molar extinction coefficients (e in M-1 cm-1)
-        nA = physical_constants['Avogadro constant'][0]
-        cte = np.log(10) * 1e3 / nA
-        extinction_coefficients = cross_section / cte
-        np.savetxt('molar_extinction_coefficients.txt',
-                   np.stack((energies, extinction_coefficients), axis=1),
-                   header='Energy [eV] Extinction coefficients [M^-1 cm^-1]')
-    else:
-        data = run(oscillators, folder=work_dir)
+    # molar extinction coefficients (e in M-1 cm-1)
+    nA = physical_constants['Avogadro constant'][0]
+    cte = np.log(10) * 1e3 / nA
+    extinction_coefficients = cross_section / cte
+    np.savetxt('molar_extinction_coefficients.txt',
+               np.stack((energies, energies_nm, extinction_coefficients), axis=1),
+               header='Energy[eV] Energy[nm^-1] Extinction_coefficients[M^-1 cm^-1]')
 
+    print("Data: ", data)
     print("Calculation Done")
 
     # Write data in human readable format
@@ -136,72 +127,45 @@ def workflow_oscillator_strength(
 
 
 def create_promised_cross_section(
-        path_hdf5: str, mo_paths_hdf5: List, oscillators: List,
-        broadening: float, energy_range: Tuple, convolution: str,
-        calculate_oscillator_every: int):
+        oscillators: List, broadening: float, energy_range: Tuple,
+        convolution: str, calculate_oscillator_every: int):
     """
     Create the function call that schedule the computation of the
     photoabsorption cross section
     """
-    # broadening in atomic units
-    broad_au = broadening / h2ev
-
     # Energy grid in  hartrees
-    initial_energy = energy_range[0] / h2ev
-    final_energy = energy_range[1] / h2ev
-    npoints = int((final_energy - initial_energy) / broad_au)
+    initial_energy = energy_range[0]
+    final_energy = energy_range[1]
+    npoints = 10 * (final_energy - initial_energy) // broadening
     energies = np.linspace(initial_energy, final_energy, npoints)
 
     # Compute the cross section
     schedule_cross_section = schedule(compute_cross_section_grid)
 
     return energies, schedule_cross_section(
-        oscillators, path_hdf5, mo_paths_hdf5, convolution, energies,
-        broadening, calculate_oscillator_every)
-
-
-def compute_swaps(
-        geometries: List, project_name: str, path_hdf5: str, dictCGFs: Dict,
-        mo_paths_hdf5: List, hdf5_trans_mtx: str, enumerate_from: int,
-        nHOMO: int, couplings_range: Tuple) -> Vector:
-    """
-    Track the triviail crossing between the molecular orbitals during
-    the molecular dynamics.
-    """
-    if len(geometries) > 1:
-        # Overlap matrix at two different times
-        promised_overlaps = calculate_overlap(
-            project_name, path_hdf5, dictCGFs, geometries, mo_paths_hdf5,
-            hdf5_trans_mtx, enumerate_from, nHOMO=nHOMO,
-            couplings_range=couplings_range)
-
-        # track the orbitals duringh the MD
-        schedule_compute_swaps = schedule(compute_swapped_indexes)
-
-        swaps = schedule_compute_swaps(
-            promised_overlaps, path_hdf5, project_name, enumerate_from, nHOMO)
-    else:
-        # Use only the first point to compute the oscillator strength
-        dim = sum(couplings_range)
-        swaps = np.arange(dim).reshape(1, dim)
-
-    return swaps
+        oscillators, convolution, energies, broadening,
+        calculate_oscillator_every)
 
 
 def compute_cross_section_grid(
-        oscillators: List, path_hdf5: str, mo_paths_hdf5: List,
-        convolution: str, energies: Vector, broadening: float,
-        calculate_oscillator_every: int) -> float:
+        oscillators: List, convolution: str, energies: Vector,
+        broadening: float, calculate_oscillator_every: int) -> float:
     """
     Compute the photoabsorption cross section as a function of the energy.
     See: The UV absorption of nucleobases: semi-classical ab initio spectra
     simulations. Phys. Chem. Chem. Phys., 2010, 12, 4959–4967
     """
-    print(oscillators)
-    # speed of light in a.u.
-    c = 137.036
-    # Constant
-    cte = 2 * (np.pi ** 2) / c
+    # speed of light in m s^-1
+    c = physical_constants['speed of light in vacuum'][0]
+    # Mass of the electron in Kg
+    m = physical_constants['electron mass'][0]
+    # Charge of the electron in C
+    e = physical_constants['elementary charge'][0]
+    # Vacuum permitivity in C^2 N^-1 m^-2
+    e0 = 8.854187817620e-12
+
+    # Constant in cm^2
+    cte = np.pi * (e ** 2) / (2 * m * c * e0) * 1e4  # m^2 to cm^2
 
     # convulation functions for the intensity
     convolution_functions = {'gaussian': gaussian_distribution,
@@ -214,17 +178,16 @@ def compute_cross_section_grid(
         rearranging oscillator strengths by initial states and perform
         the summation.
         """
-        # Photo absorption in length a.u.^2
-        grid_au = cte * sum(
+        # Photo absorption in length
+        grid_ev = cte * sum(
             sum(
-                sum(osc.fij * fun_convolution(energy, osc.deltaE, broadening)
+                sum(osc.fij * fun_convolution(energy, osc.deltaE * h2ev, broadening)
                     for osc in ws) / len(ws)
                 for ws in zip(*arr)) for arr in zip(*oscillators))
 
         # convert the cross section to cm^2
-        au_length = physical_constants['atomic unit of length'][0]
 
-        return grid_au * (au_length * 100) ** 2
+        return grid_ev
 
     vectorized_cross_section = np.vectorize(compute_cross_section)
 
@@ -236,7 +199,7 @@ def gaussian_distribution(x: float, center: float, delta: float) -> Vector:
     Return gaussian as described at:
     Phys. Chem. Chem. Phys., 2010, 12, 4959–4967
     """
-    pre_expo = np.sqrt(2 / np.pi) / delta
+    pre_expo = np.sqrt(2 / np.pi) * (hbar_evs / delta)
     expo = np.exp(-2 * ((x - center) / delta) ** 2)
 
     return pre_expo * expo
@@ -248,35 +211,14 @@ def lorentzian_distribution(
     Return a Lorentzian as described at:
     Phys. Chem. Chem. Phys., 2010, 12, 4959–4967
     """
-    cte = delta / (2 * np.pi)
+    cte = (hbar_evs * delta) / (2 * np.pi)
     denominator = (x - center) ** 2  + (delta / 2) ** 2
 
     return cte * (1 / denominator)
 
 
-def compute_swapped_indexes(promised_overlaps, path_hdf5, project_name,
-                            enumerate_from, nHOMO):
-    """
-    Track the swap between the Molecular orbitals during the
-    Molecular dynamics
-    """
-    logger.info("Tracking the swaps between Molecular orbitals")
-    # Overlaps and swaps
-    fixed_overlaps_and_swaps = compute_the_fixed_phase_overlaps(
-        promised_overlaps, path_hdf5, project_name, enumerate_from, nHOMO)
-
-    swaps = fixed_overlaps_and_swaps[1]
-    dim = swaps.shape[0]
-
-    # Accumulate the swaps
-    for i in range(1, dim):
-        swaps[i] = swaps[i, swaps[i - 1]]
-
-    return swaps
-
-
 def calcOscillatorStrenghts(
-        i: int, swaps: Matrix, project_name: str,
+        i: int, project_name: str,
         mo_paths_hdf5: str, dictCGFs: Dict,
         atoms: List, path_hdf5: str, hdf5_trans_mtx: str=None,
         initial_states: List=None, final_states: List=None):
@@ -308,10 +250,6 @@ def calcOscillatorStrenghts(
     # Energy and coefficients at time t
     es, coeffs = retrieve_hdf5_data(path_hdf5, mo_paths_hdf5[i])
 
-    # Apply the swap that took place during the MD
-    swapped_initial_states = swaps[i, initial_states]
-    swapped_final_states = swaps[i, final_states]
-
     # If the MO orbitals are given in Spherical Coordinates transform then to
     # Cartesian Coordinates.
     if hdf5_trans_mtx is not None:
@@ -329,13 +267,13 @@ def calcOscillatorStrenghts(
     oscillators = [
         compute_oscillator_strength(
             rc, atoms, dictCGFs, es, coeffs, mtx_integrals_spher, initialS, fs)
-        for initialS, fs in zip(swapped_initial_states, swapped_final_states)]
+        for initialS, fs in zip(initial_states, final_states)]
 
     return oscillators
 
 
 def compute_oscillator_strength(
-        rc: Tuple, atoms: List, cgfsN: List, es: Vector, coeffs: Matrix,
+        rc: Tuple, atoms: List, dictCGFs: Dict, es: Vector, coeffs: Matrix,
         mtx_integrals_spher: Matrix, initialS: int, fs: List):
     """
     Compute the oscillator strenght using the matrix elements of the position
@@ -377,22 +315,27 @@ def write_information(data: Tuple) -> None:
     """
     Write to a file the oscillator strenght information
     """
+    header = "Transition Energy[eV] Energy[nm^-1] fij Transition_dipole_components [a.u.]\n"
+    filename = 'oscillators.txt'
+    with open(filename, 'w') as f:
+        f.write(header)
     for xs in list(chain(*data)):
         for args in xs:
-            write_oscillator(*args)
+            write_oscillator(filename, *args)
 
 
 def write_oscillator(
-        initialS: int, finalS: int, deltaE: float, fij: float,
+        filename: str, initialS: int, finalS: int, deltaE: float, fij: float,
         components: Tuple) -> None:
     """
     Write oscillator strenght information in one file
     """
-    energy = deltaE * h2ev
-    fmt = '{}_{} {:.4e} {:.4e} {:.4e} {:.4e} {:.4e}\n'.format(
-        initialS, finalS, energy, fij, *components)
+    energy_ev = deltaE * h2ev
+    energy_nm = 1240 / energy_ev
+    fmt = '{}->{} {:12.5f} {:12.5f} {:12.5f} {:11.5f} {:11.5f} {:11.5f}\n'.format(
+        initialS, finalS, energy_ev, energy_nm, fij, *components)
 
-    with open('oscillators.txt', 'a') as f:
+    with open(filename, 'a') as f:
         f.write(fmt)
 
 
@@ -406,32 +349,8 @@ def transform2Spherical(trans_mtx: Matrix, matrix: Matrix) -> Matrix:
     return trans_mtx.dot(sparse.csr_matrix.dot(matrix, transpose))
 
 
-def calcOverlapCGFS(
-        atoms: List, cgfsN: List, trans_mtx: Matrix) -> Matrix:
-    """
-    Calculate the Matrix containining the overlap integrals bewtween
-    contracted Gauss functions and transform it to spherical coordinates.
-
-    :param atoms: Atomic label and cartesian coordinates in au.
-    type atoms: List of namedTuples
-    :param cgfsN: Contracted gauss functions normalized, represented as
-    a list of tuples of coefficients and Exponents.
-    type cgfsN: [(Coeff, Expo)]
-    :param trans_mtx: Transformation matrix to translate from Cartesian
-    to Sphericals.
-    :type trans_mtx: Numpy Matrix
-    """
-    dimCart = trans_mtx.shape[1]
-    # Overlap matrix calculated as a flatten triangular matrix
-    overlap_triang = calcMtxOverlapP(atoms, cgfsN)
-    # Expand the flatten triangular array to a matrix
-    overlap_cart = triang2mtx(overlap_triang, dimCart)
-
-    return transform2Spherical(trans_mtx, overlap_cart)
-
-
 def calcDipoleCGFS(
-        atoms: List, cgfsN: List, rc: Tuple, trans_mtx: Matrix) -> Matrix:
+        atoms: List, dictCGFs: List, rc: Tuple, trans_mtx: Matrix) -> Matrix:
     """
     Compute the Multipole matrix in cartesian coordinates and
     expand it to a matrix and finally convert it to spherical coordinates.
@@ -451,7 +370,7 @@ def calcDipoleCGFS(
                  {'e': 0, 'f': 0, 'g': 1}]
 
     dimCart = trans_mtx.shape[1]
-    mtx_integrals_triang = tuple(calcMtxMultipoleP(atoms, cgfsN, rc, **kw)
+    mtx_integrals_triang = tuple(calcMtxMultipoleP(atoms, dictCGFs, rc, **kw)
                                  for kw in exponents)
     mtx_integrals_cart = tuple(triang2mtx(xs, dimCart)
                                for xs in mtx_integrals_triang)
