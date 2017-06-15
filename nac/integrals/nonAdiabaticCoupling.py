@@ -128,14 +128,8 @@ def compute_overlaps_for_coupling(
     """
     mol0, mol1 = geometries
 
-    # Dictionary containing the number of CGFs per atoms
-    cgfs_per_atoms = {s: len(dictCGFs[s]) for s in dictCGFs.keys()}
-
-    # Dimension of the square overlap matrix
-    dim = sum(cgfs_per_atoms[at[0]] for at in mol0)
-
     # Atomic orbitals overlap
-    suv_0 = calcOverlapMtx(dictCGFs, dim, mol0, mol1)
+    suv_0 = calcOverlapMtx(dictCGFs, mol0, mol1)
 
     css0, css1, trans_mtx = read_overlap_data(
         path_hdf5, mo_paths, hdf5_trans_mtx, nHOMO, couplings_range)
@@ -210,8 +204,7 @@ def compute_range_orbitals(mtx: Matrix, nHOMO: int,
     return lowest, highest
 
 
-def calcOverlapMtx(dictCGFs: Dict, dim: int,
-                   mol0: List, mol1: List):
+def calcOverlapMtx(dictCGFs: Dict, mol0: List, mol1: List) -> Matrix:
     """
     Parallel calculation of the overlap matrix using the atomic
     basis at two different geometries: R0 and R1.
@@ -225,7 +218,7 @@ def calcOverlapMtx(dictCGFs: Dict, dim: int,
     with Pool() as p:
         xss = p.map(partial_fun, create_rows_range(nOrbs))
 
-    return np.stack(xss)
+    return np.vstack(xss)
 
 
 def calc_overlap_chunk(dictCGFs: Dict, mol0: List, mol1: List,
@@ -242,7 +235,7 @@ def calc_overlap_chunk(dictCGFs: Dict, mol0: List, mol1: List,
     rows = np.empty((chunk_size, nOrbs))
 
     # Compute the sunset of the overlap matrix
-    for k, i in enumerate(range(chunk_size)):
+    for k, i in enumerate(range(lower, upper)):
         # Atom and CGFs index
         at_i, cgfs_i_idx = indices_cgfs[i]
         # Extract atom and  CGFs
