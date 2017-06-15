@@ -2,6 +2,7 @@ from functools import partial
 from nac.common import (
     Matrix, change_mol_units, getmass, retrieve_hdf5_data, triang2mtx)
 from nac.integrals.multipoleIntegrals import calcMtxMultipoleP
+from nac.integrals.nonAdiabaticCoupling import compute_overlaps_for_coupling
 from nac.workflows.initialization import initialize
 from os.path import join
 from qmworks.parsers import parse_string_xyz
@@ -40,20 +41,34 @@ def main():
             calculate_guesses='first', path_hdf5=path_test_hdf5,
             scratch_path=scratch_path)
 
-        # If the MO orbitals are given in Spherical Coordinates transform then to
-        # Cartesian Coordinates.
-        trans_mtx = retrieve_hdf5_data(path_test_hdf5, config['hdf5_trans_mtx'])
         dictCGFs = config['dictCGFs']
 
         # Molecular geometries
         geometries = config['geometries']
-        molecule_at_t0 = change_mol_units(parse_string_xyz(geometries[0]))
+        frames = [change_mol_units(parse_string_xyz(mol)) for mol in geometries]
 
-        # Origin of the dipole
-        rc = compute_center_of_mass(molecule_at_t0)
-        mtx_integrals_spher = calcDipoleCGFS(molecule_at_t0, dictCGFs, rc, trans_mtx)
+        # Compute the overlap matrix  between 2 different geometries
+        nHOMO = 50
+        couplings_range = (50, 30)
 
-        print(tuple(map(lambda mtx: mtx.shape, mtx_integrals_spher)))
+        mo_paths = ['Cd33Se33/point_0/cp2k/mo/coefficients',
+                    'Cd33Se33/point_1/cp2k/mo/coefficients']
+
+        mtx_overlap = compute_overlaps_for_coupling(
+            tuple(frames[:2]), path_original_hdf5, mo_paths,
+            dictCGFs, nHOMO, couplings_range,
+            hdf5_trans_mtx=config['hdf5_trans_mtx'])
+
+        print(mtx_overlap.shape)
+        # # Origin of the dipole
+        # rc = compute_center_of_mass(molecule_at_t0)
+        # If the MO orbitals are given in Spherical Coordinates transform then to
+        # Cartesian Coordinates.
+        # trans_mtx = retrieve_hdf5_data(path_test_hdf5, config['hdf5_trans_mtx'])
+        # molecule_at_t0 = frames[0]
+        # mtx_integrals_spher = calcDipoleCGFS(molecule_at_t0, dictCGFs, rc, trans_mtx)
+
+        # print(tuple(map(lambda mtx: mtx.shape, mtx_integrals_spher)))
     finally:
         # remove tmp data and clean global config
         shutil.rmtree(scratch_path)

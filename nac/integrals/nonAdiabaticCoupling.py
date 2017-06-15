@@ -4,8 +4,9 @@ __all__ = ['calculate_couplings_3points', 'calculate_couplings_levine',
 # ================> Python Standard  and third-party <==========
 # from multipoleObaraSaika import sab_unfolded
 from functools import partial
-from multiprocessing import Pool
+from multiprocessing import (cpu_count, Pool)
 from nac.common import (Matrix, Vector, Tensor3D, retrieve_hdf5_data)
+from nac.integrals.multipoleIntegrals import compute_CGFs_indices
 from nac.integrals.overlapIntegral import sijContracted
 from scipy import sparse
 from typing import Dict, List, Tuple
@@ -109,7 +110,7 @@ def correct_phases(overlaps: Tensor3D, mtx_phases: Matrix) -> List:
 
 def compute_overlaps_for_coupling(
         geometries: Tuple, path_hdf5: str,
-        mo_paths: Tuple, dictCGFs: Dict,
+        mo_paths: List, dictCGFs: Dict,
         nHOMO: int, couplings_range: Tuple,
         hdf5_trans_mtx: str=None) -> Tuple:
     """
@@ -127,14 +128,8 @@ def compute_overlaps_for_coupling(
     """
     mol0, mol1 = geometries
 
-    # Dictionary containing the number of CGFs per atoms
-    cgfs_per_atoms = {s: len(dictCGFs[s]) for s in dictCGFs.keys()}
-
-    # Dimension of the square overlap matrix
-    dim = sum(cgfs_per_atoms[at[0]] for at in mol0)
-
     # Atomic orbitals overlap
-    suv_0 = calcOverlapMtx(dictCGFs, dim, mol0, mol1)
+    suv_0 = calcOverlapMtx(dictCGFs, mol0, mol1)
 
     css0, css1, trans_mtx = read_overlap_data(
         path_hdf5, mo_paths, hdf5_trans_mtx, nHOMO, couplings_range)
@@ -185,81 +180,6 @@ def calculate_spherical_overlap(trans_mtx: Matrix, suv: Matrix, css0: Matrix,
     return np.dot(css0T, np.dot(suv, css1))
 
 
-def calcOverlapMtx(dictCGFs: Dict, dim: int,
-                   mol0: List, mol1: List):
-    """
-    Parallel calculation of the overlap matrix using the atomic
-    basis at two different geometries: R0 and R1.
-    """
-    fun_overlap = partial(calc_overlap_row, dictCGFs, mol1, dim)
-    fun_lookup = partial(lookup_cgf, mol0, dictCGFs)
-
-    with Pool() as p:
-        xss = p.map(partial(apply_nested, fun_overlap, fun_lookup),
-                    range(dim))
-
-    return np.stack(xss)
-
-
-def apply_nested(f, g, i):
-    return f(*g(i))
-
-
-def calc_overlap_row(dictCGFs: Dict, mol1: List, dim: int,
-                     xyz_atom0: List, cgf_i: Tuple) -> Vector:
-    """
-    Calculate the k-th row of the overlap integral using
-    2 CGFs  and 2 different atomic coordinates.
-    This function only computes the upper triangular matrix since for the
-    atomic basis, the folliwng condition is fulfill
-    <f(t-dt) | f(t) > = <f(t) | f(t - dt) >
-    """
-    row = np.zeros(dim)
-    acc = 0
-    for s, xyz_atom1 in mol1:
-        cgfs_j = dictCGFs[s]
-        nContracted = len(cgfs_j)
-        calc_overlap_atom(
-            row, xyz_atom0, cgf_i, xyz_atom1, cgfs_j, acc)
-        acc += nContracted
-    return row
-
-
-def calc_overlap_atom(row: Vector, xyz_0: List, cgf_i: Tuple, xyz_1: List,
-                      cgfs_atom_j: Tuple, acc: int) -> Vector:
-    """
-    Compute the overlap between the CGF_i of atom0 and all the
-    CGFs of atom1
-    """
-    for j, cgf_j in enumerate(cgfs_atom_j):
-        idx = acc + j
-        row[idx] = sijContracted((xyz_0, cgf_i), (xyz_1, cgf_j))
-
-
-def lookup_cgf(atoms: List, dictCGFs: Dict, i: int) -> Tuple:
-    """
-    Search for CGFs number `i` in the dictCGFs.
-    """
-    if i == 0:
-        # return first CGFs for the first atomic symbol
-        xyz = atoms[0][1]
-        r = dictCGFs[atoms[0].symbol][0]
-        return xyz, r
-    else:
-        acc = 0
-        for s, xyz in atoms:
-            length = len(dictCGFs[s])
-            acc += length
-            n = (acc - 1) // i
-            if n != 0:
-                index = length - (acc - i)
-                break
-
-    t = xyz, dictCGFs[s][index]
-
-    return t
-
-
 def compute_range_orbitals(mtx: Matrix, nHOMO: int,
                            couplings_range: Tuple) -> Tuple:
     """
@@ -282,3 +202,91 @@ def compute_range_orbitals(mtx: Matrix, nHOMO: int,
         highest = nOrbitals
 
     return lowest, highest
+
+
+def calcOverlapMtx(dictCGFs: Dict, mol0: List, mol1: List) -> Matrix:
+    """
+    Parallel calculation of the overlap matrix using the atomic
+    basis at two different geometries: R0 and R1.
+    """
+    # Compute the indices of the nuclear coordinates and CGFs
+    # pairs
+    indices, nOrbs = compute_CGFs_indices(mol0, dictCGFs)
+
+    partial_fun = partial(calc_overlap_chunk, dictCGFs, mol0, mol1, indices)
+
+    with Pool() as p:
+        xss = p.map(partial_fun, create_rows_range(nOrbs))
+
+    return np.vstack(xss)
+
+
+def calc_overlap_chunk(dictCGFs: Dict, mol0: List, mol1: List,
+                       indices_cgfs: Matrix, row_slice: Tuple) -> Matrix:
+    """
+    Compute the row of the overlap matrix indicated by the indexes
+    given at row_slice.
+    """
+    # Indices to compute a subset of the overlap matrix
+    lower, upper = row_slice
+    nOrbs = indices_cgfs.shape[0]
+    chunk_size = upper - lower
+    # Matrix containing the partial overlap matrix
+    rows = np.empty((chunk_size, nOrbs))
+
+    # Compute the sunset of the overlap matrix
+    for k, i in enumerate(range(lower, upper)):
+        # Atom and CGFs index
+        at_i, cgfs_i_idx = indices_cgfs[i]
+        # Extract atom and  CGFs
+        atom_i = mol0[at_i]
+        cgf_i = dictCGFs[atom_i.symbol.lower()][cgfs_i_idx]
+        # Compute the ith row of the overlap matrix
+        rows[k] = calc_overlap_row(
+            dictCGFs, atom_i.xyz, cgf_i, mol1, indices_cgfs)
+
+    return rows
+
+
+def calc_overlap_row(dictCGFs: Dict, xyz_0: List, cgf_i: List,
+                     mol1: List, indices_cgfs: Matrix) -> Vector:
+    """
+    Calculate the k-th row of the overlap integral using
+    2 CGFs  and 2 different atomic coordinates.
+    """
+    nOrbs = indices_cgfs.shape[0]
+    row = np.empty(nOrbs)
+
+    for k, (at_j, cgfs_j_idx) in enumerate(np.rollaxis(indices_cgfs, axis=0)):
+        # Extract atom and  CGFs
+        atom_j = mol1[at_j]
+        cgf_j = dictCGFs[atom_j.symbol.lower()][cgfs_j_idx]
+        xyz_1  = atom_j.xyz
+        row[k] = sijContracted((xyz_0, cgf_i), (xyz_1, cgf_j))
+
+    return row
+
+
+def create_rows_range(nOrbs: int) -> List:
+    """
+    Create a list of indexes for the row of the overlap matrix
+    that will be calculated by a pool of workers.
+    """
+    # Available CPUs
+    nCPUs = cpu_count()
+
+    # Number of rows to compute for each CPU
+    chunk = nOrbs // nCPUs
+
+    # Remaining entries
+    rest = nOrbs % nCPUs
+
+    xs = []
+    acc = 0
+    for i in range(nCPUs):
+        b = 1 if i < rest else 0
+        upper = acc + chunk + b
+        xs.append((acc, upper))
+        acc = upper
+
+    return xs
