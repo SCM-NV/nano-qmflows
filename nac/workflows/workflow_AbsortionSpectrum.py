@@ -6,7 +6,8 @@ from itertools import chain
 from noodles import (gather, schedule)
 from nac.common import (
     Matrix, Tensor3D, Vector, change_mol_units, getmass, h2ev,
-    retrieve_hdf5_data, search_data_in_hdf5, triang2mtx)
+    retrieve_hdf5_data, search_data_in_hdf5, store_arrays_in_hdf5,
+    triang2mtx)
 from nac.integrals.multipoleIntegrals import calcMtxMultipoleP
 from nac.schedule.components import calculate_mos
 from os.path import join
@@ -269,8 +270,10 @@ def calcOscillatorStrenghts(
     if search_data_in_hdf5(path_hdf5, path_dipole_matrices):
         mtx_integrals_spher = retrieve_hdf5_data(path_hdf5, path_dipole_matrices)
     else:
+        # Compute the Dipole matrices and store them in the HDF5
         mtx_integrals_spher = calcDipoleCGFS(atoms, dictCGFs, rc, trans_mtx)
-
+        store_arrays_in_hdf5(path, mtx_integrals_spher)
+        
     oscillators = [
         compute_oscillator_strength(
             rc, atoms, dictCGFs, es, coeffs, mtx_integrals_spher, initialS, fs)
