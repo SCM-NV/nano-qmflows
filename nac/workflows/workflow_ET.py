@@ -3,53 +3,49 @@ __author__ = "Felipe Zapata"
 # ================> Python Standard  and third-party <==========
 
 from .components import calculate_mos
-from nac.common import (change_mol_units, retrieve_hdf5_data)
+from nac.common import (Matrix, Tensor3D, change_mol_units,
+                        retrieve_hdf5_data)
 from nac.integrals.electronTransfer import photoExcitationRate
-from nac.workflows import initialize
 from noodles import gather
 from os.path import join
 from qmworks import run
 from qmworks.parsers import parse_string_xyz
-from scm import plams
+from scipy import sparse
 
 import fnmatch
-import h5py
 import numpy as np
 import os
 
+from typing import (Dict, List)
 
 # ==============================> Main <==================================
 
 
-def calculate_ETR(package_name, project_name, package_args, geometries=None,
-                  pathTimeCoeffs=None, initial_conditions=None,
-                  path_hdf5=None, enumerate_from=0, package_config=None,
-                  calc_new_wf_guess_on_points=None, guess_args=None,
-                  work_dir=None, traj_folders=None, basisname=None,
-                  dictCGFs=None, hdf5_trans_mtx=None):
+def calculate_ETR(
+        package_name: str, project_name: str, package_args: Dict,
+        path_time_coeffs: str=None, geometries: List=None,
+        initial_conditions: List=None, path_hdf5: str=None,
+        enumerate_from: int=0, package_config: Dict=None,
+        calc_new_wf_guess_on_points: str=None, guess_args: Dict=None,
+        work_dir: str=None, traj_folders: List=None,
+        dictCGFs: Dict=None, hdf5_trans_mtx: str=None):
     """
     Use a md trajectory to calculate the Electron transfer rate
     nmad.
 
     :param package_name: Name of the package to run the QM simulations.
-    :type  package_name: String
     :param project_name: Folder name where the computations
     are going to be stored.
-    :type project_name: String
     :param package_args: Specific settings for the package
-    :type package_args: dict
     :param geometries: List of string cotaining the molecular geometries
                        numerical results.
     :type path_traj_xyz: [String]
     :param calc_new_wf_guess_on_points: number of Computations that used a
                                         previous calculation as guess for the
                                         wave function.
-    :type calc_new_wf_guess_on_points: Int
     :param enumerate_from: Number from where to start enumerating the folders
                            create for each point in the MD.
-    :type enumerate_from: Int
     :param package_config: Parameters required by the Package.
-    :type package_config: Dict
 
     :returns: None
     """
@@ -58,28 +54,29 @@ def calculate_ETR(package_name, project_name, package_args, geometries=None,
         initial_conditions = [0]
 
     # Time-dependent coefficients
-    time_depend_coeffs = retrieve_hdf5_data(path_hdf5, pathTimeCoeffs)
+    time_depend_coeffs = read_time_dependent_coeffs(path_hdf5, path_time_coeffs)
 
     # prepare Cp2k Job
     # Point calculations Using CP2K
-    mo_paths_hdf5 = calculate_mos(package_name, geometries, project_name,
-                                  path_hdf5, traj_folders, package_args,
-                                  guess_args, calc_new_wf_guess_on_points,
-                                  enumerate_from,
-                                  package_config=package_config)
+    mo_paths_hdf5 = calculate_mos(
+        package_name, geometries, project_name, path_hdf5, traj_folders,
+        package_args, guess_args, calc_new_wf_guess_on_points,
+        enumerate_from, package_config=package_config)
+
+    # List of tuples containing the electron transfer rates
+    if hdf5_trans_mtx is not None:
+            trans_mtx = sparse.csr_matrix(
+                retrieve_hdf5_data(path_hdf5, hdf5_trans_mtx))
 
     # Number of ETR points calculated with the MD trajectory
     nPoints = len(geometries) - 2
 
-    # List of tuples containing the electron transfer rates
-    if hdf5_trans_mtx is not None:
-            trans_mtx = retrieve_hdf5_data(path_hdf5, hdf5_trans_mtx)
+    etrs = [compute_photoexcitation(
+        i, path_hdf5, dictCGFs, geometries[i: i + 3],
+        time_depend_coeffs[i: i + 3], mo_paths_hdf5, trans_mtx=trans_mtx)
+        for i in range(nPoints)]
 
-    etrs = [schedule_photoexcitation(i, path_hdf5, dictCGFs, geometries,
-                                     time_depend_coeffs, mo_paths_hdf5,
-                                     trans_mtx=trans_mtx)
-            for i in range(nPoints)]
-
+    # Execute the workflow
     electronTransferRates = run(gather(*etrs))
 
     rs = list(map(lambda ts: '{:10.6f} {:10.6f}\n'.format(*ts),
@@ -92,9 +89,10 @@ def calculate_ETR(package_name, project_name, package_args, geometries=None,
 # ==============================> Tasks <======================================
 
 
-def schedule_photoexcitation(i, path_hdf5, dictCGFs, all_geometries,
-                             time_depend_paths, mo_paths, trans_mtx=None,
-                             enumerate_from=0, units='angstrom'):
+def compute_photoexcitation(
+        i: int, path_hdf5: str, dictCGFs: Dict, geometries: List,
+        time_depend_coeffs: Tensor3D, mo_paths: List, trans_mtx: Matrix=None,
+        enumerate_from: int=0, units: str='angstrom') -> List:
     """
     :param i: nth coupling calculation.
     :type i: Int
@@ -105,43 +103,31 @@ def schedule_photoexcitation(i, path_hdf5, dictCGFs, all_geometries,
     :type     dictCGFS: Dict String [CGF],
               CGF = ([Primitives], AngularMomentum),
               Primitive = (Coefficient, Exponent)
-    :param all_geometries: list of molecular geometries
-    :type all_geometries: String list
+    :param geometries: list of 3 molecular geometries
     :param time_depend_paths: Path to the time-dependent coefficients
     calculated with PYXAID and stored in HDF5 format.
-    :type time_depend_paths: [String]
     :param mo_paths: Paths to the MO coefficients and energies in the
     HDF5 file.
-    :type mo_paths: [String]
     :param trans_mtx: transformation matrix from cartesian to spherical
     orbitals.
-    :type trans_mtx: Numpy Array
     :param enumerate_from: Number from where to start enumerating the folders
     create for each point in the MD
-    :type enumerate_from: Int
-    :returns: promise to path to the Coupling inside the HDF5
-
+    :returns: promise to path to the Coupling inside the HDF5.
     """
-    j, k = i + 1, i + 2
-
-    xss = all_geometries[i], all_geometries[j], all_geometries[k]
-    geometries = tuple(map(parse_string_xyz, xss))
+    # Read the paths to the XYZ files
+    geometries = tuple(map(parse_string_xyz, geometries))
     if 'angstrom' in units.lower():
         geometries = tuple(map(change_mol_units, geometries))
 
-    mos = tuple(map(lambda j:
-                    retrieve_hdf5_data(path_hdf5,
-                                       mo_paths[i + j][1]), range(3)))
-    time_coeffs = tuple(map(lambda j:
-                            retrieve_hdf5_data(path_hdf5,
-                                               time_depend_paths[i + j]),
-                            range(3)))
+    # Read the molecular orbital coefficients from the HDF5
+    mos = np.stack(retrieve_hdf5_data(path_hdf5, mo_paths[j][1])
+                   for j in range(i, i + 3))
 
-    return photoExcitationRate(geometries, dictCGFs, time_coeffs, mos,
+    return photoExcitationRate(geometries, dictCGFs, time_depend_coeffs, mos,
                                trans_mtx=trans_mtx)
 
 
-def parse_population(filePath):
+def parse_population(filePath: str) -> Matrix:
     """
     returns a matrix contaning the pop for each time in each row.
     """
@@ -153,14 +139,11 @@ def parse_population(filePath):
     return np.array(rss)
 
 
-def read_time_dependent_coeffs(path_hdf5, pathProperty, path_pyxaid_out):
+def read_time_dependent_coeffs(
+        path_hdf5: str, path_pyxaid_out: str) -> Tensor3D:
     """
     :param path_hdf5: Path to the HDF5 file that contains the
     numerical results.
-    :type path_hdf5: String
-    :param pathProperty: path to the node that contains the time
-    coeffficients.
-    :type pathProperty: String
     :param path_pyxaid_out: Path to the out of the NA-MD carried out by
     PYXAID.
     :type path_pyxaid_out: String
@@ -168,61 +151,10 @@ def read_time_dependent_coeffs(path_hdf5, pathProperty, path_pyxaid_out):
     """
     # Read output files
     files_out = os.listdir(path_pyxaid_out)
-    names_out_es, names_out_pop  = [fnmatch.filter(files_out, x) for x
-                                    in ["*energies*", "out*"]]
-    _, paths_out_pop = [[join(path_pyxaid_out, x) for x in xs]
-                        for xs in [names_out_es, names_out_pop]]
+    names_out_pop  = fnmatch.filter(files_out, "out*")
+    paths_out_pop = (join(path_pyxaid_out, x) for x in names_out_pop)
 
-    # ess = map(parse_energies, paths_out_es)
+    # Read the data
     pss = map(parse_population, paths_out_pop)
 
-    # Make a 3D stack of arrays the calculate the mean value
-    # for the same time
-    # average_es = np.mean(np.stack(ess), axis=0)
-    # average_pop = np.mean(np.stack(pss), axis=0)
-    data = np.stack(pss)
-
-    # Save Data in the HDF5 file
-    with h5py.File(path_hdf5) as f5:
-        f5.require_dataset(pathProperty, shape=np.shape(data),
-                           data=data, dtype=np.float32)
-
-# ================================> Main <=====================================
-
-
-def main():
-    plams.init()
-
-    # Project
-    project_name = 'NAC'
-    path_traj_xyz = "./data/traj_3_points.xyz"
-    pyxaid_out_dir = "./step3/out"
-    basisname = "DZVP-MOLOPT-SR-GTH"
-    home = os.path.expanduser('~')
-    basiscp2k = join(home, "Cp2k/cp2k_basis/BASIS_MOLOPT")
-    potcp2k = join(home, "Cp2k/cp2k_basis/GTH_POTENTIALS")
-
-    initial_config = initialize(project_name, path_traj_xyz, basisname,
-                                path_basis=basiscp2k, path_potential=potcp2k,
-                                enumerate_from=0)
-    path_hdf5 = initial_config['path_hdf5']
-
-    # Process PYXAID results and store them in HDF5
-    pathProperty = join(project_name, "pyxaid/timeCoeffs")
-    if search_data_in_hdf5(path_hdf5, pathProperty):
-        read_time_dependent_coeffs(path_hdf5, pathProperty, pyxaid_out_dir)
-
-    # Electron Transfer rate calculation
-    pyxaid_initial_cond = [0, 24, 49]
-
-    # Electron transfer rate computation computation
-    cp2k_args = None
-    calculate_ETR('cp2k', project_name, cp2k_args,
-                  pathTimeCoeffs=pathProperty,
-                  initial_conditions=pyxaid_initial_cond,
-                  **initial_config)
-    plams.finish()
-
-# ==============<>=============
-if __name__ == "__main__":
-    main()
+    return np.stack(pss)

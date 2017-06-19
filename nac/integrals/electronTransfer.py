@@ -3,17 +3,19 @@ __author__ = "Felipe Zapata"
 # ================> Python Standard  and third-party <==========
 from functools import partial
 from itertools import starmap
+from nac.common import (Matrix, Tensor3D, femtosec2au)
+from nac.integrals.multipoleIntegrals import calcMtxMultipoleP
+from scipy import sparse
+from typing import (Dict, List, Tuple)
+
 import numpy as np
 
-# ==================> Internal modules <==========
-from nac.integrals.overlapIntegral import calcMtxOverlapP
-
 # ==================================<>=========================================
-au_time = 2.41888432e-2  # 1 au of time is  2.41888432e-2 femtoseconds
 
 
-def photoExcitationRate(geometries, dictCGFs, tuple_time_coefficients,
-                        tuple_mos_coefficients, trans_mtx=None, dt=1):
+def photoExcitationRate(
+        geometries: Tuple, dictCGFs: Dict, time_depend_coeffs: Matrix,
+        mos_coefficients: Tensor3D, trans_mtx: Matrix, dt: float) -> Tuple:
     """
     Calculate the Electron transfer rate, using both adiabatic and nonadiabatic
     components, using equation number 8 from:
@@ -29,35 +31,31 @@ def photoExcitationRate(geometries, dictCGFs, tuple_time_coefficients,
     Primitive = (Coefficient, Exponent)
     :param tuple_time_coefficients: Time-dependent coefficients
     at time t - dt, t and t + dt.
-    :type tuple_time_coefficients: Tuple of Numpy Arrays
     :param tuple_mos_coefficients: Tuple of Molecular orbitals at
     time t - dt, t and t + dt.
-    :type tuple_mos_coefficients: Tuple of Numpy Arrays
     :param trans_mtx: Transformation matrix to translate from Cartesian
     to Sphericals.
-    :type trans_mtx: Numpy matrix
     :returns: tuple containing both nonadiabatic and adiabatic components
     """
     # transform time to atomic units
-    dt = dt / au_time
+    dt_au = dt * femtosec2au
     # Geometry at time t
     r1 = geometries[1]
-    symbols = [x.symbol for x in r1]
-    cgfsN = [dictCGFs[s] for s in symbols]
 
     # Overlap matrices
-    s0, s1, s2 = tuple(starmap(partial(overlap_molecular, cgfsN, trans_mtx),
-                               zip(geometries, tuple_mos_coefficients)))
+    overlaps = np.stack(starmap(partial(overlap_molecular, dictCGFs, trans_mtx),
+                                zip(geometries, time_depend_coeffs)))
     # NonAdiabatic component
-    nonadiabatic = electronTransferNA(r1, tuple_time_coefficients, s1)
+    nonadiabatic = electronTransferNA(r1, time_depend_coeffs, overlaps[1], dt_au)
     # Adiabatic component
-    css1 = tuple_time_coefficients[1]
-    adiabatic = electronTransferAdiabatic(css1, np.stack([s0, s1, s2]))
+    css1 = time_depend_coeffs[1]
+    adiabatic = electronTransferAdiabatic(css1, overlaps)
 
     return nonadiabatic, adiabatic
 
 
-def electronTransferNA(geometry, tuple_coefficients, overlap, dt=1):
+def electronTransferNA(
+        geometry: List, time_depend_coeffs: Tensor3D, overlap: Matrix, dt: float):
     """
     Calculate the Nonadiabatic component of an Electron transfer process.
 
@@ -69,7 +67,6 @@ def electronTransferNA(geometry, tuple_coefficients, overlap, dt=1):
     :param overlap: Overlap matrix
     :type overlap: Numpy Martrix
     :param dt: Integration time.
-    :type dt: Float
     """
     dim = tuple_coefficients[0].shape
     xs = [x.reshape(1, dim) for x in tuple_coefficients]
@@ -99,7 +96,8 @@ def electronTransferAdiabatic(coefficients, tensor_overlap):
     return np.sum(css * overlap_derv)
 
 
-def overlap_molecular(cgfsN, trans_mtx, geometry, mos):
+def overlap_molecular(
+        dictCGFs: Dict, trans_mtx: Matrix, geometry: List, mos: Matrix) -> Matrix:
     """
     Calculate the Overlap matrix using the given geometry and Molecular
     orbitals.
@@ -113,17 +111,17 @@ def overlap_molecular(cgfsN, trans_mtx, geometry, mos):
     :param mos: Molecular orbitals coefficients
     :type mos: Numpy Martrix
     """
-    atomic_overlap = calcMtxOverlapP(geometry, cgfsN)
+    atomic_overlap = calcMtxMultipoleP(geometry, dictCGFs)
     mosT = np.transpose(mos)
-    if trans_mtx is not None:
-        transpose = np.transpose(trans_mtx)
-        # Overlap in Sphericals
-        suv = np.dot(trans_mtx, np.dot(atomic_overlap, transpose))
+
+    transpose = trans_mtx.transpose()
+    # Overlap in Sphericals
+    suv = trans_mtx.dot(sparse.csr_matrix.dot(atomic_overlap, transpose))
 
     return np.dot(mosT, np.dot(suv, mos))
 
 
-def threePointDerivative(arr, dt=1):
+def threePointDerivative(arr, dt):
     """Calculate the numerical derivatives using a Two points formula"""
 
     return (arr[0] - arr[2]) / (2 * dt)
