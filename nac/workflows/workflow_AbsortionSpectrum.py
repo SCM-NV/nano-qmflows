@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 Oscillator = namedtuple("Oscillator",
                         ('initialS', 'finalS', 'deltaE', 'fij', 'components'))
 
-# Planck constant in ev . s
+# Planck con`stant in ev . s
 hbar_evs = physical_constants['Planck constant over 2 pi in eV s'][0]
 
 
