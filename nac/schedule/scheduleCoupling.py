@@ -251,7 +251,7 @@ def swap_forward(overlaps: Tensor3D, swaps: Vector) -> Tensor3D:
 
     """
     for i, mtx in enumerate(np.rollaxis(overlaps, 0)):
-        overlaps[i] = mtx[:, swaps][swap_indexes]
+        overlaps[i] = mtx[:, swaps][swaps]
 
     return overlaps
 
