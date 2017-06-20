@@ -272,7 +272,8 @@ def calcOscillatorStrenghts(
     else:
         # Compute the Dipole matrices and store them in the HDF5
         mtx_integrals_spher = calcDipoleCGFS(atoms, dictCGFs, rc, trans_mtx)
-        store_arrays_in_hdf5(path_dipole_matrices, mtx_integrals_spher)
+        store_arrays_in_hdf5(path_hdf5, path_dipole_matrices,
+                             mtx_integrals_spher)
 
     oscillators = [
         compute_oscillator_strength(
