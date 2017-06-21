@@ -3,9 +3,10 @@ __author__ = "Felipe Zapata"
 # ==========> Standard libraries and third-party <===============
 
 from multipoleObaraSaika import sab
-from nac.common import (List, Tuple)
 from nac.integrals.multipoleIntegrals import (general_multipole_matrix,
                                               build_primitives_gaussian)
+from typing import (List, Tuple)
+
 # ====================================<>=======================================
 
 

@@ -2,7 +2,7 @@
 from nac.common import (Matrix, Vector, retrieve_hdf5_data, search_data_in_hdf5,
                         store_arrays_in_hdf5)
 from nac.integrals.multipoleIntegrals import calcMtxMultipoleP
-from nac.integrals.nonadiabatic import calculate_spherical_overlap
+from nac.integrals.nonAdiabaticCoupling import calculate_spherical_overlap
 from os.path import  join
 from scipy import sparse
 from typing import (Dict, List)
@@ -14,7 +14,6 @@ def compute_overlaps_ET(
         dictCGFs: Dict, enumerate_from) -> List:
     """
     Given a list of molecular geometries and some indices for the fragment
-    
     """
     # Read Cartesian to spherical transformation matrix
     trans_mtx = sparse.csr_matrix(
