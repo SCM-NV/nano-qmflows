@@ -194,7 +194,3 @@ def compute_indices_fragments_mos(
     fragment_ranges = indices_range_CGFs[vector_indices]
 
     return np.concatenate(list(starmap(np.arange, fragment_ranges)))
-
-
-
-# xs[np.repeat(v, 4), np.tile(v, 4)].reshape(4,4)

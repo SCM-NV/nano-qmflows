@@ -34,17 +34,15 @@ def calculate_ETR(
         pyxaid_range: Tuple=None, fragment_indices: None=List,
         dt: float=1):
     """
-    Use a md trajectory to calculate the Electron transfer rate
-    nmad.
+    Use a md trajectory to calculate the Electron transfer rate.
 
     :param package_name: Name of the package to run the QM simulations.
     :param project_name: Folder name where the computations
     are going to be stored.
-    :param package_args: Specific settings for the package
+    :param package_args: Specific settings for the package.
     :param path_hdf5: Path to the HDF5 file that contains the
     numerical results.
-    :param geometries: List of string cotaining the molecular geometries
-                       numerical results.
+    :param geometries: List of string cotaining the molecular geometries.
     :paramter dictCGFS: Dictionary from Atomic Label to basis set
     :type     dictCGFS: Dict String [CGF],
               CGF = ([Primitives], AngularMomentum),
@@ -52,12 +50,15 @@ def calculate_ETR(
     :param calc_new_wf_guess_on_points: number of Computations that used a
                                         previous calculation as guess for the
                                         wave function.
+    :param nHOMO: index of the HOMO orbital.
+    :param couplings_range: Range of MO use to compute the nonadiabatic
+    :param pyxaid_range: range of HOMOs and LUMOs used by pyxaid.
     :param enumerate_from: Number from where to start enumerating the folders
                            create for each point in the MD.
     :param traj_folders: List of paths to where the CP2K MOs are printed.
      :param package_config: Parameters required by the Package.
-    :param pyxaid_range: range of HOMOs and LUMOs used by pyxaid.
-    :param fragment_indices: indices of atoms belonging to a fragment
+    :param fragment_indices: indices of atoms belonging to a fragment.
+    :param dt: integration time used in the molecular dynamics.
     :returns: None
     """
     # prepare Cp2k Job
