@@ -26,12 +26,11 @@ def calculate_ETR(
         package_name: str, project_name: str, package_args: Dict,
         path_time_coeffs: str=None, geometries: List=None,
         initial_conditions: List=None, path_hdf5: str=None,
-        basisname: str=None,
+        basis_name: str=None,
         enumerate_from: int=0, package_config: Dict=None,
         calc_new_wf_guess_on_points: str=None, guess_args: Dict=None,
         work_dir: str=None, traj_folders: List=None,
-        dictCGFs: Dict=None, hdf5_trans_mtx: str=None,
-        nHOMO: int=None, couplings_range: Tuple=None,
+        dictCGFs: Dict=None, nHOMO: int=None, couplings_range: Tuple=None,
         pyxaid_range: Tuple=None, fragment_indices: None=List,
         dt: float=1):
     """
@@ -55,26 +54,12 @@ def calculate_ETR(
                                         wave function.
     :param enumerate_from: Number from where to start enumerating the folders
                            create for each point in the MD.
-    :param hdf5_trans_mtx: path inside the HDF5 to the transformation matrix
-    from cartesian to spherical orbitals.
     :param traj_folders: List of paths to where the CP2K MOs are printed.
-    :param package_config: Parameters required by the Package.
+     :param package_config: Parameters required by the Package.
     :param pyxaid_range: range of HOMOs and LUMOs used by pyxaid.
     :param fragment_indices: indices of atoms belonging to a fragment
     :returns: None
     """
-
-    hdf5_trans_mtx = store_transf_matrix(path_hdf5, atoms, basisname,
-                                         project_name, packageName='cp2k')
-
-    
-    map_index_pyxaid_hdf5 = create_map_index_pyxaid(
-        nHOMO, couplings_range, pyxaid_range)
-
-    # Time-dependent coefficients
-    time_depend_coeffs = read_time_dependent_coeffs(
-        path_time_coeffs, pyxaid_range)
-
     # prepare Cp2k Job
     # Point calculations Using CP2K
     mo_paths_hdf5 = calculate_mos(
@@ -89,19 +74,28 @@ def calculate_ETR(
     molecules_au = [change_mol_units(parse_string_xyz(gs))
                     for gs in geometries]
 
+    # Time-dependent coefficients
+    time_depend_coeffs = read_time_dependent_coeffs(
+        path_time_coeffs, pyxaid_range)
+
     # compute_overlaps_ET
     scheduled_overlaps = schedule(compute_overlaps_ET)
     fragment_overlaps = scheduled_overlaps(
-        project_name, molecules_au, path_hdf5, mo_paths_hdf5, hdf5_trans_mtx,
-        fragment_indices, dictCGFs, enumerate_from)
+        project_name, molecules_au, basis_name, path_hdf5, dictCGFs,
+        mo_paths_hdf5, fragment_indices, enumerate_from, package_name)
 
     # Delta time in a.u.
     dt_au = dt * femtosec2au
 
+    # Indices relation between the PYXAID active space and the orbitals
+    # stored in the HDF5
+    map_index_pyxaid_hdf5 = create_map_index_pyxaid(
+        nHOMO, couplings_range, pyxaid_range)
+
     # Electron transfer rate for each frame of the Molecular dynamics
     etrs = [compute_photoexcitation(
         i, path_hdf5, molecules_au[i: i + 3], time_depend_coeffs[i: i + 3],
-        fragment_overlaps[i: i + 3], dt_au)
+        fragment_overlaps[i: i + 3], map_index_pyxaid_hdf5, dt_au)
         for i in range(nPoints)]
 
     # Execute the workflow
@@ -116,8 +110,9 @@ def calculate_ETR(
 
 
 def compute_photoexcitation(
-        i: int, path_hdf5: str, geometries: List, time_depend_coeffs: Tensor3D,
-        fragment_overlaps: List, dt_au: float) -> List:
+        i: int, path_hdf5: str, geometries: List, time_dependent_coeffs: Matrix,
+        fragment_overlaps: List, map_index_pyxaid_hdf5: Matrix,
+        dt_au: float) -> List:
     """
     :param i: Electron transfer rate at time i * dt
     :param path_hdf5: Path to the HDF5 file that contains the
@@ -136,7 +131,8 @@ def compute_photoexcitation(
     overlaps = np.stack(retrieve_hdf5_data(path_hdf5, fragment_overlaps))
 
     return scheduled_photoexcitation(
-        geometries, time_depend_coeffs, overlaps, dt_au)
+        geometries, overlaps, time_dependent_coeffs, map_index_pyxaid_hdf5,
+        dt_au)
 
 
 def parse_population(filePath: str) -> Matrix:
@@ -168,9 +164,7 @@ def read_time_dependent_coeffs(
     # Read the data
     pss = map(parse_population, paths_out_pop)
 
-    coeffs = np.mean(np.stack(pss), axis=1)
-    
-    return 
+    return np.mean(np.stack(pss), axis=1)
 
 
 def create_map_index_pyxaid(
@@ -178,12 +172,12 @@ def create_map_index_pyxaid(
     """
     Creating an index mapping from PYXAID to the content of the HDF5.
     """
-    # Check user-defined PYXAID activate space
+    # Check user-defined PYXAID activate space and shift indices to 0
     pyxaid_range = pyxaid_range if pyxaid_range is not None else couplings_range
     pyxaid_homos, pyxaid_lumos = pyxaid_range
 
-    # Number of HOMOS and LUMOS defined for PYXAID
-    pyxaid_LUMO = pyxaid_homos + 1
+    # Number of HOMOS and LUMOS defined for PYXAID (counting from 0)
+    pyxaid_LUMO = pyxaid_homos
 
     # index of the lowest orbital in the HDF5 used by PYXAID
     lowest_homo = check_larger_than_zero(couplings_range[0] - pyxaid_homos)
@@ -205,7 +199,9 @@ def create_map_index_pyxaid(
     indexes_hdf5 = np.empty((number_of_indices, 2), dtype=np.int32)
 
     for i in range(number_of_indices):
-        indexes_hdf5[i] = compute_excitation_indexes[i]
+        indexes_hdf5[i] = compute_excitation_indexes(i)
+
+    return indexes_hdf5
 
 
 def check_larger_than_zero(val: int) -> int:
