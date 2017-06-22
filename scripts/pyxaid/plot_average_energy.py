@@ -66,8 +66,12 @@ def main(path_output, nstates, nconds):
 # Ensamble average over initial conditions of the electronic energy as a function of time
     el_ene_outs = np.average(np.sum(eav_outs, axis=1), axis=1)
     el_ene_pops = np.average(np.sum(eav_pops, axis=1), axis=1)
+# Ensamble average scaled to the lowest excitation energy. This way the cooling converge to 0. 
+    lowest_hl_gap = np.average(np.amin(energies[:,1:,:], axis=1), axis=1)
+    ene_outs_ref0 = el_ene_outs - lowest_hl_gap
+    ene_pops_ref0 = el_ene_pops - lowest_hl_gap
 
-    plot_stuff(el_ene_outs, el_ene_pops)
+    plot_stuff(ene_outs_ref0, ene_pops_ref0)
 
 
 def read_cmd_line(parser):
