@@ -5,10 +5,12 @@ from collections import namedtuple
 from itertools import chain
 from noodles import (gather, schedule)
 from nac.common import (
-    Matrix, Vector, change_mol_units, getmass, h2ev,
-    retrieve_hdf5_data, triang2mtx)
+    Matrix, Tensor3D, Vector, change_mol_units, getmass, h2ev,
+    retrieve_hdf5_data, search_data_in_hdf5, store_arrays_in_hdf5,
+    triang2mtx)
 from nac.integrals.multipoleIntegrals import calcMtxMultipoleP
 from nac.schedule.components import calculate_mos
+from os.path import join
 from qmworks import run
 from qmworks.parsers import parse_string_xyz
 from scipy import sparse
@@ -262,7 +264,16 @@ def calcOscillatorStrenghts(
     rc = compute_center_of_mass(atoms)
 
     # Dipole matrix element in spherical coordinates
-    mtx_integrals_spher = calcDipoleCGFS(atoms, dictCGFs, rc, trans_mtx)
+    path_dipole_matrices = join(project_name, 'point_{}'.format(i),
+                                'dipole_matrices')
+
+    if search_data_in_hdf5(path_hdf5, path_dipole_matrices):
+        mtx_integrals_spher = retrieve_hdf5_data(path_hdf5, path_dipole_matrices)
+    else:
+        # Compute the Dipole matrices and store them in the HDF5
+        mtx_integrals_spher = calcDipoleCGFS(atoms, dictCGFs, rc, trans_mtx)
+        store_arrays_in_hdf5(path_hdf5, path_dipole_matrices,
+                             mtx_integrals_spher)
 
     oscillators = [
         compute_oscillator_strength(
@@ -374,12 +385,12 @@ def calcDipoleCGFS(
                                  for kw in exponents)
     mtx_integrals_cart = tuple(triang2mtx(xs, dimCart)
                                for xs in mtx_integrals_triang)
-    return tuple(transform2Spherical(trans_mtx, x) for x
-                 in mtx_integrals_cart)
+    return np.stack(transform2Spherical(trans_mtx, x) for x
+                    in mtx_integrals_cart)
 
 
 def oscillator_strength(css_i: Matrix, css_j: Matrix, energy: float,
-                        mtx_integrals_spher: Matrix) -> Tuple:
+                        mtx_integrals_spher: Tensor3D) -> Tuple:
     """
     Calculate the oscillator strength between two state i and j using a
     molecular geometry in atomic units, a set of contracted gauss functions
@@ -390,6 +401,7 @@ def oscillator_strength(css_i: Matrix, css_j: Matrix, energy: float,
     :param css_i: MO coefficients of initial state
     :param css_j: MO coefficients of final state
     :param energy: energy difference i -> j.
+    :param mtx_integrals_triang: Tensor containing the dipole integrals
     :returns: Oscillator strength
     """
     components = tuple(
