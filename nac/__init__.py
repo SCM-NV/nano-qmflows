@@ -9,12 +9,11 @@ from .common import (Array, AtomBasisData, AtomBasisKey, AtomData, AtomXYZ,
                      store_arrays_in_hdf5, triang2mtx)
 
 from .integrals import (calcMtxMultipoleP, calcMtxOverlapP, calc_transf_matrix,
-                        calculate_couplings_levine, general_multipole_matrix,
-                        photo_excitation_rate)
+                        calculate_couplings_levine, general_multipole_matrix)
 
 from .schedule import (calculate_mos, create_dict_CGFs, create_point_folder,
-                       lazy_couplings, prepare_cp2k_settings,
-                       prepare_job_cp2k, split_file_geometries,
+                       lazy_couplings, prepare_cp2k_settings, prepare_job_cp2k,
+                       photo_excitation_rate, split_file_geometries,
                        write_hamiltonians)
 
 from .analysis import (autocorrelate, dephasing, gauss_function, parse_list_of_lists,
