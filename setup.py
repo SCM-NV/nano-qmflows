@@ -38,6 +38,6 @@ setup(
         'scripts/hamiltonians/plot_mos_energies.py', 'scripts/hamiltonians/plot_spectra.py',
         'scripts/pyxaid/plot_average_energy.py', 'scripts/pyxaid/plot_spectra_pyxaid.py',
         'scripts/pyxaid/plot_states_pops.py', 'scripts/qmworks/mergeHDF5.py',
-        'scripts/qmworks/removeCouplings.py', 'scripts/distribution/distribute_jobs.py',
+        'scripts/qmworks/removeHDF5folders.py', 'scripts/distribution/distribute_jobs.py',
         'scripts/distribution/merge_job.py']
 )
