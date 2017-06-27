@@ -20,7 +20,7 @@ import logging
 import numpy as np
 
 # Type hints
-from typing import (Dict, List, Tuple)
+from typing import (Any, Dict, List, Tuple)
 
 # Get logger
 logger = logging.getLogger(__name__)
@@ -40,7 +40,7 @@ def workflow_oscillator_strength(
         calc_new_wf_guess_on_points: str=None,
         path_hdf5: str=None, package_config: Dict=None,
         work_dir: str=None,
-        initial_states: List=None, final_states: List=None,
+        initial_states: Any=None, final_states: Any=None,
         traj_folders: List=None, hdf5_trans_mtx: str=None,
         nHOMO: int=None, couplings_range: Tuple=None,
         calculate_oscillator_every: int=50,
@@ -84,6 +84,10 @@ def workflow_oscillator_strength(
     # geometries in atomic units
     molecules_au = [change_mol_units(parse_string_xyz(gs))
                     for gs in geometries]
+
+    # Construct initial and final states ranges
+    initial_states, final_states = build_transitions(
+        initial_states, final_states, nHOMO)
 
     # Schedule the function the compute the Oscillator Strenghts
     scheduleOscillator = schedule(calcOscillatorStrenghts)
@@ -223,7 +227,7 @@ def calcOscillatorStrenghts(
         i: int, project_name: str,
         mo_paths_hdf5: str, dictCGFs: Dict,
         atoms: List, path_hdf5: str, hdf5_trans_mtx: str=None,
-        initial_states: List=None, final_states: List=None):
+        initial_states: Vector=None, final_states: Matrix=None):
 
     """
     Use the Molecular orbital Energies and Coefficients to compute the
@@ -432,3 +436,31 @@ def compute_center_of_mass(atoms: List) -> Tuple:
     cm = xs / total_mass
 
     return tuple(cm)
+
+
+def build_transitions(
+        initial_states: Any, final_states: Any, nHOMO: int) -> Tuple:
+    """
+    Build the set of initial state to compute the oscillator strengths with.
+    If the user provided two integers a range of transition is built assuming
+    that those numbers are the lowest ang highest orbitals to use in the space.
+    Otherwise it is assumed that the user provided the range of initial and
+    final orbitals.
+    """
+    if all(isinstance(s, list) for s in [initial_states, final_states]):
+        # Shift the range 1 to start the index at 0
+        initial = np.array(initial_states) - 1
+        final = np.array(final_states) - 1
+    elif all(isinstance(s, int) for s in [initial_states, final_states]):
+        # Create the range of initial and final states using the lowest
+        # and highest orbital provided by the user
+        initial = np.arange(initial_states - 1, nHOMO)
+        range_final = np.arange(nHOMO, final_states)
+        dim_x = initial.size
+        dim_y = range_final.size
+        # Matrix of final states
+        final = np.tile(range_final, initial).reshape(dim_x, dim_y)
+    else:
+        raise RuntimeError('I did not understand the initial and final state format')
+
+    return initial, final
