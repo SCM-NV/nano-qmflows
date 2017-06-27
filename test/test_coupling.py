@@ -91,9 +91,9 @@ def calculate_couplings_and_oscillators():
 
     data = workflow_oscillator_strength(
         'cp2k', project_name, cp2k_main, guess_args=cp2k_guess,
-        nHOMO=50, couplings_range=(50, 30), initial_states=[49],
+        nHOMO=50, couplings_range=(50, 30), initial_states=[50],
         energy_range=(0, 5),  # eV
-        final_states=[[51]], **initial_config)
+        final_states=[[52]], **initial_config)
 
     return data
 
