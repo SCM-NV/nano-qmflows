@@ -73,6 +73,9 @@ def compute_overlaps_ET(
     if not isinstance(fragment_indices, np.ndarray):
         fragment_indices = np.array(fragment_indices, dtype=np.int32)
 
+    # Shift the index 1 position to start from 0
+    fragment_indices -= 1
+
     # Matrix containing the lower and upper range for the CGFs of each atom
     # in order.
     indices_range_CGFs = create_indices_range_CGFs(molecules[0], dictCGFs)
