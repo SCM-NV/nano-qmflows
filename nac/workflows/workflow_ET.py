@@ -6,8 +6,7 @@ from nac.schedule.components import calculate_mos
 from nac.common import (
     Matrix, Tensor3D, Vector, change_mol_units, femtosec2au,
     retrieve_hdf5_data)
-from nac.schedule.scheduleET import compute_overlaps_ET
-from nac.integrals.electronTransfer import photo_excitation_rate
+from nac.schedule.scheduleET import (compute_overlaps_ET, photo_excitation_rate)
 from noodles import (gather, schedule)
 from os.path import join
 from qmworks import run
