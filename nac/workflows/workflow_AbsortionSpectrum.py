@@ -459,7 +459,7 @@ def build_transitions(
         dim_x = initial.size
         dim_y = range_final.size
         # Matrix of final states
-        final = np.tile(range_final, initial).reshape(dim_x, dim_y)
+        final = np.tile(range_final, dim_x).reshape(dim_x, dim_y)
     else:
         raise RuntimeError('I did not understand the initial and final state format')
 
