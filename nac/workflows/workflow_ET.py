@@ -100,7 +100,7 @@ def calculate_ETR(
         for i in range(nPoints)]
 
     # Execute the workflow
-    electronTransferRates = run(gather(*etrs))
+    electronTransferRates = run(gather(*etrs), folder=work_dir)
 
     rs = list(map(lambda ts: '{:10.6f} {:10.6f}\n'.format(*ts),
                   electronTransferRates))
