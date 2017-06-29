@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 
 
 def lazy_couplings(paths_overlaps: List, path_hdf5: str, project_name: str,
-                   enumerate_from: int, nHOMO: int, dt: float,
+                   enumerate_from: int, nHOMO: int, dt: float, tracking: bool,
                    algorithm='levine') -> List:
     """
     Compute the Nonadibatic coupling using a 3 point approximation. See:
@@ -42,8 +42,15 @@ def lazy_couplings(paths_overlaps: List, path_hdf5: str, project_name: str,
     such crossing must be track. see:
     J. Chem. Phys. 137, 014512 (2012); doi: 10.1063/1.4732536
     """
-    fixed_phase_overlaps, swaps = compute_the_fixed_phase_overlaps(
-        paths_overlaps, path_hdf5, project_name, enumerate_from, nHOMO)
+    if tracking:
+        fixed_phase_overlaps, swaps = compute_the_fixed_phase_overlaps(
+            paths_overlaps, path_hdf5, project_name, enumerate_from, nHOMO)
+    else:
+        # Do not track the crossings
+        fixed_phase_overlaps = np.stack(
+            retrieve_hdf5_data(path_hdf5, paths_overlaps))
+        nOverlaps, nOrbitals, _ = fixed_phase_overlaps.shape
+        swaps = np.tile(np.arange(nOrbitals), (nOverlaps + 1, 1))
 
     # Compute the couplings using either the levine method
     # or the 3Points approximation
@@ -243,9 +250,15 @@ def swap_forward(overlaps: Tensor3D, swaps: Vector) -> Tensor3D:
     """
     Track all the crossings that happend previous to the current
     time.
+    Swap the index i corresponding to the ith Molecular orbital
+    with the corresponding swap at time t0.
+    Repeat the same procedure with the index and swap at time t1.
+    The swaps are compute with the linear sum assignment algorithm from Scipy.
+    https://docs.scipy.org/doc/scipy-0.18.1/reference/generated/scipy.optimize.linear_sum_assignment.html
+
     """
     for i, mtx in enumerate(np.rollaxis(overlaps, 0)):
-        overlaps[i] = swap_indexes(mtx, swaps)
+        overlaps[i] = mtx[:, swaps][swaps]
 
     return overlaps
 
@@ -416,27 +429,6 @@ def write_hamiltonians(path_hdf5: str, mo_paths: List,
     # The couplings are compute at time t + dt therefore
     # we associate the energies at time t + dt with the corresponding coupling
     return [write_data(i) for i in range(nPoints)]
-
-
-def swap_indexes(arr: Matrix, swaps_t: Vector) -> Matrix:
-    """
-    Swap the index i corresponding to the ith Molecular orbital
-    with the corresponding swap at time t0.
-    Repeat the same procedure with the index and swap at time t1.
-    The swaps are compute with the linear sum assignment algorithm from Scipy.
-    https://docs.scipy.org/doc/scipy-0.18.1/reference/generated/scipy.optimize.linear_sum_assignment.html
-    """
-    dim = arr.shape[0]
-
-    # New Matrix where the matrix elements have been swap according
-    # to the states
-    brr = np.empty((dim, dim))
-
-    for k in range(dim):
-        indexes = np.repeat(swaps_t[k], dim), swaps_t
-        brr[k] = arr[indexes]
-
-    return brr
 
 
 def swap_columns(arr: Matrix, swaps_t: Vector) -> Matrix:
