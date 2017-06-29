@@ -81,7 +81,7 @@ def compute_overlaps_ET(
     indices_range_CGFs = create_indices_range_CGFs(molecules[0], dictCGFs)
 
     fragment_overlaps = []
-    for vector_indices in np.rollaxis(fragment_indices):
+    for vector_indices in np.rollaxis(fragment_indices, axis=0):
         # extract the atoms of the fragment
         frames_fragment_atoms = [[mol[i] for i in vector_indices]
                                  for mol in molecules]
