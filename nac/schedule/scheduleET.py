@@ -1,8 +1,8 @@
 
-from itertools import starmap
+from itertools import (groupby, starmap)
 from nac.common import (
     Array, Matrix, Tensor3D, Vector, retrieve_hdf5_data, search_data_in_hdf5,
-    store_arrays_in_hdf5)
+    store_arrays_in_hdf5, triang2mtx)
 from nac.integrals.multipoleIntegrals import calcMtxMultipoleP
 from nac.integrals.nonAdiabaticCoupling import calculate_spherical_overlap
 from nac.integrals.spherical_Cartesian_cgf import calc_transf_matrix
@@ -76,13 +76,19 @@ def compute_overlaps_ET(
     # Shift the index 1 position to start from 0
     fragment_indices -= 1
 
+    # Reshape to a matrix if there is only 1 fragment
+    if np.ndim(fragment_indices) == 1:
+        size = fragment_indices.size
+        fragment_indices = fragment_indices.reshape(1, size)
+
     # Matrix containing the lower and upper range for the CGFs of each atom
     # in order.
-    indices_range_CGFs = create_indices_range_CGFs(molecules[0], dictCGFs)
+    indices_range_CGFs_spherical = create_indices_range_CGFs_spherical(
+        molecules[0], dictCGFs)
 
     fragment_overlaps = []
     for vector_indices in np.rollaxis(fragment_indices, axis=0):
-        # extract the atoms of the fragment
+        # Extract atoms belonging to the fragment
         frames_fragment_atoms = [[mol[i] for i in vector_indices]
                                  for mol in molecules]
         # compute the transformation matrix from cartesian to spherical
@@ -95,7 +101,7 @@ def compute_overlaps_ET(
         # Compute the indices of the MOs corresponding to the atoms in the
         # fragments
         indices_fragment_mos = compute_indices_fragments_mos(
-            vector_indices, indices_range_CGFs)
+            vector_indices, indices_range_CGFs_spherical)
 
         # Overlap matrix for the given fragment
         overlaps = compute_frames_fragment_overlap(
@@ -108,47 +114,51 @@ def compute_overlaps_ET(
 
 
 def compute_frames_fragment_overlap(
-        project_name: str, molecules: str, path_hdf5: str, mo_paths_hdf5: List,
-        indices_fragment_mos: Vector, dictCGFs: Dict, sparse_trans_mtx: Matrix,
-        enumerate_from: int, fragment_hash: int) -> List:
-
+        project_name: str, frames_fragment_atoms: List, path_hdf5: str,
+        mo_paths_hdf5: List, indices_fragment_mos: Vector, dictCGFs: Dict,
+        sparse_trans_mtx: Matrix, enumerate_from: int,
+        fragment_hash: int) -> List:
     """
     Compute all the overlap matrices for the frames of a molecular dynamics
     for a given fragment.
     """
     # Path to store the fragment overlap matrices in the HDF5
-    range_points = range(enumerate_from, enumerate_from + len(molecules))
+    range_points = range(
+        enumerate_from, enumerate_from + len(frames_fragment_atoms))
     paths = [join(project_name, 'point_{}'.format(i),
                   'fragment_overlap_hash_{}'.format(fragment_hash))
              for i in range_points]
 
     return [compute_fragment_overlap(
-        path_hdf5, p, mol, path_mos, indices_fragment_mos, dictCGFs,
+        path_hdf5, p, fragment, path_mos, indices_fragment_mos, dictCGFs,
         sparse_trans_mtx)
-        for p, mol, path_mos in zip(paths, molecules, mo_paths_hdf5)]
+        for p, fragment, path_mos in
+            zip(paths, frames_fragment_atoms, mo_paths_hdf5)]
 
 
 def compute_fragment_overlap(
-        path_hdf5: str, path_overlap: str, mol: List, path_mos: str,
-        indices_fragment_mos: Vector, dictCGFs: Dict, fragment_indices: Vector,
-        trans_mtx: Matrix) -> str:
+        path_hdf5: str, path_overlap: str, fragment_atoms: List, path_mos: str,
+        indices_fragment_mos: Vector, dictCGFs: Dict, trans_mtx: Matrix) -> str:
     """
     Compute the overlap matrix only for those atoms included in the fragment
     """
     if not search_data_in_hdf5(path_hdf5, path_overlap):
-        # Extract atoms belonging to the fragment
-        fragment_atoms = [mol[i] for i in fragment_indices]
         # Compute the overlap in the atomic basis
-        overlap_AO = calcMtxMultipoleP(fragment_atoms, dictCGFs)
-
+        dim_cart = trans_mtx.shape[1]
+        overlap_AO = triang2mtx(
+            calcMtxMultipoleP(fragment_atoms, dictCGFs), dim_cart)
         # Read all the molecular orbital coefficients
         coefficients = retrieve_hdf5_data(path_hdf5, path_mos[1])
+        # Number of Orbitals stored in the HDF5
+        dim_y = coefficients.shape[1]
         # Extract the coefficients belonging to the fragment
-        dim = indices_fragment_mos.size
-        fragment_coefficients = coefficients[
-            np.repeat(indices_fragment_mos, dim),
-            np.tile(indices_fragment_mos, dim)].reshape(dim, dim)
+        dim_x = indices_fragment_mos.size
 
+        # Extract the MO Coefficients belonging to the fragment
+        x_range = np.repeat(indices_fragment_mos, dim_y)
+        y_range = np.tile(np.arange(dim_y), dim_x) 
+        fragment_coefficients = coefficients[x_range, y_range].reshape(dim_x, dim_y)
+        
         # Compute the overlap in spherical coordinates
         overlap_spherical = calculate_spherical_overlap(
             trans_mtx, overlap_AO, fragment_coefficients, fragment_coefficients)
@@ -157,21 +167,47 @@ def compute_fragment_overlap(
     return path_overlap
 
 
-def create_indices_range_CGFs(molecule: List, dictCGFs: Dict) -> Matrix:
+def create_indices_range_CGFs_spherical(molecule: List, dictCGFs: Dict) -> Matrix:
     """
     Creates a matrix containing the lower and upper(exclusive) indices
     of the CGFs for each atoms in order.
     """
+    # Compute how many CGFs are in Spherical coordinates
+    
+    lens_CGFs_spherical = compute_lens_CGFs_sphericals(molecule, dictCGFs)
     ranges = np.empty((len(molecule), 2), dtype=np.int32)
 
     lower = 0
     for i, at in enumerate(molecule):
-        upper = lower + len(dictCGFs[at.symbol])
+        upper = lower + lens_CGFs_spherical[at.symbol]
         ranges[i] = lower, upper
         lower = upper
 
     return ranges
 
+
+def compute_lens_CGFs_sphericals(molecule: List, dictCGFs: Dict) -> Dict:
+    """
+    Calculate how many CGFs in sphericals are there per atom
+    """
+    # Number of CGFs per angular momenta in Cartesian coordinates
+    CGFs_cartesians = {'S': 1, 'P': 3, 'D': 6, 'F': 10}
+
+    # Number of CGFs per angular momenta in spherical coordinates
+    CGFs_sphericals = {'S': 1, 'P': 3, 'D': 5, 'F': 7}
+    
+    # Unique labels
+    labels = set(at.symbol for at in molecule)
+
+    # Compute number of spherical CGFs per atoms
+    lens_CGFs_spherical = {
+        l : int(
+            sum(len(list(vals)) * CGFs_sphericals[g] / CGFs_cartesians[g]
+                for g, vals in groupby(dictCGFs[l], lambda cgf: cgf.orbType[0])))
+        for l in labels}
+
+    return lens_CGFs_spherical
+    
 
 def compute_fragment_trans_mtx(
         path_hdf5: str, basis_name: str, fragment_atoms: List,
