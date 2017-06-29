@@ -6,7 +6,8 @@ from nac.schedule.components import calculate_mos
 from nac.common import (
     Matrix, Tensor3D, Vector, change_mol_units, femtosec2au,
     retrieve_hdf5_data)
-from nac.schedule.scheduleET import (compute_overlaps_ET, photo_excitation_rate)
+from nac.schedule.scheduleET import compute_overlaps_ET
+from nac.integrals.electronTransfer import photo_excitation_rate
 from noodles import (gather, schedule)
 from os.path import join
 from qmworks import run
@@ -93,7 +94,8 @@ def calculate_ETR(
         nHOMO, couplings_range, pyxaid_range)
 
     # Electron transfer rate for each frame of the Molecular dynamics
-    etrs = [compute_photoexcitation(
+    scheduled_photoexcitation = schedule(compute_photoexcitation)
+    etrs = [scheduled_photoexcitation(
         i, path_hdf5, molecules_au[i: i + 3], time_depend_coeffs[i: i + 3],
         fragment_overlaps[i: i + 3], map_index_pyxaid_hdf5, dt_au)
         for i in range(nPoints)]
@@ -127,10 +129,9 @@ def compute_photoexcitation(
     :param dt_au: Delta time in atomic units
     :returns: promise to path to the Coupling inside the HDF5.
     """
-    scheduled_photoexcitation = schedule(photo_excitation_rate)
     overlaps = np.stack(retrieve_hdf5_data(path_hdf5, fragment_overlaps))
 
-    return scheduled_photoexcitation(
+    return photo_excitation_rate(
         geometries, overlaps, time_dependent_coeffs, map_index_pyxaid_hdf5,
         dt_au)
 
