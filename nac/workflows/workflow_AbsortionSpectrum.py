@@ -352,9 +352,9 @@ def write_oscillator(
     initial_ev = initialE * h2ev
     final_ev = finalE * h2ev
     energy_nm = 1240 / energy_ev
-    fmt = '{}->{} {:12.5f} {:12.5f} {:12.5f} {:12.5f} {:12.5f} \
+    fmt = '{} -> {} {:12.5f} {:12.5f} {:12.5f} {:12.5f} {:12.5f} \
     {:11.5f} {:11.5f} {:11.5f}\n'.format(
-        initialS, finalS, initial_ev, final_ev, energy_ev,
+        initialS+1, finalS+1, initial_ev, final_ev, energy_ev,
         energy_nm, fij, *components)
 
     with open(filename, 'a') as f:
