@@ -59,7 +59,7 @@ def calculate_ETR(
     :param fragment_indices: indices of atoms belonging to a fragment.
     :param dt: integration time used in the molecular dynamics.
     :returns: None
-    """
+    """    
     # prepare Cp2k Job
     # Point calculations Using CP2K
     mo_paths_hdf5 = calculate_mos(
@@ -67,17 +67,14 @@ def calculate_ETR(
         package_args, guess_args, calc_new_wf_guess_on_points,
         enumerate_from, package_config=package_config)
 
-    # Number of ETR points calculated with the MD trajectory
-    nPoints = len(geometries) - 2
-
     # geometries in atomic units
     molecules_au = [change_mol_units(parse_string_xyz(gs))
                     for gs in geometries]
-
+    
     # Time-dependent coefficients
     time_depend_coeffs = read_time_dependent_coeffs(
         path_time_coeffs, pyxaid_range)
-
+    
     # compute_overlaps_ET
     scheduled_overlaps = schedule(compute_overlaps_ET)
     fragment_overlaps = scheduled_overlaps(
@@ -92,15 +89,17 @@ def calculate_ETR(
     map_index_pyxaid_hdf5 = create_map_index_pyxaid(
         nHOMO, couplings_range, pyxaid_range)
 
+    # Number of ETR points calculated with the MD trajectory
+    n_points = len(geometries) - 2
+
     # Electron transfer rate for each frame of the Molecular dynamics
     scheduled_photoexcitation = schedule(compute_photoexcitation)
-    etrs = [scheduled_photoexcitation(
-        i, path_hdf5, molecules_au[i: i + 3], time_depend_coeffs[i: i + 3],
-        fragment_overlaps[i: i + 3], map_index_pyxaid_hdf5, dt_au)
-        for i in range(nPoints)]
+    etrs = scheduled_photoexcitation(
+        path_hdf5, time_depend_coeffs, fragment_overlaps,
+        map_index_pyxaid_hdf5, n_points, dt_au)
 
     # Execute the workflow
-    electronTransferRates = run(gather(*etrs), folder=work_dir)
+    electronTransferRates = run(etrs, folder=work_dir)
 
     rs = list(map(lambda ts: '{:10.6f} {:10.6f}\n'.format(*ts),
                   electronTransferRates))
@@ -111,9 +110,9 @@ def calculate_ETR(
 
 
 def compute_photoexcitation(
-        i: int, path_hdf5: str, geometries: List, time_dependent_coeffs: Matrix,
-        fragment_overlaps: List, map_index_pyxaid_hdf5: Matrix,
-        dt_au: float) -> List:
+        path_hdf5: str, time_dependent_coeffs: Matrix,
+        paths_fragment_overlaps: List, map_index_pyxaid_hdf5: Matrix,
+        n_points: int, dt_au: float) -> List:
     """
     :param i: Electron transfer rate at time i * dt
     :param path_hdf5: Path to the HDF5 file that contains the
@@ -128,11 +127,17 @@ def compute_photoexcitation(
     :param dt_au: Delta time in atomic units
     :returns: promise to path to the Coupling inside the HDF5.
     """
-    overlaps = np.stack(retrieve_hdf5_data(path_hdf5, fragment_overlaps))
+    results = []
+    for paths_overlaps in paths_fragment_overlaps:
+        overlaps = np.stack(retrieve_hdf5_data(path_hdf5, paths_overlaps))
 
-    return photo_excitation_rate(
-        geometries, overlaps, time_dependent_coeffs, map_index_pyxaid_hdf5,
-        dt_au)
+        etr = np.array([
+            photo_excitation_rate(
+            overlaps[i: i + 3], time_dependent_coeffs[i: i + 3], map_index_pyxaid_hdf5, dt_au)
+            for i in range(n_points)])
+        results.append(etr)
+
+    return np.concatenate(results)
 
 
 def parse_population(filePath: str) -> Matrix:

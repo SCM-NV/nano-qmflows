@@ -1,7 +1,7 @@
 
 from itertools import (groupby, starmap)
 from nac.common import (
-    Array, Matrix, Tensor3D, Vector, retrieve_hdf5_data, search_data_in_hdf5,
+    Matrix, Tensor3D, Vector, retrieve_hdf5_data, search_data_in_hdf5,
     store_arrays_in_hdf5, triang2mtx)
 from nac.integrals.multipoleIntegrals import calcMtxMultipoleP
 from nac.integrals.nonAdiabaticCoupling import calculate_spherical_overlap
@@ -14,9 +14,8 @@ import numpy as np
 
 
 def photo_excitation_rate(
-        geometries: Tuple, tensor_overlaps: Tensor3D,
-        time_dependent_coeffs: Matrix, map_index_pyxaid_hdf5: Matrix,
-        dt_au: float) -> Tuple:
+        tensor_overlaps: Tensor3D, time_dependent_coeffs: Matrix,
+        map_index_pyxaid_hdf5: Matrix, dt_au: float) -> Tuple:
     """
     Calculate the Electron transfer rate, using both adiabatic and nonadiabatic
     components, using equation number 8 from:
@@ -25,8 +24,6 @@ def photo_excitation_rate(
     Interface.
     The derivatives are calculated numerically using 3 points.
 
-    :param geometry: Molecular geometries.
-    :type geometry: ([AtomXYZ], [AtomXYZ], [AtomXYZ])
     :param tensor_overlaps: Overlap matrices at time t - dt, t and t + dt.
     :param time_dependent_coeffs: Time-dependentent coefficients
     at time t - dt, t and t + dt.
@@ -62,24 +59,15 @@ def photo_excitation_rate(
 def compute_overlaps_ET(
         project_name: str, molecules: List, basis_name: str,
         path_hdf5: str, dictCGFs: Dict, mo_paths_hdf5: List,
-        fragment_indices: Array, enumerate_from: int,
+        fragment_indices: List, enumerate_from: int,
         package_name: int) -> List:
     """
     Given a list of molecular fragments compute the Overlaps in the
     molecular orbital basis for the different fragments and for all the
     molecular frames.
     """
-    # Convert the indices to a numpy array
-    if not isinstance(fragment_indices, np.ndarray):
-        fragment_indices = np.array(fragment_indices, dtype=np.int32)
-
-    # Shift the index 1 position to start from 0
-    fragment_indices -= 1
-
-    # Reshape to a matrix if there is only 1 fragment
-    if np.ndim(fragment_indices) == 1:
-        size = fragment_indices.size
-        fragment_indices = fragment_indices.reshape(1, size)
+    # Preprocess the indices of the atomic fragments
+    fragment_indices = sanitize_fragment_indices(fragment_indices)
 
     # Matrix containing the lower and upper range for the CGFs of each atom
     # in order.
@@ -233,3 +221,25 @@ def compute_indices_fragments_mos(
     fragment_ranges = indices_range_CGFs[vector_indices]
 
     return np.concatenate(list(starmap(np.arange, fragment_ranges)))
+
+
+def sanitize_fragment_indices(fragment_indices: List) -> Matrix:
+    """
+    transform to numpy array and start the indices from 0.
+
+    :param fragment_indices: indices of the atoms belonging to the different
+    molecular fragments.
+    """
+    # Convert the indices to a numpy array
+    if not isinstance(fragment_indices, np.ndarray):
+        fragment_indices = np.array(fragment_indices, dtype=np.int)
+
+    # Shift the index 1 position to start from 0
+    fragment_indices -= 1
+
+    # Reshape to a matrix if there is only 1 fragment
+    if np.ndim(fragment_indices) == 1:
+        size = fragment_indices.size
+        fragment_indices = fragment_indices.reshape(1, size)
+
+    return fragment_indices
