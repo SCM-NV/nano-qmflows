@@ -27,7 +27,8 @@ logger = logging.getLogger(__name__)
 
 # Named tuple
 Oscillator = namedtuple("Oscillator",
-                        ('initialS', 'finalS', 'deltaE', 'fij', 'components'))
+                        ('initialS', 'finalS',  'initialE', 'finalE',
+                         'deltaE', 'fij', 'components'))
 
 # Planck constant in ev . s
 hbar_evs = physical_constants['Planck constant over 2 pi in eV s'][0]
@@ -218,7 +219,7 @@ def lorentzian_distribution(
     Phys. Chem. Chem. Phys., 2010, 12, 4959–4967
     """
     cte = (hbar_evs * delta) / (2 * np.pi)
-    denominator = (x - center) ** 2  + (delta / 2) ** 2
+    denominator = (x - center) ** 2 + (delta / 2) ** 2
 
     return cte * (1 / denominator)
 
@@ -272,7 +273,8 @@ def calcOscillatorStrenghts(
                                 'dipole_matrices')
 
     if search_data_in_hdf5(path_hdf5, path_dipole_matrices):
-        mtx_integrals_spher = retrieve_hdf5_data(path_hdf5, path_dipole_matrices)
+        mtx_integrals_spher = retrieve_hdf5_data(
+            path_hdf5, path_dipole_matrices)
     else:
         # Compute the Dipole matrices and store them in the HDF5
         mtx_integrals_spher = calcDipoleCGFS(atoms, dictCGFs, rc, trans_mtx)
@@ -320,7 +322,8 @@ def compute_oscillator_strength(
         st = 'transition {:d} -> {:d} Fij = {:f}\n'.format(
             initialS, finalS, fij)
         logger.info(st)
-        osc = Oscillator(initialS, finalS, deltaE, fij, components)
+        osc = Oscillator(
+            initialS, finalS, energy_i, energy_j, deltaE, fij, components)
         xs.append(osc)
 
     return xs
@@ -330,7 +333,7 @@ def write_information(data: Tuple) -> None:
     """
     Write to a file the oscillator strenght information
     """
-    header = "Transition Energy[eV] Energy[nm^-1] fij Transition_dipole_components [a.u.]\n"
+    header = "Transition initial_state[eV] final_state[eV] delta_energy[eV] delta_energy[nm^-1] fij Transition_dipole_components [a.u.]\n"
     filename = 'oscillators.txt'
     with open(filename, 'w') as f:
         f.write(header)
@@ -340,15 +343,19 @@ def write_information(data: Tuple) -> None:
 
 
 def write_oscillator(
-        filename: str, initialS: int, finalS: int, deltaE: float, fij: float,
-        components: Tuple) -> None:
+        filename: str, initialS: int, finalS: int, initialE: float,
+        finalE: float, deltaE: float, fij: float, components: Tuple) -> None:
     """
     Write oscillator strenght information in one file
     """
     energy_ev = deltaE * h2ev
+    initial_ev = initialE * h2ev
+    final_ev = finalE * h2ev
     energy_nm = 1240 / energy_ev
-    fmt = '{}->{} {:12.5f} {:12.5f} {:12.5f} {:11.5f} {:11.5f} {:11.5f}\n'.format(
-        initialS, finalS, energy_ev, energy_nm, fij, *components)
+    fmt = '{}->{} {:12.5f} {:12.5f} {:12.5f} {:12.5f} {:12.5f} \
+    {:11.5f} {:11.5f} {:11.5f}\n'.format(
+        initialS, finalS, initial_ev, final_ev, energy_ev,
+        energy_nm, fij, *components)
 
     with open(filename, 'a') as f:
         f.write(fmt)
