@@ -112,15 +112,6 @@ def calculate_ETR(
     for i, mtx in enumerate(electronTransferRates):
         write_ETR(mtx, i)
 
-def write_ETR(mtx, i):
-    """
-    Save the ETR in human readable format
-    """
-    file_name = "electronTranferRates_fragment_{}.txt".format(i)
-    header = 'Nonadiabatic Adibatic'
-    arr = np.column_stack((mtx, np.sum(mtx, axis=1)))
-    np.savetxt(file_name, arr, fmt='%5e', header=header)
-
 
 def compute_photoexcitation(
         path_hdf5: str, time_dependent_coeffs: Matrix,
@@ -222,3 +213,13 @@ def create_map_index_pyxaid(
         indexes_hdf5[i + 1] = compute_excitation_indexes(i)
 
     return indexes_hdf5
+
+
+def write_ETR(mtx, i):
+    """
+    Save the ETR in human readable format
+    """
+    file_name = "electronTranferRates_fragment_{}.txt".format(i)
+    header = 'Nonadiabatic  Adibatic Total'
+    arr = np.column_stack((mtx, np.sum(mtx, axis=1)))
+    np.savetxt(file_name, arr, fmt='{:^3}'.format('%e'), header=header)
