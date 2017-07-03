@@ -13,10 +13,14 @@ from qmworks import run
 from qmworks.parsers import parse_string_xyz
 
 import fnmatch
+import logging
 import numpy as np
 import os
 
 from typing import (Dict, List, Tuple)
+
+# Get logger
+logger = logging.getLogger(__name__)
 
 # ==============================> Main <==================================
 
@@ -60,8 +64,13 @@ def calculate_ETR(
     :param dt: integration time used in the molecular dynamics.
     :returns: None
     """    
-    # prepare Cp2k Job
-    # Point calculations Using CP2K
+    # Start logging event
+    file_log = '{}.log'.format(project_name)
+    logging.basicConfig(filename=file_log, level=logging.DEBUG,
+                        format='%(levelname)s:%(message)s  %(asctime)s\n',
+                        datefmt='%m/%d/%Y %I:%M:%S %p')
+
+    # prepare Cp2k Job point calculations Using CP2K
     mo_paths_hdf5 = calculate_mos(
         package_name, geometries, project_name, path_hdf5, traj_folders,
         package_args, guess_args, calc_new_wf_guess_on_points,
@@ -100,8 +109,6 @@ def calculate_ETR(
     # Execute the workflow
     electronTransferRates = run(etrs, folder=work_dir)
 
-    print(electronTransferRates)
-
     for i, mtx in enumerate(electronTransferRates):
         write_ETR(mtx, i)
 
@@ -111,7 +118,8 @@ def write_ETR(mtx, i):
     """
     file_name = "electronTranferRates_fragment_{}.txt".format(i)
     header = 'Nonadiabatic Adibatic'
-    np.savetxt(file_name, mtx, fmt='%5e', header=header)
+    arr = np.column_stack((mtx, np.sum(mtx, axis=1)))
+    np.savetxt(file_name, arr, fmt='%5e', header=header)
 
 
 def compute_photoexcitation(
@@ -172,7 +180,8 @@ def read_time_dependent_coeffs(
     # Read the data
     pss = map(parse_population, paths_out_pop)
 
-    return np.mean(np.stack(pss), axis=1)
+    rss = np.stack(pss)
+    return np.mean(rss, axis=0)
 
 
 def create_map_index_pyxaid(
@@ -213,14 +222,3 @@ def create_map_index_pyxaid(
         indexes_hdf5[i + 1] = compute_excitation_indexes(i)
 
     return indexes_hdf5
-
-
-def check_larger_than_zero(val: int) -> int:
-    """
-    Check than an index is larger than zero
-    """
-    if val >= 0:
-        return val
-    else:
-        msg = "The molecular orbitals is out of range, check the `pyxaid_range` var"
-        raise RuntimeError(msg)
