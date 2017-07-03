@@ -7,7 +7,7 @@ from nac.common import (
     Matrix, Tensor3D, Vector, change_mol_units, femtosec2au,
     retrieve_hdf5_data)
 from nac.schedule.scheduleET import (compute_overlaps_ET, photo_excitation_rate)
-from noodles import (gather, schedule)
+from noodles import schedule
 from os.path import join
 from qmworks import run
 from qmworks.parsers import parse_string_xyz
@@ -29,9 +29,9 @@ def calculate_ETR(
         enumerate_from: int=0, package_config: Dict=None,
         calc_new_wf_guess_on_points: str=None, guess_args: Dict=None,
         work_dir: str=None, traj_folders: List=None,
-        dictCGFs: Dict=None, nHOMO: int=None, couplings_range: Tuple=None,
-        pyxaid_range: Tuple=None, fragment_indices: None=List,
-        dt: float=1):
+        dictCGFs: Dict=None, orbitals_range: Tuple=None,
+        pyxaid_HOMO: int=None, pyxaid_Nmin: int=None, pyxaid_Nmax: int=None,
+        fragment_indices: None=List, dt: float=1):
     """
     Use a md trajectory to calculate the Electron transfer rate.
 
@@ -72,8 +72,7 @@ def calculate_ETR(
                     for gs in geometries]
     
     # Time-dependent coefficients
-    time_depend_coeffs = read_time_dependent_coeffs(
-        path_time_coeffs, pyxaid_range)
+    time_depend_coeffs = read_time_dependent_coeffs(path_time_coeffs)
     
     # compute_overlaps_ET
     scheduled_overlaps = schedule(compute_overlaps_ET)
@@ -87,7 +86,7 @@ def calculate_ETR(
     # Indices relation between the PYXAID active space and the orbitals
     # stored in the HDF5
     map_index_pyxaid_hdf5 = create_map_index_pyxaid(
-        nHOMO, couplings_range, pyxaid_range)
+        orbitals_range, pyxaid_HOMO, pyxaid_Nmin, pyxaid_Nmax)
 
     # Number of ETR points calculated with the MD trajectory
     n_points = len(geometries) - 2
@@ -97,16 +96,22 @@ def calculate_ETR(
     etrs = scheduled_photoexcitation(
         path_hdf5, time_depend_coeffs, fragment_overlaps,
         map_index_pyxaid_hdf5, n_points, dt_au)
-
+    
     # Execute the workflow
     electronTransferRates = run(etrs, folder=work_dir)
 
-    rs = list(map(lambda ts: '{:10.6f} {:10.6f}\n'.format(*ts),
-                  electronTransferRates))
-    result = ''.join(rs)
+    print(electronTransferRates)
 
-    with open("ElectronTranferRates", "w") as f:
-        f.write(result)
+    for i, mtx in enumerate(electronTransferRates):
+        write_ETR(mtx, i)
+
+def write_ETR(mtx, i):
+    """
+    Save the ETR in human readable format
+    """
+    file_name = "electronTranferRates_fragment_{}.txt".format(i)
+    header = 'Nonadiabatic Adibatic'
+    np.savetxt(file_name, mtx, fmt='%5e', header=header)
 
 
 def compute_photoexcitation(
@@ -137,7 +142,7 @@ def compute_photoexcitation(
             for i in range(n_points)])
         results.append(etr)
 
-    return np.concatenate(results)
+    return np.stack(results)
 
 
 def parse_population(filePath: str) -> Matrix:
@@ -153,12 +158,10 @@ def parse_population(filePath: str) -> Matrix:
 
 
 def read_time_dependent_coeffs(
-        path_pyxaid_out: str, pyxaid_range: Tuple) -> Tensor3D:
+        path_pyxaid_out: str) -> Tensor3D:
     """
     :param path_pyxaid_out: Path to the out of the NA-MD carried out by
     PYXAID.
-    :type path_pyxaid_out: String
-    :param pyxaid_range: range of HOMOs and LUMOs used by pyxaid.
     :returns: Numpy array
     """
     # Read output files
@@ -173,38 +176,41 @@ def read_time_dependent_coeffs(
 
 
 def create_map_index_pyxaid(
-        homo: int, couplings_range: Tuple, pyxaid_range: Tuple) -> Matrix:
+        orbitals_range: Tuple, pyxaid_HOMO: int, pyxaid_Nmin: int,
+        pyxaid_Nmax: int) -> Matrix:
     """
     Creating an index mapping from PYXAID to the content of the HDF5.
     """
-    # Check user-defined PYXAID activate space and shift indices to 0
-    pyxaid_range = pyxaid_range if pyxaid_range is not None else couplings_range
-    pyxaid_homos, pyxaid_lumos = pyxaid_range
+    number_of_HOMOs = pyxaid_HOMO - pyxaid_Nmin + 1
+    number_of_LUMOs = pyxaid_Nmax - pyxaid_HOMO
 
-    # Number of HOMOS and LUMOS defined for PYXAID (counting from 0)
-    pyxaid_LUMO = pyxaid_homos
+    # Shift range to start counting from 0
+    pyxaid_Nmax -= 1
+    pyxaid_Nmin -= 1
 
-    # index of the lowest orbital in the HDF5 used by PYXAID
-    lowest_homo = check_larger_than_zero(couplings_range[0] - pyxaid_homos)
-
+    # Pyxaid LUMO counting from 0
+    pyxaid_LUMO = pyxaid_HOMO 
+    
     def compute_excitation_indexes(index_ext: int) -> Vector:
         """
         create the index of the orbitals involved in the excitation i -> j.
         """
         # final state
-        j_index = lowest_homo + pyxaid_LUMO + (index_ext // pyxaid_homos)
+        j_index = pyxaid_LUMO + (index_ext // number_of_HOMOs)
         # initial state
-        i_index = lowest_homo + (index_ext % pyxaid_homos)
+        i_index = pyxaid_Nmin + (index_ext % number_of_HOMOs)
 
         return np.array((i_index, j_index), dtype=np.int32)
 
-    # Generate all the excitation indexes of pyxaid
-    number_of_indices = pyxaid_homos * pyxaid_lumos
+    # Generate all the excitation indexes of pyxaid including the ground state
+    number_of_indices = number_of_HOMOs * number_of_LUMOs
+    indexes_hdf5 = np.empty((number_of_indices + 1, 2), dtype=np.int32)
 
-    indexes_hdf5 = np.empty((number_of_indices, 2), dtype=np.int32)
-
+    # Ground state 
+    indexes_hdf5[0] = pyxaid_Nmin, pyxaid_Nmin
+    
     for i in range(number_of_indices):
-        indexes_hdf5[i] = compute_excitation_indexes(i)
+        indexes_hdf5[i + 1] = compute_excitation_indexes(i)
 
     return indexes_hdf5
 
