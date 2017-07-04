@@ -134,7 +134,7 @@ def cp2k_input(range_orbitals, cell_parameters, cell_angles,
     cp2k_args.cell_angles = cell_angles
     main_dft = cp2k_args.specific.cp2k.force_eval.dft
     main_dft.scf.added_mos = added_mos
-    main_dft.scf.max_scf = 200
+    main_dft.scf.max_scf = 40  
     main_dft.scf.eps_scf = 5e-4
     main_dft['print']['mo']['mo_index_range'] = "{} {}".format(*range_orbitals)
     cp2k_args.specific.cp2k.force_eval.subsys.cell.periodic = 'None'
