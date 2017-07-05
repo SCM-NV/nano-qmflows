@@ -10,7 +10,11 @@ from os.path import  join
 from scipy import sparse
 from typing import (Dict, List, Tuple)
 import h5py
+import logging
 import numpy as np
+
+# Get logger
+logger = logging.getLogger(__name__)
 
 
 def photo_excitation_rate(
@@ -75,7 +79,8 @@ def compute_overlaps_ET(
         molecules[0], dictCGFs)
 
     fragment_overlaps = []
-    for vector_indices in np.rollaxis(fragment_indices, axis=0):
+    for k, vector_indices in enumerate(fragment_indices):
+        logging.info("Computing Overlaps for molecular fragment: {}".format(k))
         # Extract atoms belonging to the fragment
         frames_fragment_atoms = [[mol[i] for i in vector_indices]
                                  for mol in molecules]
@@ -85,7 +90,9 @@ def compute_overlaps_ET(
 
         # create a Hash for the fragment
         fragment_hash = hash(vector_indices.tostring())
-
+        logging.info("The overlaps for the molecular fragment number {} are going \
+        to be stored in the hdf5 using the following hash: {}".format(k, fragment_hash))
+        
         # Compute the indices of the MOs corresponding to the atoms in the
         # fragments
         indices_fragment_mos = compute_indices_fragments_mos(
@@ -130,6 +137,7 @@ def compute_fragment_overlap(
     """
     Compute the overlap matrix only for those atoms included in the fragment
     """
+    logging.info("Computing overlaps: {}".format(path_overlap))
     if not search_data_in_hdf5(path_hdf5, path_overlap):
         # Compute the overlap in the atomic basis
         dim_cart = trans_mtx.shape[1]
@@ -231,15 +239,12 @@ def sanitize_fragment_indices(fragment_indices: List) -> Matrix:
     molecular fragments.
     """
     # Convert the indices to a numpy array
-    if not isinstance(fragment_indices, np.ndarray):
-        fragment_indices = np.array(fragment_indices, dtype=np.int)
-
+    if isinstance(fragment_indices[0], list):
+        fragment_indices = [np.array(xs, dtype=np.int) for xs in fragment_indices]
+    else:
+        fragment_indices = [np.array(fragment_indices, dtype=np.int)]
+        
     # Shift the index 1 position to start from 0
-    fragment_indices -= 1
-
-    # Reshape to a matrix if there is only 1 fragment
-    if np.ndim(fragment_indices) == 1:
-        size = fragment_indices.size
-        fragment_indices = fragment_indices.reshape(1, size)
+    fragment_indices = [xs - 1 for xs in fragment_indices]
 
     return fragment_indices

@@ -82,7 +82,7 @@ def calculate_ETR(
     
     # Time-dependent coefficients
     time_depend_coeffs = read_time_dependent_coeffs(path_time_coeffs)
-    
+    logger.info("Reading time_dependent coefficients from: {}".format(path_time_coeffs))
     # compute_overlaps_ET
     scheduled_overlaps = schedule(compute_overlaps_ET)
     fragment_overlaps = scheduled_overlaps(
@@ -131,6 +131,8 @@ def compute_photoexcitation(
     :param dt_au: Delta time in atomic units
     :returns: promise to path to the Coupling inside the HDF5.
     """
+    logging.info("Computing the photo-excitation rate for the molecular fragments")
+
     results = []
     for paths_overlaps in paths_fragment_overlaps:
         overlaps = np.stack(retrieve_hdf5_data(path_hdf5, paths_overlaps))
