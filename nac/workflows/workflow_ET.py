@@ -6,7 +6,8 @@ from nac.schedule.components import calculate_mos
 from nac.common import (
     Matrix, Tensor3D, Vector, change_mol_units, femtosec2au,
     retrieve_hdf5_data)
-from nac.schedule.scheduleET import (compute_overlaps_ET, photo_excitation_rate)
+from nac.schedule.scheduleET import (
+    compute_overlaps_ET, photo_excitation_rate)
 from noodles import schedule
 from os.path import join
 from qmworks import run
@@ -63,7 +64,7 @@ def calculate_ETR(
     :param fragment_indices: indices of atoms belonging to a fragment.
     :param dt: integration time used in the molecular dynamics.
     :returns: None
-    """    
+    """
     # Start logging event
     file_log = '{}.log'.format(project_name)
     logging.basicConfig(filename=file_log, level=logging.DEBUG,
@@ -79,7 +80,7 @@ def calculate_ETR(
     # geometries in atomic units
     molecules_au = [change_mol_units(parse_string_xyz(gs))
                     for gs in geometries]
-    
+
     # Time-dependent coefficients
     time_depend_coeffs = read_time_dependent_coeffs(path_time_coeffs)
     logger.info("Reading time_dependent coefficients from: {}".format(path_time_coeffs))
@@ -105,7 +106,7 @@ def calculate_ETR(
     etrs = scheduled_photoexcitation(
         path_hdf5, time_depend_coeffs, fragment_overlaps,
         map_index_pyxaid_hdf5, n_points, dt_au)
-    
+
     # Execute the workflow
     electronTransferRates = run(etrs, folder=work_dir)
 
@@ -131,7 +132,8 @@ def compute_photoexcitation(
     :param dt_au: Delta time in atomic units
     :returns: promise to path to the Coupling inside the HDF5.
     """
-    logging.info("Computing the photo-excitation rate for the molecular fragments")
+    msg = "Computing the photo-excitation rate for the molecular fragments"
+    logger.info(msg)
 
     results = []
     for paths_overlaps in paths_fragment_overlaps:
@@ -139,7 +141,8 @@ def compute_photoexcitation(
 
         etr = np.array([
             photo_excitation_rate(
-            overlaps[i: i + 3], time_dependent_coeffs[i: i + 3], map_index_pyxaid_hdf5, dt_au)
+                overlaps[i: i + 3], time_dependent_coeffs[i: i + 3],
+                map_index_pyxaid_hdf5, dt_au)
             for i in range(n_points)])
         results.append(etr)
 
@@ -167,7 +170,7 @@ def read_time_dependent_coeffs(
     """
     # Read output files
     files_out = os.listdir(path_pyxaid_out)
-    names_out_pop  = fnmatch.filter(files_out, "out*")
+    names_out_pop = fnmatch.filter(files_out, "out*")
     paths_out_pop = (join(path_pyxaid_out, x) for x in names_out_pop)
 
     # Read the data
@@ -191,8 +194,8 @@ def create_map_index_pyxaid(
     pyxaid_Nmin -= 1
 
     # Pyxaid LUMO counting from 0
-    pyxaid_LUMO = pyxaid_HOMO 
-    
+    pyxaid_LUMO = pyxaid_HOMO
+
     def compute_excitation_indexes(index_ext: int) -> Vector:
         """
         create the index of the orbitals involved in the excitation i -> j.
@@ -208,9 +211,9 @@ def create_map_index_pyxaid(
     number_of_indices = number_of_HOMOs * number_of_LUMOs
     indexes_hdf5 = np.empty((number_of_indices + 1, 2), dtype=np.int32)
 
-    # Ground state 
+    # Ground state
     indexes_hdf5[0] = pyxaid_Nmin, pyxaid_Nmin
-    
+
     for i in range(number_of_indices):
         indexes_hdf5[i + 1] = compute_excitation_indexes(i)
 

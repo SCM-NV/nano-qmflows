@@ -81,7 +81,7 @@ def compute_overlaps_ET(
 
     fragment_overlaps = []
     for k, vector_indices in enumerate(fragment_indices):
-        logging.info("Computing Overlaps for molecular fragment: {}".format(k))
+        logger.info("Computing Overlaps for molecular fragment: {}".format(k))
         # Extract atoms belonging to the fragment
         frames_fragment_atoms = [[mol[i] for i in vector_indices]
                                  for mol in molecules]
@@ -91,9 +91,9 @@ def compute_overlaps_ET(
 
         # create a Hash for the fragment
         fragment_hash = hashlib.md5(vector_indices.tostring()).hexdigest()
-        logging.info("The overlaps for the molecular fragment number {} are going \
+        logger.info("The overlaps for the molecular fragment number {} are going \
         to be stored in the hdf5 using the following hash: {}".format(k, fragment_hash))
-        
+
         # Compute the indices of the MOs corresponding to the atoms in the
         # fragments
         indices_fragment_mos = compute_indices_fragments_mos(
@@ -129,16 +129,16 @@ def compute_frames_fragment_overlap(
         path_hdf5, p, fragment, path_mos, indices_fragment_mos, dictCGFs,
         sparse_trans_mtx)
         for p, fragment, path_mos in
-            zip(paths, frames_fragment_atoms, mo_paths_hdf5)]
+        zip(paths, frames_fragment_atoms, mo_paths_hdf5)]
 
 
 def compute_fragment_overlap(
         path_hdf5: str, path_overlap: str, fragment_atoms: List, path_mos: str,
-        indices_fragment_mos: Vector, dictCGFs: Dict, trans_mtx: Matrix) -> str:
+        indices_fragment_mos: Vector, dictCGFs: Dict,
+        trans_mtx: Matrix) -> str:
     """
     Compute the overlap matrix only for those atoms included in the fragment
     """
-    logging.info("Computing overlaps: {}".format(path_overlap))
     if not search_data_in_hdf5(path_hdf5, path_overlap):
         # Compute the overlap in the atomic basis
         dim_cart = trans_mtx.shape[1]
@@ -153,24 +153,27 @@ def compute_fragment_overlap(
 
         # Extract the MO Coefficients belonging to the fragment
         x_range = np.repeat(indices_fragment_mos, dim_y)
-        y_range = np.tile(np.arange(dim_y), dim_x) 
+        y_range = np.tile(np.arange(dim_y), dim_x)
         fragment_coefficients = coefficients[x_range, y_range].reshape(dim_x, dim_y)
-        
+
         # Compute the overlap in spherical coordinates
         overlap_spherical = calculate_spherical_overlap(
             trans_mtx, overlap_AO, fragment_coefficients, fragment_coefficients)
         store_arrays_in_hdf5(path_hdf5, path_overlap, overlap_spherical)
+    else:
+        logger.info("overlap:{} already on HDF5".format(path_overlap))
 
     return path_overlap
 
 
-def create_indices_range_CGFs_spherical(molecule: List, dictCGFs: Dict) -> Matrix:
+def create_indices_range_CGFs_spherical(
+        molecule: List, dictCGFs: Dict) -> Matrix:
     """
     Creates a matrix containing the lower and upper(exclusive) indices
     of the CGFs for each atoms in order.
     """
     # Compute how many CGFs are in Spherical coordinates
-    
+
     lens_CGFs_spherical = compute_lens_CGFs_sphericals(molecule, dictCGFs)
     ranges = np.empty((len(molecule), 2), dtype=np.int32)
 
@@ -198,13 +201,13 @@ def compute_lens_CGFs_sphericals(molecule: List, dictCGFs: Dict) -> Dict:
 
     # Compute number of spherical CGFs per atoms
     lens_CGFs_spherical = {
-        l : int(
+        l: int(
             sum(len(list(vals)) * CGFs_sphericals[g] / CGFs_cartesians[g]
                 for g, vals in groupby(dictCGFs[l], lambda cgf: cgf.orbType[0])))
         for l in labels}
 
     return lens_CGFs_spherical
-    
+
 
 def compute_fragment_trans_mtx(
         path_hdf5: str, basis_name: str, fragment_atoms: List,
@@ -244,7 +247,7 @@ def sanitize_fragment_indices(fragment_indices: List) -> Matrix:
         fragment_indices = [np.array(xs, dtype=np.int) for xs in fragment_indices]
     else:
         fragment_indices = [np.array(fragment_indices, dtype=np.int)]
-        
+
     # Shift the index 1 position to start from 0
     fragment_indices = [xs - 1 for xs in fragment_indices]
 
