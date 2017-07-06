@@ -6,9 +6,10 @@ from nac.common import (
 from nac.integrals.multipoleIntegrals import calcMtxMultipoleP
 from nac.integrals.nonAdiabaticCoupling import calculate_spherical_overlap
 from nac.integrals.spherical_Cartesian_cgf import calc_transf_matrix
-from os.path import  join
+from os.path import join
 from scipy import sparse
 from typing import (Dict, List, Tuple)
+import hashlib
 import h5py
 import logging
 import numpy as np
@@ -89,7 +90,7 @@ def compute_overlaps_ET(
             path_hdf5, basis_name, frames_fragment_atoms[0], package_name)
 
         # create a Hash for the fragment
-        fragment_hash = hash(vector_indices.tostring())
+        fragment_hash = hashlib.md5(vector_indices.tostring()).hexdigest()
         logging.info("The overlaps for the molecular fragment number {} are going \
         to be stored in the hdf5 using the following hash: {}".format(k, fragment_hash))
         
