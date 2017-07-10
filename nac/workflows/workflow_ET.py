@@ -63,7 +63,7 @@ def calculate_ETR(
     :param fragment_indices: indices of atoms belonging to a fragment.
     :param dt: integration time used in the molecular dynamics.
     :returns: None
-    """    
+    """
     # Start logging event
     file_log = '{}.log'.format(project_name)
     logging.basicConfig(filename=file_log, level=logging.DEBUG,
@@ -79,10 +79,10 @@ def calculate_ETR(
     # geometries in atomic units
     molecules_au = [change_mol_units(parse_string_xyz(gs))
                     for gs in geometries]
-    
+
     # Time-dependent coefficients
     time_depend_coeffs = read_time_dependent_coeffs(path_time_coeffs)
-    
+
     # compute_overlaps_ET
     scheduled_overlaps = schedule(compute_overlaps_ET)
     fragment_overlaps = scheduled_overlaps(
@@ -105,7 +105,7 @@ def calculate_ETR(
     etrs = scheduled_photoexcitation(
         path_hdf5, time_depend_coeffs, fragment_overlaps,
         map_index_pyxaid_hdf5, n_points, dt_au)
-    
+
     # Execute the workflow
     electronTransferRates = run(etrs, folder=work_dir)
 
@@ -189,8 +189,8 @@ def create_map_index_pyxaid(
     pyxaid_Nmin -= 1
 
     # Pyxaid LUMO counting from 0
-    pyxaid_LUMO = pyxaid_HOMO 
-    
+    pyxaid_LUMO = pyxaid_HOMO
+
     def compute_excitation_indexes(index_ext: int) -> Vector:
         """
         create the index of the orbitals involved in the excitation i -> j.
@@ -206,9 +206,9 @@ def create_map_index_pyxaid(
     number_of_indices = number_of_HOMOs * number_of_LUMOs
     indexes_hdf5 = np.empty((number_of_indices + 1, 2), dtype=np.int32)
 
-    # Ground state 
+    # Ground state
     indexes_hdf5[0] = pyxaid_Nmin, pyxaid_Nmin
-    
+
     for i in range(number_of_indices):
         indexes_hdf5[i + 1] = compute_excitation_indexes(i)
 

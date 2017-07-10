@@ -144,9 +144,8 @@ def compute_fragment_overlap(
 
         # Extract the MO Coefficients belonging to the fragment
         x_range = np.repeat(indices_fragment_mos, dim_y)
-        y_range = np.tile(np.arange(dim_y), dim_x) 
+        y_range = np.tile(np.arange(dim_y), dim_x)
         fragment_coefficients = coefficients[x_range, y_range].reshape(dim_x, dim_y)
-        
         # Compute the overlap in spherical coordinates
         overlap_spherical = calculate_spherical_overlap(
             trans_mtx, overlap_AO, fragment_coefficients, fragment_coefficients)
@@ -161,7 +160,7 @@ def create_indices_range_CGFs_spherical(molecule: List, dictCGFs: Dict) -> Matri
     of the CGFs for each atoms in order.
     """
     # Compute how many CGFs are in Spherical coordinates
-    
+
     lens_CGFs_spherical = compute_lens_CGFs_sphericals(molecule, dictCGFs)
     ranges = np.empty((len(molecule), 2), dtype=np.int32)
 
@@ -183,7 +182,7 @@ def compute_lens_CGFs_sphericals(molecule: List, dictCGFs: Dict) -> Dict:
 
     # Number of CGFs per angular momenta in spherical coordinates
     CGFs_sphericals = {'S': 1, 'P': 3, 'D': 5, 'F': 7}
-    
+
     # Unique labels
     labels = set(at.symbol for at in molecule)
 
