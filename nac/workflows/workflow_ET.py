@@ -6,7 +6,8 @@ from nac.schedule.components import calculate_mos
 from nac.common import (
     Matrix, Tensor3D, Vector, change_mol_units, femtosec2au,
     retrieve_hdf5_data)
-from nac.schedule.scheduleET import (compute_overlaps_ET, photo_excitation_rate)
+from nac.schedule.scheduleET import (
+    compute_overlaps_ET, photo_excitation_rate)
 from noodles import schedule
 from os.path import join
 from qmworks import run
@@ -83,6 +84,8 @@ def calculate_ETR(
     # Time-dependent coefficients
     time_depend_coeffs = read_time_dependent_coeffs(path_time_coeffs)
 
+    logger.info("Reading time_dependent coefficients from: {}".format(path_time_coeffs))
+
     # compute_overlaps_ET
     scheduled_overlaps = schedule(compute_overlaps_ET)
     fragment_overlaps = scheduled_overlaps(
@@ -131,13 +134,17 @@ def compute_photoexcitation(
     :param dt_au: Delta time in atomic units
     :returns: promise to path to the Coupling inside the HDF5.
     """
+    msg = "Computing the photo-excitation rate for the molecular fragments"
+    logger.info(msg)
+
     results = []
     for paths_overlaps in paths_fragment_overlaps:
         overlaps = np.stack(retrieve_hdf5_data(path_hdf5, paths_overlaps))
 
         etr = np.array([
             photo_excitation_rate(
-            overlaps[i: i + 3], time_dependent_coeffs[i: i + 3], map_index_pyxaid_hdf5, dt_au)
+                overlaps[i: i + 3], time_dependent_coeffs[i: i + 3],
+                map_index_pyxaid_hdf5, dt_au)
             for i in range(n_points)])
         results.append(etr)
 
@@ -165,7 +172,7 @@ def read_time_dependent_coeffs(
     """
     # Read output files
     files_out = os.listdir(path_pyxaid_out)
-    names_out_pop  = fnmatch.filter(files_out, "out*")
+    names_out_pop = fnmatch.filter(files_out, "out*")
     paths_out_pop = (join(path_pyxaid_out, x) for x in names_out_pop)
 
     # Read the data
