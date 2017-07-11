@@ -37,12 +37,9 @@ def photo_excitation_rate(
     :param dt_au: Delta time integration used in the dynamics.
     :returns: tuple containing both nonadiabatic and adiabatic components
     """
-    # indices of the i -> j transitions used by PYXAID
-    initial = map_index_pyxaid_hdf5[:, 0]
-    final = map_index_pyxaid_hdf5[:, 1]
-
     # Rearrange the overlap matrix in the PYXAID order
-    matrix_overlap_pyxaid_order = tensor_overlaps[1][initial, final]
+    matrix_overlap_pyxaid_order = retrieve_overlap_elements(
+        map_index_pyxaid_hdf5, tensor_overlaps[1])
 
     # Density of the fragment
     density = np.dot(matrix_overlap_pyxaid_order ** 2,
@@ -59,12 +56,31 @@ def photo_excitation_rate(
     overlap_derv = np.apply_along_axis(
         lambda v: (v[0] - v[2]) / (2 * dt_au), 0, tensor_overlaps)
 
-    overlap_derv_pyxaid_order = overlap_derv[initial, final]
+    overlap_derv_pyxaid_order = retrieve_overlap_elements(
+        map_index_pyxaid_hdf5, overlap_derv)
 
     adiabatic = np.dot(time_dependent_coeffs[1] ** 2,
                        overlap_derv_pyxaid_order ** 2)
 
     return density, nonadiabatic, adiabatic
+
+
+def retrieve_overlap_elements(
+        map_index_pyxaid_hdf5: Matrix, arr: Matrix) -> Matrix:
+    """
+    Read the overlap elements in the PYXAID STATES order
+    """
+    # Resulring matrix
+    overlaps = np.empty(map_index_pyxaid_hdf5.size)
+
+    # indices of the i -> j transitions used by PYXAID
+    for k, (i, j) in enumerate(np.rollaxis(map_index_pyxaid_hdf5, axis=1)):
+        s_ii = arr[i, i]
+        s_jj = arr[j, j]
+        s_ij = arr[i, j]
+        overlaps[k] = s_ii * s_jj - (s_ij ** 2)
+
+    return overlaps
 
 
 def compute_overlaps_ET(
