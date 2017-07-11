@@ -71,10 +71,10 @@ def retrieve_overlap_elements(
     Read the overlap elements in the PYXAID STATES order
     """
     # Resulring matrix
-    overlaps = np.empty(map_index_pyxaid_hdf5.size)
+    overlaps = np.empty(map_index_pyxaid_hdf5.shape[0])
 
     # indices of the i -> j transitions used by PYXAID
-    for k, (i, j) in enumerate(np.rollaxis(map_index_pyxaid_hdf5, axis=1)):
+    for k, (i, j) in enumerate(np.rollaxis(map_index_pyxaid_hdf5, axis=0)):
         s_ii = arr[i, i]
         s_jj = arr[j, j]
         s_ij = arr[i, j]
