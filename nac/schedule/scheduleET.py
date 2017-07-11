@@ -38,27 +38,33 @@ def photo_excitation_rate(
     :returns: tuple containing both nonadiabatic and adiabatic components
     """
     # indices of the i -> j transitions used by PYXAID
-    row_indices = map_index_pyxaid_hdf5[:, 0]
-    col_indices = map_index_pyxaid_hdf5[:, 1]
+    initial = map_index_pyxaid_hdf5[:, 0]
+    final = map_index_pyxaid_hdf5[:, 1]
 
     # Rearrange the overlap matrix in the PYXAID order
-    matrix_overlap_pyxaid_order = tensor_overlaps[1][row_indices, col_indices]
+    matrix_overlap_pyxaid_order = tensor_overlaps[1][initial, final]
+
+    # Density of the fragment
+    density = np.dot(matrix_overlap_pyxaid_order ** 2,
+                     time_dependent_coeffs[1] ** 2)
 
     # NonAdiabatic component
     coeff_derivatives = np.apply_along_axis(
         lambda v: (v[0] - v[2]) / (2 * dt_au), 0, time_dependent_coeffs)
 
-    nonadiabatic = np.sum(coeff_derivatives * matrix_overlap_pyxaid_order)
+    nonadiabatic = np.dot(coeff_derivatives ** 2,
+                          matrix_overlap_pyxaid_order ** 2)
 
     # Adiabatic component
     overlap_derv = np.apply_along_axis(
         lambda v: (v[0] - v[2]) / (2 * dt_au), 0, tensor_overlaps)
 
-    overlap_derv_pyxaid_order = overlap_derv[row_indices, col_indices]
+    overlap_derv_pyxaid_order = overlap_derv[initial, final]
 
-    adiabatic = np.sum(time_dependent_coeffs[1] * overlap_derv_pyxaid_order)
+    adiabatic = np.dot(time_dependent_coeffs[1] ** 2,
+                       overlap_derv_pyxaid_order ** 2)
 
-    return nonadiabatic, adiabatic
+    return density, nonadiabatic, adiabatic
 
 
 def compute_overlaps_ET(
