@@ -43,13 +43,13 @@ def photo_excitation_rate(
 
     # Density of the fragment
     density = np.dot(matrix_overlap_pyxaid_order ** 2,
-                     time_dependent_coeffs[1] ** 2)
+                     time_dependent_coeffs[1])
 
     # NonAdiabatic component
     coeff_derivatives = np.apply_along_axis(
         lambda v: (v[0] - v[2]) / (2 * dt_au), 0, time_dependent_coeffs)
 
-    nonadiabatic = np.dot(coeff_derivatives ** 2,
+    nonadiabatic = np.dot(coeff_derivatives,
                           matrix_overlap_pyxaid_order ** 2)
 
     # Adiabatic component
@@ -59,7 +59,7 @@ def photo_excitation_rate(
     overlap_derv_pyxaid_order = retrieve_overlap_elements(
         map_index_pyxaid_hdf5, overlap_derv)
 
-    adiabatic = np.dot(time_dependent_coeffs[1] ** 2,
+    adiabatic = np.dot(time_dependent_coeffs[1],
                        overlap_derv_pyxaid_order ** 2)
 
     return density, nonadiabatic, adiabatic
