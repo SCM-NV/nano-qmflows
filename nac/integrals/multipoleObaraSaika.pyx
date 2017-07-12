@@ -66,27 +66,28 @@ cpdef double sab_efg(tuple gs1, tuple gs2, tuple rc, int e, int f, int g) except
     cdef double c1, c2, cte, e1, e2, p, u
     cdef double rab, rp, rpa, rpb, rpc, s00, prod = 1
     cdef int i, l1x, l2x
-    cdef list r1, r2
+    cdef list r1, r2, multipoles
     cdef str l1, l2
-    cdef list multipoles = [e, f, g]
 
     r1, l1, (c1, e1) = gs1
     r2, l2, (c2, e2) = gs2
     cte = sqrt(M_PI/ (e1 + e2))
     u = e1 * e2 / (e1 + e2)
     p = 1.0 / (2.0 * (e1 + e2))
+    multipoles = [e, f, g]
 
-    for i in range(3):
-        l1x = calcOrbType_ComponentsC(l1, i)
-        l2x = calcOrbType_ComponentsC(l2, i)
-        rp = (e1 * r1[i] + e2 * r2[i]) / (e1 + e2)
-        rab = r1[i] - r2[i]
-        rpa = rp - r1[i]
-        rpb = rp - r2[i]
-        rpc = rp - rc[i]
-        s00 = cte * exp(-u * rab ** 2.0)
-        # select the exponent of the multipole 
-        prod *= obaraSaikaMultipole(p, s00, rpa, rpb, rpc, l1x, l2x, multipoles[i]) 
+    i = 0 if e != 0 else (1 if f != 0 else 2)
+
+    l1x = calcOrbType_ComponentsC(l1, i)
+    l2x = calcOrbType_ComponentsC(l2, i)
+    rp = (e1 * r1[i] + e2 * r2[i]) / (e1 + e2)
+    rab = r1[i] - r2[i]
+    rpa = rp - r1[i]
+    rpb = rp - r2[i]
+    rpc = rp - rc[i]
+    s00 = cte * exp(-u * rab ** 2.0)
+    # select the exponent of the multipole 
+    prod = obaraSaikaMultipole(p, s00, rpa, rpb, rpc, l1x, l2x, multipoles[i]) 
     
     return c1 * c2 * prod
 
