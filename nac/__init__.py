@@ -9,12 +9,11 @@ from .common import (Array, AtomBasisData, AtomBasisKey, AtomData, AtomXYZ,
                      store_arrays_in_hdf5, triang2mtx)
 
 from .integrals import (calcMtxMultipoleP, calcMtxOverlapP, calc_transf_matrix,
-                        calculate_couplings_levine, general_multipole_matrix,
-                        photoExcitationRate)
+                        calculate_couplings_levine, general_multipole_matrix)
 
 from .schedule import (calculate_mos, create_dict_CGFs, create_point_folder,
-                       lazy_couplings, prepare_cp2k_settings,
-                       prepare_job_cp2k, split_file_geometries,
+                       lazy_couplings, prepare_cp2k_settings, prepare_job_cp2k,
+                       photo_excitation_rate, split_file_geometries,
                        write_hamiltonians)
 
 from .analysis import (autocorrelate, dephasing, gauss_function, parse_list_of_lists,
@@ -37,7 +36,7 @@ __all__ = ['Array', 'AtomBasisData', 'AtomBasisKey', 'AtomData', 'AtomXYZ',
            'gauss_function', 'general_multipole_matrix',
            'generate_pyxaid_hamiltonians',
            'getmass', 'hbar', 'initialize', 'lazy_couplings',
-           'parse_list_of_lists', 'photoExcitationRate',
+           'parse_list_of_lists', 'photo_excitation_rate',
            'prepare_cp2k_settings', 'prepare_job_cp2k', 'r2meV',
            'read_couplings', 'read_energies', 'retrieve_hdf5_data',
            'search_data_in_hdf5', 'spectral_density', 'split_file_geometries',

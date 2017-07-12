@@ -30,7 +30,7 @@ Oscillator = namedtuple("Oscillator",
                         ('initialS', 'finalS',  'initialE', 'finalE',
                          'deltaE', 'fij', 'components'))
 
-# Planck constant in ev . s
+# Planck con`stant in ev . s
 hbar_evs = physical_constants['Planck constant over 2 pi in eV s'][0]
 
 

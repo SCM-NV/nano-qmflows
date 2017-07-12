@@ -5,10 +5,12 @@ __author__ = "Felipe Zapata"
 from multipoleObaraSaika import sab
 from nac.integrals.multipoleIntegrals import (general_multipole_matrix,
                                               build_primitives_gaussian)
+from typing import (List, Tuple)
+
 # ====================================<>=======================================
 
 
-def sijContracted(t1, t2):
+def sijContracted(t1: Tuple, t2: Tuple):
     """
     Matrix entry calculation between two Contracted Gaussian functions.
     Equivalent to < t1| t2 >.
@@ -44,7 +46,7 @@ def calcMatrixEntry(xyz_cgfs, ixs):
     return sijContracted(t1, t2)
 
 
-def calcMtxOverlapP(atoms, cgfsN):
+def calcMtxOverlapP(atoms: List, cgfsN: List):
     """
     Overlap matrix entry calculation between two Contracted Gaussian functions
     """

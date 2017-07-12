@@ -2,146 +2,156 @@ __author__ = "Felipe Zapata"
 
 # ================> Python Standard  and third-party <==========
 
-from .components import calculate_mos
-from nac.common import (change_mol_units, retrieve_hdf5_data)
-from nac.integrals.electronTransfer import photoExcitationRate
-from nac.workflows import initialize
-from noodles import gather
+from nac.schedule.components import calculate_mos
+from nac.common import (
+    Matrix, Tensor3D, Vector, change_mol_units, femtosec2au,
+    retrieve_hdf5_data)
+from nac.schedule.scheduleET import (
+    compute_overlaps_ET, photo_excitation_rate)
+from noodles import schedule
 from os.path import join
 from qmworks import run
 from qmworks.parsers import parse_string_xyz
-from scm import plams
 
 import fnmatch
-import h5py
+import logging
 import numpy as np
 import os
 
+from typing import (Dict, List, Tuple)
+
+# Get logger
+logger = logging.getLogger(__name__)
 
 # ==============================> Main <==================================
 
 
-def calculate_ETR(package_name, project_name, package_args, geometries=None,
-                  pathTimeCoeffs=None, initial_conditions=None,
-                  path_hdf5=None, enumerate_from=0, package_config=None,
-                  calc_new_wf_guess_on_points=None, guess_args=None,
-                  work_dir=None, traj_folders=None, basisname=None,
-                  dictCGFs=None, hdf5_trans_mtx=None):
+def calculate_ETR(
+        package_name: str, project_name: str, package_args: Dict,
+        path_time_coeffs: str=None, geometries: List=None,
+        initial_conditions: List=None, path_hdf5: str=None,
+        basis_name: str=None,
+        enumerate_from: int=0, package_config: Dict=None,
+        calc_new_wf_guess_on_points: str=None, guess_args: Dict=None,
+        work_dir: str=None, traj_folders: List=None,
+        dictCGFs: Dict=None, orbitals_range: Tuple=None,
+        pyxaid_HOMO: int=None, pyxaid_Nmin: int=None, pyxaid_Nmax: int=None,
+        fragment_indices: None=List, dt: float=1):
     """
-    Use a md trajectory to calculate the Electron transfer rate
-    nmad.
+    Use a md trajectory to calculate the Electron transfer rate.
 
     :param package_name: Name of the package to run the QM simulations.
-    :type  package_name: String
     :param project_name: Folder name where the computations
     are going to be stored.
-    :type project_name: String
-    :param package_args: Specific settings for the package
-    :type package_args: dict
-    :param geometries: List of string cotaining the molecular geometries
-                       numerical results.
-    :type path_traj_xyz: [String]
-    :param calc_new_wf_guess_on_points: number of Computations that used a
-                                        previous calculation as guess for the
-                                        wave function.
-    :type calc_new_wf_guess_on_points: Int
-    :param enumerate_from: Number from where to start enumerating the folders
-                           create for each point in the MD.
-    :type enumerate_from: Int
-    :param package_config: Parameters required by the Package.
-    :type package_config: Dict
-
-    :returns: None
-    """
-    # Initial conditions
-    if initial_conditions is None:
-        initial_conditions = [0]
-
-    # Time-dependent coefficients
-    time_depend_coeffs = retrieve_hdf5_data(path_hdf5, pathTimeCoeffs)
-
-    # prepare Cp2k Job
-    # Point calculations Using CP2K
-    mo_paths_hdf5 = calculate_mos(package_name, geometries, project_name,
-                                  path_hdf5, traj_folders, package_args,
-                                  guess_args, calc_new_wf_guess_on_points,
-                                  enumerate_from,
-                                  package_config=package_config)
-
-    # Number of ETR points calculated with the MD trajectory
-    nPoints = len(geometries) - 2
-
-    # List of tuples containing the electron transfer rates
-    if hdf5_trans_mtx is not None:
-            trans_mtx = retrieve_hdf5_data(path_hdf5, hdf5_trans_mtx)
-
-    etrs = [schedule_photoexcitation(i, path_hdf5, dictCGFs, geometries,
-                                     time_depend_coeffs, mo_paths_hdf5,
-                                     trans_mtx=trans_mtx)
-            for i in range(nPoints)]
-
-    electronTransferRates = run(gather(*etrs))
-
-    rs = list(map(lambda ts: '{:10.6f} {:10.6f}\n'.format(*ts),
-                  electronTransferRates))
-    result = ''.join(rs)
-
-    with open("ElectronTranferRates", "w") as f:
-        f.write(result)
-
-# ==============================> Tasks <======================================
-
-
-def schedule_photoexcitation(i, path_hdf5, dictCGFs, all_geometries,
-                             time_depend_paths, mo_paths, trans_mtx=None,
-                             enumerate_from=0, units='angstrom'):
-    """
-    :param i: nth coupling calculation.
-    :type i: Int
+    :param package_args: Specific settings for the package.
     :param path_hdf5: Path to the HDF5 file that contains the
     numerical results.
-    :type path_hdf5: String
+    :param geometries: List of string cotaining the molecular geometries.
     :paramter dictCGFS: Dictionary from Atomic Label to basis set
     :type     dictCGFS: Dict String [CGF],
               CGF = ([Primitives], AngularMomentum),
               Primitive = (Coefficient, Exponent)
-    :param all_geometries: list of molecular geometries
-    :type all_geometries: String list
-    :param time_depend_paths: Path to the time-dependent coefficients
-    calculated with PYXAID and stored in HDF5 format.
-    :type time_depend_paths: [String]
-    :param mo_paths: Paths to the MO coefficients and energies in the
-    HDF5 file.
-    :type mo_paths: [String]
-    :param trans_mtx: transformation matrix from cartesian to spherical
-    orbitals.
-    :type trans_mtx: Numpy Array
+    :param calc_new_wf_guess_on_points: number of Computations that used a
+                                        previous calculation as guess for the
+                                        wave function.
+    :param nHOMO: index of the HOMO orbital.
+    :param couplings_range: Range of MO use to compute the nonadiabatic
+    :param pyxaid_range: range of HOMOs and LUMOs used by pyxaid.
     :param enumerate_from: Number from where to start enumerating the folders
-    create for each point in the MD
-    :type enumerate_from: Int
-    :returns: promise to path to the Coupling inside the HDF5
-
+                           create for each point in the MD.
+    :param traj_folders: List of paths to where the CP2K MOs are printed.
+     :param package_config: Parameters required by the Package.
+    :param fragment_indices: indices of atoms belonging to a fragment.
+    :param dt: integration time used in the molecular dynamics.
+    :returns: None
     """
-    j, k = i + 1, i + 2
+    # Start logging event
+    file_log = '{}.log'.format(project_name)
+    logging.basicConfig(filename=file_log, level=logging.DEBUG,
+                        format='%(levelname)s:%(message)s  %(asctime)s\n',
+                        datefmt='%m/%d/%Y %I:%M:%S %p')
 
-    xss = all_geometries[i], all_geometries[j], all_geometries[k]
-    geometries = tuple(map(parse_string_xyz, xss))
-    if 'angstrom' in units.lower():
-        geometries = tuple(map(change_mol_units, geometries))
+    # prepare Cp2k Job point calculations Using CP2K
+    mo_paths_hdf5 = calculate_mos(
+        package_name, geometries, project_name, path_hdf5, traj_folders,
+        package_args, guess_args, calc_new_wf_guess_on_points,
+        enumerate_from, package_config=package_config)
 
-    mos = tuple(map(lambda j:
-                    retrieve_hdf5_data(path_hdf5,
-                                       mo_paths[i + j][1]), range(3)))
-    time_coeffs = tuple(map(lambda j:
-                            retrieve_hdf5_data(path_hdf5,
-                                               time_depend_paths[i + j]),
-                            range(3)))
+    # geometries in atomic units
+    molecules_au = [change_mol_units(parse_string_xyz(gs))
+                    for gs in geometries]
 
-    return photoExcitationRate(geometries, dictCGFs, time_coeffs, mos,
-                               trans_mtx=trans_mtx)
+    # Time-dependent coefficients
+    time_depend_coeffs = read_time_dependent_coeffs(path_time_coeffs)
+
+    logger.info("Reading time_dependent coefficients from: {}".format(path_time_coeffs))
+
+    # compute_overlaps_ET
+    scheduled_overlaps = schedule(compute_overlaps_ET)
+    fragment_overlaps = scheduled_overlaps(
+        project_name, molecules_au, basis_name, path_hdf5, dictCGFs,
+        mo_paths_hdf5, fragment_indices, enumerate_from, package_name)
+
+    # Delta time in a.u.
+    dt_au = dt * femtosec2au
+
+    # Indices relation between the PYXAID active space and the orbitals
+    # stored in the HDF5
+    map_index_pyxaid_hdf5 = create_map_index_pyxaid(
+        orbitals_range, pyxaid_HOMO, pyxaid_Nmin, pyxaid_Nmax)
+
+    # Number of ETR points calculated with the MD trajectory
+    n_points = len(geometries) - 2
+
+    # Electron transfer rate for each frame of the Molecular dynamics
+    scheduled_photoexcitation = schedule(compute_photoexcitation)
+    etrs = scheduled_photoexcitation(
+        path_hdf5, time_depend_coeffs, fragment_overlaps,
+        map_index_pyxaid_hdf5, n_points, dt_au)
+
+    # Execute the workflow
+    electronTransferRates = run(etrs, folder=work_dir)
+
+    for i, mtx in enumerate(electronTransferRates):
+        write_ETR(mtx, i)
 
 
-def parse_population(filePath):
+def compute_photoexcitation(
+        path_hdf5: str, time_dependent_coeffs: Matrix,
+        paths_fragment_overlaps: List, map_index_pyxaid_hdf5: Matrix,
+        n_points: int, dt_au: float) -> List:
+    """
+    :param i: Electron transfer rate at time i * dt
+    :param path_hdf5: Path to the HDF5 file that contains the
+    numerical results.
+    :param geometries: list of 3 contiguous molecular geometries
+    :param time_depend_paths: mean value of the time dependent coefficients
+    computed with PYXAID.
+    param fragment_overlaps: Tensor containing 3 overlap matrices corresponding
+    with the `geometries`.
+    :param map_index_pyxaid_hdf5: map from PYXAID excitation to the indices i,j
+    of the molecular orbitals stored in the HDF5.
+    :param dt_au: Delta time in atomic units
+    :returns: promise to path to the Coupling inside the HDF5.
+    """
+    msg = "Computing the photo-excitation rate for the molecular fragments"
+    logger.info(msg)
+
+    results = []
+    for paths_overlaps in paths_fragment_overlaps:
+        overlaps = np.stack(retrieve_hdf5_data(path_hdf5, paths_overlaps))
+
+        etr = np.array([
+            photo_excitation_rate(
+                overlaps[i: i + 3], time_dependent_coeffs[i: i + 3],
+                map_index_pyxaid_hdf5, dt_au)
+            for i in range(n_points)])
+        results.append(etr)
+
+    return np.stack(results)
+
+
+def parse_population(filePath: str) -> Matrix:
     """
     returns a matrix contaning the pop for each time in each row.
     """
@@ -153,76 +163,70 @@ def parse_population(filePath):
     return np.array(rss)
 
 
-def read_time_dependent_coeffs(path_hdf5, pathProperty, path_pyxaid_out):
+def read_time_dependent_coeffs(
+        path_pyxaid_out: str) -> Tensor3D:
     """
-    :param path_hdf5: Path to the HDF5 file that contains the
-    numerical results.
-    :type path_hdf5: String
-    :param pathProperty: path to the node that contains the time
-    coeffficients.
-    :type pathProperty: String
     :param path_pyxaid_out: Path to the out of the NA-MD carried out by
     PYXAID.
-    :type path_pyxaid_out: String
-    :returns: None
+    :returns: Numpy array
     """
     # Read output files
     files_out = os.listdir(path_pyxaid_out)
-    names_out_es, names_out_pop  = [fnmatch.filter(files_out, x) for x
-                                    in ["*energies*", "out*"]]
-    _, paths_out_pop = [[join(path_pyxaid_out, x) for x in xs]
-                        for xs in [names_out_es, names_out_pop]]
+    names_out_pop = fnmatch.filter(files_out, "out*")
+    paths_out_pop = (join(path_pyxaid_out, x) for x in names_out_pop)
 
-    # ess = map(parse_energies, paths_out_es)
+    # Read the data
     pss = map(parse_population, paths_out_pop)
 
-    # Make a 3D stack of arrays the calculate the mean value
-    # for the same time
-    # average_es = np.mean(np.stack(ess), axis=0)
-    # average_pop = np.mean(np.stack(pss), axis=0)
-    data = np.stack(pss)
-
-    # Save Data in the HDF5 file
-    with h5py.File(path_hdf5) as f5:
-        f5.require_dataset(pathProperty, shape=np.shape(data),
-                           data=data, dtype=np.float32)
-
-# ================================> Main <=====================================
+    rss = np.stack(pss)
+    return np.mean(rss, axis=0)
 
 
-def main():
-    plams.init()
+def create_map_index_pyxaid(
+        orbitals_range: Tuple, pyxaid_HOMO: int, pyxaid_Nmin: int,
+        pyxaid_Nmax: int) -> Matrix:
+    """
+    Creating an index mapping from PYXAID to the content of the HDF5.
+    """
+    number_of_HOMOs = pyxaid_HOMO - pyxaid_Nmin + 1
+    number_of_LUMOs = pyxaid_Nmax - pyxaid_HOMO
 
-    # Project
-    project_name = 'NAC'
-    path_traj_xyz = "./data/traj_3_points.xyz"
-    pyxaid_out_dir = "./step3/out"
-    basisname = "DZVP-MOLOPT-SR-GTH"
-    home = os.path.expanduser('~')
-    basiscp2k = join(home, "Cp2k/cp2k_basis/BASIS_MOLOPT")
-    potcp2k = join(home, "Cp2k/cp2k_basis/GTH_POTENTIALS")
+    # Shift range to start counting from 0
+    pyxaid_Nmax -= 1
+    pyxaid_Nmin -= 1
 
-    initial_config = initialize(project_name, path_traj_xyz, basisname,
-                                path_basis=basiscp2k, path_potential=potcp2k,
-                                enumerate_from=0)
-    path_hdf5 = initial_config['path_hdf5']
+    # Pyxaid LUMO counting from 0
+    pyxaid_LUMO = pyxaid_HOMO
 
-    # Process PYXAID results and store them in HDF5
-    pathProperty = join(project_name, "pyxaid/timeCoeffs")
-    if search_data_in_hdf5(path_hdf5, pathProperty):
-        read_time_dependent_coeffs(path_hdf5, pathProperty, pyxaid_out_dir)
+    def compute_excitation_indexes(index_ext: int) -> Vector:
+        """
+        create the index of the orbitals involved in the excitation i -> j.
+        """
+        # final state
+        j_index = pyxaid_LUMO + (index_ext // number_of_HOMOs)
+        # initial state
+        i_index = pyxaid_Nmin + (index_ext % number_of_HOMOs)
 
-    # Electron Transfer rate calculation
-    pyxaid_initial_cond = [0, 24, 49]
+        return np.array((i_index, j_index), dtype=np.int32)
 
-    # Electron transfer rate computation computation
-    cp2k_args = None
-    calculate_ETR('cp2k', project_name, cp2k_args,
-                  pathTimeCoeffs=pathProperty,
-                  initial_conditions=pyxaid_initial_cond,
-                  **initial_config)
-    plams.finish()
+    # Generate all the excitation indexes of pyxaid including the ground state
+    number_of_indices = number_of_HOMOs * number_of_LUMOs
+    indexes_hdf5 = np.empty((number_of_indices + 1, 2), dtype=np.int32)
 
-# ==============<>=============
-if __name__ == "__main__":
-    main()
+    # Ground state
+    indexes_hdf5[0] = pyxaid_Nmin, pyxaid_Nmin
+
+    for i in range(number_of_indices):
+        indexes_hdf5[i + 1] = compute_excitation_indexes(i)
+
+    return indexes_hdf5
+
+
+def write_ETR(mtx, i):
+    """
+    Save the ETR in human readable format
+    """
+    file_name = "electronTranferRates_fragment_{}.txt".format(i)
+    header = 'Density  Nonadiabatic  Adibatic Total'
+    arr = np.column_stack((mtx, np.sum(mtx[:, 1:], axis=1)))
+    np.savetxt(file_name, arr, fmt='{:^3}'.format('%e'), header=header)
