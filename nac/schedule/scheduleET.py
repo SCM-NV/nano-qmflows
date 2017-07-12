@@ -3,7 +3,7 @@ from itertools import (groupby, starmap)
 from nac.common import (
     Matrix, Tensor3D, Vector, retrieve_hdf5_data, search_data_in_hdf5,
     store_arrays_in_hdf5, triang2mtx)
-from nac.integrals.multipoleIntegrals import calcMtxMultipoleP
+from nac.integrals.overlapIntegral import calcMtxOverlapP
 from nac.integrals.nonAdiabaticCoupling import calculate_spherical_overlap
 from nac.integrals.spherical_Cartesian_cgf import calc_transf_matrix
 from os.path import join
@@ -165,7 +165,7 @@ def compute_fragment_overlap(
         # Compute the overlap in the atomic basis
         dim_cart = trans_mtx.shape[1]
         overlap_AO = triang2mtx(
-            calcMtxMultipoleP(fragment_atoms, dictCGFs), dim_cart)
+            calcMtxOverlapP(fragment_atoms, dictCGFs), dim_cart)
         # Read all the molecular orbital coefficients
         coefficients = retrieve_hdf5_data(path_hdf5, path_mos[1])
         # Number of Orbitals stored in the HDF5
