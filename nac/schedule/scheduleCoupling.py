@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 
 
 def lazy_couplings(paths_overlaps: List, path_hdf5: str, project_name: str,
-                   enumerate_from: int, nHOMO: int, dt: float,
+                   enumerate_from: int, nHOMO: int, dt: float, tracking: bool,
                    algorithm='levine') -> List:
     """
     Compute the Nonadibatic coupling using a 3 point approximation. See:
@@ -42,8 +42,15 @@ def lazy_couplings(paths_overlaps: List, path_hdf5: str, project_name: str,
     such crossing must be track. see:
     J. Chem. Phys. 137, 014512 (2012); doi: 10.1063/1.4732536
     """
-    fixed_phase_overlaps, swaps = compute_the_fixed_phase_overlaps(
-        paths_overlaps, path_hdf5, project_name, enumerate_from, nHOMO)
+    if tracking:
+        fixed_phase_overlaps, swaps = compute_the_fixed_phase_overlaps(
+            paths_overlaps, path_hdf5, project_name, enumerate_from, nHOMO)
+    else:
+        # Do not track the crossings
+        fixed_phase_overlaps = np.stack(
+            retrieve_hdf5_data(path_hdf5, paths_overlaps))
+        nOverlaps, nOrbitals, _ = fixed_phase_overlaps.shape
+        swaps = np.tile(np.arange(nOrbitals), (nOverlaps + 1, 1))
 
     # Compute the couplings using either the levine method
     # or the 3Points approximation
