@@ -52,6 +52,8 @@ def build_coeff_matrix(dict_basisFormat, symbols, uniqSymbols, packageName):
     lmax = 3  # Up to f-orbitals
     dict_coeff_transf = calc_dict_spherical_cartesian(lmax)
 
+    print(dict_orbital_SLabels)
+
     def calc_transf_per_primitive(slabel, clabels):
         l, m = dict_Slabel_to_lm[slabel]
         cs = []
@@ -95,22 +97,6 @@ def calc_dict_spherical_cartesian(lmax):
     :parameter lmax: Total angular momentum
     :type lmax: Int
     """
-    def calc_s_factor(lx, m, ma, k):
-        if (m < 0 and odd(ma - lx)) or (m > 0 and even(ma - lx)):
-            e = (ma - lx + 2 * k) // 2
-            s = (-1.0) ** e * sqrt(2)
-        elif m == 0 and even(lx):
-            e = k - lx // 2
-            s = (-1.0) ** e
-        else:
-            s = 0
-        return s
-
-    def calc_s1_factor(l, ma, i, j):
-        return binomial(l, i) * binomial(i, j) * \
-            (-1) ** i * fac(2 * l - 2 * i) / \
-            fac(l - ma - 2 * i) * s2
-
     d = {}
     for l in range(lmax + 1):
         for lx in range(l + 1):
@@ -118,7 +104,7 @@ def calc_dict_spherical_cartesian(lmax):
                 lz = l - lx - ly
                 for m in range(-l, l + 1):
                     ma = abs(m)
-                    j = lx + ly - ma
+                    j = (lx + ly - ma)
                     if not(j >= 0 and even(j)):
                         d[(l, m, lx, ly, lz)] = 0
                     else:
@@ -131,14 +117,32 @@ def calc_dict_spherical_cartesian(lmax):
                                 s = calc_s_factor(lx, m, ma, k)
                                 s2 += binomial(j, k) * \
                                     binomial(ma, lx - 2 * k) * s
-                            s1 += calc_s1_factor(l, ma, i, j)
+                            s1 += calc_s1_factor(l, ma, i, j, s2)
                         root = calc_sqrt(l, ma, lx, ly, lz)
                         d[(l, m, lx, ly, lz)] = root * s1 / (2 ** l * fac(l))
 
     return d
 
 
-def calc_sqrt(l, ma, lx, ly, lz):
+def calc_s_factor(lx: int, m: int, ma: int, k: int) -> float:
+    if (m < 0 and odd(ma - lx)) or (m > 0 and even(ma - lx)):
+        e = (ma - lx + 2 * k) // 2
+        s = (-1.0) ** e * sqrt(2)
+    elif m == 0 and even(lx):
+        e = k - lx / 2
+        s = (-1.0) ** e
+    else:
+        s = 0
+    return s
+
+
+def calc_s1_factor(l: int, ma: int, i: int, j: int, s2: float) -> float:
+    b1 = binomial(l, i)
+    b2 = binomial(i, j)
+    return b1 * b2 * (-1) ** i * fac(2 * l - 2 * i) / fac(l - ma - 2 * i) * s2
+
+
+def calc_sqrt(l: int, ma: int, lx: int, ly: int, lz: int) -> float:
     """
     calculate the square root of equation 15 of:
     **H. B. Schlegel, M. J. Frisch, Int. J. Quantum Chem. 54, 83 (1995)**
