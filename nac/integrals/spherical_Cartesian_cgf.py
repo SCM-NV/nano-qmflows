@@ -2,9 +2,8 @@ __author__ = "Felipe Zapata"
 
 # ==========> Standard libraries and third-party <===============
 from math import sqrt
-from os.path import join
-
 from nac.common import (binomial, even, fac, odd, product)
+from os.path import join
 from qmworks.utils import (concat, concatMap)
 import numpy as np
 # ==================================<>=========================================
@@ -25,11 +24,10 @@ def calc_transf_matrix(f5, mol, basisName, packageName):
         formats[elem] = dset.attrs["basisFormat"]
     dict_basisFormat = {elem: read_basis_format(packageName, fs)
                         for elem, fs in formats.items()}
-    return build_coeff_matrix(dict_basisFormat, symbols,
-                              uniqSymbols, packageName)
+    return build_coeff_matrix(dict_basisFormat, symbols, packageName)
 
 
-def build_coeff_matrix(dict_basisFormat, symbols, uniqSymbols, packageName):
+def build_coeff_matrix(dict_basisFormat, symbols, packageName):
     """
     Computes equation 15 of
     **H. B. Schlegel, M. J. Frisch, Int. J. Quantum Chem. 54, 83 (1995)**
@@ -52,23 +50,20 @@ def build_coeff_matrix(dict_basisFormat, symbols, uniqSymbols, packageName):
     lmax = 3  # Up to f-orbitals
     dict_coeff_transf = calc_dict_spherical_cartesian(lmax)
 
-    print(dict_orbital_SLabels)
-
     def calc_transf_per_primitive(slabel, clabels):
         l, m = dict_Slabel_to_lm[slabel]
         cs = []
         for cl in clabels:
             lx, ly, lz = dict_Clabel_to_xyz[cl]
-            r = dict_coeff_transf.get((l, m, lx, ly, lz))
-            r = r if r is not None else 0.0
+            r = dict_coeff_transf[(l, m, lx, ly, lz)]
             cs.append(r)
         return np.array(cs)
 
-    spherical_orbital_labels = concatMap(lambda el:
-                                         dict_orbital_SLabels[el], symbols)
+    spherical_orbital_labels = concatMap(
+        lambda el: dict_orbital_SLabels[el], symbols)
 
-    cartesian_orbital_labels = concatMap(lambda el:
-                                         dict_orbital_CLabels[el], symbols)
+    cartesian_orbital_labels = concatMap(
+        lambda el: dict_orbital_CLabels[el], symbols)
 
     nSphericals = sum(len(xs) for xs in spherical_orbital_labels)
 
@@ -234,7 +229,7 @@ dict_cp2kOrder_spherical = {
 
 dict_cp2kOrd_cartesian = {
     's': ['S'],
-    'p': ['Py', 'Pz', 'Px'],
+    'p': ['Px', 'Py', 'Pz'],
     'd': ['Dxx', 'Dxy', 'Dxz', 'Dyy', 'Dyz', 'Dzz'],
     'f': ['Fxxx', 'Fxxy', 'Fxxz', 'Fxyy', 'Fxyz', 'Fxzz',
           'Fyyy', 'Fyyz', 'Fyzz', 'Fzzz']
@@ -250,7 +245,7 @@ dict_turbomoleOrd_cartesian = {
 
 dict_Slabel_to_lm = {
     's': [0, 0],
-    'px': [1, -1], 'py': [1, 0], 'pz': [1, 1],   # Is these the Cp2k Standard?
+    'px': [1, 1], 'py': [1, -1], 'pz': [1, 0],   # Is these the Cp2k Standard?
     'd-2': [2, -2], 'd-1': [2, -1], 'd0': [2, 0], 'd+1': [2, 1], 'd+2': [2, 2],
     'f-3': [3, -3], 'f-2': [3, -2], 'f-1': [3, -1], 'f0': [3, 0],
     'f+1': [3, 1], 'f+2': [3, 2], 'f+3': [3, 3]

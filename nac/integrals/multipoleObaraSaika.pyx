@@ -45,7 +45,7 @@ cpdef double sab(tuple gs1, tuple gs2) except? -1:
             rpb = rp - r2[i]
             s00 = cte * exp(-u * rab ** 2.0)
             # select the exponent of the multipole 
-            prod *= obaraSaikaMultipole(p, s00, rpa, rpb, rp, l1x, l2x, 0) 
+            prod *= obaraSaikaMultipole(p, s00, rpa, rpb, 0, l1x, l2x, 0) 
     
         return c1 * c2 * prod
 
