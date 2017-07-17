@@ -2,9 +2,8 @@ __author__ = "Felipe Zapata"
 
 # ==========> Standard libraries and third-party <===============
 from math import sqrt
-from os.path import join
-
 from nac.common import (binomial, even, fac, odd, product)
+from os.path import join
 from qmworks.utils import (concat, concatMap)
 import numpy as np
 # ==================================<>=========================================
@@ -25,11 +24,10 @@ def calc_transf_matrix(f5, mol, basisName, packageName):
         formats[elem] = dset.attrs["basisFormat"]
     dict_basisFormat = {elem: read_basis_format(packageName, fs)
                         for elem, fs in formats.items()}
-    return build_coeff_matrix(dict_basisFormat, symbols,
-                              uniqSymbols, packageName)
+    return build_coeff_matrix(dict_basisFormat, symbols, packageName)
 
 
-def build_coeff_matrix(dict_basisFormat, symbols, uniqSymbols, packageName):
+def build_coeff_matrix(dict_basisFormat, symbols, packageName):
     """
     Computes equation 15 of
     **H. B. Schlegel, M. J. Frisch, Int. J. Quantum Chem. 54, 83 (1995)**
@@ -57,16 +55,15 @@ def build_coeff_matrix(dict_basisFormat, symbols, uniqSymbols, packageName):
         cs = []
         for cl in clabels:
             lx, ly, lz = dict_Clabel_to_xyz[cl]
-            r = dict_coeff_transf.get((l, m, lx, ly, lz))
-            r = r if r is not None else 0.0
+            r = dict_coeff_transf[(l, m, lx, ly, lz)]
             cs.append(r)
         return np.array(cs)
 
-    spherical_orbital_labels = concatMap(lambda el:
-                                         dict_orbital_SLabels[el], symbols)
+    spherical_orbital_labels = concatMap(
+        lambda el: dict_orbital_SLabels[el], symbols)
 
-    cartesian_orbital_labels = concatMap(lambda el:
-                                         dict_orbital_CLabels[el], symbols)
+    cartesian_orbital_labels = concatMap(
+        lambda el: dict_orbital_CLabels[el], symbols)
 
     nSphericals = sum(len(xs) for xs in spherical_orbital_labels)
 
@@ -95,22 +92,6 @@ def calc_dict_spherical_cartesian(lmax):
     :parameter lmax: Total angular momentum
     :type lmax: Int
     """
-    def calc_s_factor(lx, m, ma, k):
-        if (m < 0 and odd(ma - lx)) or (m > 0 and even(ma - lx)):
-            e = (ma - lx + 2 * k) // 2
-            s = (-1.0) ** e * sqrt(2)
-        elif m == 0 and even(lx):
-            e = k - lx // 2
-            s = (-1.0) ** e
-        else:
-            s = 0
-        return s
-
-    def calc_s1_factor(l, ma, i, j):
-        return binomial(l, i) * binomial(i, j) * \
-            (-1) ** i * fac(2 * l - 2 * i) / \
-            fac(l - ma - 2 * i) * s2
-
     d = {}
     for l in range(lmax + 1):
         for lx in range(l + 1):
@@ -118,7 +99,7 @@ def calc_dict_spherical_cartesian(lmax):
                 lz = l - lx - ly
                 for m in range(-l, l + 1):
                     ma = abs(m)
-                    j = lx + ly - ma
+                    j = (lx + ly - ma)
                     if not(j >= 0 and even(j)):
                         d[(l, m, lx, ly, lz)] = 0
                     else:
@@ -131,14 +112,32 @@ def calc_dict_spherical_cartesian(lmax):
                                 s = calc_s_factor(lx, m, ma, k)
                                 s2 += binomial(j, k) * \
                                     binomial(ma, lx - 2 * k) * s
-                            s1 += calc_s1_factor(l, ma, i, j)
+                            s1 += calc_s1_factor(l, ma, i, j, s2)
                         root = calc_sqrt(l, ma, lx, ly, lz)
                         d[(l, m, lx, ly, lz)] = root * s1 / (2 ** l * fac(l))
 
     return d
 
 
-def calc_sqrt(l, ma, lx, ly, lz):
+def calc_s_factor(lx: int, m: int, ma: int, k: int) -> float:
+    if (m < 0 and odd(ma - lx)) or (m > 0 and even(ma - lx)):
+        e = (ma - lx + 2 * k) // 2
+        s = (-1.0) ** e * sqrt(2)
+    elif m == 0 and even(lx):
+        e = k - lx / 2
+        s = (-1.0) ** e
+    else:
+        s = 0
+    return s
+
+
+def calc_s1_factor(l: int, ma: int, i: int, j: int, s2: float) -> float:
+    b1 = binomial(l, i)
+    b2 = binomial(i, j)
+    return b1 * b2 * (-1) ** i * fac(2 * l - 2 * i) / fac(l - ma - 2 * i) * s2
+
+
+def calc_sqrt(l: int, ma: int, lx: int, ly: int, lz: int) -> float:
     """
     calculate the square root of equation 15 of:
     **H. B. Schlegel, M. J. Frisch, Int. J. Quantum Chem. 54, 83 (1995)**
@@ -230,7 +229,7 @@ dict_cp2kOrder_spherical = {
 
 dict_cp2kOrd_cartesian = {
     's': ['S'],
-    'p': ['Py', 'Pz', 'Px'],
+    'p': ['Px', 'Py', 'Pz'],
     'd': ['Dxx', 'Dxy', 'Dxz', 'Dyy', 'Dyz', 'Dzz'],
     'f': ['Fxxx', 'Fxxy', 'Fxxz', 'Fxyy', 'Fxyz', 'Fxzz',
           'Fyyy', 'Fyyz', 'Fyzz', 'Fzzz']
@@ -246,7 +245,7 @@ dict_turbomoleOrd_cartesian = {
 
 dict_Slabel_to_lm = {
     's': [0, 0],
-    'px': [1, -1], 'py': [1, 0], 'pz': [1, 1],   # Is these the Cp2k Standard?
+    'px': [1, 1], 'py': [1, -1], 'pz': [1, 0],   # Is these the Cp2k Standard?
     'd-2': [2, -2], 'd-1': [2, -1], 'd0': [2, 0], 'd+1': [2, 1], 'd+2': [2, 2],
     'f-3': [3, -3], 'f-2': [3, -2], 'f-1': [3, -1], 'f0': [3, 0],
     'f+1': [3, 1], 'f+2': [3, 2], 'f+3': [3, 3]

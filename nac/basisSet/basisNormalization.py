@@ -2,14 +2,14 @@
 __all__ = ['createNormalizedCGFs']
 
 # ================> Python Standard  and third-party <==========
-from math import pi, sqrt
-
-# =======================> Internal modules <==================================
 from .contractedGFs import createUniqueCGF
+from math import pi, sqrt
 from nac.common import (CGF, product)
 from nac.integrals.overlapIntegral import sijContracted
 from nac.integrals.multipoleIntegrals import calcOrbType_Components
 import numpy as np
+
+from typing import List
 # =======================> Basis set normalization <===========================
 
 
@@ -63,8 +63,7 @@ def normGlobal(cgf, r=None):
     cgfN = CGF((csN, es), l)
     sij = sijContracted((r, cgfN), (r, cgfN))
     n = sqrt(1.0 / sij)
-    # newCs = [n * x for x in csN]
-    newCs = n * np.array(csN)
+    newCs = csN * n
 
     return CGF((newCs, es), l)
 
@@ -72,14 +71,26 @@ def normGlobal(cgf, r=None):
 def normCoeff(cgf):
     cs, es = cgf.primitives
     orbType = cgf.orbType
-    indexes = [calcOrbType_Components(orbType, k) for k in range(3)]
-    prod = product(facOdd(2 * k - 1) for k in indexes)
-    angFun = lambda x: prod / (4 * x) ** sum(indexes)
-    fun = lambda c, e: c / (sqrt(angFun(e) *
-                                 (pi / (2.0 * e)) ** 1.5))
-    newCs = [fun(c, e) for (c, e) in zip(cs, es)]
-    return newCs
+    indices = [calcOrbType_Components(orbType, k) for k in range(3)]
+    newCs = [normalize_primitive(c, e, indices) for (c, e) in zip(cs, es)]
+    return np.array(newCs)
 
+
+def normalize_primitive(c: float, e: float, indices: List) -> float:
+    """
+    Normalize a primitive Gaussian function
+    """
+    n = (sqrt(ang_fun(e, indices) * (pi / (2.0 * e)) ** 1.5))
+
+    return c / n
+
+
+def ang_fun(e: float, indices: List) -> float:
+    """
+    compute the angular product
+    """
+    prod = product(facOdd(2 * k - 1) for k in indices)
+    return prod / (4 * e) ** sum(indices)
 
 # ============================================
 # Auxiliar functions
