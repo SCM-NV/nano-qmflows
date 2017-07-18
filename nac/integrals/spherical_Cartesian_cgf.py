@@ -2,7 +2,6 @@ __author__ = "Felipe Zapata"
 
 # ==========> Standard libraries and third-party <===============
 from itertools import chain
-from math import sqrt
 from nac.common import (Matrix, Vector)
 from os.path import join
 from qmworks.utils import concat
@@ -66,7 +65,7 @@ def build_coeff_matrix(
     dict_coeff_transf = {
         (0, 0, 0, 0, 0): 1,   # S
         (1, -1, 0, 1, 0): 1,  # Py
-        (1, 0, 0, 1, 0): 1,   # Pz
+        (1, 0, 0, 0, 1): 1,   # Pz
         (1, 1, 1, 0, 0): 1,   # Px
         (2, -2, 1, 1, 0): 1,  # Dxy
         (2, -1, 0, 1, 1): 1,  # Dyz
@@ -83,21 +82,27 @@ def build_coeff_matrix(
     i, j = 0, 0
     for el in symbols:
         # Retrieve the spherical and Cartesian labels of the CGFs
-        slabels = list(chain(*dict_orbital_SLabels[el]))
-        clabels = list(chain(*dict_orbital_CLabels[el]))
-        len_s = len(slabels)
-        len_c = len(clabels)
+        slabels = dict_orbital_SLabels[el]
+        clabels = dict_orbital_CLabels[el]
+
+        # downcase the atomic label
+        el = el.lower()
 
         # Fill the transformation matrix rows
-        for k, s in enumerate(slabels):
-            el = el.lower()
-            norm = dict_global_norms[el][k][1]
-            rs = calc_transf_per_primitive(
-                s, clabels, dict_orbital_CLabels, dict_orbital_SLabels,
-                dict_coeff_transf)
-            css[i + k, j: j + len_c] = rs * norm
-        j += len_c
-        i += len_s
+        k = 0
+        for lss, lcs in zip(slabels, clabels):
+            len_c = len(lcs)
+            for s in lss:
+                norm = dict_global_norms[el][k][1]
+                rs = calc_transf_per_primitive(
+                    s, lcs, dict_orbital_CLabels, dict_orbital_SLabels,
+                    dict_coeff_transf)
+                css[i, j: j + len(lcs)] = rs * norm
+                # Update the index of the row
+                i += 1
+                k += 1
+            # update the indices of the columns
+            j += len_c
     return css
 
 

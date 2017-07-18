@@ -27,7 +27,7 @@ dict_spherical_cartesian = {
     'D-1': [(4, 1)],                   # D-1 => Dyz
     'D0': [(5, 2), (0, -1), (3, -1)],  # D0 => 2Dzz - Dxx - Dyy
     'D+1': [(2, 1)],                   # D-1 => Dxz
-    'D+2': [(0, 1), (3, -1)]  # D-2 => Dxx - Dyy
+    'D+2': [(0, 1), (3, -1)]           # D-2 => Dxx - Dyy
 }
 
 
@@ -71,7 +71,8 @@ def compute_normalizations(label: str, cgfs: List) -> List:
     # Retrieve the labels of the CGFs components  in sphericals
     ang_labels = spherical_labels[label]
 
-    return list(map(lambda l: compute_normalization_per_cgf(cgfs, l), ang_labels))
+    return list(map(
+        lambda l: compute_normalization_per_cgf(cgfs, l), ang_labels))
 
 
 def compute_normalization_per_cgf(cgfs: List, label: str) -> List:

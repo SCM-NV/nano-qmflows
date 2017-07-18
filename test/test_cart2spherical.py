@@ -27,7 +27,7 @@ def test_compare_with_cp2k():
     mtx_overlap = triang2mtx(rs, 48)  # there are 48 Cartesian basis CGFs
 
     dict_global_norms = compute_normalization_sphericals(dictCGFs)
-    print(dict_global_norms)
+
     with h5py.File(path_hdf5, 'r') as f5:
         transf_matrix = calc_transf_matrix(
             f5, atoms, basisname, dict_global_norms, 'cp2k')
@@ -39,7 +39,7 @@ def test_compare_with_cp2k():
 
     arr = test - expected
     print(np.diag(test))
-    print(np.diag(arr))
+    print(np.argmax(np.abs(arr)))
     # print("With index i, j: ", n // 46, n % 46)
     # print("Val: ", val)
     # print([np.argmax(x) for x in arr])
