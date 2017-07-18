@@ -1,154 +1,120 @@
 __author__ = "Felipe Zapata"
 
 # ==========> Standard libraries and third-party <===============
+from itertools import chain
 from math import sqrt
-from nac.common import (binomial, even, fac, odd, product)
+from nac.common import (Matrix, Vector)
 from os.path import join
-from qmworks.utils import (concat, concatMap)
+from qmworks.utils import concat
+from typing import (Dict, List)
 import numpy as np
 # ==================================<>=========================================
 
 
-def calc_transf_matrix(f5, mol, basisName, packageName):
+def calc_transf_matrix(
+        f5, mol: List, basis_name: str, dict_global_norms: Dict,
+        package_name: str) -> Matrix:
     """
-    calculate the transformation of the overlap matrix from both spherical
-    to cartesian and from cartesian to spherical, see:
-    **H. B. Schlegel, M. J. Frisch, Int. J. Quantum Chem. 54, 83 (1995)**
+    Compute the transformation matrix using the values of Appendix A, from:
+    `International Journal of Quantum Chemistry, Vol. 90, 227–243 (2002)`
     """
     symbols = [at.symbol for at in mol]
     uniqSymbols = set(symbols)
     formats = {}
     for elem in uniqSymbols:
-        dset = f5[join(packageName, 'basis', elem,
-                       basisName.upper(), "coefficients")]
+        dset = f5[join(package_name, 'basis', elem,
+                       basis_name.upper(), "coefficients")]
         formats[elem] = dset.attrs["basisFormat"]
-    dict_basisFormat = {elem: read_basis_format(packageName, fs)
+    dict_basisFormat = {elem: read_basis_format(package_name, fs)
                         for elem, fs in formats.items()}
-    return build_coeff_matrix(dict_basisFormat, symbols, packageName)
+    return build_coeff_matrix(
+        dict_basisFormat, symbols, dict_global_norms, package_name)
 
 
-def build_coeff_matrix(dict_basisFormat, symbols, packageName):
+def build_coeff_matrix(
+        dict_basisFormat: Dict, symbols: List, dict_global_norms: Dict,
+        package_name: str) -> Matrix:
     """
-    Computes equation 15 of
-    **H. B. Schlegel, M. J. Frisch, Int. J. Quantum Chem. 54, 83 (1995)**
+    using the atomic `symbols` and the basis for a given package,
+    compute the transformation matrix.
     :parameter dict_basisFormats: Format containing information
                                   about the Contracted GF
     :type dict_basisFormat: Key= String, Val = [Int] | [[Int]]
     :parameter symbols: Atomics symbols
-    :type symbols: [String]
     :parameter Uniqsymbols: There is only one symbol for
-    atom type in the molecule
-    :type symbols: [String]
-    :parameter packName: Quantum package name
-    :type packName: string
+    atom type in the molecule.
+    :parameter package_name: Quantum package name.
+    :returns: transformation matrix
     """
-    dict_orbital_SLabels = {elem: calc_orbital_Slabels(packageName, fs)
+    # Compute the global norm for all the spherical CGfs
+    # Label of the spherical CGFs
+    dict_orbital_SLabels = {elem: calc_orbital_Slabels(package_name, fs)
                             for elem, fs in dict_basisFormat.items()}
 
-    dict_orbital_CLabels = {elem: calc_orbital_Clabels(packageName, fs)
+    # Label of the Cartesian CGFs
+    dict_orbital_CLabels = {elem: calc_orbital_Clabels(package_name, fs)
                             for elem, fs in dict_basisFormat.items()}
-    lmax = 3  # Up to f-orbitals
-    dict_coeff_transf = calc_dict_spherical_cartesian(lmax)
 
-    def calc_transf_per_primitive(slabel, clabels):
-        l, m = dict_Slabel_to_lm[slabel]
-        cs = []
-        for cl in clabels:
-            lx, ly, lz = dict_Clabel_to_xyz[cl]
-            r = dict_coeff_transf[(l, m, lx, ly, lz)]
-            cs.append(r)
-        return np.array(cs)
+    # Total number of spherical CGFs
+    nSphericals = sum(sum(len(x) for x in dict_orbital_SLabels[el])
+                      for el in symbols)
+    # Total number of cartesian CGFs
+    nCartesians = sum(sum(len(x) for x in dict_orbital_CLabels[el])
+                      for el in symbols)
 
-    spherical_orbital_labels = concatMap(
-        lambda el: dict_orbital_SLabels[el], symbols)
-
-    cartesian_orbital_labels = concatMap(
-        lambda el: dict_orbital_CLabels[el], symbols)
-
-    nSphericals = sum(len(xs) for xs in spherical_orbital_labels)
-
-    nCartesians = sum(len(xs) for xs in cartesian_orbital_labels)
-
+    # dict_coeff_transf
+    dict_coeff_transf = {
+        (0, 0, 0, 0, 0): 1,   # S
+        (1, -1, 0, 1, 0): 1,  # Py
+        (1, 0, 0, 1, 0): 1,   # Pz
+        (1, 1, 1, 0, 0): 1,   # Px
+        (2, -2, 1, 1, 0): 1,  # Dxy
+        (2, -1, 0, 1, 1): 1,  # Dyz
+        (2, 0, 2, 0, 0): -1,  # Dxx
+        (2, 0, 0, 2, 0): -1,  # Dyy
+        (2, 0, 0, 0, 2): 2,   # Dzz
+        (2, 1, 1, 0, 1): 1,   # Dxz
+        (2, 2, 2, 0, 0): 1,   # Dxx
+        (2, 2, 0, 2, 0): -1,  # Dyy
+    }
+    # Resulting coefficients matrix
     css = np.zeros((nSphericals, nCartesians))
 
     i, j = 0, 0
-    for (slabels, clabels) in zip(spherical_orbital_labels,
-                                  cartesian_orbital_labels):
+    for el in symbols:
+        # Retrieve the spherical and Cartesian labels of the CGFs
+        slabels = list(chain(*dict_orbital_SLabels[el]))
+        clabels = list(chain(*dict_orbital_CLabels[el]))
         len_s = len(slabels)
         len_c = len(clabels)
 
+        # Fill the transformation matrix rows
         for k, s in enumerate(slabels):
-            rs = calc_transf_per_primitive(s, clabels)
-            css[i + k, j: j + len_c] = rs
+            el = el.lower()
+            norm = dict_global_norms[el][k][1]
+            rs = calc_transf_per_primitive(
+                s, clabels, dict_orbital_CLabels, dict_orbital_SLabels,
+                dict_coeff_transf)
+            css[i + k, j: j + len_c] = rs * norm
         j += len_c
         i += len_s
     return css
 
 
-def calc_dict_spherical_cartesian(lmax):
+def calc_transf_per_primitive(
+        slabel: str, clabels: List, dict_orbital_CLabels: Dict,
+        dict_orbital_SLabels: dict, dict_coeff_transf: Dict) -> Vector:
     """
-    The implementation use a dictionary with key (l,m,lx,ly,lz) to store the
-    value of the transformation coefficients.
-    :parameter lmax: Total angular momentum
-    :type lmax: Int
+    Compute the coefficients to transform from Cartesian to sphericals
     """
-    d = {}
-    for l in range(lmax + 1):
-        for lx in range(l + 1):
-            for ly in range(l - lx + 1):
-                lz = l - lx - ly
-                for m in range(-l, l + 1):
-                    ma = abs(m)
-                    j = (lx + ly - ma)
-                    if not(j >= 0 and even(j)):
-                        d[(l, m, lx, ly, lz)] = 0
-                    else:
-                        j = j // 2
-                        s1 = 0
-                        b = (l - ma) // 2
-                        for i in range(b + 1):
-                            s2 = 0
-                            for k in range(j + 1):
-                                s = calc_s_factor(lx, m, ma, k)
-                                s2 += binomial(j, k) * \
-                                    binomial(ma, lx - 2 * k) * s
-                            s1 += calc_s1_factor(l, ma, i, j, s2)
-                        root = calc_sqrt(l, ma, lx, ly, lz)
-                        d[(l, m, lx, ly, lz)] = root * s1 / (2 ** l * fac(l))
-
-    return d
-
-
-def calc_s_factor(lx: int, m: int, ma: int, k: int) -> float:
-    if (m < 0 and odd(ma - lx)) or (m > 0 and even(ma - lx)):
-        e = (ma - lx + 2 * k) // 2
-        s = (-1.0) ** e * sqrt(2)
-    elif m == 0 and even(lx):
-        e = k - lx / 2
-        s = (-1.0) ** e
-    else:
-        s = 0
-    return s
-
-
-def calc_s1_factor(l: int, ma: int, i: int, j: int, s2: float) -> float:
-    b1 = binomial(l, i)
-    b2 = binomial(i, j)
-    return b1 * b2 * (-1) ** i * fac(2 * l - 2 * i) / fac(l - ma - 2 * i) * s2
-
-
-def calc_sqrt(l: int, ma: int, lx: int, ly: int, lz: int) -> float:
-    """
-    calculate the square root of equation 15 of:
-    **H. B. Schlegel, M. J. Frisch, Int. J. Quantum Chem. 54, 83 (1995)**
-    """
-    [l2, l2x, l2y, l2z] = [2 * x for x in [l, lx, ly, lz]]
-    lmp = l + ma
-    lmm = l - ma
-    xs = [l, l2, l2x, l2y, l2z, lx, ly, lz, lmp, lmm]
-    fl, fl2, fl2x, fl2y, fl2z, flx, fly, flz, flmp, flmm = list(map(fac, xs))
-    return sqrt(product([fl2x, fl2y, fl2z, fl, flmm]) /
-                product([fl2, flx, fly, flz, flmp]))
+    l, m = dict_Slabel_to_lm[slabel]
+    cs = []
+    for cl in clabels:
+        lx, ly, lz = dict_Clabel_to_xyz[cl]
+        r = dict_coeff_transf.get((l, m, lx, ly, lz))
+        r = r if r is not None else 0
+        cs.append(r)
+    return np.array(cs)
 
 
 def calc_orbital_Slabels(name, fss):
@@ -189,6 +155,7 @@ def calc_orbital_Slabels(name, fss):
 
 def calc_orbital_Clabels(name, fss):
     """
+    Labels of the Cartesian CGFs
     """
     def funClabels(d, l, fs):
         if isinstance(fs, list):
@@ -213,7 +180,7 @@ def read_basis_format(name, basisFormat):
         fss = list(map(int, s.split(',')))
         fss = fss[4:]  # cp2k coefficient formats start in column 5
         return fss
-    elif name == 'turbomle':
+    elif name == 'turbomole':
         strs = s.replace('[', '').split('],')
         return [list(map(int, s.replace(']', '').split(','))) for s in strs]
     else:

@@ -1,7 +1,9 @@
 # ===============================<>============================================
+from itertools import groupby
+from nac.basisSet.basisNormalization import compute_normalization_sphericals
 from nac.common import (change_mol_units, triang2mtx)
 from nac.integrals import (calcMtxOverlapP, calc_transf_matrix)
-from nac.schedule.components import create_dict_CGFs
+from nac.basisSet import create_dict_CGFs
 from qmworks.parsers import readXYZ
 
 import h5py
@@ -19,12 +21,16 @@ def test_compare_with_cp2k():
     # Molecular geometry in a.u.
     atoms = change_mol_units(readXYZ('test/test_files/ethylene.xyz'))
     dictCGFs = create_dict_CGFs(path_hdf5, basisname, atoms)
+
     # Compute the overlap matrix using the general multipole expression
     rs = calcMtxOverlapP(atoms, dictCGFs)
     mtx_overlap = triang2mtx(rs, 48)  # there are 48 Cartesian basis CGFs
 
+    dict_global_norms = compute_normalization_sphericals(dictCGFs)
+    print(dict_global_norms)
     with h5py.File(path_hdf5, 'r') as f5:
-        transf_matrix = calc_transf_matrix(f5, atoms, basisname, 'cp2k')
+        transf_matrix = calc_transf_matrix(
+            f5, atoms, basisname, dict_global_norms, 'cp2k')
 
     transpose = np.transpose(transf_matrix)
 
@@ -32,11 +38,8 @@ def test_compare_with_cp2k():
     expected = np.load('test/test_files/overlap_ethylene_sphericals.npy')
 
     arr = test - expected
-    val = np.max(arr)
-    n = np.argmax(arr)
-
     print(np.diag(test))
-    print(arr[0])
+    print(np.diag(arr))
     # print("With index i, j: ", n // 46, n % 46)
     # print("Val: ", val)
     # print([np.argmax(x) for x in arr])
