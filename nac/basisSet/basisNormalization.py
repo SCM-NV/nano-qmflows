@@ -18,16 +18,26 @@ import h5py
 
 # =======================> Basis set normalization <===========================
 # indices from Spherical to cartesians (Index, coefficients)
+#     0      1       2      3        4       5        6     7       8        9
+# ['Fxxx', 'Fxxy', 'Fxxz', 'Fxyy', 'Fxyz', 'Fxzz', 'Fyyy', 'Fyyz', 'Fyzz', 'Fzzz']
+
 dict_spherical_cartesian = {
-    'S': [(0, 1)],                     # S => S
-    'Py': [(1, 1)],                    # Py => Py
-    'Pz': [(2, 1)],                    # Pz => Pz
-    'Px': [(0, 1)],                    # Px => Px
-    'D-2': [(1, 1)],                   # D-2 => Dxy
-    'D-1': [(4, 1)],                   # D-1 => Dyz
-    'D0': [(5, 2), (0, -1), (3, -1)],  # D0 => 2Dzz - Dxx - Dyy
-    'D+1': [(2, 1)],                   # D-1 => Dxz
-    'D+2': [(0, 1), (3, -1)]           # D-2 => Dxx - Dyy
+    'S': [(0, 1)],                      # S => S
+    'Py': [(1, 1)],                     # Py => Py
+    'Pz': [(2, 1)],                     # Pz => Pz
+    'Px': [(0, 1)],                     # Px => Px
+    'D-2': [(1, 1)],                    # D-2 => Dxy
+    'D-1': [(4, 1)],                    # D-1 => Dyz
+    'D0': [(5, 2), (0, -1), (3, -1)],   # D0 => 2Dzz - Dxx - Dyy
+    'D+1': [(2, 1)],                    # D-1 => Dxz
+    'D+2': [(0, 1), (3, -1)],           # D-2 => Dxx - Dyy
+    'F-3': [(6, 1), (1, -3)],           # F-3 => Fy3 - Fx2y
+    'F-2': [(4, 1)],                    # F-2 => Fxyz
+    'F-1': [(8, 4), (6, -1), (1, -1)],  # F-1 => 4Fz2 - Fy3 - Fx2y
+    'F0': [(9, 2), (7, -3), (2, 1)],    # F0 => Fz3 - 3Fy2z + Fx2z
+    'F+1': [(5, 4), (0, -1), (3, -1)],  # F+1 => 4Fxz2 -Fx3 - Fxy2
+    'F+2': [(2, 1), (7, -1)],           # F+2 => Fx2z - Fy2z
+    'F+3': [(0, 1), (3, -3)]            # F+3 => Fx3 - Fxy2
 }
 
 
@@ -67,7 +77,8 @@ def compute_normalizations(label: str, cgfs: List) -> List:
     """
     spherical_labels = {
         'S': ['S'], 'P': ['Py', 'Pz', 'Px'],
-        'D': ['D-2', 'D-1', 'D0', 'D+1', 'D+2']}
+        'D': ['D-2', 'D-1', 'D0', 'D+1', 'D+2'],
+        'F': ['F-3', 'F-2', 'F-1', 'F0', 'F+1', 'F+2', 'F+3']}
 
     # Retrieve the labels of the CGFs components  in sphericals
     ang_labels = spherical_labels[label]

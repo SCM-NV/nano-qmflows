@@ -1,7 +1,6 @@
 __author__ = "Felipe Zapata"
 
-# ==========> Standard libraries and third-party <===============
-from itertools import chain
+# ==========> Standard libraries and third-party <============================
 from nac.common import (Matrix, Vector)
 from os.path import join
 from qmworks.utils import concat
@@ -63,18 +62,34 @@ def build_coeff_matrix(
 
     # dict_coeff_transf
     dict_coeff_transf = {
-        (0, 0, 0, 0, 0): 1,   # S
-        (1, -1, 0, 1, 0): 1,  # Py
-        (1, 0, 0, 0, 1): 1,   # Pz
-        (1, 1, 1, 0, 0): 1,   # Px
-        (2, -2, 1, 1, 0): 1,  # Dxy
-        (2, -1, 0, 1, 1): 1,  # Dyz
-        (2, 0, 2, 0, 0): -1,  # Dxx
-        (2, 0, 0, 2, 0): -1,  # Dyy
-        (2, 0, 0, 0, 2): 2,   # Dzz
-        (2, 1, 1, 0, 1): 1,   # Dxz
-        (2, 2, 2, 0, 0): 1,   # Dxx
-        (2, 2, 0, 2, 0): -1,  # Dyy
+        (0, 0, 0, 0, 0): 1,    # S
+        (1, -1, 0, 1, 0): 1,   # Py
+        (1, 0, 0, 0, 1): 1,    # Pz
+        (1, 1, 1, 0, 0): 1,    # Px
+        (2, -2, 1, 1, 0): 1,   # Dxy
+        (2, -1, 0, 1, 1): 1,   # Dyz
+        (2, 0, 2, 0, 0): -1,   # Dxx
+        (2, 0, 0, 2, 0): -1,   # Dyy
+        (2, 0, 0, 0, 2): 2,    # Dzz
+        (2, 1, 1, 0, 1): 1,    # Dxz
+        (2, 2, 2, 0, 0): 1,    # Dxx
+        (2, 2, 0, 2, 0): -1,   # Dyy
+        (3, -3, 0, 3, 0): 1,   # Fy3
+        (3, -3, 2, 1, 0): -3,  # Fx2y
+        (3, -2, 1, 1, 1): 1,   # Fxyz
+        (3, -1, 0, 1, 2): 4,   # Fyz2
+        (3, -1, 0, 3, 0): -1,  # Fy3
+        (3, -1, 2, 1, 0): -1,  # Fx2y
+        (3, 0, 0, 0, 3): 2,    # Fz3
+        (3, 0, 0, 2, 1): -3,   # Fy2z
+        (3, 0, 2, 0, 1): 1,    # Fx2z
+        (3, 1, 1, 0, 2): 4,    # Fxz2
+        (3, 1, 3, 0, 0): -1,   # Fx3
+        (3, 1, 1, 2, 0): -1,   # Fxy2
+        (3, 2, 2, 0, 1): 1,    # Fx2z
+        (3, 2, 0, 2, 1): -1,   # Fy2z
+        (3, 3, 3, 0, 0): 1,    # Fx3
+        (3, 3, 1, 2, 0): -3,   # Fxy2
     }
     # Resulting coefficients matrix
     css = np.zeros((nSphericals, nCartesians))

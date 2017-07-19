@@ -1,5 +1,4 @@
 # ===============================<>============================================
-from itertools import groupby
 from nac.basisSet.basisNormalization import compute_normalization_sphericals
 from nac.common import (change_mol_units, triang2mtx)
 from nac.integrals import (calcMtxOverlapP, calc_transf_matrix)
@@ -20,6 +19,7 @@ def test_compare_with_cp2k():
     basisname = "DZVP-MOLOPT-SR-GTH"
     # Molecular geometry in a.u.
     atoms = change_mol_units(readXYZ('test/test_files/ethylene.xyz'))
+
     dictCGFs = create_dict_CGFs(path_hdf5, basisname, atoms)
 
     # Compute the overlap matrix using the general multipole expression
@@ -37,18 +37,10 @@ def test_compare_with_cp2k():
     test = np.dot(transf_matrix, np.dot(mtx_overlap, transpose))
     expected = np.load('test/test_files/overlap_ethylene_sphericals.npy')
 
-    arr = test - expected
-    print(np.diag(test))
-    print(np.argmax(np.abs(arr)))
-    print(test[27, 42])
-    print(expected[27, 42])
-    # print(arr[0])
-    # print("With index i, j: ", n // 46, n % 46)
-    # print("Val: ", val)
-    # print([np.argmax(x) for x in arr])
-    # print([np.max(x) for x in arr])
+    arr = np.abs(test - expected)
+    print("Maximum diference: ", np.max(arr))
 
-    assert np.allclose(test, expected)
+    assert np.allclose(test, expected, atol=1e-5)
 
 
 if __name__ == '__main__':

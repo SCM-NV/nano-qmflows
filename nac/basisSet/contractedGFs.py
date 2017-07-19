@@ -13,16 +13,6 @@ from qmworks.utils import (concat, concatMap)
 # ==========================<>=================================
 
 
-def createCGF(file_h5, path_basis, basis_name, softName, ls):
-    """
-    """
-    uniqLabels = set(ls)
-    bss = [readBasisSet(file_h5, basis_name, softName, l) for l in uniqLabels]
-    ds = dict(zip(uniqLabels, bss))
-
-    return [ds[l] for l in ls]
-
-
 def createUniqueCGF(f5, basis_name, package_name, ls):
     """
     Using a HDF5 file Object, it reads the basis set and generates
