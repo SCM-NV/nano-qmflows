@@ -40,6 +40,9 @@ def test_compare_with_cp2k():
     arr = test - expected
     print(np.diag(test))
     print(np.argmax(np.abs(arr)))
+    print(test[27, 42])
+    print(expected[27, 42])
+    # print(arr[0])
     # print("With index i, j: ", n // 46, n % 46)
     # print("Val: ", val)
     # print([np.argmax(x) for x in arr])

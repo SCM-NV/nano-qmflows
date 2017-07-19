@@ -4,7 +4,7 @@ __all__ = ['compute_normalization_sphericals', 'create_dict_CGFs',
 
 # ================> Python Standard  and third-party <==========
 from .contractedGFs import createUniqueCGF
-from itertools import (chain, groupby, starmap)
+from itertools import (chain, groupby)
 from math import pi, sqrt
 from nac.common import (CGF, InputKey, product)
 from nac.integrals.overlapIntegral import sijContracted
@@ -12,7 +12,7 @@ from nac.integrals.multipoleIntegrals import calcOrbType_Components
 from os.path import join
 from qmworks.utils import chunksOf
 from qmworks.hdf5.quantumHDF5 import (cp2k2hdf5, turbomole2hdf5)
-from typing import (Dict, List)
+from typing import (Dict, List, Tuple)
 import numpy as np
 import h5py
 
@@ -66,7 +66,8 @@ def compute_normalizations(label: str, cgfs: List) -> List:
     momentum.
     """
     spherical_labels = {
-        'S': ['S'], 'P': ['Py', 'Pz', 'Px'], 'D': ['D-2', 'D-1', 'D0', 'D+1', 'D+2']}
+        'S': ['S'], 'P': ['Py', 'Pz', 'Px'],
+        'D': ['D-2', 'D-1', 'D0', 'D+1', 'D+2']}
 
     # Retrieve the labels of the CGFs components  in sphericals
     ang_labels = spherical_labels[label]
@@ -81,22 +82,30 @@ def compute_normalization_per_cgf(cgfs: List, label: str) -> List:
     Using the coefficients reported at:
     `International Journal of Quantum Chemistry, Vol. 90, 227–243 (2002)`
     """
-    def compute_norm(index: int, coeff: float):
-        cgf = cgfs[index]
+    def compute_norm(ti: Tuple, tj: Tuple) -> float:
+        # Get the index coefficient pairs
+        i, ci = ti
+        j, cj = tj
+        # Retrieve the corresponding CGF
+        cgfi = cgfs[i]
+        cgfj = cgfs[j]
+
         # Integrate at zero
         r = [0, 0, 0]
-        sij = (coeff ** 2) * sijContracted((r, cgf), (r, cgf))
+        sij = ci * cj * sijContracted((r, cgfi), (r, cgfj))
 
-        return sqrt(1 / sij)
+        return sij
 
-    # Retrieve the linear combination of Cartesian the compose the spherical CGF
+    # Retrieve the linear combination of Cartesian the compose
+    # the spherical CGF
     cgfs_indices = dict_spherical_cartesian[label]
 
     #  compute the norm of the components
-    norms = np.array(list(starmap(compute_norm, cgfs_indices)))
+    norm2 = sum(sum(
+        compute_norm(ti, tj) for tj in cgfs_indices) for ti in cgfs_indices)
 
     # returns the global norm of the CGF
-    global_norm = np.sqrt(np.dot(norms, norms))
+    global_norm = np.sqrt(1 / norm2)
 
     return label, global_norm
 
