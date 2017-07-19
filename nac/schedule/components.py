@@ -1,6 +1,6 @@
 __author__ = "Felipe Zapata"
 
-__all__ = ["calculate_mos", "create_dict_CGFs", "create_point_folder",
+__all__ = ["calculate_mos", "create_point_folder",
            "split_file_geometries"]
 
 # ================> Python Standard  and third-party <==========
@@ -15,13 +15,10 @@ import os
 import shutil
 
 # ==================> Internal modules <==========
-from nac.basisSet.basisNormalization import createNormalizedCGFs
 from nac.schedule.scheduleCp2k import prepare_job_cp2k
 from nac.schedule.scheduleOrca import prepare_job_orca
 from nac.common import search_data_in_hdf5
-from qmworks.common import InputKey
 from qmworks.hdf5 import dump_to_hdf5
-from qmworks.hdf5.quantumHDF5 import (cp2k2hdf5, turbomole2hdf5)
 from qmworks.utils import chunksOf
 from qmworks.warnings_qmworks import SCF_Convergence_Warning
 
@@ -244,35 +241,6 @@ def split_file_geometries(pathXYZ):
 
     numat = int(xss[0].split()[0])
     return list(map(''.join, chunksOf(xss, numat + 2)))
-
-
-def create_dict_CGFs(path_hdf5, basisname, xyz, package_name='cp2k',
-                     package_config=None):
-    """
-    Try to read the basis from the HDF5 otherwise read it from a file and store
-    it in the HDF5 file. Finally, it reads the basis Set from HDF5 and
-    calculate the CGF for each atom.
-
-    :param path_hdf5: Path to the HDF5 file that contains the
-    numerical results.
-    type path_hdf5: String
-    :param basisname: Name of the Gaussian basis set.
-    :type basisname: String
-    :param xyz: List of Atoms.
-    :type xyz: [nac.common.AtomXYZ]
-    """
-    functions = {'cp2k': cp2k2hdf5, 'turbomole': turbomole2hdf5}
-
-    basis_location = join(package_name, 'basis')
-    with h5py.File(path_hdf5) as f5:
-        if basis_location not in f5:
-            # Search Path to the file containing the basis set
-            pathBasis = package_config["basis"]
-            keyBasis = InputKey("basis", [pathBasis])
-            # Store the basis sets
-            functions[package_name](f5, [keyBasis])
-
-        return createNormalizedCGFs(f5, basisname, package_name, xyz)
 
 
 def create_file_names(work_dir, i):

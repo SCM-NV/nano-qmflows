@@ -195,14 +195,10 @@ cpdef bool neglect_integral(double r, double e1, double e2, double accuracy):
     """
     Compute whether an overlap integral should be neglected 
     """
-    cdef double a, ln
-    a = min(e1, e2)
-    ln = log(((M_PI / (2 * a)) ** 3) * 10 ** (2 * accuracy))
+    cdef double ln
+    ln = -log(accuracy) * ((1 / e1) + (1 / e2))
     
-    # Check if the condition is fulfill
-    b = r > sqrt((1 / a) * ln) 
-
-    return b
+    return (r ** 2) > ln
 
 @cython.boundscheck(False)
 @cython.wraparound(False)

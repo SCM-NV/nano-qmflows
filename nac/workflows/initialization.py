@@ -2,10 +2,11 @@
 __all__ = ['initialize', 'split_trajectory', 'store_transf_matrix']
 
 from os.path import join
+from nac.basisSet import create_dict_CGFs
 from nac.common import change_mol_units
 from nac.integrals import calc_transf_matrix
-from nac.schedule.components import (create_dict_CGFs, create_point_folder,
-                                     split_file_geometries)
+from nac.schedule.components import (
+    create_point_folder, split_file_geometries)
 from qmworks.hdf5.quantumHDF5 import StoreasHDF5
 from qmworks.parsers import parse_string_xyz
 from subprocess import (PIPE, Popen)
