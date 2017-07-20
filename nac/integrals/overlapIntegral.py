@@ -3,12 +3,16 @@ __author__ = "Felipe Zapata"
 # ==========> Standard libraries and third-party <===============
 
 from multipoleObaraSaika import sab
-from nac.integrals.multipoleIntegrals import (general_multipole_matrix,
-                                              build_primitives_gaussian)
+from nac.common import (Matrix, Vector)
+from nac.integrals.multipoleIntegrals import (
+    build_primitives_gaussian, general_multipole_matrix)
+from typing import (Dict, List, Tuple)
+import numpy as np
+
 # ====================================<>=======================================
 
 
-def sijContracted(t1, t2):
+def sijContracted(t1: Tuple, t2: Tuple):
     """
     Matrix entry calculation between two Contracted Gaussian functions.
     Equivalent to < t1| t2 >.
@@ -26,27 +30,41 @@ def sijContracted(t1, t2):
     return sum(sab(g1, g2) for g1 in gs1 for g2 in gs2)
 
 
-def calcMatrixEntry(xyz_cgfs, ixs):
+def calc_overlap_triang(
+        molecule: List, dictCGFs: Dict, indices_cgfs: Matrix,
+        indices_triang: Matrix) -> Vector:
     """
-    Computed each matrix element using an index a tuple containing the
-    cartesian coordinates and the primitives gauss functions.
-
-    :param xyz_cgfs: List of tuples containing the cartesian coordinates
-    and the primitive gauss functions.
-    :type xyz_cgfs: [(xyz, (Coeff, Expo))]
-    :param ixs: Index of the matrix entry to calculate.
-    :type ixs: (Int, Int)
-    :returns: float
+    Compute the upper triangular overlap matrix
     """
-    i, j = ixs
-    t1 = xyz_cgfs[i]
-    t2 = xyz_cgfs[j]
-    return sijContracted(t1, t2)
+    # Number of total orbitals
+    result = np.empty(indices_triang.shape[0])
+
+    for k, (i, j) in enumerate(indices_triang):
+        # Extract contracted and atom indices
+        at_i, cgfs_i_idx = indices_cgfs[i]
+        at_j, cgfs_j_idx = indices_cgfs[j]
+
+        # Extract atom
+        atom_i = molecule[at_i]
+        atom_j = molecule[at_j]
+        # Extract CGFs
+        cgf_i = dictCGFs[atom_i.symbol.lower()][cgfs_i_idx]
+        cgf_j = dictCGFs[atom_j.symbol.lower()][cgfs_j_idx]
+
+        # Contracted Gauss functions and nuclear coordinates
+        ti = atom_i.xyz, cgf_i
+        tj = atom_j.xyz, cgf_j
+        result[k] = sijContracted(ti, tj)
+
+    return result
 
 
-def calcMtxOverlapP(atoms, cgfsN):
+def calcMtxOverlapP(molecule: List, dictCGFs: Dict) -> Vector:
     """
-    Overlap matrix entry calculation between two Contracted Gaussian functions
-    """
+    Overlap matrix entries calculated using Contracted Gaussian
+    functions.
 
-    return general_multipole_matrix(atoms, cgfsN, calculator=calcMatrixEntry)
+    :returns: flatten upper triangular matrix
+    """
+    return general_multipole_matrix(
+        molecule, dictCGFs, calculator=calc_overlap_triang)
