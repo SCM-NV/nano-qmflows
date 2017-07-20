@@ -1,4 +1,3 @@
-
 __all__ = ['compute_normalization_sphericals', 'create_dict_CGFs',
            'create_normalized_CGFs']
 
@@ -20,7 +19,32 @@ import h5py
 # indices from Spherical to cartesians (Index, coefficients)
 #     0      1       2      3        4       5        6     7       8        9
 # ['Fxxx', 'Fxxy', 'Fxxz', 'Fxyy', 'Fxyz', 'Fxzz', 'Fyyy', 'Fyyz', 'Fyzz', 'Fzzz']
+# c_3_4 = np.sqrt(3 / 4)    # 0.866025
+# c_6_5 = np.sqrt(6 / 5)    # 1.095445
+# c_3_8 = np.sqrt(3 / 8)    # 0.612372
+# c_5_8 = np.sqrt(5 / 8)    # 0.790569
+# c_9_8 = np.sqrt(9 / 8)    # 1.060660
+# c_9_20 = np.sqrt(9 / 20)  # 0.670820
+# c_3_40 = np.sqrt(3 / 40)  # 0.273861
 
+# dict_spherical_cartesian = {
+#     'S': [(0, 1)],                                   # S => S
+#     'Py': [(1, 1)],                                  # Py => Py
+#     'Pz': [(2, 1)],                                  # Pz => Pz
+#     'Px': [(0, 1)],                                  # Px => Px
+#     'D-2': [(1, 1)],                                 # D-2 => Dxy
+#     'D-1': [(4, 1)],                                 # D-1 => Dyz
+#     'D0': [(5, 1), (0, -0.5), (3, -0.5)],            # D0 => Dzz - 0.5Dxx - 0.5Dyy
+#     'D+1': [(2, 1)],                                 # D-1 => Dxz
+#     'D+2': [(0, c_3_4), (3, -c_3_4)],                # D-2 => Dxx - Dyy
+#     'F-3': [(6, -c_5_8), (1, c_9_8)],                # F-3 => Fx2y - fy3
+#     'F-2': [(4, 1)],                                 # F-2 => Fxyz
+#     'F-1': [(8, c_6_5), (6, -c_3_8), (1, -c_3_40)],  # F-1 => Fyz2 - Fy3 - Fx2y
+#     'F0': [(9, 1), (7, -c_9_20), (2, -c_9_20)],      # F0 => Fz3 - Fy2z - Fx2z
+#     'F+1': [(5, c_6_5), (0, -c_3_8), (3, -c_3_40)],  # F+1 => Fxz2 -Fx3 - Fxy2
+#     'F+2': [(2, c_3_4), (7, -c_3_4)],                # F+2 => Fx2z - Fy2z
+#     'F+3': [(0, c_5_8), (3, -c_9_8)]                 # F+3 => Fx3 - Fxy2
+# }
 dict_spherical_cartesian = {
     'S': [(0, 1)],                      # S => S
     'Py': [(1, 1)],                     # Py => Py
