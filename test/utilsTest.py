@@ -1,6 +1,6 @@
 
 from functools import wraps
-from nac.basisSet.basisNormalization import createNormalizedCGFs
+from nac.basisSet.basisNormalization import create_normalized_CGFs
 from nac.common import InputKey
 
 import numpy as np
@@ -48,7 +48,7 @@ def create_dict_CGFs(f5, packageHDF5, pathBasis, basisname, packageName, xyz):
     """
     keyBasis = InputKey("basis", [pathBasis])
     packageHDF5(f5, [keyBasis])   # Store the basis sets
-    return createNormalizedCGFs(f5, basisname, packageName, xyz)
+    return create_normalized_CGFs(f5, basisname, packageName, xyz)
 
 
 def dump_MOs_coeff(handle_hdf5, packageHDF5, path_MO, pathEs, pathCs,
