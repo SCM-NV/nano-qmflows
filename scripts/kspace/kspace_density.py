@@ -3,7 +3,7 @@ from functools import (partial, reduce)
 from math import (pi, sqrt)
 from multiprocessing import Pool
 from nac.integrals.fourierTransform import calculate_fourier_trasform_cartesian
-from nac.schedule.components import create_dict_CGFs
+from nac.basisSet import create_dict_CGFs
 from os.path import join
 from qmworks.parsers.xyzParser import readXYZ
 from qmworks.utils import concat
