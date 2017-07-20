@@ -1,5 +1,6 @@
 
 from itertools import (groupby, starmap)
+from nac.basisSet.basisNormalization import compute_normalization_sphericals
 from nac.common import (
     Matrix, Tensor3D, Vector, retrieve_hdf5_data, search_data_in_hdf5,
     store_arrays_in_hdf5, triang2mtx)
@@ -101,6 +102,9 @@ def compute_overlaps_ET(
     indices_range_CGFs_spherical = create_indices_range_CGFs_spherical(
         molecules[0], dictCGFs)
 
+    # Norms of the spherical CGfs
+    dict_global_norms = compute_normalization_sphericals(dictCGFs)
+    
     fragment_overlaps = []
     for k, vector_indices in enumerate(fragment_indices):
         logger.info("Computing Overlaps for molecular fragment: {}".format(k))
@@ -109,7 +113,8 @@ def compute_overlaps_ET(
                                  for mol in molecules]
         # compute the transformation matrix from cartesian to spherical
         sparse_trans_mtx = compute_fragment_trans_mtx(
-            path_hdf5, basis_name, frames_fragment_atoms[0], package_name)
+            path_hdf5, basis_name, frames_fragment_atoms[0], dict_global_norms,
+            package_name)
 
         # create a Hash for the fragment
         fragment_hash = hashlib.md5(vector_indices.tostring()).hexdigest()
@@ -233,14 +238,14 @@ def compute_lens_CGFs_sphericals(molecule: List, dictCGFs: Dict) -> Dict:
 
 def compute_fragment_trans_mtx(
         path_hdf5: str, basis_name: str, fragment_atoms: List,
-        package_name: str) -> Matrix:
+        dict_global_norms: Dict, package_name: str) -> Matrix:
     """
     Calculate the cartesian to spherical transformation matrix for
     the given fragment
     """
     with h5py.File(path_hdf5, 'r') as f5:
         trans_mtx = calc_transf_matrix(
-            f5, fragment_atoms, basis_name, package_name)
+            f5, fragment_atoms, dict_global_norms, basis_name, package_name)
 
     return sparse.csr_matrix(trans_mtx)
 

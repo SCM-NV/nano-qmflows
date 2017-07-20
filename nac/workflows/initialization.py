@@ -1,8 +1,7 @@
-
 __all__ = ['initialize', 'split_trajectory', 'store_transf_matrix']
 
 from os.path import join
-from nac.basisSet import create_dict_CGFs
+from nac.basisSet import (compute_normalization_sphericals, create_dict_CGFs)
 from nac.common import change_mol_units
 from nac.integrals import calc_transf_matrix
 from nac.schedule.components import (
@@ -10,6 +9,7 @@ from nac.schedule.components import (
 from qmworks.hdf5.quantumHDF5 import StoreasHDF5
 from qmworks.parsers import parse_string_xyz
 from subprocess import (PIPE, Popen)
+from typing import (Dict, List)
 
 import fnmatch
 import getpass
@@ -23,10 +23,11 @@ logger = logging.getLogger(__name__)
 # ====================================<>=======================================
 
 
-def initialize(project_name, path_traj_xyz, basisname, enumerate_from=0,
-               calculate_guesses='first', path_hdf5=None,
-               scratch_path=None, path_basis=None, path_potential=None,
-               geometry_units='angstrom'):
+def initialize(
+        project_name: str, path_traj_xyz: str, basisname: str,
+        enumerate_from: int=0, calculate_guesses: int='first',
+        path_hdf5: str=None, scratch_path: str=None, path_basis: str=None,
+        path_potential: str=None, geometry_units: str='angstrom') -> Dict:
     """
     Initialize all the data required to schedule the workflows associated with
     the nonadaibatic coupling
@@ -77,13 +78,14 @@ def initialize(project_name, path_traj_xyz, basisname, enumerate_from=0,
     if 'angstrom' in geometry_units.lower():
         atoms = change_mol_units(atoms)
 
+    # CGFs per element
     dictCGFs = create_dict_CGFs(path_hdf5, basisname, atoms,
                                 package_config=cp2k_config)
 
     # Calculcate the matrix to transform from cartesian to spherical
     # representation of the overlap matrix
-    hdf5_trans_mtx = store_transf_matrix(path_hdf5, atoms, basisname,
-                                         project_name, packageName='cp2k')
+    hdf5_trans_mtx = store_transf_matrix(
+        path_hdf5, atoms, dictCGFs, basisname, project_name)
 
     d = {'package_config': cp2k_config, 'path_hdf5': path_hdf5,
          'calc_new_wf_guess_on_points': points_guess,
@@ -95,43 +97,40 @@ def initialize(project_name, path_traj_xyz, basisname, enumerate_from=0,
     return d
 
 
-def store_transf_matrix(path_hdf5, atoms, basisName, project_name,
-                        packageName):
+def store_transf_matrix(
+        path_hdf5: str, atoms: List, dictCGFs: Dict, basis_name: str,
+        project_name: str, package_name: str='cp2k') -> str:
     """
     calculate the transformation of the overlap matrix from both spherical
     to cartesian and from cartesian to spherical.
 
     :param path_hdf5: Path to the HDF5 file.
-    :type: String
     :param atoms: Atoms that made up the molecule.
-    :type atoms:  List of Strings
     :param project_name: Name of the project.
-    :type project_name: String
-    :param packageName: Name of the ab initio simulation package.
-    :type packageName: String
+    :param package_name: Name of the ab initio simulation package.
     :returns: Numpy matrix containing the transformation matrix.
     """
+    # Norms of the spherical CGFs for each element
+    dict_global_norms = compute_normalization_sphericals(dictCGFs)
+    # Compute the transformation matrix between cartesian and spherical 
     path = os.path.join(project_name, 'trans_mtx')
     with h5py.File(path_hdf5) as f5:
         if path not in f5:
-
-            mtx = calc_transf_matrix(f5, atoms, basisName, packageName)
-            store = StoreasHDF5(f5, packageName)
+            mtx = calc_transf_matrix(
+                f5, atoms, basis_name, dict_global_norms, package_name)
+            store = StoreasHDF5(f5, package_name)
             store.funHDF5(path, mtx)
     return path
 
 
-def split_trajectory(path, nBlocks, pathOut):
+def split_trajectory(path: str, nBlocks: int, pathOut: str) -> List:
     """
     Split an XYZ trajectory in n Block and write
     them in a given path.
     :Param path: Path to the XYZ file.
-    :type path: String
     :param nBlocks: number of Block into which the xyz file is split.
-    :type nBlocks: Int
     :param pathOut: Path were the block are written.
-    :type pathOut: String
-    :returns: tuple (Number of structures per block, path to blocks)
+    :returns: path to block List
     """
     with open(path, 'r') as f:
             l = f.readline()  # Read First line
