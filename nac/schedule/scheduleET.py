@@ -1,4 +1,5 @@
 
+
 from itertools import (groupby, starmap)
 from nac.basisSet.basisNormalization import compute_normalization_sphericals
 from nac.common import (
@@ -39,11 +40,12 @@ def photo_excitation_rate(
     :returns: tuple containing both nonadiabatic and adiabatic components
     """
     # Rearrange the overlap matrix in the PYXAID order
-    matrix_overlap_pyxaid_order = retrieve_overlap_elements(
-        map_index_pyxaid_hdf5, tensor_overlaps[1])
+    hole_indices, electron_indices = map_index_pyxaid_hdf5
+
+    matrix_overlap_pyxaid_order = tensor_overlaps[1][electron_indices, electron_indices]
 
     # Density of the fragment
-    density = np.dot(matrix_overlap_pyxaid_order ** 2,
+    density = np.dot(matrix_overlap_pyxaid_order,
                      time_dependent_coeffs[1])
 
     # NonAdiabatic component
@@ -51,37 +53,18 @@ def photo_excitation_rate(
         lambda v: (v[0] - v[2]) / (2 * dt_au), 0, time_dependent_coeffs)
 
     nonadiabatic = np.dot(coeff_derivatives,
-                          matrix_overlap_pyxaid_order ** 2)
+                          matrix_overlap_pyxaid_order)
 
     # Adiabatic component
     overlap_derv = np.apply_along_axis(
         lambda v: (v[0] - v[2]) / (2 * dt_au), 0, tensor_overlaps)
 
-    overlap_derv_pyxaid_order = retrieve_overlap_elements(
-        map_index_pyxaid_hdf5, overlap_derv)
+    overlap_derv_pyxaid_order = overlap_derv[electron_indices, electron_indices]
 
     adiabatic = np.dot(time_dependent_coeffs[1],
-                       overlap_derv_pyxaid_order ** 2)
+                       overlap_derv_pyxaid_order)
 
     return density, nonadiabatic, adiabatic
-
-
-def retrieve_overlap_elements(
-        map_index_pyxaid_hdf5: Matrix, arr: Matrix) -> Matrix:
-    """
-    Read the overlap elements in the PYXAID STATES order
-    """
-    # Resulring matrix
-    overlaps = np.empty(map_index_pyxaid_hdf5.shape[0])
-
-    # indices of the i -> j transitions used by PYXAID
-    for k, (i, j) in enumerate(np.rollaxis(map_index_pyxaid_hdf5, axis=0)):
-        s_ii = arr[i, i]
-        s_jj = arr[j, j]
-        s_ij = arr[i, j]
-        overlaps[k] = s_ii * s_jj - (s_ij ** 2)
-
-    return overlaps
 
 
 def compute_overlaps_ET(
@@ -104,7 +87,7 @@ def compute_overlaps_ET(
 
     # Norms of the spherical CGfs
     dict_global_norms = compute_normalization_sphericals(dictCGFs)
-    
+
     fragment_overlaps = []
     for k, vector_indices in enumerate(fragment_indices):
         logger.info("Computing Overlaps for molecular fragment: {}".format(k))
