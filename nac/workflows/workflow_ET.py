@@ -227,6 +227,5 @@ def write_ETR(mtx, i):
     Save the ETR in human readable format
     """
     file_name = "electronTranferRates_fragment_{}.txt".format(i)
-    header = 'Density  Nonadiabatic  Adibatic Total'
-    arr = np.column_stack((mtx, np.sum(mtx[:, 1:], axis=1)))
-    np.savetxt(file_name, arr, fmt='{:^3}'.format('%e'), header=header)
+    header = 'electron_Density electron_ETR(Nonadiabatic Adibatic) hole_density hole_ETR(Nonadiabatic Adibatic)'
+    np.savetxt(file_name, mtx, fmt='{:^3}'.format('%e'), header=header)

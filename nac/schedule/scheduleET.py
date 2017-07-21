@@ -42,29 +42,37 @@ def photo_excitation_rate(
     # Rearrange the overlap matrix in the PYXAID order
     hole_indices, electron_indices = map_index_pyxaid_hdf5
 
-    matrix_overlap_pyxaid_order = tensor_overlaps[1][electron_indices, electron_indices]
+    # Overlaps for the electron and the hole pair
+    electron_matrix_overlap = tensor_overlaps[1][electron_indices, electron_indices]
+    hole_matrix_overlap = tensor_overlaps[1][hole_indices, hole_indices]
 
     # Density of the fragment
-    density = np.dot(matrix_overlap_pyxaid_order,
-                     time_dependent_coeffs[1])
+    electron_density = np.dot(electron_matrix_overlap, time_dependent_coeffs[1])
+    hole_density = np.dot(hole_matrix_overlap, time_dependent_coeffs[1])
 
     # NonAdiabatic component
     coeff_derivatives = np.apply_along_axis(
         lambda v: (v[0] - v[2]) / (2 * dt_au), 0, time_dependent_coeffs)
 
-    nonadiabatic = np.dot(coeff_derivatives,
-                          matrix_overlap_pyxaid_order)
+    # Nonadiabatic components of the electron/hole transfer
+    electron_nonadiabatic = np.dot(coeff_derivatives, electron_matrix_overlap)
+    hole_nonadiabatic = np.dot(coeff_derivatives, hole_matrix_overlap)
 
     # Adiabatic component
     overlap_derv = np.apply_along_axis(
         lambda v: (v[0] - v[2]) / (2 * dt_au), 0, tensor_overlaps)
 
-    overlap_derv_pyxaid_order = overlap_derv[electron_indices, electron_indices]
+    # Adiabatic components of the electron/hole transfer
+    electron_overlap_derv = overlap_derv[electron_indices, electron_indices]
+    hole_overlap_derv = overlap_derv[hole_indices, hole_indices]
 
-    adiabatic = np.dot(time_dependent_coeffs[1],
-                       overlap_derv_pyxaid_order)
+    electron_adiabatic = np.dot(time_dependent_coeffs[1], electron_overlap_derv)
+    hole_adiabatic = np.dot(time_dependent_coeffs[1], hole_overlap_derv)
 
-    return density, nonadiabatic, adiabatic
+    rs = (electron_density, electron_nonadiabatic, electron_adiabatic,
+          hole_density, hole_nonadiabatic, hole_adiabatic)
+
+    return rs
 
 
 def compute_overlaps_ET(
@@ -150,6 +158,7 @@ def compute_fragment_overlap(
     Compute the overlap matrix only for those atoms included in the fragment
     """
     if not search_data_in_hdf5(path_hdf5, path_overlap):
+        logger.info("Computing overlap:{}".format(path_overlap))
         # Compute the overlap in the atomic basis
         dim_cart = trans_mtx.shape[1]
         overlap_AO = triang2mtx(
