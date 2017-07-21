@@ -40,7 +40,7 @@ def photo_excitation_rate(
     :returns: tuple containing both nonadiabatic and adiabatic components
     """
     # Rearrange the overlap matrix in the PYXAID order
-    hole_indices, electron_indices = map_index_pyxaid_hdf5
+    hole_indices, electron_indices = map_index_pyxaid_hdf5.transpose()
 
     matrix_overlap_pyxaid_order = tensor_overlaps[1][electron_indices, electron_indices]
 
