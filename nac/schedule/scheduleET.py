@@ -245,7 +245,7 @@ def compute_fragment_trans_mtx(
     """
     with h5py.File(path_hdf5, 'r') as f5:
         trans_mtx = calc_transf_matrix(
-            f5, fragment_atoms, dict_global_norms, basis_name, package_name)
+            f5, fragment_atoms, basis_name, dict_global_norms, package_name)
 
     return sparse.csr_matrix(trans_mtx)
 
