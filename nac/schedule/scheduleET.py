@@ -52,7 +52,7 @@ def photo_excitation_rate(
 
     # NonAdiabatic component
     coeff_derivatives = np.apply_along_axis(
-        lambda v: (v[0] - v[2]) / (2 * dt_au), 0, time_dependent_coeffs)
+        lambda v: (v[2] - v[0]) / (2 * dt_au), 0, time_dependent_coeffs)
 
     # Nonadiabatic components of the electron/hole transfer
     electron_nonadiabatic = np.dot(coeff_derivatives, electron_matrix_overlap)
@@ -60,7 +60,7 @@ def photo_excitation_rate(
 
     # Adiabatic component
     overlap_derv = np.apply_along_axis(
-        lambda v: (v[0] - v[2]) / (2 * dt_au), 0, tensor_overlaps)
+        lambda v: (v[2] - v[0]) / (2 * dt_au), 0, tensor_overlaps)
 
     # Adiabatic components of the electron/hole transfer
     electron_overlap_derv = overlap_derv[electron_indices, electron_indices]
