@@ -233,11 +233,11 @@ def write_ETR(mtx, dt, i):
     file_name = "electronTranferRates_fragment_{}.txt".format(i)
     header = 'electron_Density electron_ETR(Nonadiabatic Adibatic) hole_density hole_ETR(Nonadiabatic Adibatic)'
     # Density of Electron/hole
-    density_electron = mtx[:, 0]
-    density_hole = mtx[:, 3]
+    density_electron = mtx[1:, 0]
+    density_hole = mtx[1:, 3]
     # Integrate the nonadiabatic/adiabatic components of the electron/hole ETR
     int_elec_nonadia, int_elec_adia, int_hole_nonadia, int_hole_adia = [
-        integrate.cumtrapz(mtx[:, k], dt) for k in [1, 2, 4, 5]]
+        integrate.cumtrapz(mtx[:, k], dx=dt) for k in [1, 2, 4, 5]]
 
     # Join the data
     data = np.stack(
@@ -257,11 +257,11 @@ def write_overlap_densities(path_hdf5: str, paths_fragment_overlaps: List, dt: i
         overlaps = np.stack(retrieve_hdf5_data(path_hdf5, paths_overlaps))
         # time frame
         frames = overlaps.shape[0]
-        ts = np.arange(1, frames + 1) * dt
+        ts = np.arange(1, frames + 1).reshape(frames, 1) * dt
         # Diagonal of the 3D-tensor
         densities = np.diagonal(overlaps, axis1=1, axis2=2)
         data = np.hstack((ts, densities))
 
         # Save data in human readable format
-        file_name = 'densities_fragment_{}'.format(k)
+        file_name = 'densities_fragment_{}.txt'.format(k)
         np.savetxt(file_name, data, fmt='{:^3}'.format('%e'))
