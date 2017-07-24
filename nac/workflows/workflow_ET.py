@@ -5,7 +5,8 @@ __author__ = "Felipe Zapata"
 from nac.schedule.components import calculate_mos
 from nac.common import (
     Matrix, Tensor3D, Vector, change_mol_units, femtosec2au,
-    retrieve_hdf5_data)
+    retrieve_hdf5_data, search_data_in_hdf5)
+from nac.schedule.scheduleCoupling import swap_forward
 from nac.schedule.scheduleET import (
     compute_overlaps_ET, photo_excitation_rate)
 from noodles import (gather, schedule)
@@ -84,8 +85,8 @@ def calculate_ETR(
 
     # Time-dependent coefficients
     time_depend_coeffs = read_time_dependent_coeffs(path_time_coeffs)
-
-    logger.info("Reading time_dependent coefficients from: {}".format(path_time_coeffs))
+    msg = "Reading time_dependent coefficients from: {}".format(path_time_coeffs)
+    logger.info(msg)
 
     # compute_overlaps_ET
     scheduled_overlaps = schedule(compute_overlaps_ET)
@@ -104,14 +105,18 @@ def calculate_ETR(
     # Number of ETR points calculated with the MD trajectory
     n_points = len(geometries) - 2
 
+    # Read the swap between Molecular orbitals obtained from a previous
+    # Coupling calculation
+    swaps = read_swaps(path_hdf5, project_name)
+
     # Electron transfer rate for each frame of the Molecular dynamics
     scheduled_photoexcitation = schedule(compute_photoexcitation)
     etrs = scheduled_photoexcitation(
         path_hdf5, time_depend_coeffs, fragment_overlaps,
-        map_index_pyxaid_hdf5, n_points, dt_au)
+        map_index_pyxaid_hdf5, swaps, n_points, dt_au)
 
     # Execute the workflow
-    electronTransferRates, path_overlaps  = run(
+    electronTransferRates, path_overlaps = run(
         gather(etrs, fragment_overlaps), folder=work_dir)
 
     for i, mtx in enumerate(electronTransferRates):
@@ -123,7 +128,7 @@ def calculate_ETR(
 def compute_photoexcitation(
         path_hdf5: str, time_dependent_coeffs: Matrix,
         paths_fragment_overlaps: List, map_index_pyxaid_hdf5: Matrix,
-        n_points: int, dt_au: float) -> List:
+        swaps: Matrix, n_points: int, dt_au: float) -> List:
     """
     :param i: Electron transfer rate at time i * dt
     :param path_hdf5: Path to the HDF5 file that contains the
@@ -135,6 +140,9 @@ def compute_photoexcitation(
     with the `geometries`.
     :param map_index_pyxaid_hdf5: map from PYXAID excitation to the indices i,j
     of the molecular orbitals stored in the HDF5.
+    :param swaps: Matrix containing the crossing between the MOs during the
+    molecular dynamics.
+    :param n_points: Number of frames to compute the ETR.
     :param dt_au: Delta time in atomic units
     :returns: promise to path to the Coupling inside the HDF5.
     """
@@ -144,10 +152,13 @@ def compute_photoexcitation(
     results = []
     for paths_overlaps in paths_fragment_overlaps:
         overlaps = np.stack(retrieve_hdf5_data(path_hdf5, paths_overlaps))
+        # Track the crossing between MOs
+        nframes = overlaps.shape[0]
+        corrected_overlaps = swap_forward(overlaps, swaps[:nframes])
 
         etr = np.array([
             photo_excitation_rate(
-                overlaps[i: i + 3], time_dependent_coeffs[i: i + 3],
+                corrected_overlaps[i: i + 3], time_dependent_coeffs[i: i + 3],
                 map_index_pyxaid_hdf5, dt_au)
             for i in range(n_points)])
         results.append(etr)
@@ -184,6 +195,20 @@ def read_time_dependent_coeffs(
 
     rss = np.stack(pss)
     return np.mean(rss, axis=0)
+
+
+def read_swaps(path_hdf5: str, project_name: str) -> Matrix:
+    """
+    Read the crossing tracking for the Molecular orbital
+    """
+    path_swaps = join(project_name, 'swaps')
+    if search_data_in_hdf5(path_hdf5, path_swaps):
+        return retrieve_hdf5_data(path_hdf5, path_swaps)
+    else:
+        msg = """There is not a tracking file called: {}
+        This file is automatically created when running the worflow_coupling
+        simulations""".format(path_swaps)
+        raise RuntimeError(msg)
 
 
 def create_map_index_pyxaid(
@@ -265,3 +290,4 @@ def write_overlap_densities(path_hdf5: str, paths_fragment_overlaps: List, dt: i
         # Save data in human readable format
         file_name = 'densities_fragment_{}.txt'.format(k)
         np.savetxt(file_name, data, fmt='{:^3}'.format('%e'))
+

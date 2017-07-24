@@ -43,11 +43,13 @@ def photo_excitation_rate(
     hole_indices, electron_indices = map_index_pyxaid_hdf5.transpose()
 
     # Overlaps for the electron and the hole pair
-    electron_matrix_overlap = tensor_overlaps[1][electron_indices, electron_indices]
+    electron_matrix_overlap = tensor_overlaps[1][
+        electron_indices, electron_indices]
     hole_matrix_overlap = tensor_overlaps[1][hole_indices, hole_indices]
 
     # Density of the fragment
-    electron_density = np.dot(electron_matrix_overlap, time_dependent_coeffs[1])
+    electron_density = np.dot(
+        electron_matrix_overlap, time_dependent_coeffs[1])
     hole_density = np.dot(hole_matrix_overlap, time_dependent_coeffs[1])
 
     # NonAdiabatic component
@@ -66,7 +68,8 @@ def photo_excitation_rate(
     electron_overlap_derv = overlap_derv[electron_indices, electron_indices]
     hole_overlap_derv = overlap_derv[hole_indices, hole_indices]
 
-    electron_adiabatic = np.dot(time_dependent_coeffs[1], electron_overlap_derv)
+    electron_adiabatic = np.dot(
+        time_dependent_coeffs[1], electron_overlap_derv)
     hole_adiabatic = np.dot(time_dependent_coeffs[1], hole_overlap_derv)
 
     rs = (electron_density, electron_nonadiabatic, electron_adiabatic,
