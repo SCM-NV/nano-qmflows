@@ -8,10 +8,11 @@ from nac.common import (
     retrieve_hdf5_data)
 from nac.schedule.scheduleET import (
     compute_overlaps_ET, photo_excitation_rate)
-from noodles import schedule
+from noodles import (gather, schedule)
 from os.path import join
 from qmworks import run
 from qmworks.parsers import parse_string_xyz
+from scipy import integrate
 
 import fnmatch
 import logging
@@ -110,10 +111,13 @@ def calculate_ETR(
         map_index_pyxaid_hdf5, n_points, dt_au)
 
     # Execute the workflow
-    electronTransferRates = run(etrs, folder=work_dir)
+    electronTransferRates, path_overlaps  = run(
+        gather(etrs, fragment_overlaps), folder=work_dir)
 
     for i, mtx in enumerate(electronTransferRates):
-        write_ETR(mtx, i)
+        write_ETR(mtx, dt, i)
+
+    write_overlap_densities(path_hdf5, path_overlaps, dt)
 
 
 def compute_photoexcitation(
@@ -222,10 +226,42 @@ def create_map_index_pyxaid(
     return indexes_hdf5
 
 
-def write_ETR(mtx, i):
+def write_ETR(mtx, dt, i):
     """
     Save the ETR in human readable format
     """
     file_name = "electronTranferRates_fragment_{}.txt".format(i)
     header = 'electron_Density electron_ETR(Nonadiabatic Adibatic) hole_density hole_ETR(Nonadiabatic Adibatic)'
-    np.savetxt(file_name, mtx, fmt='{:^3}'.format('%e'), header=header)
+    # Density of Electron/hole
+    density_electron = mtx[:, 0]
+    density_hole = mtx[:, 3]
+    # Integrate the nonadiabatic/adiabatic components of the electron/hole ETR
+    int_elec_nonadia, int_elec_adia, int_hole_nonadia, int_hole_adia = [
+        integrate.cumtrapz(mtx[:, k], dt) for k in [1, 2, 4, 5]]
+
+    # Join the data
+    data = np.stack(
+        (density_electron, int_elec_nonadia, int_elec_adia, density_hole,
+         int_hole_nonadia, int_hole_adia), axis=1)
+
+    # save the data in human readable format
+    np.savetxt(file_name, data, fmt='{:^3}'.format('%e'), header=header)
+
+
+def write_overlap_densities(path_hdf5: str, paths_fragment_overlaps: List, dt: int=1):
+    """
+    Write the diagonal of the overlap matrices
+    """
+    logger.info("writing densities in human readable format")
+    for k, paths_overlaps in enumerate(paths_fragment_overlaps):
+        overlaps = np.stack(retrieve_hdf5_data(path_hdf5, paths_overlaps))
+        # time frame
+        frames = overlaps.shape[0]
+        ts = np.arange(1, frames + 1) * dt
+        # Diagonal of the 3D-tensor
+        densities = np.diagonal(overlaps, axis1=1, axis2=2)
+        data = np.hstack((ts, densities))
+
+        # Save data in human readable format
+        file_name = 'densities_fragment_{}'.format(k)
+        np.savetxt(file_name, data, fmt='{:^3}'.format('%e'))
