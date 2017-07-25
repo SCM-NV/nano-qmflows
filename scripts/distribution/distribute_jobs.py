@@ -3,7 +3,6 @@ from collections import namedtuple
 from nac.workflows.initialization import split_trajectory
 from os.path import join
 from qmworks import Settings
-from qmworks.utils import settings2Dict
 
 import os
 import shutil

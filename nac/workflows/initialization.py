@@ -112,7 +112,7 @@ def store_transf_matrix(
     """
     # Norms of the spherical CGFs for each element
     dict_global_norms = compute_normalization_sphericals(dictCGFs)
-    # Compute the transformation matrix between cartesian and spherical 
+    # Compute the transformation matrix between cartesian and spherical
     path = os.path.join(project_name, 'trans_mtx')
     with h5py.File(path_hdf5) as f5:
         if path not in f5:

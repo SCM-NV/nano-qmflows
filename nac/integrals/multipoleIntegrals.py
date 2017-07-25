@@ -200,7 +200,7 @@ def compute_CGFs_indices(mol: List, dictCGFs: Dict) -> Tuple:
     indices = np.empty((nOrbs, 2), dtype=np.int32)
 
     acc = 0
-    for i, at in enumerate(mol):
+    for i in range(len(mol)):
         nContracted = lens[i]
         slices = acc + nContracted
         # indices of the CGFs
