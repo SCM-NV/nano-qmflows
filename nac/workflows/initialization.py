@@ -15,7 +15,9 @@ import fnmatch
 import getpass
 import h5py
 import logging
+import nac
 import os
+import pkg_resources
 import subprocess
 
 # Starting logger
@@ -157,3 +159,20 @@ def split_trajectory(path: str, nBlocks: int, pathOut: str) -> List:
         raise RuntimeError("Submission Errors: {}".format(err))
     else:
         return fnmatch.filter(os.listdir(), "chunk_xyz*")
+
+
+def log_config(work_dir, path_hdf5, algorithm):
+    """
+    Print initial configuration
+    """
+    # Get logger
+    logger = logging.getLogger(__name__)
+
+    version = pkg_resources.get_distribution('qmworks-namd').version
+    path = nac.__path__
+
+    logger.info("Using qmworks-namd version: {} ".format(version))
+    logger.info("qmworks-namd path is: {}".format(path))
+    logger.info("Working directory is: {}".format(work_dir))
+    logger.info("Data will be stored in HDF5 file: {}".format(path_hdf5))
+    logger.info("The chosen algorithm to compute the coupling is: {}\n".format(algorithm))

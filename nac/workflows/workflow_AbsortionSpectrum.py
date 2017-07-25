@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 
 # Named tuple
 Oscillator = namedtuple("Oscillator",
-                        ('initialS', 'finalS',  'initialE', 'finalE',
+                        ('initialS', 'finalS', 'initialE', 'finalE',
                          'deltaE', 'fij', 'components'))
 
 # Planck con`stant in ev . s

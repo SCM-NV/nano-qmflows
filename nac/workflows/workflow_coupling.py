@@ -4,6 +4,7 @@ __all__ = ['generate_pyxaid_hamiltonians']
 
 # ================> Python Standard  and third-party <==========
 
+from .initialization import log_config
 from nac.schedule.components import calculate_mos
 from nac.schedule.scheduleCoupling import (
     calculate_overlap, lazy_couplings, write_hamiltonians)
@@ -12,8 +13,6 @@ from os.path import join
 from qmworks import run
 
 import logging
-import pkg_resources
-import nac
 import os
 import shutil
 
@@ -122,20 +121,3 @@ def remove_folders(folders):
     for f in folders:
         if os.path.exists(f):
             shutil.rmtree(f)
-
-
-def log_config(work_dir, path_hdf5, algorithm):
-    """
-    Print initial configuration
-    """
-    # Get logger
-    logger = logging.getLogger(__name__)
-
-    version = pkg_resources.get_distribution('qmworks-namd').version
-    path = nac.__path__
-
-    logger.info("Using qmworks-namd version: {} ".format(version))
-    logger.info("qmworks-namd path is: {}".format(path))
-    logger.info("Working directory is: {}".format(work_dir))
-    logger.info("Data will be stored in HDF5 file: {}".format(path_hdf5))
-    logger.info("The chosen algorithm to compute the coupling is: {}\n".format(algorithm))
