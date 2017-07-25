@@ -63,11 +63,13 @@ def main(path_output, nstates, nconds):
     # Weighted state energy for a given SH or SH population at time t
     eav_outs = energies * outs
     eav_pops = energies * pops
-# Ensamble average over initial conditions of the electronic energy as a function of time
+    # Ensamble average over initial conditions of the electronic energy
+    # as a function of time
     el_ene_outs = np.average(np.sum(eav_outs, axis=1), axis=1)
     el_ene_pops = np.average(np.sum(eav_pops, axis=1), axis=1)
-# Ensamble average scaled to the lowest excitation energy. This way the cooling converge to 0. 
-    lowest_hl_gap = np.average(np.amin(energies[:,1:,:], axis=1), axis=1)
+    # Ensamble average scaled to the lowest excitation energy.
+    # This way the cooling converge to 0.
+    lowest_hl_gap = np.average(np.amin(energies[:, 1:, :], axis=1), axis=1)
     ene_outs_ref0 = el_ene_outs - lowest_hl_gap
     ene_pops_ref0 = el_ene_pops - lowest_hl_gap
 

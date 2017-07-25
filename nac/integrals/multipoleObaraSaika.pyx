@@ -45,7 +45,7 @@ cpdef double sab(tuple gs1, tuple gs2) except? -1:
             rpb = rp - r2[i]
             s00 = cte * exp(-u * rab ** 2.0)
             # select the exponent of the multipole 
-            prod *= obaraSaikaMultipole(p, s00, rpa, rpb, rp, l1x, l2x, 0) 
+            prod *= obaraSaikaMultipole(p, s00, rpa, rpb, 0, l1x, l2x, 0) 
     
         return c1 * c2 * prod
 
@@ -195,14 +195,10 @@ cpdef bool neglect_integral(double r, double e1, double e2, double accuracy):
     """
     Compute whether an overlap integral should be neglected 
     """
-    cdef double a, ln
-    a = min(e1, e2)
-    ln = log(((M_PI / (2 * a)) ** 3) * 10 ** (2 * accuracy))
+    cdef double ln
+    ln = -log(accuracy) * ((1 / e1) + (1 / e2))
     
-    # Check if the condition is fulfill
-    b = r > sqrt((1 / a) * ln) 
-
-    return b
+    return (r ** 2) > ln
 
 @cython.boundscheck(False)
 @cython.wraparound(False)

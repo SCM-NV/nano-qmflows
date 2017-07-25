@@ -102,7 +102,7 @@ def calcMatrixEntry(
     return result
 
 
-def calcMtxMultipoleP(atoms: List, dictCGFs: Dict, rc, e=0, f=0, g=0):
+def calcMtxMultipoleP(atoms: List, dictCGFs: Dict, rc=(0, 0, 0), e=0, f=0, g=0):
     """
     Multipole matrix entry calculation between two Contracted Gaussian functions.
     It uses a partial applied function to pass the center of the multipole `rc`
@@ -200,9 +200,9 @@ def compute_CGFs_indices(mol: List, dictCGFs: Dict) -> Tuple:
     indices = np.empty((nOrbs, 2), dtype=np.int32)
 
     acc = 0
-    for i, at in enumerate(mol):
+    for i in range(len(mol)):
         nContracted = lens[i]
-        slices  = acc + nContracted
+        slices = acc + nContracted
         # indices of the CGFs
         indices[acc: slices, 1] = np.arange(nContracted)
         # index of the atom

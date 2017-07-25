@@ -64,8 +64,8 @@ def test_couplings_and_oscillators():
         # Check couplings
         check_properties()
         # Check oscillator
-        fij = list(*chain(*data[0]))[3]
-        assert abs(fij - 0.13074799310750024) < 1e-8
+        fij = list(*chain(*data[0]))[5]
+        assert abs(fij - 0.130748) < 1e-6
 
     finally:
         # remove tmp data and clean global config
