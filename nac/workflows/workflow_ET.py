@@ -37,7 +37,7 @@ def calculate_ETR(
         work_dir: str=None, traj_folders: List=None,
         dictCGFs: Dict=None, orbitals_range: Tuple=None,
         pyxaid_HOMO: int=None, pyxaid_Nmin: int=None, pyxaid_Nmax: int=None,
-        fragment_indices: None=List, dt: float=1):
+        fragment_indices: None=List, dt: float=1, **kwargs):
     """
     Use a md trajectory to calculate the Electron transfer rate.
 
@@ -154,7 +154,7 @@ def compute_photoexcitation(
         # Track the crossing between MOs
         for m, x in enumerate(overlaps):
             overlaps[m] = x[swaps[m]]  # update the overlaps
-        
+
         etr = np.array([
             photo_excitation_rate(
                 overlaps[i: i + 3], time_dependent_coeffs[i: i + 3],

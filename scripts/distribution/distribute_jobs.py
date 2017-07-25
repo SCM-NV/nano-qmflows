@@ -222,7 +222,7 @@ path_basis = '{}'
 path_potential = '{}'
 path_hdf5 = '{}'
 path_traj_xyz = '{}'
-basisname = '{}'
+basisname = {}
 
 initial_config = initialize(project_name, path_traj_xyz,
                             basisname=basisname,

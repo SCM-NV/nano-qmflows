@@ -36,7 +36,7 @@ def main():
 
     # Integation step used for the dynamics (femtoseconds)
     dt = 1
-    
+
     # ============== End of User definitions ===================================
 
     cp2k_args = Settings()
