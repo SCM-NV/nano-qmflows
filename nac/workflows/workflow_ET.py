@@ -152,12 +152,12 @@ def compute_photoexcitation(
     for paths_overlaps in paths_fragment_overlaps:
         overlaps = np.stack(retrieve_hdf5_data(path_hdf5, paths_overlaps))
         # Track the crossing between MOs
-        nframes = overlaps.shape[0]
-        corrected_overlaps = overlaps[:, swaps[:nframes]]
-
+        for m, x in enumerate(overlaps):
+            overlaps[m] = x[swaps[m]]  # update the overlaps
+        
         etr = np.array([
             photo_excitation_rate(
-                corrected_overlaps[i: i + 3], time_dependent_coeffs[i: i + 3],
+                overlaps[i: i + 3], time_dependent_coeffs[i: i + 3],
                 map_index_pyxaid_hdf5, dt_au)
             for i in range(n_points)])
         results.append(etr)
