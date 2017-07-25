@@ -154,7 +154,7 @@ def compute_photoexcitation(
         # Track the crossing between MOs
         for m, x in enumerate(overlaps):
             overlaps[m] = x[swaps[m]]  # update the overlaps
-        
+
         etr = np.array([
             photo_excitation_rate(
                 overlaps[i: i + 3], time_dependent_coeffs[i: i + 3],
