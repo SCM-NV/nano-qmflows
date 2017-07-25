@@ -6,7 +6,6 @@ from nac.schedule.components import calculate_mos
 from nac.common import (
     Matrix, Tensor3D, Vector, change_mol_units, femtosec2au,
     retrieve_hdf5_data, search_data_in_hdf5)
-from nac.schedule.scheduleCoupling import swap_forward
 from nac.schedule.scheduleET import (
     compute_overlaps_ET, photo_excitation_rate)
 from noodles import (gather, schedule)
@@ -153,8 +152,7 @@ def compute_photoexcitation(
     for paths_overlaps in paths_fragment_overlaps:
         overlaps = np.stack(retrieve_hdf5_data(path_hdf5, paths_overlaps))
         # Track the crossing between MOs
-        nframes = overlaps.shape[0]
-        corrected_overlaps = swap_forward(overlaps, swaps[:nframes])
+        corrected_overlaps = overlaps[:, swaps]
 
         etr = np.array([
             photo_excitation_rate(
