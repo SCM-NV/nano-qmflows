@@ -289,4 +289,3 @@ def write_overlap_densities(path_hdf5: str, paths_fragment_overlaps: List, dt: i
         # Save data in human readable format
         file_name = 'densities_fragment_{}.txt'.format(k)
         np.savetxt(file_name, data, fmt='{:^3}'.format('%e'))
-

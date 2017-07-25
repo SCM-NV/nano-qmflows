@@ -34,6 +34,9 @@ def main():
     # Algorithm to compute the NAC
     algorithm = 'levine'
 
+    # Integation step used for the dynamics (femtoseconds)
+    dt = 1
+    
     # ============== End of User definitions ===================================
 
     cp2k_args = Settings()
@@ -52,7 +55,7 @@ def main():
 
     write_python_script(scratch, 'total_results', path_to_trajectory, project_name,
                         basisCP2K, potCP2K, cp2k_args, Settings(), 0, script_name,
-                        file_hdf5, nHOMO, couplings_range, algorithm)
+                        file_hdf5, nHOMO, couplings_range, algorithm, dt)
 
     # Script using SLURM
     write_slurm_script(scratch, results_dir, script_name)
