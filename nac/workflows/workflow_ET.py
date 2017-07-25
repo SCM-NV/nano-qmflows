@@ -154,7 +154,7 @@ def compute_photoexcitation(
         # Track the crossing between MOs
         for m, x in enumerate(overlaps):
             overlaps[m] = x[swaps[m]]  # update the overlaps
-        
+
         etr = np.array([
             photo_excitation_rate(
                 overlaps[i: i + 3], time_dependent_coeffs[i: i + 3],
@@ -289,4 +289,3 @@ def write_overlap_densities(path_hdf5: str, paths_fragment_overlaps: List, dt: i
         # Save data in human readable format
         file_name = 'densities_fragment_{}.txt'.format(k)
         np.savetxt(file_name, data, fmt='{:^3}'.format('%e'))
-
