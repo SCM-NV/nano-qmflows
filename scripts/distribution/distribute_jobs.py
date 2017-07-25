@@ -40,7 +40,7 @@ def main():
 
 
     # Varaible to define the Path ehere the Cp2K jobs will be computed
-    scratch = "<Path/where/the/Molecular Orbitals/and/Couplings/are/computed>"
+    scratch = "<Path/where/the/Molecular_Orbitals/and/Couplings/are/computed>"
     project_name = 'replace_with_Name_of_the_Project'  # name use to create folders
 
     # Path to the basis set used by Cp2k
@@ -121,41 +121,49 @@ def main():
                             slurm, cwd, nHOMO, coupling_range, algorithm, dt)
 
 
-def cp2k_input(range_orbitals, cell_parameters, cell_angles,
-               added_mos):
+def cp2k_input(
+        range_orbitals, cell_parameters, cell_angles, added_mos,
+        basis="DZVP-MOLOPT-SR-GTH", potential="GTH-PBE"):
     """
     # create ``Settings`` for the Cp2K Jobs.
     """
     # Main Cp2k Jobs
     cp2k_args = Settings()
-    cp2k_args.basis = "DZVP-MOLOPT-SR-GTH"
-    cp2k_args.potential = "GTH-PBE"
+    cp2k_args.basis = fun_format(basis)
+    cp2k_args.potential = fun_format(potential)
     cp2k_args.cell_parameters = cell_parameters
     cp2k_args.cell_angles = cell_angles
     main_dft = cp2k_args.specific.cp2k.force_eval.dft
     main_dft.scf.added_mos = added_mos
-    main_dft.scf.max_scf = 40  
+    main_dft.scf.max_scf = 40
     main_dft.scf.eps_scf = 5e-4
-    main_dft['print']['mo']['mo_index_range'] = "{} {}".format(*range_orbitals)
-    cp2k_args.specific.cp2k.force_eval.subsys.cell.periodic = 'None'
+    main_dft['print']['mo']['mo_index_range'] = '"{} {}"'.format(*range_orbitals)
+    cp2k_args.specific.cp2k.force_eval.subsys.cell.periodic = fun_format('None')
 
     # Setting to calculate the wave function used as guess
     cp2k_OT = Settings()
-    cp2k_OT.basis = "DZVP-MOLOPT-SR-GTH"
-    cp2k_OT.potential = "GTH-PBE"
+    cp2k_OT.basis = fun_format(basis)
+    cp2k_OT.potential = fun_format(potential)
     cp2k_OT.cell_parameters = cell_parameters
     cp2k_OT.cell_angles = cell_angles
     ot_dft = cp2k_OT.specific.cp2k.force_eval.dft
-    ot_dft.scf.scf_guess = 'atomic'
-    ot_dft.scf.ot.minimizer = 'DIIS'
+    ot_dft.scf.scf_guess = fun_format('atomic')
+    ot_dft.scf.ot.minimizer = fun_format('DIIS')
     ot_dft.scf.ot.n_diis = 7
-    ot_dft.scf.ot.preconditioner = 'FULL_SINGLE_INVERSE'
+    ot_dft.scf.ot.preconditioner = fun_format('FULL_SINGLE_INVERSE')
     ot_dft.scf.added_mos = 0
     ot_dft.scf.eps_scf = 1e-06
-    ot_dft.scf.scf_guess = 'restart'
-    cp2k_OT.specific.cp2k.force_eval.subsys.cell.periodic = 'None'
+    ot_dft.scf.scf_guess = fun_format('restart')
+    cp2k_OT.specific.cp2k.force_eval.subsys.cell.periodic = fun_format('None')
 
     return cp2k_args, cp2k_OT
+
+
+def fun_format(s):
+    """
+    Wrapped a string inside a string for printing purposes
+    """
+    return '"{}"'.format(s)
 
 
 # ============================> Distribution <=================================
@@ -197,10 +205,10 @@ def distribute_computations(scratch_path, project_name, basisCP2K, potCP2K,
         enumerate_from += dim_batch
 
 
-def write_python_script(scratch, folder, file_xyz, project_name, basisCP2K,
-                        potCP2K, cp2k_main, cp2k_guess, enumerate_from,
-                        script_name, path_hdf5, nHOMO, couplings_range,
-                        algorithm, dt):
+def write_python_script(
+        scratch, folder, file_xyz, project_name, basisCP2K, potCP2K, cp2k_main,
+        cp2k_guess, enumerate_from, script_name, path_hdf5, nHOMO,
+        couplings_range, algorithm, dt):
     """ Write the python script to compute the PYXAID hamiltonians"""
     path = join(scratch, project_name)
     if not os.path.exists(path):
@@ -208,11 +216,7 @@ def write_python_script(scratch, folder, file_xyz, project_name, basisCP2K,
     xs = """
 from nac.workflows.workflow_coupling import generate_pyxaid_hamiltonians
 from nac.workflows.initialization import initialize
-from qmworks.utils import dict2Setting
-from scm import plams
-
-
-plams.init(folder='{}')
+from qmworks import Settings
 
 project_name = '{}'
 path_basis = '{}'
@@ -230,8 +234,13 @@ initial_config = initialize(project_name, path_traj_xyz,
                             path_hdf5=path_hdf5,
                             scratch_path='{}')
 
-cp2k_main = dict2Setting({})
-cp2k_guess = dict2Setting({})
+# Molecular orbitals calculation input
+cp2k_main = Settings()
+{}
+
+#Guess Molecular orbitals
+cp2k_guess = Settings()
+{}
 
 generate_pyxaid_hamiltonians('cp2k', project_name, cp2k_main,
                              guess_args=cp2k_guess,
@@ -240,10 +249,9 @@ generate_pyxaid_hamiltonians('cp2k', project_name, cp2k_main,
                              dt={},
                              couplings_range=({},{}),
                              **initial_config)
-plams.finish()
- """.format(scratch, project_name, basisCP2K, potCP2K,
-            path_hdf5, file_xyz, cp2k_main.basis, enumerate_from, scratch,
-            settings2Dict(cp2k_main), settings2Dict(cp2k_guess), nHOMO,
+ """.format(project_name, basisCP2K, potCP2K, path_hdf5, file_xyz, cp2k_main.basis,
+            enumerate_from, scratch, dot_print(cp2k_main, parent='cp2k_main'),
+            dot_print(cp2k_guess, parent='cp2k_guess'), nHOMO,
             algorithm, dt, *couplings_range)
 
     with open(join(folder, script_name), 'w') as f:
@@ -309,6 +317,17 @@ def number_of_geometries(file_name):
     lines_per_geometry = numat + 2
 
     return int(wc) // lines_per_geometry
+
+
+def dot_print(s, parent='s'):
+    acc = ''
+    for k, v in s.items():
+        if not k.startswith('_'):
+            if not isinstance(v, Settings):
+                acc += '{}.{} = {}\n'.format(parent, k, v)
+            else:
+                acc += dot_print(v, parent='{}.{}'.format(parent, k))
+    return acc
 
 
 if __name__ == "__main__":
