@@ -97,9 +97,10 @@ def create_grid_nuclear_coordinates(grid_data: Tuple, mol: List) -> Tensor3D:
     Compute all the Nuclear coordinates where the density is evaluated
     """
     shape = grid_data.shape
+    voxel = grid_data.shape
 
     grids = np.stack([nuclear_linspace(
-        at.xyz, grid_data.shape, grid_data.voxel) for at in mol], axis=3)
+        at.xyz, shape, voxel) for at in mol], axis=3)
 
     return grids.reshape(shape ** 3, len(mol), 3)
 
