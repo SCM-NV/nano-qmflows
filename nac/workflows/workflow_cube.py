@@ -4,12 +4,12 @@ __author__ = "Felipe Zapata"
 # ================> Python Standard  and third-party <==========
 from .initialization import read_time_dependent_coeffs
 from collections import namedtuple
-from multiprocessing import Pool
+# from multiprocessing import Pool
 from nac.common import (
-    Matrix, Tensor3D, Vector, change_mol_units, product, retrieve_hdf5_data)
+    Array, Matrix, Tensor3D, Vector, change_mol_units)
 from nac.schedule.components import calculate_mos
 from noodles import gather
-from os.path import join
+# from os.path import join
 from qmworks import run
 from qmworks.parsers import parse_string_xyz
 from typing import (Dict, List, Tuple)
@@ -96,39 +96,23 @@ def create_grid_nuclear_coordinates(grid_data: Tuple, mol: List) -> Tensor3D:
     """
     Compute all the Nuclear coordinates where the density is evaluated
     """
-    pass
-    # size_grid = product(grid_data.shape)
+    shape = grid_data.shape
 
-    # grid = np.emtpty((len(mol), 3), size_grid)
+    grids = np.stack([nuclear_linspace(
+        at.xyz, grid_data.shape, grid_data.voxel) for at in mol], axis=3)
+
+    return grids.reshape(shape ** 3, len(mol), 3)
 
 
-def molecular_linspace(mol: List, points: int, delta: float):
+def nuclear_linspace(xyz: Vector, points: int, delta: float) -> Array:
     """
-    Create an Array containing the grid in cartesian coordinate for all the atoms.
-    """
-    pass
-    # coords = np.array([at.xyz for at in mol])
-    # n_atoms = len(mol)
-
-    # # Create The whole grid
-    # grid = np.empty(points ** 3, n_atoms, 3)
-
-    # xs = np.stack([nuclear_linspace(xyz, 0, points, delta) for at in mol)]
-
-    
-
-def nuclear_linspace(xyz: Vector, axis: int, points: int, delta: float) -> Matrix:
-    """
-    Create a Matrix containing the displacement for a single Nuclear coordinate
+    Create a Matrix containing the displacement for a single atomic coordinate
     """
     arr = np.empty((3, points))
     for k, x in enumerate(xyz):
-        if k == axis:
-            arr[k] = space_fun(x, points, delta)
-        else:
-            arr[k] = np.repeat(x, points)
+        arr[k] = space_fun(x, points, delta)
 
-    return arr.transpose()
+    return np.stack(np.meshgrid(*arr, indexing='ij'), axis=3)
 
 
 def space_fun(center, points, delta):
@@ -148,7 +132,7 @@ def distribute_grid_computation(
     """
     pass
     # with Pool() as p:
-    #     p.map = 
+    #     p.map =
 
 
 def print_grids(path_hdf5: str, path_grids: List) -> None:
