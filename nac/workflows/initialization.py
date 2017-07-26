@@ -2,7 +2,7 @@ __all__ = ['initialize', 'split_trajectory', 'store_transf_matrix']
 
 from os.path import join
 from nac.basisSet import (compute_normalization_sphericals, create_dict_CGFs)
-from nac.common import change_mol_units
+from nac.common import (change_mol_units, Matrix, Tensor3D)
 from nac.integrals import calc_transf_matrix
 from nac.schedule.components import (
     create_point_folder, split_file_geometries)
@@ -16,6 +16,7 @@ import getpass
 import h5py
 import logging
 import nac
+import numpy as np
 import os
 import pkg_resources
 import subprocess
@@ -34,6 +35,11 @@ def initialize(
     Initialize all the data required to schedule the workflows associated with
     the nonadaibatic coupling
     """
+    # Start logging event
+    file_log = '{}.log'.format(project_name)
+    logging.basicConfig(filename=file_log, level=logging.DEBUG,
+                        format='%(levelname)s:%(message)s  %(asctime)s\n',
+                        datefmt='%m/%d/%Y %I:%M:%S %p')
     # User variables
     username = getpass.getuser()
 
@@ -97,6 +103,37 @@ def initialize(
          'hdf5_trans_mtx': hdf5_trans_mtx}
 
     return d
+
+
+def read_time_dependent_coeffs(
+        path_pyxaid_out: str) -> Tensor3D:
+    """
+    :param path_pyxaid_out: Path to the out of the NA-MD carried out by
+    PYXAID.
+    :returns: Numpy array
+    """
+    # Read output files
+    files_out = os.listdir(path_pyxaid_out)
+    names_out_pop = fnmatch.filter(files_out, "out*")
+    paths_out_pop = (join(path_pyxaid_out, x) for x in names_out_pop)
+
+    # Read the data
+    pss = map(parse_population, paths_out_pop)
+
+    rss = np.stack(pss)
+    return np.mean(rss, axis=0)
+
+
+def parse_population(filePath: str) -> Matrix:
+    """
+    returns a matrix contaning the pop for each time in each row.
+    """
+    with open(filePath, 'r') as f:
+        xss = f.readlines()
+    rss = [[float(x) for i, x in enumerate(l.split())
+            if i % 2 == 1 and i > 2] for l in xss]
+
+    return np.array(rss)
 
 
 def store_transf_matrix(
@@ -176,3 +213,6 @@ def log_config(work_dir, path_hdf5, algorithm):
     logger.info("Working directory is: {}".format(work_dir))
     logger.info("Data will be stored in HDF5 file: {}".format(path_hdf5))
     logger.info("The chosen algorithm to compute the coupling is: {}\n".format(algorithm))
+
+
+    

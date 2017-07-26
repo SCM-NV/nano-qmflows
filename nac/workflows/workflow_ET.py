@@ -1,10 +1,10 @@
 __author__ = "Felipe Zapata"
 
 # ================> Python Standard  and third-party <==========
-
+from .initialization import read_time_dependent_coeffs
 from nac.schedule.components import calculate_mos
 from nac.common import (
-    Matrix, Tensor3D, Vector, change_mol_units, femtosec2au,
+    Matrix, Vector, change_mol_units, femtosec2au,
     retrieve_hdf5_data, search_data_in_hdf5)
 from nac.schedule.scheduleET import (
     compute_overlaps_ET, photo_excitation_rate)
@@ -14,10 +14,8 @@ from qmworks import run
 from qmworks.parsers import parse_string_xyz
 from scipy import integrate
 
-import fnmatch
 import logging
 import numpy as np
-import os
 
 from typing import (Dict, List, Tuple)
 
@@ -66,12 +64,6 @@ def calculate_ETR(
     :param dt: integration time used in the molecular dynamics.
     :returns: None
     """
-    # Start logging event
-    file_log = '{}.log'.format(project_name)
-    logging.basicConfig(filename=file_log, level=logging.DEBUG,
-                        format='%(levelname)s:%(message)s  %(asctime)s\n',
-                        datefmt='%m/%d/%Y %I:%M:%S %p')
-
     # prepare Cp2k Job point calculations Using CP2K
     mo_paths_hdf5 = calculate_mos(
         package_name, geometries, project_name, path_hdf5, traj_folders,
@@ -163,37 +155,6 @@ def compute_photoexcitation(
         results.append(etr)
 
     return np.stack(results)
-
-
-def parse_population(filePath: str) -> Matrix:
-    """
-    returns a matrix contaning the pop for each time in each row.
-    """
-    with open(filePath, 'r') as f:
-        xss = f.readlines()
-    rss = [[float(x) for i, x in enumerate(l.split())
-            if i % 2 == 1 and i > 2] for l in xss]
-
-    return np.array(rss)
-
-
-def read_time_dependent_coeffs(
-        path_pyxaid_out: str) -> Tensor3D:
-    """
-    :param path_pyxaid_out: Path to the out of the NA-MD carried out by
-    PYXAID.
-    :returns: Numpy array
-    """
-    # Read output files
-    files_out = os.listdir(path_pyxaid_out)
-    names_out_pop = fnmatch.filter(files_out, "out*")
-    paths_out_pop = (join(path_pyxaid_out, x) for x in names_out_pop)
-
-    # Read the data
-    pss = map(parse_population, paths_out_pop)
-
-    rss = np.stack(pss)
-    return np.mean(rss, axis=0)
 
 
 def read_swaps(path_hdf5: str, project_name: str) -> Matrix:
