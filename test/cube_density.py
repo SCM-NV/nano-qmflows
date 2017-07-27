@@ -72,4 +72,4 @@ def fixme_test_cube():
 
 
 if __name__ == "__main__":
-    test_cube()
+    fixme_test_cube()
