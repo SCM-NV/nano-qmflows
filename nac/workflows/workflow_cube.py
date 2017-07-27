@@ -36,7 +36,7 @@ def workflow_compute_cubes(
         dictCGFs: Dict=None, calc_new_wf_guess_on_points: str=None,
         path_hdf5: str=None, enumerate_from: int=0, package_config: Dict=None,
         traj_folders: List=None, work_dir: str=None, basisname: str=None,
-        hdf5_trans_mtx: str=None, nHOMO: int=None, algorithm='levine',
+        hdf5_trans_mtx: str=None, nHOMO: int=None,
         ignore_warnings=False, **kwargs) -> None:
     """
     :param path_hdf5: Path to the HDF5 file that contains the
@@ -83,7 +83,7 @@ def workflow_compute_cubes(
     # Execute the workflow
     path_grids = run(gather(*promised_grids), folder=work_dir)
 
-    print_grids(path_hdf5, path_grids)
+    return path_grids
 
 
 def compute_dynamic_density(
