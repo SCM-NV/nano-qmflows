@@ -3,7 +3,8 @@ from nac.basisSet import (compute_normalization_sphericals, create_dict_CGFs)
 from nac.common import (change_mol_units, store_arrays_in_hdf5)
 from nac.schedule.components import split_file_geometries
 from nac.integrals import calc_transf_matrix
-from nac.worflows.worflow_cube import (GridCube, workflow_compute_cubes)
+from nac.workflows.worflow_cube import (GridCube, workflow_compute_cubes)
+
 from os.path import join
 from qmworks.parsers import readXYZ
 import h5py
@@ -19,7 +20,7 @@ project_name = 'ethylene'
 package_args = None
 
 
-def test_cube():
+def fixme_test_cube():
     """
     Test the density compute to create a cube file.
     """
