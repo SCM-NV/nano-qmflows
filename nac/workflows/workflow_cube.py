@@ -1,5 +1,6 @@
 __author__ = "Felipe Zapata"
 
+__all__ = ["workflow_compute_cubes"]
 
 # ================> Python Standard  and third-party <==========
 # from .initialization import read_time_dependent_coeffs
@@ -18,6 +19,7 @@ from qmworks.parsers import parse_string_xyz
 from typing import (Dict, List, Tuple)
 import numpy as np
 import logging
+import sparse
 
 # Data types
 GridCube = namedtuple("GridCube", ("voxel", "shape"))
@@ -27,7 +29,7 @@ CGFS = namedtuple("CGFS", ("primitives", "ang_expo"))
 logger = logging.getLogger(__name__)
 
 
-def compute_cubes(
+def workflow_compute_cubes(
         package_name: str, project_name: str, package_args: Dict,
         path_time_coeffs: str=None, grid_data: Tuple=None,
         guess_args: Dict=None, geometries: List=None,
@@ -58,9 +60,13 @@ def compute_cubes(
         get_primitives(dictCGFs, l), get_angular_exponents(dictCGFs, l))
         for l in dictCGFs.keys()}
 
+    # Retrieve the matrix to transform from Cartesian to spherical coordinates
+    trans_mtx = sparse.csr_matrix(retrieve_hdf5_data(path_hdf5, hdf5_trans_mtx))
+
     # Compute the values in the given grid
     promised_grids = [compute_grid_density(
-        k, project_name, grid_data, path_hdf5, dictCGFs_array, mol, path_mo)
+        k, project_name, grid_data, path_hdf5, dictCGFs_array,
+        trans_mtx, mol, path_mo)
         for k, mol, path_mo in enumerate(zip(molecules_au, mo_paths_hdf5))]
 
     # # Compute the density weighted by the population computed with PYXAID
@@ -86,8 +92,8 @@ def compute_dynamic_density(
 
 def compute_grid_density(
         k: int, project_name: str, grid_data: Tuple, path_hdf5: str,
-        time_depend_coeffs: Matrix, dictCGFs_array: Dict, mol: List,
-        path_mo: str) -> str:
+        time_depend_coeffs: Matrix, dictCGFs_array: Dict, trans_mtx: Matrix,
+        mol: List, path_mo: str) -> str:
     """
     Compute the grid density for a given geometry and store it in the HDF5
 
