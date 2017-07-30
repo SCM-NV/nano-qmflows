@@ -12,14 +12,14 @@ from nac.common import (
     store_arrays_in_hdf5)
 from nac.integrals.multipoleIntegrals import calcOrbType_Components
 from nac.schedule.components import calculate_mos
-from noodles import (gather)
+from noodles import (gather, schedule)
 from os.path import join
 from qmworks import run
 from qmworks.parsers import parse_string_xyz
+from scipy import sparse
 from typing import (Dict, List, Tuple)
 import numpy as np
 import logging
-import sparse
 
 # Data types
 GridCube = namedtuple("GridCube", ("voxel", "shape"))
@@ -51,7 +51,7 @@ def workflow_compute_cubes(
         ignore_warnings=ignore_warnings)
 
     # geometries in atomic units
-    molecules_au = [center_molecule_in_cube(center_molecule_in_cube(
+    molecules_au = [center_molecule_in_cube(grid_data, center_molecule_in_cube(
         grid_data, change_mol_units(parse_string_xyz(gs))))
         for gs in geometries]
 
@@ -65,10 +65,11 @@ def workflow_compute_cubes(
         retrieve_hdf5_data(path_hdf5, hdf5_trans_mtx))
 
     # Compute the values in the given grid
-    promised_grids = [compute_grid_density(
+    promised_fun_grid = schedule(compute_grid_density)
+    promised_grids = [promised_fun_grid(
         k, project_name, grid_data, path_hdf5, dictCGFs_array,
-        trans_mtx, mol, path_mo)
-        for k, mol, path_mo in enumerate(zip(molecules_au, mo_paths_hdf5))]
+        trans_mtx, mol, mo_paths_hdf5)
+        for k, mol in enumerate(molecules_au)]
 
     # # Compute the density weighted by the population computed with PYXAID
     # # Time-dependent coefficients
@@ -93,8 +94,8 @@ def compute_dynamic_density(
 
 def compute_grid_density(
         k: int, project_name: str, grid_data: Tuple, path_hdf5: str,
-        time_depend_coeffs: Matrix, dictCGFs_array: Dict, trans_mtx: Matrix,
-        mol: List, path_mo: str) -> str:
+        dictCGFs_array: Dict, trans_mtx: Matrix, mol: List,
+        paths_mos: List) -> str:
     """
     Compute the grid density for a given geometry and store it in the HDF5
 
@@ -112,7 +113,6 @@ def compute_grid_density(
     path_grid = join(project_name, 'density_grid_{}'.format(k))
     # Nuclear coordinates of the grid
     grid_coordinates = create_grid_nuclear_coordinates(grid_data, mol)
-
     # Atomic symbols
     symbols = [at.symbol for at in mol]
 
@@ -120,6 +120,8 @@ def compute_grid_density(
     # Before multiplying for the MO coefficient
     orbital_grid_cartesian = distribute_grid_computation(
         symbols, grid_coordinates, dictCGFs_array)
+
+    np.save('grid_orbitals', orbital_grid_cartesian)
 
     # Transform to spherical coordinate
     transpose = trans_mtx.transpose()
@@ -130,7 +132,7 @@ def compute_grid_density(
     orbital_grid_sphericals *= orbital_grid_sphericals
 
     # Read the molecular orbitals from the HDF5
-    css = retrieve_hdf5_data(path_hdf5, path_mo)
+    css = retrieve_hdf5_data(path_hdf5, paths_mos[k][1])
 
     # Ci ^ 2
     css *= css
@@ -146,7 +148,7 @@ def compute_grid_density(
 
 def distribute_grid_computation(
         symbols: List, grid_coordinates: Tensor3D,
-        dictCGFs_array: Tensor3D) -> Tensor3D:
+        dictCGFs_array: Tensor3D) -> Matrix:
     """
     Use all the available CPUs to compute the grid of density for a given
     molecular geometry.
@@ -174,10 +176,11 @@ def distribute_grid_computation(
     chunks = (grid_coordinates[lower: upper] for lower, upper in indices)
 
     # Number of CGFs in total
-    number_of_CGFs = sum(dictCGFs_array[l].primitives.shape[0] for l in symbols)
+    number_of_CGFs = sum(
+        dictCGFs_array[l].primitives.shape[0] for l in symbols)
 
     # Distribute the jobs among the available CPUs
-    with Pool() as p:
+    with Pool(processes=1) as p:
         grid = np.concatenate(
             p.map(partial(
                 compute_CGFs_chunk, symbols, dictCGFs_array, number_of_CGFs),
@@ -187,8 +190,8 @@ def distribute_grid_computation(
 
 
 def compute_CGFs_chunk(
-        symbols: List, dictCGFs_array: Dict, chunk: Tensor3D,
-        number_of_CGFs) -> Matrix:
+        symbols: List, dictCGFs_array: Dict, number_of_CGFs: int,
+        chunk: Tensor3D) -> Matrix:
     """
     Compute the value of all the CGFs for a set molecular geometries
     taken as an slice of the grid.
@@ -199,10 +202,9 @@ def compute_CGFs_chunk(
     # Resulting array
     cgfs_grid = np.empty((chunk_size, number_of_CGFs))
 
-    for i, mtx_coord in np.rollaxis(chunk, axis=0):
-        cgfs_grid = compute_CGFs_values(
+    for i, mtx_coord in enumerate(np.rollaxis(chunk, axis=0)):
+        cgfs_grid[i] = compute_CGFs_values(
             symbols, dictCGFs_array, mtx_coord, number_of_CGFs)
-
     return cgfs_grid
 
 
@@ -212,7 +214,7 @@ def compute_CGFs_values(
     """
     Evaluate the CGFs in a given molecular geometry.
     """
-    return np.concatenate([compute_CGFs_per_atom(dictCGFs_array, xyz)
+    return np.concatenate([compute_CGFs_per_atom(dictCGFs_array[s], xyz)
                            for s, xyz in zip(symbols, mtx_coord)])
 
 
@@ -221,11 +223,12 @@ def compute_CGFs_per_atom(cgfs: Tuple, xyz: Vector) -> Vector:
     Compute the value of the CGFs for a particular atom
     """
     ang_exponents = cgfs.ang_expo
-    primitives = cgfs
+    primitives = cgfs.primitives
 
-    rs = np.array(primitives.shape[0])
+    rs = np.empty(primitives.shape[0])
     for k, (expos, ps) in enumerate(zip(ang_exponents, primitives)):
-        rs[k] = compute_CGF(xyz, expos, ps)
+        x = compute_CGF(xyz, expos, ps)
+        rs[k] = x
 
     return rs
 

@@ -1,26 +1,27 @@
 
 from nac.basisSet import (compute_normalization_sphericals, create_dict_CGFs)
-from nac.common import (change_mol_units, store_arrays_in_hdf5)
+from nac.common import (
+    change_mol_units, retrieve_hdf5_data, store_arrays_in_hdf5)
 from nac.schedule.components import split_file_geometries
 from nac.integrals import calc_transf_matrix
-from nac.workflows.worflow_cube import (GridCube, workflow_compute_cubes)
+from nac.workflows.workflow_cube import (GridCube, workflow_compute_cubes)
 
 from os.path import join
 from qmworks.parsers import readXYZ
 import h5py
-# import numpy as np
+import numpy as np
 import os
 import shutil
 
 scratch_path = 'scratch'
 path_original_hdf5 = 'test/test_files/ethylene.hdf5'
 path_test_hdf5 = join(scratch_path, 'test.hdf5')
-path_xyz = 'test/test_files/ethylene.xyz'
+path_xyz = 'test/test_files/ethylene_center.xyz'
 project_name = 'ethylene'
 package_args = None
 
 
-def fixme_test_cube():
+def test_cube():
     """
     Test the density compute to create a cube file.
     """
@@ -53,7 +54,7 @@ def fixme_test_cube():
             path_test_hdf5, path_transf_mtx, transf_mtx)
 
         # voxel size and Number of steps
-        grid_data = GridCube(0.300939, 80)
+        grid_data = GridCube(0.300939, 5)
 
         rs = workflow_compute_cubes(
             'cp2k', project_name, package_args, path_time_coeffs=None,
@@ -61,10 +62,11 @@ def fixme_test_cube():
             dictCGFs=dictCGFs, calc_new_wf_guess_on_points=[],
             path_hdf5=path_test_hdf5, enumerate_from=0, package_config=None,
             traj_folders=None, work_dir=scratch_path, basisname=basisname,
-            hdf5_trans_mtxstr=path_transf_mtx, nHOMO=None,
+            hdf5_trans_mtx=path_transf_mtx, nHOMO=None,
             ignore_warnings=False)
 
-        print(rs)
+        xs = retrieve_hdf5_data(path_test_hdf5, rs)[0]
+        np.save("grid_density", xs)
 
     finally:
         # Remove intermediate results
@@ -72,4 +74,5 @@ def fixme_test_cube():
 
 
 if __name__ == "__main__":
-    fixme_test_cube()
+    test_cube()
+    

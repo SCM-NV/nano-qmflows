@@ -1,12 +1,7 @@
 
-from nac.common import (binomial, fac, odd, product,
-                        retrieve_hdf5_data, triang2mtx)
-from os.path import join
-
+from nac.common import (
+    binomial, fac, odd, product, triang2mtx)
 import numpy as np
-
-# ====================================<>=======================================
-path_hdf5 = 'test/test_files/ethylene.hdf5'
 
 
 def test_product():
@@ -41,18 +36,3 @@ def test_triang_to_dim2():
     mtx = triang2mtx(arr, 4)
 
     assert np.sum(expected - mtx) < 1e-8
-
-
-def test_retrieve_hdf5():
-    """
-    Test the function to read data from the HDF5 file.
-    """
-    root = 'ethylene/point_3/cp2k/mo'
-    ps = ['coefficients', 'eigenvalues']
-    properties = [join(root, p) for p in ps]
-    retrieve_hdf5_data(path_hdf5, properties)
-    try:
-        false_path = 'Nonexisting/node/path'
-        retrieve_hdf5_data(path_hdf5, false_path)
-    except KeyError:
-        assert True
