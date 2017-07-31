@@ -24,8 +24,8 @@ from .analysis import (
 
 
 from .workflows import (
-    generate_pyxaid_hamiltonians, initialize, store_transf_matrix,
-    workflow_compute_cubes, workflow_oscillator_strength)
+    create_map_index_pyxaid, generate_pyxaid_hamiltonians, initialize,
+    store_transf_matrix, workflow_compute_cubes, workflow_oscillator_strength)
 
 
 __all__ = ['Array', 'AtomBasisData', 'AtomBasisKey', 'AtomData', 'AtomXYZ',
@@ -33,10 +33,10 @@ __all__ = ['Array', 'AtomBasisData', 'AtomBasisKey', 'AtomData', 'AtomXYZ',
            'Vector', 'Tensor3D',
            'calcMtxMultipoleP', 'calcMtxOverlapP',
            'calc_transf_matrix', 'calculate_couplings_levine', 'calculate_mos',
-           'change_mol_units', 'create_normalized_CGFs', 'createUniqueCGF',
-           'create_dict_CGFs', 'create_point_folder', 'dephasing',
-           'expandBasisOneCGF', 'expandBasis_cp2k', 'expandBasis_turbomole',
-           'fs_to_cm', 'fs_to_nm',
+           'change_mol_units', 'create_map_index_pyxaid',
+           'create_normalized_CGFs', 'createUniqueCGF', 'create_dict_CGFs',
+           'create_point_folder', 'dephasing', 'expandBasisOneCGF',
+           'expandBasis_cp2k', 'expandBasis_turbomole', 'fs_to_cm', 'fs_to_nm',
            'gauss_function', 'general_multipole_matrix',
            'generate_pyxaid_hamiltonians',
            'getmass', 'hbar', 'initialize', 'lazy_couplings',

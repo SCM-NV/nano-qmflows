@@ -1,15 +1,16 @@
-__all__ = ['initialize', 'split_trajectory', 'store_transf_matrix']
+__all__ = ['create_map_index_pyxaid', 'initialize', 'split_trajectory',
+           'store_transf_matrix']
 
 from os.path import join
 from nac.basisSet import (compute_normalization_sphericals, create_dict_CGFs)
-from nac.common import (change_mol_units, Matrix, Tensor3D)
+from nac.common import (change_mol_units, Matrix, Tensor3D, Vector)
 from nac.integrals import calc_transf_matrix
 from nac.schedule.components import (
     create_point_folder, split_file_geometries)
 from qmworks.hdf5.quantumHDF5 import StoreasHDF5
 from qmworks.parsers import parse_string_xyz
 from subprocess import (PIPE, Popen)
-from typing import (Dict, List)
+from typing import (Dict, List, Tuple)
 
 import fnmatch
 import getpass
@@ -134,6 +135,46 @@ def parse_population(filePath: str) -> Matrix:
             if i % 2 == 1 and i > 2] for l in xss]
 
     return np.array(rss)
+
+
+def create_map_index_pyxaid(
+        orbitals_range: Tuple, pyxaid_HOMO: int, pyxaid_Nmin: int,
+        pyxaid_Nmax: int) -> Matrix:
+    """
+    Creating an index mapping from PYXAID to the content of the HDF5.
+    """
+    number_of_HOMOs = pyxaid_HOMO - pyxaid_Nmin + 1
+    number_of_LUMOs = pyxaid_Nmax - pyxaid_HOMO
+
+    # Shift range to start counting from 0
+    pyxaid_Nmax -= 1
+    pyxaid_Nmin -= 1
+
+    # Pyxaid LUMO counting from 0
+    pyxaid_LUMO = pyxaid_HOMO
+
+    def compute_excitation_indexes(index_ext: int) -> Vector:
+        """
+        create the index of the orbitals involved in the excitation i -> j.
+        """
+        # final state
+        j_index = pyxaid_LUMO + (index_ext // number_of_HOMOs)
+        # initial state
+        i_index = pyxaid_Nmin + (index_ext % number_of_HOMOs)
+
+        return np.array((i_index, j_index), dtype=np.int32)
+
+    # Generate all the excitation indexes of pyxaid including the ground state
+    number_of_indices = number_of_HOMOs * number_of_LUMOs
+    indexes_hdf5 = np.empty((number_of_indices + 1, 2), dtype=np.int32)
+
+    # Ground state
+    indexes_hdf5[0] = pyxaid_Nmin, pyxaid_Nmin
+
+    for i in range(number_of_indices):
+        indexes_hdf5[i + 1] = compute_excitation_indexes(i)
+
+    return indexes_hdf5
 
 
 def store_transf_matrix(

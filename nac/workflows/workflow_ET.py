@@ -1,10 +1,11 @@
 __author__ = "Felipe Zapata"
 
 # ================> Python Standard  and third-party <==========
-from .initialization import read_time_dependent_coeffs
+from .initialization import (
+    create_map_index_pyxaid, read_time_dependent_coeffs)
 from nac.schedule.components import calculate_mos
 from nac.common import (
-    Matrix, Vector, change_mol_units, femtosec2au,
+    Matrix, change_mol_units, femtosec2au,
     retrieve_hdf5_data, search_data_in_hdf5)
 from nac.schedule.scheduleET import (
     compute_overlaps_ET, photo_excitation_rate)
@@ -171,46 +172,6 @@ def read_swaps(path_hdf5: str, project_name: str) -> Matrix:
         raise RuntimeError(msg)
 
 
-def create_map_index_pyxaid(
-        orbitals_range: Tuple, pyxaid_HOMO: int, pyxaid_Nmin: int,
-        pyxaid_Nmax: int) -> Matrix:
-    """
-    Creating an index mapping from PYXAID to the content of the HDF5.
-    """
-    number_of_HOMOs = pyxaid_HOMO - pyxaid_Nmin + 1
-    number_of_LUMOs = pyxaid_Nmax - pyxaid_HOMO
-
-    # Shift range to start counting from 0
-    pyxaid_Nmax -= 1
-    pyxaid_Nmin -= 1
-
-    # Pyxaid LUMO counting from 0
-    pyxaid_LUMO = pyxaid_HOMO
-
-    def compute_excitation_indexes(index_ext: int) -> Vector:
-        """
-        create the index of the orbitals involved in the excitation i -> j.
-        """
-        # final state
-        j_index = pyxaid_LUMO + (index_ext // number_of_HOMOs)
-        # initial state
-        i_index = pyxaid_Nmin + (index_ext % number_of_HOMOs)
-
-        return np.array((i_index, j_index), dtype=np.int32)
-
-    # Generate all the excitation indexes of pyxaid including the ground state
-    number_of_indices = number_of_HOMOs * number_of_LUMOs
-    indexes_hdf5 = np.empty((number_of_indices + 1, 2), dtype=np.int32)
-
-    # Ground state
-    indexes_hdf5[0] = pyxaid_Nmin, pyxaid_Nmin
-
-    for i in range(number_of_indices):
-        indexes_hdf5[i + 1] = compute_excitation_indexes(i)
-
-    return indexes_hdf5
-
-
 def write_ETR(mtx, dt, i):
     """
     Save the ETR in human readable format
@@ -233,7 +194,8 @@ def write_ETR(mtx, dt, i):
     np.savetxt(file_name, data, fmt='{:^3}'.format('%e'), header=header)
 
 
-def write_overlap_densities(path_hdf5: str, paths_fragment_overlaps: List, dt: int=1):
+def write_overlap_densities(
+        path_hdf5: str, paths_fragment_overlaps: List, dt: int=1):
     """
     Write the diagonal of the overlap matrices
     """

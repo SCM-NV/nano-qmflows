@@ -3,13 +3,15 @@ __author__ = "Felipe Zapata"
 __all__ = ["workflow_compute_cubes"]
 
 # ================> Python Standard  and third-party <==========
-# from .initialization import read_time_dependent_coeffs
+from .initialization import (
+    create_map_index_pyxaid, read_time_dependent_coeffs)
 from collections import namedtuple
 from functools import partial
+from itertools import repeat
 from multiprocessing import (cpu_count, Pool)
 from nac.common import (
     Array, AtomXYZ, Matrix, Tensor3D, Vector, change_mol_units,
-    retrieve_hdf5_data, store_arrays_in_hdf5)
+    getmass, retrieve_hdf5_data, store_arrays_in_hdf5)
 from nac.integrals.multipoleIntegrals import calcOrbType_Components
 from nac.integrals.nonAdiabaticCoupling import compute_range_orbitals
 from nac.schedule.components import calculate_mos
@@ -38,7 +40,8 @@ def workflow_compute_cubes(
         path_hdf5: str=None, enumerate_from: int=0, package_config: Dict=None,
         traj_folders: List=None, work_dir: str=None, basisname: str=None,
         hdf5_trans_mtx: str=None, nHOMO: int=None, orbitals_range: Tuple=None,
-        ignore_warnings=False, **kwargs) -> None:
+        pyxaid_HOMO: int=None, pyxaid_Nmin: int=None, pyxaid_Nmax: int=None,
+        time_steps_grid: int=1, ignore_warnings=False, **kwargs) -> None:
     """
     :param path_hdf5: Path to the HDF5 file that contains the
     numerical results.
@@ -67,30 +70,66 @@ def workflow_compute_cubes(
 
     # Compute the values in the given grid
     promised_fun_grid = schedule(compute_grid_density)
-    promised_grids = [promised_fun_grid(
+    promised_grids = gather(*[promised_fun_grid(
         k, mol, project_name, grid_data, path_hdf5, dictCGFs_array,
         trans_mtx, mo_paths_hdf5, nHOMO, orbitals_range)
-        for k, mol in enumerate(molecules_au)]
+        for k, mol in enumerate(molecules_au)])
 
-    # # Compute the density weighted by the population computed with PYXAID
-    # # Time-dependent coefficients
-    # time_depend_coeffs = read_time_dependent_coeffs(path_time_coeffs)
-    # msg = "Reading time_dependent coefficients from: {}".format(path_time_coeffs)
-    # logger.info(msg)
+    # Compute the density weighted by the population computed with PYXAID
+    # Time-dependent coefficients
+    if path_time_coeffs is not None:
+        time_depend_coeffs = read_time_dependent_coeffs(path_time_coeffs)
+        msg = "Reading time_dependent coefficients from: {}".format(path_time_coeffs)
+        logger.info(msg)
+    else:
+        time_depend_coeffs = None
 
-    # scheduled_density = schedule(compute_dynamic_density)
-    # promised_dynamic_density = scheduled_density(
-    #     path_hdf5, promised_grids, time_depend_coeffs)
+    scheduled_density = schedule(compute_ET_density)
+    promised_ET_density = scheduled_density(
+        path_hdf5, promised_grids, time_depend_coeffs, orbitals_range,
+        pyxaid_HOMO, pyxaid_Nmax, pyxaid_Nmin, time_steps_grid)
 
     # Execute the workflow
-    path_grids = run(gather(*promised_grids), folder=work_dir)
+    path_grids, grids_ET = run(
+        gather(promised_grids, promised_ET_density), folder=work_dir)
+
+    # Print the cube files
+    if grids_ET is not None:
+        for k, (grid, mol) in enumerate(zip(grids_ET, molecules_au)):
+            step = time_steps_grid * k
+            file_name = join(project_name, 'point_{}'.format(step))
+
+            print_grids(grid_data, mol, grid, file_name, step)
 
     return path_grids
 
 
-def compute_dynamic_density(
-        path_hdf5: str, promised_grids: List, time_depend_coeffs: Matrix):
-    pass
+def compute_ET_density(
+        path_hdf5: str, promised_grids: List, time_depend_coeffs: Matrix,
+        orbitals_range: Tuple, pyxaid_HOMO: int, pyxaid_Nmin: int,
+        pyxaid_Nmax: int, time_steps_grid: int):
+    """
+    Multiply the population with the corresponding orbitals
+    """
+    if all(x is not None for x in
+           [orbitals_range, pyxaid_HOMO, pyxaid_Nmax, pyxaid_Nmin]):
+        # Create a map from PYXAID orbitals to orbitals store in the HDF5
+        map_indices = create_map_index_pyxaid(
+            orbitals_range, pyxaid_HOMO, pyxaid_Nmin, pyxaid_Nmax)
+        electron_indices = map_indices[:, 1]
+
+        # Extract only the orbitals involved in the electron transfer
+        for k, path_grid in enumerate(promised_grids):
+            grid = retrieve_hdf5_data(path_hdf5, path_grid)
+            electron_grid = grid[:, electron_indices]
+
+            # Compute the time_dependent ET
+            population = time_depend_coeffs[k * time_steps_grid]
+            grid_ET = np.dot(electron_grid, population)
+
+            yield grid_ET
+    else:
+        return None
 
 
 def compute_grid_density(
@@ -215,21 +254,28 @@ def compute_CGFs_values(
     """
     Evaluate the CGFs in a given molecular geometry.
     """
-    return np.concatenate(
-        [compute_CGFs_per_atom(dictCGFs_array[at.symbol], at.xyz, xyz)
-         for at, xyz in zip(molecule, mtx_coord)])
+    vs = np.empty(number_of_CGFs)
+
+    acc = 0
+    for k, xyz in enumerate(np.rollaxis(mtx_coord, axis=0)):
+        at = molecule[k]
+        cgfs = dictCGFs_array[at.symbol]
+        size = cgfs.primitives.shape[0]
+
+        vs[acc: acc + size] = compute_CGFs_per_atom(cgfs, at.xyz - xyz)
+        acc += size
+
+    return vs
 
 
-def compute_CGFs_per_atom(cgfs: Tuple, center: List, xyz: Vector) -> Vector:
+def compute_CGFs_per_atom(cgfs: Tuple, deltaR: Vector) -> Vector:
     """
     Compute the value of the CGFs for a particular atom
     """
     ang_exponents = cgfs.ang_expo
     primitives = cgfs.primitives
 
-    # Shift the gaussian form the Center to the  correspoding voxel
-    deltaR = center - xyz
-
+    # Iterate over each CGF per atom
     rs = np.empty(primitives.shape[0])
     for k, (expos, ps) in enumerate(zip(ang_exponents, primitives)):
         x = compute_CGF(deltaR, expos, ps)
@@ -300,15 +346,98 @@ def get_angular_exponents(dictCGFs: Dict, s: str) -> List:
         [[calcOrbType_Components(l, x) for x in range(3)] for l in ls])
 
 
-def print_grids(path_hdf5: str, path_grids: List) -> None:
-    """
-    Write the grid in plain text format
-    """
-    pass
-
-
 def center_molecule_in_cube(grid_data: Tuple, mol: List) -> None:
     """
     Translate a molecule to the center of the cube
     """
     return [AtomXYZ(at.symbol, np.array(at.xyz)) for at in mol]
+
+
+def print_grids(
+        grid_data: Tuple, molecule: List, grid: Vector,
+        file_name: str, step: int) -> None:
+    """
+    Write the grid cube format format
+    """
+    fmt1 = '{:5d}{:12.6f}{:12.6f}{:12.6f}\n'
+
+    # Box specification
+    shape = grid_data.shape
+    voxel = grid_data.voxel
+
+    # First two lines
+    header1 = "Cube file generated by qmworks-namd\n"
+    header2 = "Contains grid for the electron tranfer step: \n".format(step)
+
+    # Box matrix
+    numat = fmt1.format(len(molecule), 0, 0, 0)
+    vectorx = fmt1.format(shape, voxel, 0, 0)
+    vectory = fmt1.format(shape, 0, voxel, 0)
+    vectorz = fmt1.format(shape, 0, 0, voxel)
+
+    # Print coordinates in the cube format
+    coords = format_coords(molecule)
+
+    # print the grid in the cube format
+    arr = format_cube_grid(shape, grid)
+
+    s = header1 + header2 + numat + vectorx + vectory + vectorz + coords + arr
+
+    with open(file_name, 'w') as f:
+        f.write(s)
+
+
+def format_coords(mol: List) -> str:
+    """ Format the nuclear coordinates in the cube style"""
+    fmt = '{:5d}{:12.6f}{:12.6f}{:12.6f}{:12.6f}\n'
+    s = ''
+    for at in mol:
+        s += fmt(getmass(at.symbol), 0, *at.xyz)
+
+    return s
+
+
+def format_cube_grid(shape: int, grid: Vector) -> str:
+    """ Format the numerical grid in the cube style"""
+
+    arr = grid.reshape(shape ** 2, shape)
+
+    # remaining format
+    r = shape % 6
+    if r != 0:
+        fmt_r = ''.join(repeat(' {:12.5E}', 2))
+    else:
+        fmt_r = None
+
+    # number of row per chunk
+    nrow = shape // 6
+
+    # cube are printing in lines of maximum 6 columns
+    s = ''
+    for chunk in np.rollaxis(arr, axis=0):
+        s += format_chunk_grid(chunk, nrow, r, fmt_r)
+
+    return s
+
+
+def format_chunk_grid(
+        chunk: Vector, nrow: int, r: int, fmt_r: str) -> str:
+    """
+    format a vector containing an slice of the grid in the cube format.
+    """
+    # 6 column cube format
+    fmt = ' {:12.5E} {:12.5E} {:12.5E} {:12.5E} {:12.5E} {:12.5E}'
+
+    # Reshape the vector in a matrix with 6 columns
+    head = chunk[:nrow * 6].reshape(nrow, 6)
+
+    # Print Columns of 6 numbers
+    s = ''
+    for v in head:
+        s += fmt.format(*v)
+
+    # Print the remaining values
+    if r != 0:
+        s += fmt_r.format(*chunk[-r:])
+
+    return s
