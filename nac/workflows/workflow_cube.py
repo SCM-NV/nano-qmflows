@@ -392,7 +392,7 @@ def format_coords(mol: List) -> str:
     fmt = '{:5d}{:12.6f}{:12.6f}{:12.6f}{:12.6f}\n'
     s = ''
     for at in mol:
-        s += fmt(getmass(at.symbol), 0, *at.xyz)
+        s += fmt.format(getmass(at.symbol), 0, *at.xyz)
 
     return s
 
