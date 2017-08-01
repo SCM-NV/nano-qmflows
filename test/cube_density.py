@@ -54,7 +54,7 @@ def test_cube():
             path_test_hdf5, path_transf_mtx, transf_mtx)
 
         # voxel size and Number of steps
-        grid_data = GridCube(0.300939, 20)
+        grid_data = GridCube(0.300939, 40)
 
         rs = workflow_compute_cubes(
             'cp2k', project_name, package_args, path_time_coeffs=None,
