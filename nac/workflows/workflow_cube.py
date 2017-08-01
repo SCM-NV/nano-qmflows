@@ -64,6 +64,8 @@ def workflow_compute_cubes(
         get_primitives(dictCGFs, l), get_angular_exponents(dictCGFs, l))
         for l in dictCGFs.keys()}
 
+    print(dictCGFs_array)
+
     # Retrieve the matrix to transform from Cartesian to spherical coordinates
     trans_mtx = sparse.csr_matrix(
         retrieve_hdf5_data(path_hdf5, hdf5_trans_mtx))
@@ -84,22 +86,22 @@ def workflow_compute_cubes(
     else:
         time_depend_coeffs = None
 
-    scheduled_density = schedule(compute_ET_density)
-    promised_ET_density = scheduled_density(
+    scheduled_density = schedule(compute_TD_density)
+    promised_TD_density = scheduled_density(
         path_hdf5, promised_grids, time_depend_coeffs, orbitals_range,
         pyxaid_HOMO, pyxaid_Nmax, pyxaid_Nmin, time_steps_grid)
 
     # Execute the workflow
-    path_grids, grids_ET = run(
-        gather(promised_grids, promised_ET_density), folder=work_dir)
+    path_grids, grids_TD = run(
+        gather(promised_grids, promised_TD_density), folder=work_dir)
 
     # print_grids(
     #     grid_data, molecules_au[0],
     #     retrieve_hdf5_data(path_hdf5, path_grids[0])[:, 6], 'test.cube', 1)
 
     # Print the cube files
-    if grids_ET is not None:
-        for k, (grid, mol) in enumerate(zip(grids_ET, molecules_au)):
+    if grids_TD is not None:
+        for k, (grid, mol) in enumerate(zip(grids_TD, molecules_au)):
             step = time_steps_grid * k
             file_name = join(project_name, 'point_{}'.format(step))
 
@@ -108,7 +110,7 @@ def workflow_compute_cubes(
     return path_grids
 
 
-def compute_ET_density(
+def compute_TD_density(
         path_hdf5: str, promised_grids: List, time_depend_coeffs: Matrix,
         orbitals_range: Tuple, pyxaid_HOMO: int, pyxaid_Nmin: int,
         pyxaid_Nmax: int, time_steps_grid: int):
@@ -137,7 +139,7 @@ def compute_ET_density(
 
 
 def compute_grid_density(
-        k: int,  mol: List, project_name: str, grid_data: Tuple,
+        k: int, mol: List, project_name: str, grid_data: Tuple,
         path_hdf5: str, dictCGFs_array: Dict, trans_mtx: Matrix,
         paths_mos: List, nHOMO: int, orbitals_range: Tuple) -> str:
     """
@@ -293,15 +295,25 @@ def compute_CGF(
     """
     Compute a single CGF
     """
-    return np.sum(np.prod(np.apply_along_axis(
-        lambda t: gaussian_primitive(t[0], t[1], *primitives), 0,
-        np.stack((ang_expos, xyz))), axis=1))
+    expos = primitives[0]
+    coeffs = primitives[1]
+
+    # Compute the xyz gaussian primitives
+    gaussians = np.apply_along_axis(
+        lambda t: gaussian_primitive(t[0], t[1], expos), 0,
+        np.stack((ang_expos, xyz)))
+
+    # Multiplied the x,y and z gaussians
+    rs_gauss = np.prod(gaussians, axis=1)
+
+    # multiple the gaussian by the contraction coefficients
+    return np.sum(coeffs * rs_gauss)
 
 
 def gaussian_primitive(
-        ang: float, x: float, coeff: Vector, expo: Vector) -> Vector:
+        ang: float, x: float, expos: Vector) -> Vector:
     """Evaluate a primitive Gauss function"""
-    return x ** ang * coeff * np.exp(-expo * x ** 2)
+    return x ** ang * np.exp(-expos * x ** 2)
 
 
 def create_grid_nuclear_coordinates(grid_data: Tuple, mol: List) -> Tensor3D:
