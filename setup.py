@@ -45,6 +45,7 @@ setup(
         'scripts/pyxaid/plot_states_pops.py',
         'scripts/qmworks/mergeHDF5.py',
         'scripts/qmworks/removeHDF5folders.py',
+        'scripts/qmworks/remove_mos_hdf5.py',
         'scripts/distribution/distribute_jobs.py',
         'scripts/distribution/merge_job.py']
 )
