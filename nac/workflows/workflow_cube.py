@@ -95,7 +95,7 @@ def workflow_compute_cubes(
 
     # print_grids(
     #     grid_data, molecules_au[0],
-    #     retrieve_hdf5_data(path_hdf5, path_grids[0])[:, 6], 'test.cube', 1)
+    #     retrieve_hdf5_data(path_hdf5, path_grids[0])[:, 49], 'test.cube', 1)
 
     # Print the cube files
     if grids_TD is not None:
@@ -265,8 +265,9 @@ def compute_CGFs_values(
         at = molecule[k]
         cgfs = dictCGFs_array[at.symbol]
         size = cgfs.primitives.shape[0]
-
-        vs[acc: acc + size] = compute_CGFs_per_atom(cgfs, at.xyz - xyz)
+        deltaR = (at.xyz - xyz).reshape(1, 3)
+        
+        vs[acc: acc + size] = compute_CGFs_per_atom(cgfs, deltaR)
         acc += size
 
     return vs
@@ -294,24 +295,17 @@ def compute_CGF(
     Compute a single CGF
     """
     coeffs = primitives[0]
-    expos = primitives[1]
+    expos = primitives[1].reshape(primitives[1].size, 1)
 
     # Compute the xyz gaussian primitives
-    gaussians = np.apply_along_axis(
-        lambda t: gaussian_primitive(t[0], t[1], expos), 0,
-        np.stack((ang_expos, xyz)))
+    xs = xyz ** ang_expos
+    gaussians = xs * np.exp(-expos * xyz ** 2)
 
     # Multiplied the x,y and z gaussians
     rs_gauss = np.prod(gaussians, axis=1)
 
     # multiple the gaussian by the contraction coefficients
     return np.sum(coeffs * rs_gauss)
-
-
-def gaussian_primitive(
-        ang: float, x: float, expos: Vector) -> Vector:
-    """Evaluate a primitive Gauss function"""
-    return x ** ang * np.exp(-expos * x ** 2)
 
 
 def create_grid_nuclear_coordinates(grid_data: Tuple, mol: List) -> Tensor3D:
