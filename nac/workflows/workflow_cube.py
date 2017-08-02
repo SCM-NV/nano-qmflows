@@ -64,8 +64,6 @@ def workflow_compute_cubes(
         get_primitives(dictCGFs, l), get_angular_exponents(dictCGFs, l))
         for l in dictCGFs.keys()}
 
-    print(dictCGFs_array)
-
     # Retrieve the matrix to transform from Cartesian to spherical coordinates
     trans_mtx = sparse.csr_matrix(
         retrieve_hdf5_data(path_hdf5, hdf5_trans_mtx))
@@ -295,8 +293,8 @@ def compute_CGF(
     """
     Compute a single CGF
     """
-    expos = primitives[0]
-    coeffs = primitives[1]
+    coeffs = primitives[0]
+    expos = primitives[1]
 
     # Compute the xyz gaussian primitives
     gaussians = np.apply_along_axis(
