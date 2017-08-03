@@ -64,6 +64,11 @@ def workflow_compute_cubes(
         get_primitives(dictCGFs, l), get_angular_exponents(dictCGFs, l))
         for l in dictCGFs.keys()}
 
+    # Nuclear coordinates of the grid
+    grid_coordinates = create_grid_nuclear_coordinates(grid_data)
+
+    np.save('grid_coordinates', grid_coordinates)
+
     # Retrieve the matrix to transform from Cartesian to spherical coordinates
     trans_mtx = sparse.csr_matrix(
         retrieve_hdf5_data(path_hdf5, hdf5_trans_mtx))
@@ -71,8 +76,8 @@ def workflow_compute_cubes(
     # Compute the values in the given grid
     promised_fun_grid = schedule(compute_grid_density)
     promised_grids = gather(*[promised_fun_grid(
-        k, mol, project_name, grid_data, path_hdf5, dictCGFs_array,
-        trans_mtx, mo_paths_hdf5, nHOMO, orbitals_range)
+        k, mol, project_name, grid_data, grid_coordinates, path_hdf5,
+        dictCGFs_array, trans_mtx, mo_paths_hdf5, nHOMO, orbitals_range)
         for k, mol in enumerate(molecules_au)])
 
     # Compute the density weighted by the population computed with PYXAID
@@ -93,9 +98,9 @@ def workflow_compute_cubes(
     path_grids, grids_TD = run(
         gather(promised_grids, promised_TD_density), folder=work_dir)
 
-    # print_grids(
-    #     grid_data, molecules_au[0],
-    #     retrieve_hdf5_data(path_hdf5, path_grids[0])[:, 49], 'test.cube', 1)
+    print_grids(
+        grid_data, molecules_au[0],
+        retrieve_hdf5_data(path_hdf5, path_grids[0])[:, 6], 'test.cube', 1)
 
     # Print the cube files
     if grids_TD is not None:
@@ -138,6 +143,7 @@ def compute_TD_density(
 
 def compute_grid_density(
         k: int, mol: List, project_name: str, grid_data: Tuple,
+        grid_coordinates: Array,
         path_hdf5: str, dictCGFs_array: Dict, trans_mtx: Matrix,
         paths_mos: List, nHOMO: int, orbitals_range: Tuple) -> str:
     """
@@ -155,8 +161,6 @@ def compute_grid_density(
     :returns: path where the grid is stored in the HDF5
     """
     path_grid = join(project_name, 'density_grid_{}'.format(k))
-    # Nuclear coordinates of the grid
-    grid_coordinates = create_grid_nuclear_coordinates(grid_data, mol)
 
     # Compute the values of the orbital using all the Avialable CPUs
     # Before multiplying for the MO coefficient
@@ -168,8 +172,8 @@ def compute_grid_density(
     orbital_grid_sphericals = sparse.csr_matrix.dot(
         orbital_grid_cartesian, transpose)
 
-    # |phi| ^ 2
-    orbital_grid_sphericals *= orbital_grid_sphericals
+    # # |phi| ^ 2
+    # orbital_grid_sphericals *= orbital_grid_sphericals
 
     # Read the molecular orbitals from the HDF5
     css = retrieve_hdf5_data(path_hdf5, paths_mos[k][1])
@@ -178,8 +182,8 @@ def compute_grid_density(
     lowest, highest = compute_range_orbitals(css, nHOMO, orbitals_range)
     css = css[:, lowest: highest]
 
-    # Ci ^ 2
-    css *= css
+    # # Ci ^ 2
+    # css *= css
 
     # Ci^2 * |phi| ^ 2. Matrix shape: points ** 3, number_of_orbitals
     density_grid = np.dot(orbital_grid_sphericals, css)
@@ -191,7 +195,7 @@ def compute_grid_density(
 
 
 def distribute_grid_computation(
-        molecule: List, grid_coordinates: Tensor3D,
+        molecule: List, grid_coordinates: Matrix,
         dictCGFs_array: Tensor3D) -> Matrix:
     """
     Use all the available CPUs to compute the grid of density for a given
@@ -235,7 +239,7 @@ def distribute_grid_computation(
 
 def compute_CGFs_chunk(
         molecule: List, dictCGFs_array: Dict, number_of_CGFs: int,
-        chunk: Tensor3D) -> Matrix:
+        chunk: Matrix) -> Matrix:
     """
     Compute the value of all the CGFs for a set molecular geometries
     taken as an slice of the grid.
@@ -246,14 +250,14 @@ def compute_CGFs_chunk(
     # Resulting array
     cgfs_grid = np.empty((chunk_size, number_of_CGFs))
 
-    for i, mtx_coord in enumerate(np.rollaxis(chunk, axis=0)):
+    for i, voxel_center in enumerate(np.rollaxis(chunk, axis=0)):
         cgfs_grid[i] = compute_CGFs_values(
-            molecule, dictCGFs_array, mtx_coord, number_of_CGFs)
+            molecule, dictCGFs_array, voxel_center, number_of_CGFs)
     return cgfs_grid
 
 
 def compute_CGFs_values(
-        molecule: List, dictCGFs_array: Dict, mtx_coord: Matrix,
+        molecule: List, dictCGFs_array: Dict, voxel_center: Vector,
         number_of_CGFs) -> Vector:
     """
     Evaluate the CGFs in a given molecular geometry.
@@ -262,10 +266,9 @@ def compute_CGFs_values(
 
     acc = 0
     for k, at in enumerate(molecule):
-        xyz = mtx_coord[k]
         cgfs = dictCGFs_array[at.symbol]
         size = cgfs.primitives.shape[0]
-        deltaR = (at.xyz - xyz).reshape(1, 3)
+        deltaR = (at.xyz - voxel_center).reshape(1, 3)
 
         vs[acc: acc + size] = compute_CGFs_per_atom(cgfs, deltaR)
         acc += size
@@ -308,37 +311,22 @@ def compute_CGF(
     return np.sum(coeffs * rs_gauss)
 
 
-def create_grid_nuclear_coordinates(grid_data: Tuple, mol: List) -> Tensor3D:
+def create_grid_nuclear_coordinates(grid_data: Tuple) -> Matrix:
     """
     Compute all the Nuclear coordinates where the density is evaluated
+
+    :returns: 4D-Array containing the voxels center
     """
     shape = grid_data.shape
     voxel = grid_data.voxel
 
-    grids = np.stack([nuclear_linspace(
-        at.xyz, shape, voxel) for at in mol], axis=3)
+    # Vector of equally seperated voxels in 1D
+    xs = np.linspace(0, voxel * shape, num=shape, endpoint=False)
 
-    return grids.reshape(shape ** 3, len(mol), 3)
+    # Create 4D Grid containing the voxel centers
+    grids = np.stack(np.meshgrid(xs, xs, xs), axis=3)
 
-
-def nuclear_linspace(xyz: Vector, points: int, delta: float) -> Array:
-    """
-    Create a Matrix containing the displacement for a single atomic coordinate
-    """
-    arr = np.empty((3, points))
-    for k, x in enumerate(xyz):
-        arr[k] = space_fun(x, points, delta)
-
-    return np.stack(np.meshgrid(*arr, indexing='ij'), axis=3)
-
-
-def space_fun(center, points, delta):
-    """
-    Create a 1D array Grid for a component of a Nuclear coordinate
-    """
-    start = center - points * 0.5 * delta
-    stop = center + points * 0.5 * delta
-    return np.linspace(start, stop, points, endpoint=False) + 0.5 * delta
+    return grids.reshape(shape ** 3, 3)
 
 
 def get_primitives(dictCGFs: Dict, s: str) -> Tensor3D:

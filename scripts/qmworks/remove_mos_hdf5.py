@@ -19,7 +19,7 @@ def main(project_name, path_hdf5, indices):
 
     # Concatenate both Molecular orbitals and Overlaps
     paths = mos + overlaps
-    
+
     with h5py.File(path_hdf5, 'r+') as f5:
         for p in paths:
             if p in f5:
