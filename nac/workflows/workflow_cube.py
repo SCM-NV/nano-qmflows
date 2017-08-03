@@ -67,8 +67,6 @@ def workflow_compute_cubes(
     # Nuclear coordinates of the grid
     grid_coordinates = create_grid_nuclear_coordinates(grid_data)
 
-    np.save('grid_coordinates', grid_coordinates)
-
     # Retrieve the matrix to transform from Cartesian to spherical coordinates
     trans_mtx = sparse.csr_matrix(
         retrieve_hdf5_data(path_hdf5, hdf5_trans_mtx))
@@ -324,7 +322,7 @@ def create_grid_nuclear_coordinates(grid_data: Tuple) -> Matrix:
     xs = np.linspace(0, voxel * shape, num=shape, endpoint=False)
 
     # Create 4D Grid containing the voxel centers
-    grids = np.stack(np.meshgrid(xs, xs, xs), axis=3)
+    grids = np.stack(np.meshgrid(xs, xs, xs, indexing='ij'), axis=3)
 
     return grids.reshape(shape ** 3, 3)
 
