@@ -1,3 +1,4 @@
+#! /usr/bin/env python
 
 from os.path import join
 import argparse
@@ -11,9 +12,14 @@ def main(project_name, path_hdf5, indices):
     indices = np.array(indices) - 1
 
     # path to the failed points
-    root = join(project_name, 'point_{}')
-    paths = [root.format(i) for i in indices]
+    root_paths = join(project_name, 'point_{}')
+    root_overlaps = join(project_name, 'overlaps_{}')
+    mos = [root_paths.format(i) for i in indices]
+    overlaps = [root_overlaps.format(i) for i in indices]
 
+    # Concatenate both Molecular orbitals and Overlaps
+    paths = mos + overlaps
+    
     with h5py.File(path_hdf5, 'r+') as f5:
         for p in paths:
             if p in f5:
