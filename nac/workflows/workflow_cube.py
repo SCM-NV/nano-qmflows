@@ -66,6 +66,7 @@ def workflow_compute_cubes(
 
     # Nuclear coordinates of the grid
     grid_coordinates = create_grid_nuclear_coordinates(grid_data)
+    np.save('grid_coordinates', grid_coordinates)
 
     # Retrieve the matrix to transform from Cartesian to spherical coordinates
     trans_mtx = sparse.csr_matrix(
@@ -266,7 +267,7 @@ def compute_CGFs_values(
     for k, at in enumerate(molecule):
         cgfs = dictCGFs_array[at.symbol]
         size = cgfs.primitives.shape[0]
-        deltaR = (at.xyz - voxel_center).reshape(1, 3)
+        deltaR = at.xyz - voxel_center
 
         vs[acc: acc + size] = compute_CGFs_per_atom(cgfs, deltaR)
         acc += size
@@ -284,29 +285,25 @@ def compute_CGFs_per_atom(cgfs: Tuple, deltaR: Vector) -> Vector:
     # Iterate over each CGF per atom
     rs = np.empty(primitives.shape[0])
     for k, (expos, ps) in enumerate(zip(ang_exponents, primitives)):
-        x = compute_CGF(deltaR, expos, ps)
-        rs[k] = x
+        rs[k] = compute_CGF(deltaR, expos, ps)
 
     return rs
 
 
 def compute_CGF(
-        xyz: Vector, ang_expos: Vector, primitives: Matrix) -> float:
+        deltaR: Vector, ang_expos: Vector, primitives: Matrix) -> float:
     """
     Compute a single CGF
     """
     coeffs = primitives[0]
-    expos = primitives[1].reshape(primitives[1].size, 1)
+    expos = primitives[1]
 
     # Compute the xyz gaussian primitives
-    xs = xyz ** ang_expos
-    gaussians = xs * np.exp(-expos * xyz ** 2)
-
-    # Multiplied the x,y and z gaussians
-    rs_gauss = np.prod(gaussians, axis=1)
+    xs = np.prod(deltaR ** ang_expos)
+    gaussians = xs * np.exp(-expos * np.dot(deltaR, deltaR))
 
     # multiple the gaussian by the contraction coefficients
-    return np.sum(coeffs * rs_gauss)
+    return np.dot(coeffs, gaussians)
 
 
 def create_grid_nuclear_coordinates(grid_data: Tuple) -> Matrix:
@@ -319,7 +316,7 @@ def create_grid_nuclear_coordinates(grid_data: Tuple) -> Matrix:
     voxel = grid_data.voxel
 
     # Vector of equally seperated voxels in 1D
-    xs = np.linspace(0, voxel * shape, num=shape, endpoint=False)
+    xs = np.linspace(0, voxel * shape, num=shape, endpoint=False) + 0.5 * voxel
 
     # Create 4D Grid containing the voxel centers
     grids = np.stack(np.meshgrid(xs, xs, xs, indexing='ij'), axis=3)
