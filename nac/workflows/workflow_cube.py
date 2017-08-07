@@ -4,13 +4,13 @@ __all__ = ["workflow_compute_cubes"]
 
 # ================> Python Standard  and third-party <==========
 from .initialization import (
-    create_map_index_pyxaid, read_time_dependent_coeffs)
+    create_map_index_pyxaid, read_swaps, read_time_dependent_coeffs)
 from collections import namedtuple
 from functools import partial
 from itertools import repeat
 from multiprocessing import (cpu_count, Pool)
 from nac.common import (
-    Array, AtomXYZ, Matrix, Tensor3D, Vector, change_mol_units,
+    Array, Matrix, Tensor3D, Vector, change_mol_units,
     getmass, retrieve_hdf5_data, store_arrays_in_hdf5)
 from nac.common import search_data_in_hdf5
 from nac.integrals.multipoleIntegrals import calcOrbType_Components
@@ -56,14 +56,16 @@ def workflow_compute_cubes(
         ignore_warnings=ignore_warnings)
 
     # geometries in atomic units
-    molecules_au = [center_molecule_in_cube(
-        grid_data, change_mol_units(parse_string_xyz(gs)))
-        for gs in geometries]
+    molecules_au = [
+        change_mol_units(parse_string_xyz(gs)) for gs in geometries]
 
     # Extract the information of the CGFs dictionary
     dictCGFs_array = {l: CGFS(
         get_primitives(dictCGFs, l), get_angular_exponents(dictCGFs, l))
         for l in dictCGFs.keys()}
+
+    # Track unavoided crossing
+    swaps = read_swaps(path_hdf5, project_name)
 
     # Nuclear coordinates of the grid
     grid_coordinates = create_grid_nuclear_coordinates(grid_data)
@@ -76,8 +78,8 @@ def workflow_compute_cubes(
     promised_fun_grid = schedule(compute_grid_orbitals)
     promised_grids = gather(*[promised_fun_grid(
         k, mol, project_name, grid_data, grid_coordinates, path_hdf5,
-        dictCGFs_array, trans_mtx, mo_paths_hdf5, nHOMO, orbitals_range)
-        for k, mol in enumerate(molecules_au)])
+        dictCGFs_array, trans_mtx, mo_paths_hdf5, swaps[k], nHOMO, orbitals_range)
+        for k, mol in enumerate(molecules_au) if k % time_steps_grid == 0])
 
     # Compute the density weighted by the population computed with PYXAID
     # Time-dependent coefficients
@@ -99,7 +101,7 @@ def workflow_compute_cubes(
 
     print_grids(
         grid_data, molecules_au[0],
-        retrieve_hdf5_data(path_hdf5, path_grids[0])[:, 4], 'test.cube', 1)
+        retrieve_hdf5_data(path_hdf5, path_grids[0])[:, 5], 'test.cube', 1)
 
     # Print the cube files
     if grids_TD is not None:
@@ -144,9 +146,9 @@ def compute_TD_density(
 
 def compute_grid_orbitals(
         k: int, mol: List, project_name: str, grid_data: Tuple,
-        grid_coordinates: Array,
-        path_hdf5: str, dictCGFs_array: Dict, trans_mtx: Matrix,
-        paths_mos: List, nHOMO: int, orbitals_range: Tuple) -> str:
+        grid_coordinates: Array, path_hdf5: str, dictCGFs_array: Dict,
+        trans_mtx: Matrix, paths_mos: List, swaps: Vector,
+        nHOMO: int, orbitals_range: Tuple) -> str:
     """
     Compute the grid density for a given geometry and store it in the HDF5
 
@@ -177,6 +179,10 @@ def compute_grid_orbitals(
         # Read the molecular orbitals from the HDF5
         css = retrieve_hdf5_data(path_hdf5, paths_mos[k][1])
 
+        # Use the order computed after the tracking of the
+        # trivial crossings
+        css = css[:, swaps]
+
         # Extract a subset of MOs from the HDF5
         lowest, highest = compute_range_orbitals(css, nHOMO, orbitals_range)
         css = css[:, lowest: highest]
@@ -197,6 +203,9 @@ def distribute_grid_computation(
     Use all the available CPUs to compute the grid of density for a given
     molecular geometry.
     """
+    # Tuple of symbols, coords as numpy arrays
+    molecule_array = molecule_to_array(molecule)
+
     # Available CPUs
     nCPUs = cpu_count()
 
@@ -227,14 +236,14 @@ def distribute_grid_computation(
     with Pool() as p:
         grid = np.concatenate(
             p.map(partial(
-                compute_CGFs_chunk, molecule, dictCGFs_array, number_of_CGFs),
-                chunks))
+                compute_CGFs_chunk, molecule_array, dictCGFs_array,
+                number_of_CGFs), chunks))
 
     return grid
 
 
 def compute_CGFs_chunk(
-        molecule: List, dictCGFs_array: Dict, number_of_CGFs: int,
+        molecule_array: Tuple, dictCGFs_array: Dict, number_of_CGFs: int,
         chunk: Matrix) -> Matrix:
     """
     Compute the value of all the CGFs for a set molecular geometries
@@ -248,12 +257,12 @@ def compute_CGFs_chunk(
 
     for i, voxel_center in enumerate(np.rollaxis(chunk, axis=0)):
         cgfs_grid[i] = compute_CGFs_values(
-            molecule, dictCGFs_array, voxel_center, number_of_CGFs)
+            molecule_array, dictCGFs_array, voxel_center, number_of_CGFs)
     return cgfs_grid
 
 
 def compute_CGFs_values(
-        molecule: List, dictCGFs_array: Dict, voxel_center: Vector,
+        molecule_array: tuple, dictCGFs_array: Dict, voxel_center: Vector,
         number_of_CGFs) -> Vector:
     """
     Evaluate the CGFs in a given molecular geometry.
@@ -261,10 +270,10 @@ def compute_CGFs_values(
     vs = np.empty(number_of_CGFs)
 
     acc = 0
-    for k, at in enumerate(molecule):
-        cgfs = dictCGFs_array[at.symbol]
+    for symbol, xyz in zip(*molecule_array):
+        cgfs = dictCGFs_array[symbol]
         size = cgfs.primitives.shape[0]
-        deltaR = at.xyz - voxel_center
+        deltaR = xyz - voxel_center
 
         vs[acc: acc + size] = compute_CGFs_per_atom(cgfs, deltaR)
         acc += size
@@ -334,11 +343,14 @@ def get_angular_exponents(dictCGFs: Dict, s: str) -> List:
         [[calcOrbType_Components(l, x) for x in range(3)] for l in ls])
 
 
-def center_molecule_in_cube(grid_data: Tuple, mol: List) -> None:
+def molecule_to_array(mol: List) -> Tuple:
     """
     Translate a molecule to the center of the cube
     """
-    return [AtomXYZ(at.symbol, np.array(at.xyz)) for at in mol]
+    coords = np.array([at.xyz for at in mol])
+    symbols = np.array([at.symbol for at in mol])
+
+    return symbols, coords
 
 
 def print_grids(

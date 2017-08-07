@@ -1,12 +1,13 @@
-__all__ = ['create_map_index_pyxaid', 'initialize', 'split_trajectory',
-           'store_transf_matrix']
+__all__ = ['create_map_index_pyxaid', 'initialize', 'read_swaps',
+           'split_trajectory', 'store_transf_matrix']
 
-from os.path import join
 from nac.basisSet import (compute_normalization_sphericals, create_dict_CGFs)
-from nac.common import (change_mol_units, Matrix, Tensor3D, Vector)
+from nac.common import (
+    Matrix, Tensor3D, Vector, change_mol_units, retrieve_hdf5_data, search_data_in_hdf5)
 from nac.integrals import calc_transf_matrix
 from nac.schedule.components import (
     create_point_folder, split_file_geometries)
+from os.path import join
 from qmworks.hdf5.quantumHDF5 import StoreasHDF5
 from qmworks.parsers import parse_string_xyz
 from subprocess import (PIPE, Popen)
@@ -175,6 +176,20 @@ def create_map_index_pyxaid(
         indexes_hdf5[i + 1] = compute_excitation_indexes(i)
 
     return indexes_hdf5
+
+
+def read_swaps(path_hdf5: str, project_name: str) -> Matrix:
+    """
+    Read the crossing tracking for the Molecular orbital
+    """
+    path_swaps = join(project_name, 'swaps')
+    if search_data_in_hdf5(path_hdf5, path_swaps):
+        return retrieve_hdf5_data(path_hdf5, path_swaps)
+    else:
+        msg = """There is not a tracking file called: {}
+        This file is automatically created when running the worflow_coupling
+        simulations""".format(path_swaps)
+        raise RuntimeError(msg)
 
 
 def store_transf_matrix(

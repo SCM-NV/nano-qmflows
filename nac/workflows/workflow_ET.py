@@ -2,15 +2,14 @@ __author__ = "Felipe Zapata"
 
 # ================> Python Standard  and third-party <==========
 from .initialization import (
-    create_map_index_pyxaid, read_time_dependent_coeffs)
+    create_map_index_pyxaid, read_swaps, read_time_dependent_coeffs)
 from nac.schedule.components import calculate_mos
 from nac.common import (
     Matrix, change_mol_units, femtosec2au,
-    retrieve_hdf5_data, search_data_in_hdf5)
+    retrieve_hdf5_data)
 from nac.schedule.scheduleET import (
     compute_overlaps_ET, photo_excitation_rate)
 from noodles import (gather, schedule)
-from os.path import join
 from qmworks import run
 from qmworks.parsers import parse_string_xyz
 from scipy import integrate
@@ -156,20 +155,6 @@ def compute_photoexcitation(
         results.append(etr)
 
     return np.stack(results)
-
-
-def read_swaps(path_hdf5: str, project_name: str) -> Matrix:
-    """
-    Read the crossing tracking for the Molecular orbital
-    """
-    path_swaps = join(project_name, 'swaps')
-    if search_data_in_hdf5(path_hdf5, path_swaps):
-        return retrieve_hdf5_data(path_hdf5, path_swaps)
-    else:
-        msg = """There is not a tracking file called: {}
-        This file is automatically created when running the worflow_coupling
-        simulations""".format(path_swaps)
-        raise RuntimeError(msg)
 
 
 def write_ETR(mtx, dt, i):
