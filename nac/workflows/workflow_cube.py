@@ -55,8 +55,8 @@ def workflow_compute_cubes(
         ignore_warnings=ignore_warnings)
 
     # geometries in atomic units
-    molecules_au = [center_molecule_in_cube(grid_data, center_molecule_in_cube(
-        grid_data, change_mol_units(parse_string_xyz(gs))))
+    molecules_au = [center_molecule_in_cube(
+        grid_data, change_mol_units(parse_string_xyz(gs)))
         for gs in geometries]
 
     # Extract the information of the CGFs dictionary
@@ -66,7 +66,6 @@ def workflow_compute_cubes(
 
     # Nuclear coordinates of the grid
     grid_coordinates = create_grid_nuclear_coordinates(grid_data)
-    np.save('grid_coordinates', grid_coordinates)
 
     # Retrieve the matrix to transform from Cartesian to spherical coordinates
     trans_mtx = sparse.csr_matrix(
@@ -97,9 +96,9 @@ def workflow_compute_cubes(
     path_grids, grids_TD = run(
         gather(promised_grids, promised_TD_density), folder=work_dir)
 
-    print_grids(
-        grid_data, molecules_au[0],
-        retrieve_hdf5_data(path_hdf5, path_grids[0])[:, 6], 'test.cube', 1)
+    # print_grids(
+    #     grid_data, molecules_au[0],
+    #     retrieve_hdf5_data(path_hdf5, path_grids[0])[:, 5], 'test.cube', 1)
 
     # Print the cube files
     if grids_TD is not None:
@@ -319,7 +318,7 @@ def create_grid_nuclear_coordinates(grid_data: Tuple) -> Matrix:
     xs = np.linspace(0, voxel * shape, num=shape, endpoint=False) + 0.5 * voxel
 
     # Create 4D Grid containing the voxel centers
-    grids = np.stack(np.meshgrid(xs, xs, xs, indexing='ij'), axis=3)
+    grids = np.stack(np.meshgrid(xs, xs, xs), axis=3)
 
     return grids.reshape(shape ** 3, 3)
 
