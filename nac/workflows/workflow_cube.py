@@ -12,6 +12,7 @@ from multiprocessing import (cpu_count, Pool)
 from nac.common import (
     Array, AtomXYZ, Matrix, Tensor3D, Vector, change_mol_units,
     getmass, retrieve_hdf5_data, store_arrays_in_hdf5)
+from nac.common import search_data_in_hdf5
 from nac.integrals.multipoleIntegrals import calcOrbType_Components
 from nac.integrals.nonAdiabaticCoupling import compute_range_orbitals
 from nac.schedule.components import calculate_mos
@@ -72,7 +73,7 @@ def workflow_compute_cubes(
         retrieve_hdf5_data(path_hdf5, hdf5_trans_mtx))
 
     # Compute the values in the given grid
-    promised_fun_grid = schedule(compute_grid_density)
+    promised_fun_grid = schedule(compute_grid_orbitals)
     promised_grids = gather(*[promised_fun_grid(
         k, mol, project_name, grid_data, grid_coordinates, path_hdf5,
         dictCGFs_array, trans_mtx, mo_paths_hdf5, nHOMO, orbitals_range)
@@ -129,17 +130,19 @@ def compute_TD_density(
         for k, path_grid in enumerate(promised_grids):
             grid = retrieve_hdf5_data(path_hdf5, path_grid)
             electron_grid = grid[:, electron_indices]
+            # Compute the electron_density
+            electron_density = electron_grid ** 2
 
-            # Compute the time_dependent ET
+            # Compute the time_dependent change in density
             population = time_depend_coeffs[k * time_steps_grid]
-            grid_ET = np.dot(electron_grid, population)
+            grid_ET = np.dot(electron_density, population)
 
             yield grid_ET
     else:
         return None
 
 
-def compute_grid_density(
+def compute_grid_orbitals(
         k: int, mol: List, project_name: str, grid_data: Tuple,
         grid_coordinates: Array,
         path_hdf5: str, dictCGFs_array: Dict, trans_mtx: Matrix,
@@ -158,36 +161,31 @@ def compute_grid_density(
     :param path_mo: Path to the MO in the HDF5.
     :returns: path where the grid is stored in the HDF5
     """
-    path_grid = join(project_name, 'density_grid_{}'.format(k))
+    path_grid = join(project_name, 'orbitals_grid_{}'.format(k))
 
     # Compute the values of the orbital using all the Avialable CPUs
     # Before multiplying for the MO coefficient
-    orbital_grid_cartesian = distribute_grid_computation(
-        mol, grid_coordinates, dictCGFs_array)
+    if not search_data_in_hdf5(path_grid):
+        orbital_grid_cartesian = distribute_grid_computation(
+            mol, grid_coordinates, dictCGFs_array)
 
-    # Transform to spherical coordinate
-    transpose = trans_mtx.transpose()
-    orbital_grid_sphericals = sparse.csr_matrix.dot(
-        orbital_grid_cartesian, transpose)
+        # Transform to spherical coordinate
+        transpose = trans_mtx.transpose()
+        orbital_grid_sphericals = sparse.csr_matrix.dot(
+            orbital_grid_cartesian, transpose)
 
-    # # |phi| ^ 2
-    # orbital_grid_sphericals *= orbital_grid_sphericals
+        # Read the molecular orbitals from the HDF5
+        css = retrieve_hdf5_data(path_hdf5, paths_mos[k][1])
 
-    # Read the molecular orbitals from the HDF5
-    css = retrieve_hdf5_data(path_hdf5, paths_mos[k][1])
+        # Extract a subset of MOs from the HDF5
+        lowest, highest = compute_range_orbitals(css, nHOMO, orbitals_range)
+        css = css[:, lowest: highest]
 
-    # Extract a subset of MOs from the HDF5
-    lowest, highest = compute_range_orbitals(css, nHOMO, orbitals_range)
-    css = css[:, lowest: highest]
+        # Ci * phi . Matrix shape: points ** 3, number_of_orbitals
+        density_grid = np.dot(orbital_grid_sphericals, css)
 
-    # # Ci ^ 2
-    # css *= css
-
-    # Ci^2 * |phi| ^ 2. Matrix shape: points ** 3, number_of_orbitals
-    density_grid = np.dot(orbital_grid_sphericals, css)
-
-    # Store the density grid in the HDF5
-    store_arrays_in_hdf5(path_hdf5, path_grid, density_grid)
+        # Store the density grid in the HDF5
+        store_arrays_in_hdf5(path_hdf5, path_grid, density_grid)
 
     return path_grid
 
