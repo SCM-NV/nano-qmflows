@@ -165,7 +165,7 @@ def compute_grid_orbitals(
 
     # Compute the values of the orbital using all the Avialable CPUs
     # Before multiplying for the MO coefficient
-    if not search_data_in_hdf5(path_grid):
+    if not search_data_in_hdf5(path_hdf5, path_grid):
         orbital_grid_cartesian = distribute_grid_computation(
             mol, grid_coordinates, dictCGFs_array)
 
