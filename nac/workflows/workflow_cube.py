@@ -262,7 +262,9 @@ def compute_CGFs_chunk(
     n_atoms = symbols.size
 
     # Deltas between the voxel center and the atoms in the molecule
-    deltaR = chunk.resize(1, chunk_size, 3) - coords.resize(n_atoms, 1, 3)
+    chunk = chunk.reshape(1, chunk_size, 3)
+    coords = coords.reshape(n_atoms, 1, 3)
+    deltaR = chunk - coords
 
     # Resulting array
     cgfs_grid = np.empty((chunk_size, number_of_CGFs))
