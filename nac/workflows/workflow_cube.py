@@ -4,7 +4,7 @@ __all__ = ["workflow_compute_cubes"]
 
 # ================> Python Standard  and third-party <==========
 from .initialization import (
-    create_map_index_pyxaid, read_swaps, read_time_dependent_coeffs)
+    create_map_index_pyxaid, read_swaps, parse_population)
 from collections import namedtuple
 from functools import partial
 from itertools import repeat
@@ -42,6 +42,7 @@ def workflow_compute_cubes(
         traj_folders: List=None, work_dir: str=None, basisname: str=None,
         hdf5_trans_mtx: str=None, nHOMO: int=None, orbitals_range: Tuple=None,
         pyxaid_HOMO: int=None, pyxaid_Nmin: int=None, pyxaid_Nmax: int=None,
+        density_type: str='electron',
         time_steps_grid: int=1, ignore_warnings=False, **kwargs) -> None:
     """
     :param path_hdf5: Path to the HDF5 file that contains the
@@ -84,7 +85,7 @@ def workflow_compute_cubes(
     # Compute the density weighted by the population computed with PYXAID
     # Time-dependent coefficients
     if path_time_coeffs is not None:
-        time_depend_coeffs = read_time_dependent_coeffs(path_time_coeffs)
+        time_depend_coeffs = parse_population(path_time_coeffs)
         msg = "Reading time_dependent coefficients from: {}".format(path_time_coeffs)
         logger.info(msg)
     else:
@@ -93,22 +94,17 @@ def workflow_compute_cubes(
     scheduled_density = schedule(compute_TD_density)
     promised_TD_density = scheduled_density(
         path_hdf5, promised_grids, time_depend_coeffs, orbitals_range,
-        pyxaid_HOMO, pyxaid_Nmax, pyxaid_Nmin, time_steps_grid)
+        pyxaid_HOMO, pyxaid_Nmin, pyxaid_Nmax, time_steps_grid, density_type)
 
     # Execute the workflow
     path_grids, grids_TD = run(
         gather(promised_grids, promised_TD_density), folder=work_dir)
 
-    print_grids(
-        grid_data, molecules_au[0],
-        retrieve_hdf5_data(path_hdf5, path_grids[0])[:, 5], 'test.cube', 1)
-
     # Print the cube files
     if grids_TD is not None:
         for k, (grid, mol) in enumerate(zip(grids_TD, molecules_au)):
             step = time_steps_grid * k
-            file_name = join(project_name, 'point_{}'.format(step))
-
+            file_name = project_name + 'frame_{}'.format(step)
             print_grids(grid_data, mol, grid, file_name, step)
 
     return path_grids
@@ -117,7 +113,7 @@ def workflow_compute_cubes(
 def compute_TD_density(
         path_hdf5: str, promised_grids: List, time_depend_coeffs: Matrix,
         orbitals_range: Tuple, pyxaid_HOMO: int, pyxaid_Nmin: int,
-        pyxaid_Nmax: int, time_steps_grid: int):
+        pyxaid_Nmax: int, time_steps_grid: int, density_type: str):
     """
     Multiply the population with the corresponding orbitals
     """
@@ -126,12 +122,16 @@ def compute_TD_density(
         # Create a map from PYXAID orbitals to orbitals store in the HDF5
         map_indices = create_map_index_pyxaid(
             orbitals_range, pyxaid_HOMO, pyxaid_Nmin, pyxaid_Nmax)
-        electron_indices = map_indices[:, 1]
+
+        # Extract the indices of either the electron of the hole
+        j = 1 if density_type == 'electron' else 0 
+        indices = map_indices[:, j]
 
         # Extract only the orbitals involved in the electron transfer
         for k, path_grid in enumerate(promised_grids):
             grid = retrieve_hdf5_data(path_hdf5, path_grid)
-            electron_grid = grid[:, electron_indices]
+            electron_grid = grid[:, indices]
+
             # Compute the electron_density
             electron_density = electron_grid ** 2
 
@@ -168,6 +168,7 @@ def compute_grid_orbitals(
     # Compute the values of the orbital using all the Avialable CPUs
     # Before multiplying for the MO coefficient
     if not search_data_in_hdf5(path_hdf5, path_grid):
+        logger.info("Computing: {}".format(path_grid))
         orbital_grid_cartesian = distribute_grid_computation(
             mol, grid_coordinates, dictCGFs_array)
 
@@ -193,6 +194,9 @@ def compute_grid_orbitals(
         # Store the density grid in the HDF5
         store_arrays_in_hdf5(path_hdf5, path_grid, density_grid)
 
+    else:
+        logger.info("{} already computed and stored in HDF5".format(path_grid))
+        
     return path_grid
 
 
