@@ -79,7 +79,8 @@ def workflow_compute_cubes(
     promised_fun_grid = schedule(compute_grid_orbitals)
     promised_grids = gather(*[promised_fun_grid(
         k, mol, project_name, grid_data, grid_coordinates, path_hdf5,
-        dictCGFs_array, trans_mtx, mo_paths_hdf5, swaps[k], nHOMO, orbitals_range)
+        dictCGFs_array, trans_mtx, mo_paths_hdf5, swaps[k], nHOMO,
+        orbitals_range)
         for k, mol in enumerate(molecules_au) if k % time_steps_grid == 0])
 
     # Compute the density weighted by the population computed with PYXAID
@@ -270,56 +271,40 @@ def compute_CGFs_chunk(
     for k, (s, mtx) in enumerate(zip(symbols, deltaR)):
         cgfs = dictCGFs_array[s]
         upper = acc + cgfs.primitives.shape[0]
-        cgfs_grid[:, acc + upper] = compute_CGFs_values(mtx, cgfs)
+        cgfs_grid[:, acc + upper] = compute_CGFs_per_atom(mtx, cgfs)
         acc += upper
     return cgfs_grid
 
 
-def compute_CGFs_values(
-        coords: Matrix, cgfs: Tuple) -> Matrix:
-    """
-    Evaluate the CGFs in a given molecular geometry.
-    """
-    vs = np.empty(number_of_CGFs)
-
-    acc = 0
-    for symbol, xyz in zip(*molecule_array):
-        cgfs = dictCGFs_array[symbol]
-        size = cgfs.primitives.shape[0]
-        deltaR = xyz - voxel_center
-
-        vs[acc: acc + size] = compute_CGFs_per_atom(cgfs, deltaR)
-        acc += size
-
-    return vs
-
-
-def compute_CGFs_per_atom(cgfs: Tuple, deltaR: Vector) -> Vector:
+def compute_CGFs_per_atom(coords: Matrix, cgfs: Tuple) -> Matrix:
     """
     Compute the value of the CGFs for a particular atom
     """
     ang_exponents = cgfs.ang_expo
     primitives = cgfs.primitives
 
-    # Iterate over each CGF per atom
-    rs = np.empty(primitives.shape[0])
+    # Iterate for all the distance of a particular atom to all
+    # The voxels in the grid
+    dim_x = coords.shape[0]
+    dim_y = primitives.shape[0]
+    rs = np.empty((dim_x, dim_y))
     for k, (expos, ps) in enumerate(zip(ang_exponents, primitives)):
-        rs[k] = compute_CGF(deltaR, expos, ps)
+        rs[:, k] = compute_CGF(coords, expos, ps)
 
     return rs
 
 
 def compute_CGF(
-        deltaR: Vector, ang_expos: Vector, primitives: Matrix) -> float:
+        coords: Matrix, ang_expos: Vector, primitives: Matrix) -> Vector:
     """
-    Compute a single CGF
+    Compute a single CGF for a set of Coords
     """
     coeffs = primitives[0]
     expos = primitives[1]
 
     # Compute the xyz gaussian primitives
-    xs = np.prod(deltaR ** ang_expos)
-    gaussians = xs * np.exp(-expos * np.dot(deltaR, deltaR))
+    xs = np.prod(coords ** ang_expos)
+    gaussians = xs * np.exp(-expos * coords ** 2)
 
     # multiple the gaussian by the contraction coefficients
     return np.dot(coeffs, gaussians)
