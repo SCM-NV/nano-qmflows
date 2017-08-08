@@ -104,7 +104,7 @@ def workflow_compute_cubes(
     if grids_TD is not None:
         for k, (grid, mol) in enumerate(zip(grids_TD, molecules_au)):
             step = time_steps_grid * k
-            file_name = project_name + 'frame_{}'.format(step)
+            file_name = project_name + '_frame_{}.cube'.format(step)
             print_grids(grid_data, mol, grid, file_name, step)
 
     return path_grids
@@ -124,7 +124,7 @@ def compute_TD_density(
             orbitals_range, pyxaid_HOMO, pyxaid_Nmin, pyxaid_Nmax)
 
         # Extract the indices of either the electron of the hole
-        j = 1 if density_type == 'electron' else 0 
+        j = 1 if density_type.lower() == 'electron' else 0
         indices = map_indices[:, j]
 
         # Extract only the orbitals involved in the electron transfer
@@ -196,7 +196,7 @@ def compute_grid_orbitals(
 
     else:
         logger.info("{} already computed and stored in HDF5".format(path_grid))
-        
+
     return path_grid
 
 
