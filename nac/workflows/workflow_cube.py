@@ -256,18 +256,27 @@ def compute_CGFs_chunk(
     # Dimensions of the result array
     chunk_size = chunk.shape[0]
 
+    # Unpack the molecule
+    symbols, coords = molecule_array
+    n_atoms = symbols.size
+
+    # Deltas between the voxel center and the atoms in the molecule
+    deltaR = chunk.resize(1, chunk_size, 3) - coords.resize(n_atoms, 1, 3)
+
     # Resulting array
     cgfs_grid = np.empty((chunk_size, number_of_CGFs))
 
-    for i, voxel_center in enumerate(np.rollaxis(chunk, axis=0)):
-        cgfs_grid[i] = compute_CGFs_values(
-            molecule_array, dictCGFs_array, voxel_center, number_of_CGFs)
+    acc = 0
+    for k, (s, mtx) in enumerate(zip(symbols, deltaR)):
+        cgfs = dictCGFs_array[s]
+        upper = acc + cgfs.primitives.shape[0]
+        cgfs_grid[:, acc + upper] = compute_CGFs_values(mtx, cgfs)
+        acc += upper
     return cgfs_grid
 
 
 def compute_CGFs_values(
-        molecule_array: tuple, dictCGFs_array: Dict, voxel_center: Vector,
-        number_of_CGFs) -> Vector:
+        coords: Matrix, cgfs: Tuple) -> Matrix:
     """
     Evaluate the CGFs in a given molecular geometry.
     """
