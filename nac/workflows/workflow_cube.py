@@ -268,9 +268,9 @@ def compute_CGFs_chunk(
 
     # Resulting array
     cgfs_grid = np.empty((chunk_size, number_of_CGFs))
-    
+
     acc = 0
-    for k, (s, mtx) in enumerate(zip(symbols, deltaR)):
+    for s, mtx in zip(symbols, deltaR):
         cgfs = dictCGFs_array[s]
         upper = acc + cgfs.primitives.shape[0]
         cgfs_grid[:, acc: upper] = compute_CGFs_per_atom(mtx, cgfs)
