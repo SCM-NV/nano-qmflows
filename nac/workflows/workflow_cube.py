@@ -146,10 +146,10 @@ def compute_TD_density(
 
 
 def compute_grid_orbitals(
-        k: int, mol: List, project_name: str, grid_data: Tuple,
-        grid_coordinates: Array, path_hdf5: str, dictCGFs_array: Dict,
-        trans_mtx: Matrix, paths_mos: List, swaps: Vector,
-        nHOMO: int, orbitals_range: Tuple) -> str:
+    k: int, mol: List, project_name: str, grid_data: Tuple,
+    grid_coordinates: Array, path_hdf5: str, dictCGFs_array: Dict,
+    trans_mtx: Matrix, paths_mos: List, swaps: Vector,
+    nHOMO: int, orbitals_range: Tuple) -> str:
     """
     Compute the grid density for a given geometry and store it in the HDF5
 
@@ -264,11 +264,11 @@ def compute_CGFs_chunk(
     # Deltas between the voxel center and the atoms in the molecule
     chunk = chunk.reshape(1, chunk_size, 3)
     coords = coords.reshape(n_atoms, 1, 3)
-    deltaR = chunk - coords
+    deltaR = coords - chunk
 
     # Resulting array
     cgfs_grid = np.empty((chunk_size, number_of_CGFs))
-
+    
     acc = 0
     for k, (s, mtx) in enumerate(zip(symbols, deltaR)):
         cgfs = dictCGFs_array[s]
