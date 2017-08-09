@@ -273,8 +273,8 @@ def compute_CGFs_chunk(
     for k, (s, mtx) in enumerate(zip(symbols, deltaR)):
         cgfs = dictCGFs_array[s]
         upper = acc + cgfs.primitives.shape[0]
-        cgfs_grid[:, acc + upper] = compute_CGFs_per_atom(mtx, cgfs)
-        acc += upper
+        cgfs_grid[:, acc: upper] = compute_CGFs_per_atom(mtx, cgfs)
+        acc = upper
     return cgfs_grid
 
 
@@ -289,6 +289,7 @@ def compute_CGFs_per_atom(coords: Matrix, cgfs: Tuple) -> Matrix:
     # The voxels in the grid
     dim_x = coords.shape[0]
     dim_y = primitives.shape[0]
+
     rs = np.empty((dim_x, dim_y))
     for k, (expos, ps) in enumerate(zip(ang_exponents, primitives)):
         rs[:, k] = compute_CGF(coords, expos, ps)
@@ -313,7 +314,7 @@ def compute_CGF(
     expos = expos.reshape(1, dim_y)
 
     # Compute the xyz gaussian primitives
-    xs = np.prod(coords ** ang_expos, axis=1)
+    xs = np.prod(coords ** ang_expos, axis=1).reshape(dim_x, 1)
     dr_2 = np.sum(coords ** 2, axis=1).reshape(dim_x, 1)
     gaussians = xs * np.exp(-expos * dr_2)
 
