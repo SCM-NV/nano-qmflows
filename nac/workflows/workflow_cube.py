@@ -79,7 +79,8 @@ def workflow_compute_cubes(
     promised_fun_grid = schedule(compute_grid_orbitals)
     promised_grids = gather(*[promised_fun_grid(
         k, mol, project_name, grid_data, grid_coordinates, path_hdf5,
-        dictCGFs_array, trans_mtx, mo_paths_hdf5, swaps[k], nHOMO, orbitals_range)
+        dictCGFs_array, trans_mtx, mo_paths_hdf5, swaps[k], nHOMO,
+        orbitals_range)
         for k, mol in enumerate(molecules_au) if k % time_steps_grid == 0])
 
     # Compute the density weighted by the population computed with PYXAID
@@ -145,10 +146,10 @@ def compute_TD_density(
 
 
 def compute_grid_orbitals(
-        k: int, mol: List, project_name: str, grid_data: Tuple,
-        grid_coordinates: Array, path_hdf5: str, dictCGFs_array: Dict,
-        trans_mtx: Matrix, paths_mos: List, swaps: Vector,
-        nHOMO: int, orbitals_range: Tuple) -> str:
+    k: int, mol: List, project_name: str, grid_data: Tuple,
+    grid_coordinates: Array, path_hdf5: str, dictCGFs_array: Dict,
+    trans_mtx: Matrix, paths_mos: List, swaps: Vector,
+    nHOMO: int, orbitals_range: Tuple) -> str:
     """
     Compute the grid density for a given geometry and store it in the HDF5
 
@@ -243,7 +244,7 @@ def distribute_grid_computation(
                 compute_CGFs_chunk, molecule_array, dictCGFs_array,
                 number_of_CGFs), chunks))
 
-    return grid
+        return grid
 
 
 def compute_CGFs_chunk(
@@ -256,64 +257,69 @@ def compute_CGFs_chunk(
     # Dimensions of the result array
     chunk_size = chunk.shape[0]
 
+    # Unpack the molecule
+    symbols, coords = molecule_array
+    n_atoms = symbols.size
+
+    # Deltas between the voxel center and the atoms in the molecule
+    chunk = chunk.reshape(1, chunk_size, 3)
+    coords = coords.reshape(n_atoms, 1, 3)
+    deltaR = coords - chunk
+
     # Resulting array
     cgfs_grid = np.empty((chunk_size, number_of_CGFs))
 
-    for i, voxel_center in enumerate(np.rollaxis(chunk, axis=0)):
-        cgfs_grid[i] = compute_CGFs_values(
-            molecule_array, dictCGFs_array, voxel_center, number_of_CGFs)
+    acc = 0
+    for s, mtx in zip(symbols, deltaR):
+        cgfs = dictCGFs_array[s]
+        upper = acc + cgfs.primitives.shape[0]
+        cgfs_grid[:, acc: upper] = compute_CGFs_per_atom(mtx, cgfs)
+        acc = upper
     return cgfs_grid
 
 
-def compute_CGFs_values(
-        molecule_array: tuple, dictCGFs_array: Dict, voxel_center: Vector,
-        number_of_CGFs) -> Vector:
-    """
-    Evaluate the CGFs in a given molecular geometry.
-    """
-    vs = np.empty(number_of_CGFs)
-
-    acc = 0
-    for symbol, xyz in zip(*molecule_array):
-        cgfs = dictCGFs_array[symbol]
-        size = cgfs.primitives.shape[0]
-        deltaR = xyz - voxel_center
-
-        vs[acc: acc + size] = compute_CGFs_per_atom(cgfs, deltaR)
-        acc += size
-
-    return vs
-
-
-def compute_CGFs_per_atom(cgfs: Tuple, deltaR: Vector) -> Vector:
+def compute_CGFs_per_atom(coords: Matrix, cgfs: Tuple) -> Matrix:
     """
     Compute the value of the CGFs for a particular atom
     """
     ang_exponents = cgfs.ang_expo
     primitives = cgfs.primitives
 
-    # Iterate over each CGF per atom
-    rs = np.empty(primitives.shape[0])
+    # Iterate for all the distance of a particular atom to all
+    # The voxels in the grid
+    dim_x = coords.shape[0]
+    dim_y = primitives.shape[0]
+
+    rs = np.empty((dim_x, dim_y))
     for k, (expos, ps) in enumerate(zip(ang_exponents, primitives)):
-        rs[k] = compute_CGF(deltaR, expos, ps)
+        rs[:, k] = compute_CGF(coords, expos, ps)
 
     return rs
 
 
 def compute_CGF(
-        deltaR: Vector, ang_expos: Vector, primitives: Matrix) -> float:
+        coords: Matrix, ang_expos: Vector, primitives: Matrix) -> Vector:
     """
-    Compute a single CGF
+    Compute a single CGF for a set of Coords
     """
+    # Extract data
     coeffs = primitives[0]
     expos = primitives[1]
 
+    # Shape of the arrays
+    dim_x = coords.shape[0]
+    dim_y = expos.size
+
+    # Reshape data
+    expos = expos.reshape(1, dim_y)
+
     # Compute the xyz gaussian primitives
-    xs = np.prod(deltaR ** ang_expos)
-    gaussians = xs * np.exp(-expos * np.dot(deltaR, deltaR))
+    xs = np.prod(coords ** ang_expos, axis=1).reshape(dim_x, 1)
+    dr_2 = np.sum(coords ** 2, axis=1).reshape(dim_x, 1)
+    gaussians = xs * np.exp(-expos * dr_2)
 
     # multiple the gaussian by the contraction coefficients
-    return np.dot(coeffs, gaussians)
+    return np.dot(gaussians, coeffs)
 
 
 def create_grid_nuclear_coordinates(grid_data: Tuple) -> Matrix:
