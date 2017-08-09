@@ -77,11 +77,10 @@ def workflow_compute_cubes(
 
     # Compute the values in the given grid
     promised_fun_grid = schedule(compute_grid_orbitals)
-    promised_grids = gather(*[promised_fun_grid(
-        k, mol, project_name, grid_data, grid_coordinates, path_hdf5,
-        dictCGFs_array, trans_mtx, mo_paths_hdf5, swaps[k], nHOMO,
-        orbitals_range)
-        for k, mol in enumerate(molecules_au) if k % time_steps_grid == 0])
+    promised_grids = gather(*promised_fun_grid(
+        molecules_au, project_name, grid_data, grid_coordinates, path_hdf5,
+        dictCGFs_array, trans_mtx, mo_paths_hdf5, swaps, nHOMO,
+        orbitals_range, time_steps_grid))
 
     # Compute the density weighted by the population computed with PYXAID
     # Time-dependent coefficients
@@ -146,10 +145,25 @@ def compute_TD_density(
 
 
 def compute_grid_orbitals(
-    k: int, mol: List, project_name: str, grid_data: Tuple,
-    grid_coordinates: Array, path_hdf5: str, dictCGFs_array: Dict,
-    trans_mtx: Matrix, paths_mos: List, swaps: Vector,
-    nHOMO: int, orbitals_range: Tuple) -> str:
+        molecules_au: List, project_name: str, grid_data: Tuple,
+        grid_coordinates: Array, path_hdf5: str, dictCGFs_array: Dict,
+        trans_mtx: Matrix, paths_mos: List, swaps: Matrix, nHOMO: int,
+        orbitals_range: Tuple, time_steps_grid: int) -> str:
+    """
+    Compute the grids for all the geometries requested by the user.
+    """
+    return [compute_grid_per_geometry(
+        k, mol, project_name, grid_data, grid_coordinates, path_hdf5,
+        dictCGFs_array, trans_mtx, paths_mos[k], swaps[k], nHOMO,
+        orbitals_range)
+            for k, mol in enumerate(molecules_au) if k % time_steps_grid == 0]
+
+
+def compute_grid_per_geometry(
+        k: int, mol: List, project_name: str, grid_data: Tuple,
+        grid_coordinates: Array, path_hdf5: str, dictCGFs_array: Dict,
+        trans_mtx: Matrix, paths_mos: List, swaps: Vector, nHOMO: int,
+        orbitals_range: Tuple) -> str:
     """
     Compute the grid density for a given geometry and store it in the HDF5
 
@@ -179,7 +193,7 @@ def compute_grid_orbitals(
             orbital_grid_cartesian, transpose)
 
         # Read the molecular orbitals from the HDF5
-        css = retrieve_hdf5_data(path_hdf5, paths_mos[k][1])
+        css = retrieve_hdf5_data(path_hdf5, paths_mos[1])
 
         # Use the order computed after the tracking of the
         # trivial crossings
