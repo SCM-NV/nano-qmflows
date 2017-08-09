@@ -244,7 +244,7 @@ def distribute_grid_computation(
                 compute_CGFs_chunk, molecule_array, dictCGFs_array,
                 number_of_CGFs), chunks))
 
-    return grid
+        return grid
 
 
 def compute_CGFs_chunk(
@@ -301,15 +301,24 @@ def compute_CGF(
     """
     Compute a single CGF for a set of Coords
     """
+    # Extract data
     coeffs = primitives[0]
     expos = primitives[1]
 
+    # Shape of the arrays
+    dim_x = coords.shape[0]
+    dim_y = expos.size
+
+    # Reshape data
+    expos = expos.reshape(1, dim_y)
+
     # Compute the xyz gaussian primitives
-    xs = np.prod(coords ** ang_expos)
-    gaussians = xs * np.exp(-expos * coords ** 2)
+    xs = np.prod(coords ** ang_expos, axis=1)
+    dr_2 = np.sum(coords ** 2, axis=1).reshape(dim_x, 1)
+    gaussians = xs * np.exp(-expos * dr_2)
 
     # multiple the gaussian by the contraction coefficients
-    return np.dot(coeffs, gaussians)
+    return np.dot(gaussians, coeffs)
 
 
 def create_grid_nuclear_coordinates(grid_data: Tuple) -> Matrix:
