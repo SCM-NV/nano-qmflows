@@ -77,10 +77,10 @@ def workflow_compute_cubes(
 
     # Compute the values in the given grid
     promised_fun_grid = schedule(compute_grid_orbitals)
-    promised_grids = gather(*promised_fun_grid(
+    promised_grids = promised_fun_grid(
         molecules_au, project_name, grid_data, grid_coordinates, path_hdf5,
         dictCGFs_array, trans_mtx, mo_paths_hdf5, swaps, nHOMO,
-        orbitals_range, time_steps_grid))
+        orbitals_range, time_steps_grid)
 
     # Compute the density weighted by the population computed with PYXAID
     # Time-dependent coefficients
