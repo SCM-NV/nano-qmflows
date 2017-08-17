@@ -113,7 +113,7 @@ def calculate_ETR(
     for i, mtx in enumerate(electronTransferRates):
         write_ETR(mtx, dt, i)
 
-    write_overlap_densities(path_hdf5, path_overlaps, dt)
+    write_overlap_densities(path_hdf5, path_overlaps, swaps, dt)
 
 
 def compute_photoexcitation(
@@ -180,20 +180,26 @@ def write_ETR(mtx, dt, i):
 
 
 def write_overlap_densities(
-        path_hdf5: str, paths_fragment_overlaps: List, dt: int=1):
+        path_hdf5: str, paths_fragment_overlaps: List, swaps: Matrix, dt: int=1):
     """
     Write the diagonal of the overlap matrices
     """
     logger.info("writing densities in human readable format")
-    for k, paths_overlaps in enumerate(paths_fragment_overlaps):
+
+    # Track the crossing between MOs
+    for paths_overlaps in paths_fragment_overlaps:
         overlaps = np.stack(retrieve_hdf5_data(path_hdf5, paths_overlaps))
+        for k, mtx in enumerate(np.rollaxis(overlaps, 0)):
+            overlaps[k] = mtx[:, swaps[k]][swaps[k]]
+
+    # Print to file the densities for each fragment on a given MO 
+    for ifrag, paths_overlaps in enumerate(paths_fragment_overlaps):
         # time frame
-        frames = overlaps.shape[0]
+       	frames = overlaps.shape[0]
         ts = np.arange(1, frames + 1).reshape(frames, 1) * dt
         # Diagonal of the 3D-tensor
         densities = np.diagonal(overlaps, axis1=1, axis2=2)
         data = np.hstack((ts, densities))
-
         # Save data in human readable format
-        file_name = 'densities_fragment_{}.txt'.format(k)
+        file_name = 'densities_fragment_{}.txt'.format(ifrag)
         np.savetxt(file_name, data, fmt='{:^3}'.format('%e'))
