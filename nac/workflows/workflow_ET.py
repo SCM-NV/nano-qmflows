@@ -34,7 +34,8 @@ def calculate_ETR(
         calc_new_wf_guess_on_points: str=None, guess_args: Dict=None,
         work_dir: str=None, traj_folders: List=None,
         dictCGFs: Dict=None, orbitals_range: Tuple=None,
-        pyxaid_HOMO: int=None, pyxaid_Nmin: int=None, pyxaid_Nmax: int=None, pyxaid_iconds: List=None, 
+        pyxaid_HOMO: int=None, pyxaid_Nmin: int=None, pyxaid_Nmax: int=None,
+        pyxaid_iconds: List=None,
         fragment_indices: None=List, dt: float=1, **kwargs):
     """
     Use a md trajectory to calculate the Electron transfer rate.
@@ -60,7 +61,7 @@ def calculate_ETR(
                            create for each point in the MD.
     :param traj_folders: List of paths to where the CP2K MOs are printed.
     :param package_config: Parameters required by the Package.
-    :param pyxaid_iconds = List of initial conditions in the pyxaid dynamics 
+    :param pyxaid_iconds = List of initial conditions in the pyxaid dynamics
     :param fragment_indices: indices of atoms belonging to a fragment.
     :param dt: integration time used in the molecular dynamics.
     :returns: None
@@ -94,10 +95,9 @@ def calculate_ETR(
     map_index_pyxaid_hdf5 = create_map_index_pyxaid(
         orbitals_range, pyxaid_HOMO, pyxaid_Nmin, pyxaid_Nmax)
 
-    # Number of ETR points calculated with the MD trajectory
-#    n_points = len(geometries) - 2
-#    n_points = time_depend_coeffs[1] # Number of points in the pyxaid trajectory 
-    n_points = 500
+    # Number of points in the pyxaid trajectory
+    n_points = time_depend_coeffs[1]
+
     # Read the swap between Molecular orbitals obtained from a previous
     # Coupling calculation
     swaps = read_swaps(path_hdf5, project_name)
@@ -136,7 +136,7 @@ def compute_photoexcitation(
     :param swaps: Matrix containing the crossing between the MOs during the
     molecular dynamics.
     :param n_points: Number of frames to compute the ETR.
-    :param pyxaid_iconds: List of initial conditions 
+    :param pyxaid_iconds: List of initial conditions
     :param dt_au: Delta time in atomic units
     :returns: promise to path to the Coupling inside the HDF5.
     """
@@ -153,11 +153,11 @@ def compute_photoexcitation(
 
         etr = np.stack(np.array([
             photo_excitation_rate(
-                overlaps[i + pyxaid_iconds[j] : i + pyxaid_iconds[j] + 3], time_dependent_coeffs[j, i: i + 3],
-                map_index_pyxaid_hdf5, dt_au)
-            for i in range(n_points)]) for j in range(len(pyxaid_iconds))) 
+                overlaps[i + pyxaid_iconds[j]: i + pyxaid_iconds[j] + 3],
+                time_dependent_coeffs[j, i: i + 3], map_index_pyxaid_hdf5, dt_au)
+            for i in range(n_points)]) for j in range(len(pyxaid_iconds)))
 
-        etr = np.mean(etr, axis=0) 
+        etr = np.mean(etr, axis=0)
 
         results.append(etr)
 
@@ -199,10 +199,10 @@ def write_overlap_densities(
         for k, mtx in enumerate(np.rollaxis(overlaps, 0)):
             overlaps[k] = mtx[:, swaps[k]][swaps[k]]
 
-    # Print to file the densities for each fragment on a given MO 
+    # Print to file the densities for each fragment on a given MO
     for ifrag, paths_overlaps in enumerate(paths_fragment_overlaps):
         # time frame
-       	frames = overlaps.shape[0]
+        frames = overlaps.shape[0]
         ts = np.arange(1, frames + 1).reshape(frames, 1) * dt
         # Diagonal of the 3D-tensor
         densities = np.diagonal(overlaps, axis1=1, axis2=2)
