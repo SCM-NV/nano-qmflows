@@ -192,6 +192,9 @@ def compute_phases(overlaps: Tensor3D, nCouplings: int,
         mtx_phases[i + 1] = phases
         references = phases
 
+    # Print phases (debug) 
+    np.savetxt('mtx_phases', mtx_phases) 
+
     return mtx_phases
 
 
