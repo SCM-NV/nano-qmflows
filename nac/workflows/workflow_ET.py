@@ -96,7 +96,7 @@ def calculate_ETR(
         orbitals_range, pyxaid_HOMO, pyxaid_Nmin, pyxaid_Nmax)
 
     # Number of points in the pyxaid trajectory
-    n_points = time_depend_coeffs[1]
+    n_points = time_depend_coeffs.shape[0]
 
     # Read the swap between Molecular orbitals obtained from a previous
     # Coupling calculation
