@@ -122,8 +122,8 @@ def read_time_dependent_coeffs(
     # Read the data
     pss = map(parse_population, paths_out_pop)
 
-    rss = np.stack(pss)
-    return np.mean(rss, axis=0)
+    # Returns 3D-Array containing the TD-coefficients
+    return np.array(list(pss))
 
 
 def parse_population(filePath: str) -> Matrix:
