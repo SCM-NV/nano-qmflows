@@ -45,6 +45,5 @@ if __name__ == "__main__":
                         help='project name')
     parser.add_argument('-hdf5', required=True,
                         help='Index of the first state')
-    parser.add_argument('-o', help='Remove the overlap matrices', default=False,
-                        type=bool)
+    parser.add_argument('-o', help='Remove the overlap matrices', action='store_true')
     main(*read_cmd_line(parser))

@@ -1,23 +1,21 @@
 __author__ = "Felipe Zapata"
 
 # ================> Python Standard  and third-party <==========
-
+from .initialization import (
+    create_map_index_pyxaid, read_swaps, read_time_dependent_coeffs)
 from nac.schedule.components import calculate_mos
 from nac.common import (
-    Matrix, Tensor3D, Vector, change_mol_units, femtosec2au,
-    retrieve_hdf5_data, search_data_in_hdf5)
+    Matrix, change_mol_units, femtosec2au,
+    retrieve_hdf5_data)
 from nac.schedule.scheduleET import (
     compute_overlaps_ET, photo_excitation_rate)
 from noodles import (gather, schedule)
-from os.path import join
 from qmworks import run
 from qmworks.parsers import parse_string_xyz
 from scipy import integrate
 
-import fnmatch
 import logging
 import numpy as np
-import os
 
 from typing import (Dict, List, Tuple)
 
@@ -37,6 +35,7 @@ def calculate_ETR(
         work_dir: str=None, traj_folders: List=None,
         dictCGFs: Dict=None, orbitals_range: Tuple=None,
         pyxaid_HOMO: int=None, pyxaid_Nmin: int=None, pyxaid_Nmax: int=None,
+        pyxaid_iconds: List=None,
         fragment_indices: None=List, dt: float=1, **kwargs):
     """
     Use a md trajectory to calculate the Electron transfer rate.
@@ -61,17 +60,12 @@ def calculate_ETR(
     :param enumerate_from: Number from where to start enumerating the folders
                            create for each point in the MD.
     :param traj_folders: List of paths to where the CP2K MOs are printed.
-     :param package_config: Parameters required by the Package.
+    :param package_config: Parameters required by the Package.
+    :param pyxaid_iconds = List of initial conditions in the pyxaid dynamics
     :param fragment_indices: indices of atoms belonging to a fragment.
     :param dt: integration time used in the molecular dynamics.
     :returns: None
     """
-    # Start logging event
-    file_log = '{}.log'.format(project_name)
-    logging.basicConfig(filename=file_log, level=logging.DEBUG,
-                        format='%(levelname)s:%(message)s  %(asctime)s\n',
-                        datefmt='%m/%d/%Y %I:%M:%S %p')
-
     # prepare Cp2k Job point calculations Using CP2K
     mo_paths_hdf5 = calculate_mos(
         package_name, geometries, project_name, path_hdf5, traj_folders,
@@ -101,8 +95,8 @@ def calculate_ETR(
     map_index_pyxaid_hdf5 = create_map_index_pyxaid(
         orbitals_range, pyxaid_HOMO, pyxaid_Nmin, pyxaid_Nmax)
 
-    # Number of ETR points calculated with the MD trajectory
-    n_points = len(geometries) - 2
+    # Number of points in the pyxaid trajectory
+    n_points = time_depend_coeffs.shape[0]
 
     # Read the swap between Molecular orbitals obtained from a previous
     # Coupling calculation
@@ -112,7 +106,7 @@ def calculate_ETR(
     scheduled_photoexcitation = schedule(compute_photoexcitation)
     etrs = scheduled_photoexcitation(
         path_hdf5, time_depend_coeffs, fragment_overlaps,
-        map_index_pyxaid_hdf5, swaps, n_points, dt_au)
+        map_index_pyxaid_hdf5, swaps, n_points, pyxaid_iconds, dt_au)
 
     # Execute the workflow
     electronTransferRates, path_overlaps = run(
@@ -121,13 +115,13 @@ def calculate_ETR(
     for i, mtx in enumerate(electronTransferRates):
         write_ETR(mtx, dt, i)
 
-    write_overlap_densities(path_hdf5, path_overlaps, dt)
+    write_overlap_densities(path_hdf5, path_overlaps, swaps, dt)
 
 
 def compute_photoexcitation(
         path_hdf5: str, time_dependent_coeffs: Matrix,
         paths_fragment_overlaps: List, map_index_pyxaid_hdf5: Matrix,
-        swaps: Matrix, n_points: int, dt_au: float) -> List:
+        swaps: Matrix, n_points: int, pyxaid_iconds: List, dt_au: float) -> List:
     """
     :param i: Electron transfer rate at time i * dt
     :param path_hdf5: Path to the HDF5 file that contains the
@@ -142,6 +136,7 @@ def compute_photoexcitation(
     :param swaps: Matrix containing the crossing between the MOs during the
     molecular dynamics.
     :param n_points: Number of frames to compute the ETR.
+    :param pyxaid_iconds: List of initial conditions
     :param dt_au: Delta time in atomic units
     :returns: promise to path to the Coupling inside the HDF5.
     """
@@ -149,105 +144,24 @@ def compute_photoexcitation(
     logger.info(msg)
 
     results = []
+
     for paths_overlaps in paths_fragment_overlaps:
         overlaps = np.stack(retrieve_hdf5_data(path_hdf5, paths_overlaps))
         # Track the crossing between MOs
-        for m, x in enumerate(overlaps):
-            overlaps[m] = x[swaps[m]]  # update the overlaps
+        for k, mtx in enumerate(np.rollaxis(overlaps, 0)):
+            overlaps[k] = mtx[:, swaps[k]][swaps[k]]
 
-        etr = np.array([
+        etr = np.stack(np.array([
             photo_excitation_rate(
-                overlaps[i: i + 3], time_dependent_coeffs[i: i + 3],
-                map_index_pyxaid_hdf5, dt_au)
-            for i in range(n_points)])
+                overlaps[i + pyxaid_iconds[j]: i + pyxaid_iconds[j] + 3],
+                time_dependent_coeffs[j, i: i + 3], map_index_pyxaid_hdf5, dt_au)
+            for i in range(n_points)]) for j in range(len(pyxaid_iconds)))
+
+        etr = np.mean(etr, axis=0)
+
         results.append(etr)
 
     return np.stack(results)
-
-
-def parse_population(filePath: str) -> Matrix:
-    """
-    returns a matrix contaning the pop for each time in each row.
-    """
-    with open(filePath, 'r') as f:
-        xss = f.readlines()
-    rss = [[float(x) for i, x in enumerate(l.split())
-            if i % 2 == 1 and i > 2] for l in xss]
-
-    return np.array(rss)
-
-
-def read_time_dependent_coeffs(
-        path_pyxaid_out: str) -> Tensor3D:
-    """
-    :param path_pyxaid_out: Path to the out of the NA-MD carried out by
-    PYXAID.
-    :returns: Numpy array
-    """
-    # Read output files
-    files_out = os.listdir(path_pyxaid_out)
-    names_out_pop = fnmatch.filter(files_out, "out*")
-    paths_out_pop = (join(path_pyxaid_out, x) for x in names_out_pop)
-
-    # Read the data
-    pss = map(parse_population, paths_out_pop)
-
-    rss = np.stack(pss)
-    return np.mean(rss, axis=0)
-
-
-def read_swaps(path_hdf5: str, project_name: str) -> Matrix:
-    """
-    Read the crossing tracking for the Molecular orbital
-    """
-    path_swaps = join(project_name, 'swaps')
-    if search_data_in_hdf5(path_hdf5, path_swaps):
-        return retrieve_hdf5_data(path_hdf5, path_swaps)
-    else:
-        msg = """There is not a tracking file called: {}
-        This file is automatically created when running the worflow_coupling
-        simulations""".format(path_swaps)
-        raise RuntimeError(msg)
-
-
-def create_map_index_pyxaid(
-        orbitals_range: Tuple, pyxaid_HOMO: int, pyxaid_Nmin: int,
-        pyxaid_Nmax: int) -> Matrix:
-    """
-    Creating an index mapping from PYXAID to the content of the HDF5.
-    """
-    number_of_HOMOs = pyxaid_HOMO - pyxaid_Nmin + 1
-    number_of_LUMOs = pyxaid_Nmax - pyxaid_HOMO
-
-    # Shift range to start counting from 0
-    pyxaid_Nmax -= 1
-    pyxaid_Nmin -= 1
-
-    # Pyxaid LUMO counting from 0
-    pyxaid_LUMO = pyxaid_HOMO
-
-    def compute_excitation_indexes(index_ext: int) -> Vector:
-        """
-        create the index of the orbitals involved in the excitation i -> j.
-        """
-        # final state
-        j_index = pyxaid_LUMO + (index_ext // number_of_HOMOs)
-        # initial state
-        i_index = pyxaid_Nmin + (index_ext % number_of_HOMOs)
-
-        return np.array((i_index, j_index), dtype=np.int32)
-
-    # Generate all the excitation indexes of pyxaid including the ground state
-    number_of_indices = number_of_HOMOs * number_of_LUMOs
-    indexes_hdf5 = np.empty((number_of_indices + 1, 2), dtype=np.int32)
-
-    # Ground state
-    indexes_hdf5[0] = pyxaid_Nmin, pyxaid_Nmin
-
-    for i in range(number_of_indices):
-        indexes_hdf5[i + 1] = compute_excitation_indexes(i)
-
-    return indexes_hdf5
 
 
 def write_ETR(mtx, dt, i):
@@ -272,20 +186,27 @@ def write_ETR(mtx, dt, i):
     np.savetxt(file_name, data, fmt='{:^3}'.format('%e'), header=header)
 
 
-def write_overlap_densities(path_hdf5: str, paths_fragment_overlaps: List, dt: int=1):
+def write_overlap_densities(
+        path_hdf5: str, paths_fragment_overlaps: List, swaps: Matrix, dt: int=1):
     """
     Write the diagonal of the overlap matrices
     """
     logger.info("writing densities in human readable format")
-    for k, paths_overlaps in enumerate(paths_fragment_overlaps):
+
+    # Track the crossing between MOs
+    for paths_overlaps in paths_fragment_overlaps:
         overlaps = np.stack(retrieve_hdf5_data(path_hdf5, paths_overlaps))
+        for k, mtx in enumerate(np.rollaxis(overlaps, 0)):
+            overlaps[k] = mtx[:, swaps[k]][swaps[k]]
+
+    # Print to file the densities for each fragment on a given MO
+    for ifrag, paths_overlaps in enumerate(paths_fragment_overlaps):
         # time frame
         frames = overlaps.shape[0]
         ts = np.arange(1, frames + 1).reshape(frames, 1) * dt
         # Diagonal of the 3D-tensor
         densities = np.diagonal(overlaps, axis1=1, axis2=2)
         data = np.hstack((ts, densities))
-
         # Save data in human readable format
-        file_name = 'densities_fragment_{}.txt'.format(k)
+        file_name = 'densities_fragment_{}.txt'.format(ifrag)
         np.savetxt(file_name, data, fmt='{:^3}'.format('%e'))

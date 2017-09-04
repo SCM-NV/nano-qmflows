@@ -15,12 +15,10 @@ install:
   # Install virtual enviroment 
   - conda create -q -n qmworks python=3.5
   - conda install --name qmworks -c anaconda hdf5
-  - conda install --name qmworks -c https://conda.anaconda.org/rdkit rdkit
+  - conda install --name qmworks -c rdkit rdkit
   - source activate qmworks
   - pip install cython h5py nose coverage
 
-  - pip install -e git://github.com/SCM-NV/plams.git@master#egg=Plams
-  - pip install -e git://github.com/NLeSC/noodles.git@devel#egg=Noodles
   - pip install -e git://github.com/SCM-NV/qmworks.git@develop#egg=qmworks
   - pip install .
   

@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 
 # Named tuple
 Oscillator = namedtuple("Oscillator",
-                        ('initialS', 'finalS',  'initialE', 'finalE',
+                        ('initialS', 'finalS', 'initialE', 'finalE',
                          'deltaE', 'fij', 'components'))
 
 # Planck con`stant in ev . s
@@ -70,12 +70,6 @@ def workflow_oscillator_strength(
     :param calculate_oscillator_every: step to compute the oscillator strengths
     :returns: None
     """
-    # Start logging event
-    file_log = '{}.log'.format(project_name)
-    logging.basicConfig(filename=file_log, level=logging.DEBUG,
-                        format='%(levelname)s:%(message)s  %(asctime)s\n',
-                        datefmt='%m/%d/%Y %I:%M:%S %p')
-
     # Point calculations Using CP2K
     mo_paths_hdf5 = calculate_mos(
         package_name, geometries, project_name, path_hdf5, traj_folders,
