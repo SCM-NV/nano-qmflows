@@ -78,7 +78,8 @@ def calculate_ETR(
 
     # Time-dependent coefficients
     time_depend_coeffs = read_time_dependent_coeffs(path_time_coeffs)
-    msg = "Reading time_dependent coefficients from: {}".format(path_time_coeffs)
+    msg = "Reading time_dependent coefficients from: {}".format(
+        path_time_coeffs)
     logger.info(msg)
 
     # compute_overlaps_ET
@@ -95,8 +96,9 @@ def calculate_ETR(
     map_index_pyxaid_hdf5 = create_map_index_pyxaid(
         orbitals_range, pyxaid_HOMO, pyxaid_Nmin, pyxaid_Nmax)
 
-    # Number of points in the pyxaid trajectory
-    n_points = time_depend_coeffs.shape[0]
+    # Number of points in the pyxaid trajectory:
+    # shape: (initial_conditions, n_points, n_states)
+    n_points = time_depend_coeffs.shape[1]
 
     # Read the swap between Molecular orbitals obtained from a previous
     # Coupling calculation
@@ -121,7 +123,8 @@ def calculate_ETR(
 def compute_photoexcitation(
         path_hdf5: str, time_dependent_coeffs: Matrix,
         paths_fragment_overlaps: List, map_index_pyxaid_hdf5: Matrix,
-        swaps: Matrix, n_points: int, pyxaid_iconds: List, dt_au: float) -> List:
+        swaps: Matrix, n_points: int, pyxaid_iconds: List,
+        dt_au: float) -> List:
     """
     :param i: Electron transfer rate at time i * dt
     :param path_hdf5: Path to the HDF5 file that contains the
@@ -154,7 +157,8 @@ def compute_photoexcitation(
         etr = np.stack(np.array([
             photo_excitation_rate(
                 overlaps[i + pyxaid_iconds[j]: i + pyxaid_iconds[j] + 3],
-                time_dependent_coeffs[j, i: i + 3], map_index_pyxaid_hdf5, dt_au)
+                time_dependent_coeffs[j, i: i + 3],
+                map_index_pyxaid_hdf5, dt_au)
             for i in range(n_points)]) for j in range(len(pyxaid_iconds)))
 
         etr = np.mean(etr, axis=0)
