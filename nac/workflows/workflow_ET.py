@@ -156,7 +156,7 @@ def compute_photoexcitation(
 
         etr = np.stack(np.array([
             photo_excitation_rate(
-                overlaps[i + pyxaid_iconds[j]: i + pyxaid_iconds[j] + 3],
+                overlaps[i: i + 3],
                 time_dependent_coeffs[j, i: i + 3],
                 map_index_pyxaid_hdf5, dt_au)
             for i in range(n_points)]) for j in range(len(pyxaid_iconds)))
