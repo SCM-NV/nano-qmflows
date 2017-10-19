@@ -30,8 +30,10 @@ setup(
         'topic :: scientific/engineering :: chemistry'
     ],
     install_requires=[
-        'cython', 'numpy', 'h5py', 'noodles', 'pandas', 'qmflows', 'pymonad',
-        'scipy'],
+        'cython', 'numpy', 'h5py', 'noodles', 'pandas', 'qmflows',
+        'pymonad', 'scipy'],
+    dependency_links=[
+            "https://github.com/SCM-NV/qmflows/tarball/master#egg=qmflows"],
     cmdclass={'build_ext': build_ext},
     ext_modules=[Extension(
         'multipoleObaraSaika', ['nac/integrals/multipoleObaraSaika.pyx'])],
