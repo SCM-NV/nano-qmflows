@@ -13,20 +13,20 @@ install:
   - conda info -a
 
   # Install virtual enviroment 
-  - conda create -q -n qmworks python=3.5
-  - conda install --name qmworks -c anaconda hdf5
-  - conda install --name qmworks -c rdkit rdkit
-  - source activate qmworks
+  - conda create -q -n qmflows python=3.5
+  - conda install --name qmflows -c anaconda hdf5
+  - conda install --name qmflows -c rdkit rdkit
+  - source activate qmflows
   - pip install cython h5py nose coverage
 
-  - pip install -e git://github.com/SCM-NV/qmworks.git@develop#egg=qmworks
+  - pip install -e git://github.com/SCM-NV/qmflows.git@develop#egg=qmflows
   - pip install .
   
 
 before_script:
  # RDKit
   - conda list
-  - ls $HOME/miniconda/envs/qmworks/lib/python3.5/site-packages/
+  - ls $HOME/miniconda/envs/qmflows/lib/python3.5/site-packages/
 
 script:
   - nosetests --with-coverage --cover-erase --cover-package=nac -v
