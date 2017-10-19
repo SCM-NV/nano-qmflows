@@ -10,8 +10,8 @@ from nac.common import (
 from nac.schedule.scheduleET import (
     compute_overlaps_ET, photo_excitation_rate)
 from noodles import (gather, schedule)
-from qmworks import run
-from qmworks.parsers import parse_string_xyz
+from qmflows import run
+from qmflows.parsers import parse_string_xyz
 from scipy import integrate
 
 import logging

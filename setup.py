@@ -10,11 +10,11 @@ if shutil.which('icc') is not None:
     os.environ['LDSHARED'] = 'icc -shared'
 
 setup(
-    name='qmworks-namd',
+    name='qmflows-namd',
     version='0.2.0',
     description='Automation of computations in quantum chemistry',
     license='MIT',
-    url='https://github.com/SCM-NV/qmworks-namd',
+    url='https://github.com/SCM-NV/qmflows-namd',
     author=['Felipe Zapata', 'Ivan Infante'],
     author_email='tifonzafel_gmail.com',
     keywords='chemistry Photochemistry Simulation',
@@ -30,7 +30,7 @@ setup(
         'topic :: scientific/engineering :: chemistry'
     ],
     install_requires=[
-        'cython', 'numpy', 'h5py', 'noodles', 'pandas', 'qmworks', 'pymonad',
+        'cython', 'numpy', 'h5py', 'noodles', 'pandas', 'qmflows', 'pymonad',
         'scipy'],
     cmdclass={'build_ext': build_ext},
     ext_modules=[Extension(
@@ -43,9 +43,9 @@ setup(
         'scripts/pyxaid/plot_average_energy.py',
         'scripts/pyxaid/plot_spectra_pyxaid.py',
         'scripts/pyxaid/plot_states_pops.py',
-        'scripts/qmworks/mergeHDF5.py',
-        'scripts/qmworks/removeHDF5folders.py',
-        'scripts/qmworks/remove_mos_hdf5.py',
+        'scripts/qmflows/mergeHDF5.py',
+        'scripts/qmflows/removeHDF5folders.py',
+        'scripts/qmflows/remove_mos_hdf5.py',
         'scripts/distribution/distribute_jobs.py',
         'scripts/distribution/merge_job.py']
 )

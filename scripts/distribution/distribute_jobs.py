@@ -2,7 +2,7 @@
 from collections import namedtuple
 from nac.workflows.initialization import split_trajectory
 from os.path import join
-from qmworks import Settings
+from qmflows import Settings
 
 import os
 import shutil
@@ -215,7 +215,7 @@ def write_python_script(
     xs = """
 from nac.workflows.workflow_coupling import generate_pyxaid_hamiltonians
 from nac.workflows.initialization import initialize
-from qmworks import Settings
+from qmflows import Settings
 
 project_name = '{}'
 path_basis = '{}'
@@ -293,7 +293,7 @@ def format_slurm_parameters(slurm):
     sbatch = "#SBATCH -{} {}\n".format
 
     header = "#! /bin/bash\n"
-    modules = "\nmodule load cp2k/3.0\nsource activate qmworks\n\n"
+    modules = "\nmodule load cp2k/3.0\nsource activate qmflows\n\n"
     time = sbatch('t', slurm.time)
     nodes = sbatch('N', slurm.nodes)
     tasks = sbatch('n', slurm.tasks)

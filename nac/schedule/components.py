@@ -18,9 +18,9 @@ import shutil
 from nac.schedule.scheduleCp2k import prepare_job_cp2k
 from nac.schedule.scheduleOrca import prepare_job_orca
 from nac.common import search_data_in_hdf5
-from qmworks.hdf5 import dump_to_hdf5
-from qmworks.utils import chunksOf
-from qmworks.warnings_qmworks import SCF_Convergence_Warning
+from qmflows.hdf5 import dump_to_hdf5
+from qmflows.utils import chunksOf
+from qmflows.warnings_qmflows import SCF_Convergence_Warning
 
 # Type Hints
 from typing import (Dict, List, Tuple)

@@ -17,7 +17,7 @@ from nac.common import (
     search_data_in_hdf5, store_arrays_in_hdf5)
 
 from noodles import (gather, schedule)
-from qmworks.parsers import parse_string_xyz
+from qmflows.parsers import parse_string_xyz
 
 # Types hint
 from typing import (Callable, Dict, List, Tuple)

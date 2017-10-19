@@ -1,6 +1,6 @@
 from nac.common import InputKey
 from os.path import join
-from qmworks.hdf5.quantumHDF5 import turbomole2hdf5
+from qmflows.hdf5.quantumHDF5 import turbomole2hdf5
 from utilsTest import try_to_remove
 
 import h5py

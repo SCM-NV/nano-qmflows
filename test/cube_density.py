@@ -7,7 +7,7 @@ from nac.integrals import calc_transf_matrix
 from nac.workflows.workflow_cube import (GridCube, workflow_compute_cubes)
 
 from os.path import join
-from qmworks.parsers import readXYZ
+from qmflows.parsers import readXYZ
 import h5py
 import numpy as np
 import os

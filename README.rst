@@ -3,8 +3,8 @@
     :target: https://travis-ci.org/SCM-NV/qmworks-namd
 .. image:: https://img.shields.io/github/license/felipeZ/nonAdiabaticCoupling.svg?maxAge=2592000
     :target: https://github.com/felipeZ/nonAdiabaticCoupling/blob/master/LICENSE
-.. image:: https://img.shields.io/github/release/SCM-NV/qmworks-namd.svg
-    :target: https://github.com/SCM-NV/qmworks-namd/releases
+.. image:: https://img.shields.io/github/release/SCM-NV/qmflows-namd.svg
+    :target: https://github.com/SCM-NV/qmflows-namd/releases
 .. image:: https://img.shields.io/badge/python-3.5-blue.svg
 .. image:: https://img.shields.io/codacy/grade/e27821fb6289410b8f58338c7e0bc686.svg?maxAge=2592000
     :target: https://www.codacy.com/app/tifonzafel/nonAdiabaticCoupling/dashboard
@@ -18,7 +18,7 @@ One of the main problems to calculate (numerically) NACVs by standard QM softwar
 
 For further information on the theory behind QMWorks-NAMD and how to use the program, you can visit the following webpage:
 
-http://scm-nv.github.io/qmworks-namd/ 
+http://scm-nv.github.io/qmflows-namd/ 
  
 ==========================
 Advantages and Limitations
@@ -43,11 +43,11 @@ Installation
 
 In order to install the *QMWorks-NAMD* library you need to install first the **QMWorks** package and its environment using *Anaconda* as detailed here_.
 
-.. _here: https://github.com/SCM-NV/qmworks
+.. _here: https://github.com/SCM-NV/qmflows
 
 Then,  to install the **QMWorks-NAMD** library type the following command inside the conda environment::
 
-  (qmworks) user@server> pip install https://github.com/SCM-NV/qmworks-namd/tarball/master#egg=nac --upgrade
+  (qmflows) user@server> pip install https://github.com/SCM-NV/qmflows-namd/tarball/master#egg=nac --upgrade
 
 Overview
 ========

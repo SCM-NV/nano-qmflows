@@ -11,8 +11,8 @@ from nac.common import (
 from nac.integrals.multipoleIntegrals import calcMtxMultipoleP
 from nac.schedule.components import calculate_mos
 from os.path import join
-from qmworks import run
-from qmworks.parsers import parse_string_xyz
+from qmflows import run
+from qmflows.parsers import parse_string_xyz
 from scipy import sparse
 from scipy.constants import physical_constants
 
