@@ -19,7 +19,7 @@ install:
   - source activate qmflows
   - pip install cython h5py nose coverage
 
-  - pip install -e git://github.com/SCM-NV/qmflows.git@develop#egg=qmflows
+  - pip install -e git://github.com/SCM-NV/qmflows.git@master#egg=qmflows
   - pip install .
   
 
