@@ -8,7 +8,9 @@
 .. image:: https://img.shields.io/badge/python-3.5-blue.svg
 .. image:: https://api.codacy.com/project/badge/Grade/2bb0085352354caa9dd2ca655c2a8db3
     :target: https://www.codacy.com/app/tifonzafel/nonAdiabaticCoupling?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=felipeZ/nonAdiabaticCoupling&amp;utm_campaign=Badge_Grade
-
+.. image:: https://api.codacy.com/project/badge/Coverage/2bb0085352354caa9dd2ca655c2a8db3
+    :target: https://www.codacy.com/app/tifonzafel/nonAdiabaticCoupling?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=felipeZ/nonAdiabaticCoupling&amp;utm_campaign=Badge_Coverage
+	     
 ====================
 QMWorks-NAMD
 ====================
