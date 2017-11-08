@@ -6,8 +6,9 @@
 .. image:: https://img.shields.io/github/release/SCM-NV/qmflows-namd.svg
     :target: https://github.com/SCM-NV/qmflows-namd/releases
 .. image:: https://img.shields.io/badge/python-3.5-blue.svg
-.. image:: https://img.shields.io/codacy/grade/e27821fb6289410b8f58338c7e0bc686.svg?maxAge=2592000
-    :target: https://www.codacy.com/app/tifonzafel/nonAdiabaticCoupling/dashboard
+.. image:: https://api.codacy.com/project/badge/Grade/2bb0085352354caa9dd2ca655c2a8db3
+    :target: https://www.codacy.com/app/tifonzafel/nonAdiabaticCoupling?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=felipeZ/nonAdiabaticCoupling&amp;utm_campaign=Badge_Grade
+
 ====================
 QMWorks-NAMD
 ====================

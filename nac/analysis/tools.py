@@ -101,10 +101,3 @@ def parse_list_of_lists(xs):
         return list(map(lambda x: list(map(int, x)), rs))
     except pa.ParseException:
         raise RuntimeError("Invalid Macro states Specification")
-
-
-
-
-
-
-
