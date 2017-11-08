@@ -17,7 +17,6 @@ excess is an excess of energy (in eV) from where to begin the electron/hole cool
 
 import numpy as np
 import os
-import matplotlib.pyplot as plt
 import argparse
 
 
@@ -36,20 +35,23 @@ def main(path_output, nstates, iconds, excess, delta, cool):
     # HOMO-LUMO gap at each time t 
     lowest_hl_gap = np.amin(energies[:, 1:], axis=1)
     lowest_hl_gap = lowest_hl_gap.reshape(lowest_hl_gap.shape[0], 1) 
-    
+
     # Scale the energies to calculate the excess energies over the CB and VB 
     en_scaled = energies[:, 1:] - lowest_hl_gap
 
-    # Find the index of the states with a given excess energy 
-    indexes =  [ np.where ( (en_scaled[ iconds[i] ] > excess-delta) & (en_scaled[ iconds[i] ] < excess+delta) ) for i in range(len(iconds)) ]
+    # Find the index of the states with a given excess energy
+    indexes = [np.where(
+        (en_scaled[iconds[i]] > excess-delta) & (en_scaled[iconds[i]] < excess + delta))
+                for i in range(len(iconds))]
 
-    # Print the states 
+    # Print the states
     t = 'Time Init Cond    List with State Indexes\n'
     for i in range(len(iconds)):
         t +=  ' {}           {}\n'.format(iconds[i], indexes[i][0] + 1)
- 
+
     with open('initial_conditions.out', 'w') as f:
         f.write(t)
+
 
 def read_cmd_line(parser):
     """

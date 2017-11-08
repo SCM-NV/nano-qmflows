@@ -50,7 +50,7 @@ def read_cmd_line(parser):
 
     return [getattr(args, p) for p in attributes]
 
-# ============<>===============
+
 if __name__ == "__main__":
 
     msg = "plot_decho -p <path/to/hamiltonians> -ts <time window for analysis>\
@@ -58,10 +58,15 @@ if __name__ == "__main__":
     -nlumos <number of lumo states to be plotted"
 
     parser = argparse.ArgumentParser(description=msg)
-    parser.add_argument('-p', required=True, help='path to the Hamiltonian files in Pyxaid format')
-    parser.add_argument('-ts', type=str, default='All', help='Index of the second state')
-    parser.add_argument('-ihomo', type=int, required=True, help='Index of the HOMO state')
-    parser.add_argument('-nhomos', default=10, type=int, help='Number of homo states to be plotted')
-    parser.add_argument('-nlumos', default=10, type=int, help='Number of lumo states to be plotted')
+    parser.add_argument(
+        '-p', required=True, help='path to the Hamiltonian files in Pyxaid format')
+    parser.add_argument(
+        '-ts', type=str, default='All', help='Index of the second state')
+    parser.add_argument(
+        '-ihomo', type=int, required=True, help='Index of the HOMO state')
+    parser.add_argument(
+        '-nhomos', default=10, type=int, help='Number of homo states to be plotted')
+    parser.add_argument(
+        '-nlumos', default=10, type=int, help='Number of lumo states to be plotted')
 
     main(*read_cmd_line(parser))

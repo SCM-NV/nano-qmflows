@@ -8,7 +8,8 @@ def main(project_name, path_hdf5, remove_overlaps):
 
     path_swaps = [join(project_name, 'swaps')]
     name = 'overlaps_{}/mtx_sji_t0_corrected'
-    paths_overlaps_corrected = [join(project_name, name.format(i)) for i in range(10000)]
+    paths_overlaps_corrected = [
+        join(project_name, name.format(i)) for i in range(10000)]
     if remove_overlaps:
         paths_overlaps = [
             join(project_name, 'overlaps_{}/mtx_sji_t0'.format(i)) for i in range(10000)]
@@ -35,7 +36,7 @@ def read_cmd_line(parser):
 
     return [getattr(args, p) for p in attributes]
 
-# ============<>===============
+
 if __name__ == "__main__":
 
     msg = " remove_couplings -pn <ProjectName> -hdf5 <path/to/hdf5 file> -o False"

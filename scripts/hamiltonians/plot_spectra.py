@@ -27,13 +27,15 @@ import glob
 import argparse
 import os
 from nac.common import fs_to_nm
-from nac.analysis import (autocorrelate, dephasing, read_couplings, read_energies, spectral_density)
+from nac.analysis import (
+    autocorrelate, dephasing, read_couplings, read_energies, spectral_density)
 
 
 def plot_stuff(ens, coupls, acf, sd, deph, rate, s1, s2, ts, wsd, wdeph):
     """
     arr - a vector of y-values that are plot
-    plot_mean, save_plot - bools telling to plot the mean and save the plot or not, respectively
+    plot_mean, save_plot - bools telling to plot the mean and save the plot or not,
+    respectively
     """
     dim_x = np.arange(ts)
 
@@ -104,13 +106,16 @@ def main(path_hams, s1, s2, ts, wsd, wdeph):
     # Generate a matrix with s1, s2 and diff between them
     en_states = np.column_stack((energies[:, s1], energies[:, s2], d_E))
     # Compute autocorrelation function for each column (i.e. state)
-    acf = np.stack(autocorrelate(en_states[:, i]) for i in range(en_states.shape[1])).transpose()
+    acf = np.stack(
+        autocorrelate(en_states[:, i]) for i in range(en_states.shape[1])).transpose()
     # Compute the spectral density for each column using the normalized acf
-    sd = np.stack(spectral_density(acf[:, 1, i]) for i in range(en_states.shape[1])).transpose()
+    sd = np.stack(
+        spectral_density(acf[:, 1, i]) for i in range(en_states.shape[1])).transpose()
     # Compute the dephasing time for the uncorrelated acf between two states
     deph, rate = dephasing(acf[:, 0, 2])
     # Plot stuff
-    plot_stuff(en_states, couplings, acf, sd, deph, rate, s1, s2, ts, wsd, wdeph)
+    plot_stuff(
+        en_states, couplings, acf, sd, deph, rate, s1, s2, ts, wsd, wdeph)
 
 
 def read_cmd_line(parser):
@@ -123,21 +128,26 @@ def read_cmd_line(parser):
 
     return [getattr(args, p) for p in attributes]
 
-# ============<>===============
-if __name__ == "__main__":
 
+if __name__ == "__main__":
     msg = "plot_decho -p <path/to/hamiltonians> -s1 <State 1> -s2 <State 2>\
      -ts <time window for analysis>\
      -wsd <energy window for spectral density plot in cm-1>\
       -wdeph <time window for dephasing time in fs>"
 
     parser = argparse.ArgumentParser(description=msg)
-    parser.add_argument('-p', required=True, help='path to the Hamiltonian files in Pyxaid format')
-    parser.add_argument('-s1', required=True, type=int, help='Index of the first state')
-    parser.add_argument('-s2', required=True, type=int, help='Index of the second state')
-    parser.add_argument('-ts', type=str, default='All', help='Index of the second state')
-    parser.add_argument('-wsd', type=int, default=1500,
+    parser.add_argument(
+        '-p', required=True, help='path to the Hamiltonian files in Pyxaid format')
+    parser.add_argument(
+        '-s1', required=True, type=int, help='Index of the first state')
+    parser.add_argument(
+        '-s2', required=True, type=int, help='Index of the second state')
+    parser.add_argument(
+        '-ts', type=str, default='All', help='Index of the second state')
+    parser.add_argument(
+        '-wsd', type=int, default=1500,
                         help='energy window for spectral density plot in cm-1')
-    parser.add_argument('-wdeph', type=int, default=50, help='time window for dephasing time in fs')
+    parser.add_argument(
+        '-wdeph', type=int, default=50, help='time window for dephasing time in fs')
 
     main(*read_cmd_line(parser))

@@ -63,7 +63,7 @@ def read_cmd_line(parser):
 
     return [getattr(args, p) for p in attributes]
 
-# ============<>===============
+
 if __name__ == "__main__":
 
     msg = "plot_decho -xyz <path/to/xyz> -cell <cell_size>\

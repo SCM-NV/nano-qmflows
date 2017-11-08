@@ -21,7 +21,7 @@ def main(project_name, path_hdf5, indices, overlap_flag, mo_flag):
         root_overlaps = join(project_name, 'overlaps_{}')
         overlaps = [root_overlaps.format(i) for i in indices]
     else:
-        overlaps = []        
+        overlaps = []
 
     # Concatenate both Molecular orbitals and Overlaps
     paths = mos + overlaps
