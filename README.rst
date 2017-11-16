@@ -1,5 +1,4 @@
-
-.. image:: https://travis-ci.org/SCM-NV/qmflows-namd.svg?branch=master
+.. image:: https://travis-ci.org/SCM-NV/qmflows-namd.svg?branch=0.1.7
     :target: https://travis-ci.org/SCM-NV/qmflows-namd
 .. image:: https://img.shields.io/github/license/felipeZ/nonAdiabaticCoupling.svg?maxAge=2592000
     :target: https://github.com/felipeZ/nonAdiabaticCoupling/blob/master/LICENSE
