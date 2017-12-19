@@ -1,7 +1,5 @@
 .. image:: https://travis-ci.org/SCM-NV/qmflows-namd.svg?branch=0.1.7
     :target: https://travis-ci.org/SCM-NV/qmflows-namd
-.. image:: https://img.shields.io/github/license/felipeZ/nonAdiabaticCoupling.svg?maxAge=2592000
-    :target: https://github.com/felipeZ/nonAdiabaticCoupling/blob/master/LICENSE
 .. image:: https://img.shields.io/github/release/SCM-NV/qmflows-namd.svg
     :target: https://github.com/SCM-NV/qmflows-namd/releases
 .. image:: https://img.shields.io/badge/python-3.5-blue.svg
