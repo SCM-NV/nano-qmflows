@@ -30,6 +30,21 @@ def gauss_function(x, sigma):
     """
     return np.exp(-0.5 * (-x / sigma) ** 2)
 
+def func_conv(x_real, x_grid, delta):
+    """ 
+    A Gaussian function computed on a grid used to convolute spectra 
+    """
+    return np.exp(-2 * (x_grid - x_real) ** 2 / delta ** 2)
+
+def convolute(x, y, x_points, sigma):
+    """ 
+    A function used to convolute spectra on a grid of x_points. You need as input x, y and the grid where to convolute.  
+    """ 
+    # Compute gaussian prefactor
+    prefactor = np.sqrt(2.0) / (sigma * np.sqrt(np.pi))
+    # Convolute spectrum over grid 
+    y_points = prefactor * np.stack(np.sum( y * g(x, x_point, sigma) ) for x_point in x_points)
+    return y_points
 
 def dephasing(f):
     """
@@ -53,7 +68,7 @@ def dephasing(f):
     return deph, rate
 
 
-def spectral_density(f):
+def spectral_density(f, dt):
     """
     Fourier Transform of a given function f using a dense grid with 100000 points.
     In the case of a FFT of a normalized autocorrelation function,
@@ -61,7 +76,7 @@ def spectral_density(f):
     """
     f_fft = abs(1 / np.sqrt(2 * np.pi) * np.fft.fft(f, 100000)) ** 2
     # Fourier Transform of the time axis
-    freq = np.fft.fftfreq(len(f_fft), 1)
+    freq = np.fft.fftfreq(len(f_fft), dt)
     # Conversion of the x axis (given in cycles/fs) to cm-1
     freq = freq * fs_to_cm
     return f_fft, freq
