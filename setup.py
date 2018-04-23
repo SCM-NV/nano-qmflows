@@ -43,7 +43,7 @@ setup(
         'scripts/pyxaid/plot_average_energy.py',
         'scripts/pyxaid/plot_spectra_pyxaid.py',
         'scripts/pyxaid/plot_states_pops.py',
-        'script/pyxaid/plot_cooling.py', 
+        'scripts/pyxaid/plot_cooling.py', 
         'scripts/qmworks/mergeHDF5.py',
         'scripts/qmworks/removeHDF5folders.py',
         'scripts/qmworks/remove_mos_hdf5.py',
