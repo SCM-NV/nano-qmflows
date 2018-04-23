@@ -43,7 +43,7 @@ def convolute(x, y, x_points, sigma):
     # Compute gaussian prefactor
     prefactor = np.sqrt(2.0) / (sigma * np.sqrt(np.pi))
     # Convolute spectrum over grid 
-    y_points = prefactor * np.stack(np.sum( y * g(x, x_point, sigma) ) for x_point in x_points)
+    y_points = prefactor * np.stack(np.sum( y * func_conv(x, x_point, sigma) ) for x_point in x_points)
     return y_points
 
 def dephasing(f):
