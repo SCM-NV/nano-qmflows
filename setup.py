@@ -47,5 +47,6 @@ setup(
         'scripts/qmworks/removeHDF5folders.py',
         'scripts/qmworks/remove_mos_hdf5.py',
         'scripts/distribution/distribute_jobs.py',
-        'scripts/distribution/merge_job.py']
+        'scripts/distribution/merge_job.py',
+        'scripts/qmworks/plot_dos.py']
 )
