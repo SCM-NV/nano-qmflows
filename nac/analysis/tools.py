@@ -46,7 +46,7 @@ def convolute(x, y, x_points, sigma):
     y_points = prefactor * np.stack(np.sum( y * func_conv(x, x_point, sigma) ) for x_point in x_points)
     return y_points
 
-def dephasing(f):
+def dephasing(f, dt):
     """
     Computes the dephasing time of a given function using optical response
     formalisms:
@@ -56,7 +56,7 @@ def dephasing(f):
     To calculate the dephasing time tau we fit the dephasing function to a
     gaussian of the type : exp(-0.5 * (-x / tau) ** 2)
     """
-    ts = np.arange(f.shape[0])
+    ts = np.arange(f.shape[0]) * dt 
     cumu_ii = np.stack(np.sum(f[0:i]) for i in range(ts.size)) / hbar
     cumu_i = np.stack(np.sum(cumu_ii[0:i]) for i in range(ts.size)) / hbar
     deph = np.exp(-cumu_i)
