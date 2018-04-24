@@ -68,6 +68,7 @@ def read_cmd_line(parser):
 
     return [getattr(args, p) for p in attributes]
 
+
 # ============<>===============
 if __name__ == "__main__":
 
@@ -88,4 +89,3 @@ if __name__ == "__main__":
                         help='Location of basis set files')
 
     main(*read_cmd_line(parser))
-
