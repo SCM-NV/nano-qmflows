@@ -13,15 +13,14 @@ Note that the number of states is the same as given in the pyxaid output.
 """
 
 import numpy as np
-import os
 import matplotlib.pyplot as plt
 from matplotlib import interactive
 import argparse
-from scipy.optimize import curve_fit
-from nac.analysis import (read_energies_pyxaid, read_pops_pyxaid, convolute, autocorrelate, dephasing, spectral_density)
+from nac.analysis import (read_energies_pyxaid, read_pops_pyxaid, convolute, autocorrelate, spectral_density)
+
 
 def func(x, a, b, c, d, e):
-    return a * np.exp(- x ** 2 / b ** 2 ) + d * np.exp(- x / e ) + c
+    return a * np.exp(- x ** 2 / b ** 2) + d * np.exp(- x / e) + c
 
 #def read_energies(path, fn, nstates, nconds):
 #    inpfile = os.path.join(path, fn)
@@ -53,75 +52,76 @@ def func(x, a, b, c, d, e):
 #    return y_points 
 
 def plot_stuff(ts, aven_conv, aven_scaled_conv, w_en, w_en_scaled, aven, minim, maxim, start, end, uacf, nacf, sd_int, sd_freq, dt):
-  
-    plt.figure(1)   
+
+    plt.figure(1)
     plt.xlabel('Time (fs)')
     plt.ylabel('Energy (eV)')
     plt.imshow(aven_conv.T, aspect='auto', origin='lower', extent=(0, len(ts) * dt, minim, maxim), interpolation='bicubic', cmap='hot')
     plt.plot(ts, w_en, 'w')
-    interactive(True) 
-    plt.show() 
-    
+    interactive(True)
+    plt.show()
+
     plt.figure(2)
     plt.xlabel('Time (fs)')
     plt.ylabel('Scaled Energy (eV)')
     plt.imshow(aven_scaled_conv.T, aspect='auto', origin='lower', extent=(0, len(ts) * dt, start, end), interpolation='bicubic', cmap='hot')
     plt.plot(ts, w_en_scaled, 'w')
     interactive(True)
-    plt.show() 
+    plt.show()
 
     plt.figure(3)
     plt.xlabel('Energy (eV)')
-    plt.ylabel('Counts') 
-    plt.hist(w_en, bins='auto') 
+    plt.ylabel('Counts')
+    plt.hist(w_en, bins='auto')
     interactive(True)
-    plt.show() 
+    plt.show()
 
     plt.figure(4)
     plt.xlabel('Energy (eV)')
     plt.ylabel('Counts')
-    plt.hist(w_en_scaled, bins='auto') 
+    plt.hist(w_en_scaled, bins='auto')
     interactive(True)
     plt.show()
-   
+
     plt.figure(5)
     plt.xlabel('Time')
     plt.ylabel('Energy (eV)')
-    plt.plot(ts, aven) 
+    plt.plot(ts, aven)
     interactive(True)
     plt.show()
 
     plt.figure(6)
-    ts = np.arange(uacf.size) * dt 
+    ts = np.arange(uacf.size) * dt
     plt.xlabel('Un-normalized AUC')
     plt.ylabel('Time')
-    plt.plot(ts, uacf) 
+    plt.plot(ts, uacf)
     interactive(True)
     plt.show()
 
     plt.figure(7)
     plt.xlabel('Normalized AUC')
     plt.ylabel('Time')
-    plt.plot(ts, nacf)           
+    plt.plot(ts, nacf)
     interactive(True)
     plt.show()
 
     plt.figure(8)
     plt.xlabel('Spectral Density')
     plt.ylabel('Freqencies cm-1')
-    plt.xlim(0, 300) 
-    plt.ylim(0, np.max(sd_int))  
+    plt.xlim(0, 300)
+    plt.ylim(0, np.max(sd_int))
     plt.plot(sd_freq, sd_int)
     interactive(False)
     plt.show()
-    
+
+
 def main(path_output, nstates, nconds, dt, start, end, sigma):
     outs = read_pops_pyxaid(path_output, 'out', nstates, nconds)
     energies = read_energies_pyxaid(path_output, 'me_energies', nstates, nconds)
     ##################################
     # Averaged energies and populations over initial conditions
-    av_outs = np.average(outs, axis = 2)
-    av_energies = np.average(energies, axis = 2)
+    av_outs = np.average(outs, axis=2)
+    av_energies = np.average(energies, axis=2)
     # Remove the ground state and scale the energies to the lowest excitation energy
     av_outs = av_outs[:, 1:]
     av_energies = av_energies[:, 1:]
@@ -129,10 +129,14 @@ def main(path_output, nstates, nconds, dt, start, end, sigma):
     highest_hl_gap = np.average(np.amax(energies[:, 1:, :], axis=1), axis=1)
     av_energies_scaled = (av_energies.transpose() - lowest_hl_gap).transpose()
     # Convolute a gaussian for each timestep
-    x_grid = np.linspace(np.min(lowest_hl_gap),np.max(highest_hl_gap), 100)  
-    y_grid = np.stack(np.stack(convolute(av_energies[time, :], av_outs[time, :], x_grid, sigma) for time in range(av_energies.shape[0]) ) )
-    x_grid_scaled = np.linspace(start, end, 100) 
-    y_grid_scaled = np.stack(np.stack(convolute(av_energies_scaled[time, :], av_outs[time, :], x_grid_scaled, sigma) for time in range(av_energies_scaled.shape[0]) ) )
+    x_grid = np.linspace(np.min(lowest_hl_gap), np.max(highest_hl_gap), 100)
+    y_grid = np.stack(np.stack(
+        convolute(av_energies[time, :], av_outs[time, :], x_grid, sigma)
+        for time in range(av_energies.shape[0])))
+    x_grid_scaled = np.linspace(start, end, 100)
+    y_grid_scaled = np.stack(np.stack(
+        convolute(av_energies_scaled[time, :], av_outs[time, :], x_grid_scaled, sigma)
+        for time in range(av_energies_scaled.shape[0])))
     # This part is done
     ##################################
     # Compute weighted energies vs population at a given time t
@@ -147,25 +151,26 @@ def main(path_output, nstates, nconds, dt, start, end, sigma):
     # Compute spectral density
     sd_int, sd_freq = spectral_density(nacf, dt)
     #################################
-    # Print the 3d-array on a file for plotting 
+    # Print the 3d-array on a file for plotting
     xs = ""
     for time in range(av_energies_scaled.shape[0]):
         for x_point in range(x_grid.size):
-             xs += '{:f} {:f} {:f} \n'.format(time, x_grid[x_point], y_grid[time, x_point])
+            xs += '{:f} {:f} {:f} \n'.format(time, x_grid[x_point], y_grid[time, x_point])
     with open('cooling_plot_data.txt', 'w') as f:
-        f.write(xs)  
+        f.write(xs)
     # Plotting stuff
-    # Define size axes for all plot 
-    ts = np.arange(av_energies.shape[0]) * dt 
-    # Call plotting function 
+    # Define size axes for all plot
+    ts = np.arange(av_energies.shape[0]) * dt
+    # Call plotting function
     plot_stuff(ts, y_grid, y_grid_scaled, el_ene_outs, ene_outs_ref0, av_energies, np.min(lowest_hl_gap), np.max(highest_hl_gap), start, end, uacf, nacf, sd_int, sd_freq, dt)
 
 #    plt.plot(ts, ene_outs_ref0, 'w')
-#    plt.show() 
+#    plt.show()
 #    plt.hist(el_ene_outs[1000:], bins='auto')
-#    plt.show() 
+#    plt.show()
 #    plt.imshow(av_outs.T, aspect='auto', origin='lower', extent=(0, av_energies.shape[0] * dt, 0, av_energies.shape[1] * dt), interpolation='bicubic', cmap='hot')
 #    plt.show() 
+
 
 def read_cmd_line(parser):
     """
@@ -192,12 +197,12 @@ if __name__ == "__main__":
                         help='Number of states')
     parser.add_argument('-nconds', type=int, required=True,
                         help='Number of initial conditions')
-    parser.add_argument('-dt', type=float, required=False, default = 1.0, 
+    parser.add_argument('-dt', type=float, required=False, default=1.0,
                         help='Nuclear Time Step')
-    parser.add_argument('-start', type=float, required=False, default=0.0, 
+    parser.add_argument('-start', type=float, required=False, default=0.0,
                         help='Start point for the convolution on the energy axis')
-    parser.add_argument('-end', type=float, required=False, default=3.0, 
+    parser.add_argument('-end', type=float, required=False, default=3.0,
                         help='End point for the convolution on the energy axis')
-    parser.add_argument('-sigma', type=float, required=False, default=0.05, 
+    parser.add_argument('-sigma', type=float, required=False, default=0.05,
                         help='Line broadening for the convolution with Gaussian functions')
     main(*read_cmd_line(parser))

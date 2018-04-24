@@ -1,8 +1,8 @@
 #! /usr/bin/env python
- 
+
 """
-This program finds the indexes of the states for electron and hole cooling calculations (ONLY!) 
-extrapolated at a desired initial condition. It reads the me_energies0 file from pyxaid [at initial condition t=0]. 
+This program finds the indexes of the states for electron and hole cooling calculations (ONLY!)
+extrapolated at a desired initial condition. It reads the me_energies0 file from pyxaid [at initial condition t=0].
 
 Example:
 
@@ -11,7 +11,7 @@ Example:
 n_states is the total number of states from the pyxaid simulation.
 iconds is a list of initial conditions for the desired simulations
 excess is an excess of energy (in eV) from where to begin the electron/hole cooling
-	delta is an energy range to select states around the excess energy 
+delta is an energy range to select states around the excess energy
 
 """
 
@@ -32,11 +32,11 @@ def main(path_output, nstates, iconds, excess, delta, cool):
     # Read Energies
     energies = read_energies(path_output, 'me_energies0', nstates)
 
-    # HOMO-LUMO gap at each time t 
+    # HOMO-LUMO gap at each time t
     lowest_hl_gap = np.amin(energies[:, 1:], axis=1)
-    lowest_hl_gap = lowest_hl_gap.reshape(lowest_hl_gap.shape[0], 1) 
+    lowest_hl_gap = lowest_hl_gap.reshape(lowest_hl_gap.shape[0], 1)
 
-    # Scale the energies to calculate the excess energies over the CB and VB 
+    # Scale the energies to calculate the excess energies over the CB and VB
     en_scaled = energies[:, 1:] - lowest_hl_gap
 
     # Find the index of the states with a given excess energy
@@ -84,4 +84,3 @@ if __name__ == "__main__":
     parser.add_argument('-delta', type=float, required=True,
                         help='Delta Energy around excess')
     main(*read_cmd_line(parser))
-
