@@ -48,7 +48,7 @@ setup(
         'scripts/qmflows/mergeHDF5.py',
         'scripts/qmflows/removeHDF5folders.py',
         'scripts/qmflows/remove_mos_hdf5.py',
-        'scripts/pyxaid/plot_cooling.py', 
+        'scripts/pyxaid/plot_cooling.py'
         'scripts/distribution/distribute_jobs.py',
         'scripts/distribution/merge_job.py',
         'scripts/qmflows/plot_dos.py']
