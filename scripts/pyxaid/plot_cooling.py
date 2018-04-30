@@ -22,23 +22,23 @@ from nac.analysis import (read_energies_pyxaid, read_pops_pyxaid, convolute, aut
 def func(x, a, b, c, d, e):
     return a * np.exp(- x ** 2 / b ** 2) + d * np.exp(- x / e) + c
 
-def plot_stuff(x_grid, y_grid, x_grid_scaled, y_grid_scaled, sd, w_en, w_en_scaled, nconds, outs, ts, dt):
+def plot_stuff(x_grid, y_grid, x_grid_scaled, y_grid_scaled, sd, w_en, w_en_scaled, nconds, outs, energies, ts, dt):
 
     plt.figure(1)
     plt.xlabel('Time (fs)')
     plt.ylabel('Energy (eV)')
     for iconds in range(nconds):
         plt.imshow(y_grid[iconds, :, :].T, aspect='auto', extent=(0, len(ts)*dt, np.min(x_grid), np.max(x_grid)), origin='lower', interpolation='bicubic', cmap='hot')
-    plt.plot(ts, w_en, 'w')
+    plt.plot(ts * dt, w_en, 'w')
     interactive(True)
     plt.show()
 
     plt.figure(2)
     plt.xlabel('Time (fs)')
-    plt.ylabel('Scaled Energy (eV)')
+    plt.ylabel('Excess Energy (eV)')
     for iconds in range(nconds):
         plt.imshow(y_grid_scaled[iconds, :, :].T, aspect='auto', extent=(0, len(ts)*dt, np.min(x_grid_scaled), np.max(x_grid_scaled)), origin='lower', interpolation='bicubic', cmap='hot')  
-    plt.plot(ts, w_en_scaled, 'w')
+    plt.plot(ts * dt, w_en_scaled, 'w')
     interactive(True)
     plt.show()
 
@@ -65,12 +65,17 @@ def plot_stuff(x_grid, y_grid, x_grid_scaled, y_grid_scaled, sd, w_en, w_en_scal
     plt.show()
 
     plt.figure(6)
+    plt.xlabel('Time (fs)')
+    plt.ylabel('State Energy (eV)')
+    plt.plot(ts*dt, energies[:, :, 0])
+    interactive(True)
+    plt.show()
+
+    plt.figure(7)
     plt.ylabel('State Number')
     plt.xlabel('Freqencies cm-1')
     sd_int = sd[:, 0, :int(sd.shape[2]/2)] 
     sd_freq = sd[0, 1, :int(sd.shape[2]/2)]
-#    plt.ylim(0, np.max(sd_int))
-#    plt.xlim(0, 3000)
     plt.imshow(sd_int, aspect='auto', origin='lower', extent = (np.min(sd_freq), np.max(sd_freq), 0, sd_int.shape[0] ), interpolation='bicubic', cmap='hot')    
     interactive(False)
     plt.show()
@@ -119,7 +124,7 @@ def main(path_output, nstates, nconds, dt, sigma):
     #################################
     # Call plotting function
     ts = np.arange(energies.shape[0])
-    plot_stuff(x_grid, y_grid, x_grid_scaled, y_grid_scaled, sd, el_ene_av, ene_outs_ref0, nconds, outs, ts, dt)
+    plot_stuff(x_grid, y_grid, x_grid_scaled, y_grid_scaled, sd, el_ene_av, ene_outs_ref0, nconds, outs, energies, ts, dt)
 
 def read_cmd_line(parser):
     """
@@ -137,8 +142,9 @@ if __name__ == "__main__":
     msg = "plot_states_pops -p <path/to/output>\
      -nstates <number of states computed>\
       -nconds <number of initial conditions>\
-      -dt <nuclear time step>"
-
+      -dt <nuclear time step>\
+      -sigma <line broadening for convoluton>"
+      
     parser = argparse.ArgumentParser(description=msg)
     parser.add_argument('-p', required=True,
                         help='path to the Hamiltonian files in Pyxaid format')

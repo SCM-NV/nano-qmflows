@@ -90,7 +90,14 @@ def main(group, emin, emax):
     energies = np.loadtxt(files[0], usecols=1)
     # Convert energies to eV
     energies *= 27.211
-
+    #Occupation 
+    occ = np.loadtxt(files[0], usecols=2)
+    lumos_indx = np.where(occ == 0)    
+    lumo_indx = lumos_indx[0][0] 
+    homo_indx = lumo_indx - 1
+    hl_gap = (energies[lumo_indx] - energies[homo_indx]) 
+    print('The homo-lumo gap is: {} eV'.format(hl_gap))  
+    
     # Read Files with PDOS info
     xs = [np.loadtxt(files[i]) for i in range(len(files))]
     # Add up all orbitals contribution for each atom type
