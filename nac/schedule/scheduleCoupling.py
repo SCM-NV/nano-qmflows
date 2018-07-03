@@ -52,6 +52,10 @@ def lazy_couplings(paths_overlaps: List, path_hdf5: str, project_name: str,
         nOverlaps, nOrbitals, _ = fixed_phase_overlaps.shape
         swaps = np.tile(np.arange(nOrbitals), (nOverlaps + 1, 1))
 
+    # Write the overlaps in text format
+    logger.debug("Writing down the overlaps in ascii format")
+    write_overlaps_in_ascii(fixed_phase_overlaps)
+
     # Compute the couplings using either the levine method
     # or the 3Points approximation
     coupling_algorithms = {'levine': (calculate_couplings_levine, 1),
@@ -127,10 +131,6 @@ def compute_the_fixed_phase_overlaps(
         fixed_phase_overlaps = np.stack(
             retrieve_hdf5_data(path_hdf5, paths_corrected_overlaps))
         swaps = retrieve_hdf5_data(path_hdf5, path_swaps)
-
-    # Write the overlaps in text format
-    logger.debug("Writing down the overlaps in ascii format")
-    write_overlaps_in_ascii(fixed_phase_overlaps)
 
     return fixed_phase_overlaps, swaps
 
