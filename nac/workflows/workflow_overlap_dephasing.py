@@ -78,7 +78,6 @@ def generate_overlap_dephasing(
         couplings_range=couplings_range)
 
     # Write the overlaps in text format
-    logger.debug("Writing down the overlaps in ascii format")
     write_overlaps_in_ascii(promised_overlaps_dephasing)
    
     # Remove folders
