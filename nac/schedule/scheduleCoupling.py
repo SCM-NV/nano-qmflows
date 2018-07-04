@@ -324,6 +324,60 @@ def calculate_overlap(project_name: str, path_hdf5: str, dictCGFs: Dict,
     # Gather all the promised paths
     return gather(*paths_overlaps)
 
+def calculate_overlap_dephasing(project_name: str, path_hdf5: str, dictCGFs: Dict,
+                      geometries: List, mo_paths_hdf5: List,
+                      hdf5_trans_mtx: str, enumerate_from: int,
+                      nHOMO: int=None, couplings_range: Tuple=None,
+                      units: str='angstrom') -> List:
+    """
+    Calculate the overlap between time 0 and time i 
+    :param path_hdf5: Path to the HDF5 file that contains the
+    numerical results.
+    :type path_hdf5: String
+    :paramter dictCGFS: Dictionary from Atomic Label to basis set
+    :type     dictCGFS: Dict String [CGF],
+              CGF = ([Primitives], AngularMomentum),
+              Primitive = (Coefficient, Exponent)
+    :param geometries: list of molecular geometries
+    :param mo_paths: Path to the MO coefficients and energies in the
+    HDF5 file.
+    :param hdf5_trans_mtx: path to the transformation matrix in the HDF5 file.
+    :param enumerate_from: Number from where to start enumerating the folders
+    create for each point in the MD
+    :type enumerate_from: Int
+    :param nHOMO: index of the HOMO orbital in the HDF5
+    :param couplings_range: range of Molecular orbitals used to compute the
+    coupling.
+    :returns: paths to the Overlap matrices inside the HDF5.
+    """
+    nPoints = len(geometries) - 1
+
+    # Inplace scheduling of calculate_overlap function
+    # Equivalent to add @schedule on top of the function
+    schedule_overlaps = schedule(lazy_overlaps)
+
+    # Compute the Overlaps
+    paths_overlaps = []
+    for i in range(nPoints):
+
+        # extract 3 molecular geometries to compute the overlaps
+        molecules = tuple(map(lambda idx: parse_string_xyz(geometries[idx]),
+                              [0, i + 1]))
+
+        # If units are Angtrom convert then to a.u.
+        if 'angstrom' in units.lower():
+            molecules = tuple(map(change_mol_units, molecules))
+
+        # Compute the coupling
+        overlaps = schedule_overlaps(
+            i, project_name, path_hdf5, dictCGFs, molecules, mo_paths_hdf5,
+            hdf5_trans_mtx=hdf5_trans_mtx, enumerate_from=enumerate_from,
+            nHOMO=nHOMO, couplings_range=couplings_range)
+
+        paths_overlaps.append(overlaps)
+ 
+    # Gather all the promised paths
+    return gather(*paths_overlaps)
 
 def lazy_overlaps(i: int, project_name: str, path_hdf5: str, dictCGFs: Dict,
                   geometries: Tuple, mo_paths: List, hdf5_trans_mtx: str=None,
