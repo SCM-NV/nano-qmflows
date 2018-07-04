@@ -7,7 +7,7 @@ __all__ = ['generate_overlap_dephasing']
 from .initialization import log_config
 from nac.schedule.components import calculate_mos
 from nac.schedule.scheduleCoupling import (
-    calculate_overlap_dephasing)
+    calculate_overlap_dephasing, write_overlaps_in_ascii)
 from noodles import schedule
 from os.path import join
 from qmworks import run
