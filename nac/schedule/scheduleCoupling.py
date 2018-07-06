@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 
 def lazy_couplings(paths_overlaps: List, path_hdf5: str, project_name: str,
                    enumerate_from: int, nHOMO: int, dt: float, tracking: bool,
-                   algorithm='levine') -> List:
+                   write_overlaps: bool, algorithm='levine') -> List:
     """
     Compute the Nonadibatic coupling using a 3 point approximation. See:
     The Journal of Chemical Physics 137, 22A514 (2012); doi: 10.1063/1.4738960
@@ -53,8 +53,9 @@ def lazy_couplings(paths_overlaps: List, path_hdf5: str, project_name: str,
         swaps = np.tile(np.arange(nOrbitals), (nOverlaps + 1, 1))
 
     # Write the overlaps in text format
-    logger.debug("Writing down the overlaps in ascii format")
-    write_overlaps_in_ascii(fixed_phase_overlaps)
+    if write_overlaps: 
+       logger.debug("Writing down the overlaps in ascii format")
+       write_overlaps_in_ascii(fixed_phase_overlaps)
 
     # Compute the couplings using either the levine method
     # or the 3Points approximation
@@ -74,7 +75,6 @@ def lazy_couplings(paths_overlaps: List, path_hdf5: str, project_name: str,
         path_hdf5, enumerate_from, dt_au) for i in range(nCouplings)]
 
     return swaps, couplings
-
 
 def compute_the_fixed_phase_overlaps(
         paths_overlaps: List, path_hdf5: str, project_name: str,
@@ -269,7 +269,7 @@ def swap_forward(overlaps: Tensor3D, swaps: Vector) -> Tensor3D:
 
 def calculate_overlap(project_name: str, path_hdf5: str, dictCGFs: Dict,
                       geometries: List, mo_paths_hdf5: List,
-                      hdf5_trans_mtx: str, enumerate_from: int,
+                      hdf5_trans_mtx: str, enumerate_from: int, overlaps_deph: bool, 
                       nHOMO: int=None, couplings_range: Tuple=None,
                       units: str='angstrom') -> List:
     """
@@ -304,10 +304,14 @@ def calculate_overlap(project_name: str, path_hdf5: str, dictCGFs: Dict,
     # Compute the Overlaps
     paths_overlaps = []
     for i in range(nPoints):
-
-        # extract 3 molecular geometries to compute the overlaps
-        molecules = tuple(map(lambda idx: parse_string_xyz(geometries[idx]),
-                              [i, i + 1]))
+ 
+        # Extract molecules to compute couplings 
+        if overlaps_deph:
+            molecules = tuple(map(lambda idx: parse_string_xyz(geometries[idx]),
+                                  [0, i + 1]))
+        else: 
+            molecules = tuple(map(lambda idx: parse_string_xyz(geometries[idx]),
+                                  [i, i + 1]))
 
         # If units are Angtrom convert then to a.u.
         if 'angstrom' in units.lower():

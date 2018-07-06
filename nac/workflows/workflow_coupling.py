@@ -30,8 +30,8 @@ def generate_pyxaid_hamiltonians(
         path_hdf5: str=None, enumerate_from: int=0,
         package_config: Dict=None, dt: float=1,
         traj_folders: List=None, work_dir: str=None,
-        basisname: str=None, hdf5_trans_mtx: str=None,
-        nHOMO: int=None, couplings_range: Tuple=None,
+        basisname: str=None, hdf5_trans_mtx: str=None, overlaps_deph=False, 
+        nHOMO: int=None, couplings_range: Tuple=None, write_overlaps=False, 
         algorithm='levine', ignore_warnings=False, tracking=True) -> None:
     """
     Use a md trajectory to generate the hamiltonian components to run PYXAID
@@ -75,14 +75,14 @@ def generate_pyxaid_hamiltonians(
     # Overlap matrix at two different times
     promised_overlaps = calculate_overlap(
         project_name, path_hdf5, dictCGFs, geometries, mo_paths_hdf5,
-        hdf5_trans_mtx, enumerate_from, nHOMO=nHOMO,
+        hdf5_trans_mtx, enumerate_from, overlaps_deph, nHOMO=nHOMO,
         couplings_range=couplings_range)
 
     # Calculate Non-Adiabatic Coupling
     schedule_couplings = schedule(lazy_couplings)
     promised_crossing_and_couplings = schedule_couplings(
         promised_overlaps, path_hdf5, project_name, enumerate_from, nHOMO, dt,
-        tracking, algorithm=algorithm)
+        tracking, write_overlaps, algorithm=algorithm)
 
     # Write the results in PYXAID format
     path_hamiltonians = join(work_dir, 'hamiltonians')
