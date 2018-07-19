@@ -15,9 +15,9 @@ install:
   - conda install h5py
   - conda install -c rdkit rdkit
   - conda install cython
-  - pip coverage
+  - pip install coverage
 
-  - pip install -e git://github.com/SCM-NV/qmflows.git@master#egg=qmflows
+  - pip install "https://github.com/SCM-NV/qmflows/tarball/master#egg=qmflows"
   - pip install .[test]
   
 
