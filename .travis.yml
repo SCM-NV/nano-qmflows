@@ -15,7 +15,6 @@ install:
   - conda install h5py
   - conda install -c rdkit rdkit
   - conda install cython
-  - pip install coverage
 
   - pip install "https://github.com/SCM-NV/qmflows/tarball/master#egg=qmflows"
   - pip install .[test]
@@ -26,7 +25,7 @@ before_script:
 
 
 script:
-  - py.test -m "not (slow or long)" test
+  - py.test -m "not (slow or long)" test --cov=nac
 
 branches:
   only:
