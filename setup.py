@@ -37,7 +37,7 @@ setup(
     ext_modules=[Extension(
         'multipoleObaraSaika', ['nac/integrals/multipoleObaraSaika.pyx'])],
     include_dirs=[np.get_include()],
-    extras_require={'test': ['pytest', 'pytest-cov']},
+    extras_require={'test': ['coverage', 'pytest', 'pytest-cov']},
     scripts=[
         'scripts/hamiltonians/plot_mos_energies.py',
         'scripts/hamiltonians/plot_spectra.py',
