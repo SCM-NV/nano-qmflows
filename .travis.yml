@@ -13,7 +13,7 @@ install:
 
   # Install virtual enviroment 
   - conda install h5py
-  - conda -c rdkit rdkit
+  - conda install -c rdkit rdkit
   - conda install cython
   - pip coverage
 
