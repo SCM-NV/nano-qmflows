@@ -9,9 +9,9 @@ mergeHDF5.py -i chunk_a.hdf5 chunk_b.hdf5 chunk_c.hdf5 -o total.hdf5
 
 An empty total.hdf5 file should be already available before using the script.
 """
-from os.path import join
 import argparse
 import h5py
+import os
 
 # ====================================<>=======================================
 msg = " script -i <Path(s)/to/source/hdf5> -o <path/to/destiny/hdf5>"
@@ -40,22 +40,36 @@ def mergeHDF5(inp, out):
     Merge Recursively two hdf5 Files
     """
     with h5py.File(inp, 'r') as f5, h5py.File(out, 'r+') as g5:
-        keys = f5.keys()
-        for k in keys:
-            if k not in g5:
-                g5.create_group(k)
-            keys2 = f5[k].keys()
-            for l in keys2:
-                if l not in g5[k]:
-                    path = join(k, l)
-                    print("Copying pAth: ", path)
-                    f5.copy(path, g5[k])
+        merge_recursively(f5, g5)
+
+
+def merge_recursively(f, g):
+    """
+    Traverse all the groups tree and copy the different datasets.
+    """
+    for k in f.keys():
+        if k not in g:
+            if isinstance(f[k], h5py.Dataset):
+                f.copy(k, g)
+            else:
+                g.create_group(k)
+                merge_recursively(f[k], g[k])
+        elif isinstance(f[k], h5py.Group):
+            merge_recursively(f[k], g[k])
 
 
 def main():
     inps, out = read_cmd_line()
+    if not os.path.exists(out):
+        touch(out)
     for i in inps:
         mergeHDF5(i, out)
+
+
+def touch(fname, times=None):
+    """ Equivalent to unix touch command"""
+    with open(fname, 'a'):
+        os.utime(fname, times)
 
 
 if __name__ == "__main__":
