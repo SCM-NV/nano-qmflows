@@ -12,7 +12,7 @@ A minimal cp2k_
 
 
 
-qmworks_ automatically create the indented structure of the previous example together with the special character *&* at
+qmflows_ automatically create the indented structure of the previous example together with the special character *&* at
 the beginning and end of each section, and finally the keyword *END* at the end of each section.
 
     

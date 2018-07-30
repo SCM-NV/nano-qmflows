@@ -13,7 +13,7 @@ It assumes a DZVP by default, which can be also changed
 It is always advised to submit the script using a JOB Manager like Slurm
 """
 
-from qmworks import (cp2k, run, templates)
+from qmflows import (cp2k, run, templates)
 from scm.plams import Molecule
 import argparse
 from os.path import join
@@ -68,6 +68,7 @@ def read_cmd_line(parser):
 
     return [getattr(args, p) for p in attributes]
 
+
 # ============<>===============
 if __name__ == "__main__":
 
@@ -88,4 +89,3 @@ if __name__ == "__main__":
                         help='Location of basis set files')
 
     main(*read_cmd_line(parser))
-

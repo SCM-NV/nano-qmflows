@@ -3,7 +3,7 @@ __author__ = "Felipe Zapata"
 # ==========> Standard libraries and third-party <============================
 from nac.common import (Matrix, Vector)
 from os.path import join
-from qmworks.utils import concat
+from qmflows.utils import concat
 from typing import (Dict, List)
 import numpy as np
 # ==================================<>=========================================

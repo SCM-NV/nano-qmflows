@@ -8,8 +8,8 @@ from pymonad import curry
 
 # ==================> Internal modules <==========
 from nac.common import (CGF, InputKey)
-from qmworks.hdf5.quantumHDF5 import cp2k2hdf5, turbomole2hdf5
-from qmworks.utils import (concat, concatMap)
+from qmflows.hdf5.quantumHDF5 import cp2k2hdf5, turbomole2hdf5
+from qmflows.utils import (concat, concatMap)
 # ==========================<>=================================
 
 

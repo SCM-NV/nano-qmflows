@@ -1,7 +1,7 @@
 
 from distribute_jobs import (SLURM, format_slurm_parameters, write_python_script)
 from os.path import join
-from qmworks import Settings
+from qmflows import Settings
 
 import fnmatch
 import h5py

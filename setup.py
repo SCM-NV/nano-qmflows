@@ -10,11 +10,11 @@ if shutil.which('icc') is not None:
     os.environ['LDSHARED'] = 'icc -shared'
 
 setup(
-    name='qmworks-namd',
-    version='0.2.0',
-    description='Automation of computations in quantum chemistry',
-    license='MIT',
-    url='https://github.com/SCM-NV/qmworks-namd',
+    name='qmflows-namd',
+    version='0.3.0',
+    description='Derivative coupling calculation',
+    license='Apache-2.0',
+    url='https://github.com/SCM-NV/qmflows-namd',
     author=['Felipe Zapata', 'Ivan Infante'],
     author_email='tifonzafel_gmail.com',
     keywords='chemistry Photochemistry Simulation',
@@ -30,24 +30,25 @@ setup(
         'topic :: scientific/engineering :: chemistry'
     ],
     install_requires=[
-        'cython', 'numpy', 'h5py', 'noodles', 'pandas', 'qmworks', 'pymonad',
-        'scipy'],
+        'cython', 'numpy', 'h5py', 'noodles==0.2.4', 'qmflows', 'pymonad', 'scipy'],
+    dependency_links=[
+            "https://github.com/SCM-NV/qmflows/tarball/master#egg=qmflows"],
     cmdclass={'build_ext': build_ext},
     ext_modules=[Extension(
         'multipoleObaraSaika', ['nac/integrals/multipoleObaraSaika.pyx'])],
     include_dirs=[np.get_include()],
-    extras_require={'test': ['nose', 'coverage']},
+    extras_require={'test': ['coverage', 'pytest', 'pytest-cov']},
     scripts=[
         'scripts/hamiltonians/plot_mos_energies.py',
         'scripts/hamiltonians/plot_spectra.py',
         'scripts/pyxaid/plot_average_energy.py',
         'scripts/pyxaid/plot_spectra_pyxaid.py',
         'scripts/pyxaid/plot_states_pops.py',
-        'scripts/pyxaid/plot_cooling.py', 
-        'scripts/qmworks/mergeHDF5.py',
-        'scripts/qmworks/removeHDF5folders.py',
-        'scripts/qmworks/remove_mos_hdf5.py',
+        'scripts/qmflows/mergeHDF5.py',
+        'scripts/qmflows/removeHDF5folders.py',
+        'scripts/qmflows/remove_mos_hdf5.py',
+        'scripts/pyxaid/plot_cooling.py',
         'scripts/distribution/distribute_jobs.py',
         'scripts/distribution/merge_job.py',
-        'scripts/qmworks/plot_dos.py']
+        'scripts/qmflows/plot_dos.py']
 )

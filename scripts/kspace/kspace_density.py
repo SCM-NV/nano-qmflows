@@ -5,8 +5,8 @@ from multiprocessing import Pool
 from nac.integrals.fourierTransform import calculate_fourier_trasform_cartesian
 from nac.basisSet import create_dict_CGFs
 from os.path import join
-from qmworks.parsers.xyzParser import readXYZ
-from qmworks.utils import concat
+from qmflows.parsers.xyzParser import readXYZ
+from qmflows.utils import concat
 
 import argparse
 import itertools

@@ -2,8 +2,8 @@ __author__ = "Felipe Zapata"
 
 # ================> Python Standard  and third-party <==========
 from noodles import schedule  # Workflow Engine
-from qmworks.packages import orca
-from qmworks.parsers.xyzParser import string_to_plams_Molecule
+from qmflows.packages import orca
+from qmflows.parsers.xyzParser import string_to_plams_Molecule
 
 from typing import (Dict, Tuple)
 # ==============================> Schedule Tasks <=========================
@@ -23,7 +23,7 @@ def prepare_job_orca(geometry: str, files: Tuple, settings: Dict, k: int,
     :param k: nth Job
     :parameter work_dir: Name of the Working folder
     :param wfn_restart_job: Path to *.wfn cp2k file use as restart file.
-    :returns: ~qmworks.CP2K
+    :returns: ~qmflows.CP2K
     """
 
     return orca(settings, string_to_plams_Molecule(geometry))

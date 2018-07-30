@@ -9,8 +9,8 @@ from nac.common import (CGF, InputKey, product)
 from nac.integrals.overlapIntegral import sijContracted
 from nac.integrals.multipoleIntegrals import calcOrbType_Components
 from os.path import join
-from qmworks.utils import chunksOf
-from qmworks.hdf5.quantumHDF5 import (cp2k2hdf5, turbomole2hdf5)
+from qmflows.utils import chunksOf
+from qmflows.hdf5.quantumHDF5 import (cp2k2hdf5, turbomole2hdf5)
 from typing import (Dict, List, Tuple)
 import numpy as np
 import h5py

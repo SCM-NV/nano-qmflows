@@ -2,7 +2,7 @@ from nac.workflows.workflow_AbsortionSpectrum import workflow_oscillator_strengt
 from nac.workflows.initialization import initialize
 from nose.plugins.attrib import attr
 from os.path import join
-from qmworks.utils import dict2Setting
+from qmflows.utils import dict2Setting
 
 import h5py
 import os

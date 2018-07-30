@@ -2,7 +2,7 @@
 from collections import namedtuple
 from nac.workflows.initialization import split_trajectory
 from os.path import join
-from qmworks import Settings
+from qmflows import Settings
 
 import os
 import shutil
@@ -35,12 +35,12 @@ def main():
 
     # Algorithm use to compute the derivative coupling
     # Either levine or 3points
-    algorithm='levine'
-
+    algorithm = 'levine'
 
     # Varaible to define the Path ehere the Cp2K jobs will be computed
     scratch = "<Path/where/the/Molecular_Orbitals/and/Couplings/are/computed>"
-    project_name = 'replace_with_Name_of_the_Project'  # name use to create folders
+    # name use to create folders
+    project_name = 'replace_with_Name_of_the_Project'
 
     # Path to the basis set used by Cp2k
     basisCP2K = "<Path/to/the/BASIS_MOLOPT>"
@@ -179,8 +179,8 @@ def distribute_computations(scratch_path, project_name, basisCP2K, potCP2K,
     chunks_trajectory = split_trajectory(path_to_trajectory, blocks, '.')
     chunks_trajectory.sort()
     enumerate_from = 0
-    for  i, (file_xyz, l) in enumerate(zip(chunks_trajectory,
-                                           string.ascii_lowercase)):
+    for i, (file_xyz, l) in enumerate(
+            zip(chunks_trajectory, string.ascii_lowercase)):
         folder = 'chunk_{}'.format(l)
         os.mkdir(folder)
         shutil.move(file_xyz, folder)
@@ -215,7 +215,7 @@ def write_python_script(
     xs = """
 from nac.workflows.workflow_coupling import generate_pyxaid_hamiltonians
 from nac.workflows.initialization import initialize
-from qmworks import Settings
+from qmflows import Settings
 
 project_name = '{}'
 path_basis = '{}'
@@ -248,10 +248,11 @@ generate_pyxaid_hamiltonians('cp2k', project_name, cp2k_main,
                              dt={},
                              couplings_range=({},{}),
                              **initial_config)
- """.format(project_name, basisCP2K, potCP2K, path_hdf5, file_xyz, cp2k_main.basis,
-            enumerate_from, scratch, dot_print(cp2k_main, parent='cp2k_main'),
-            dot_print(cp2k_guess, parent='cp2k_guess'), nHOMO,
-            algorithm, dt, *couplings_range)
+ """.format(
+     project_name, basisCP2K, potCP2K, path_hdf5, file_xyz, cp2k_main.basis,
+     enumerate_from, scratch, dot_print(cp2k_main, parent='cp2k_main'),
+     dot_print(cp2k_guess, parent='cp2k_guess'), nHOMO,
+     algorithm, dt, *couplings_range)
 
     with open(join(folder, script_name), 'w') as f:
         f.write(xs)
@@ -293,7 +294,7 @@ def format_slurm_parameters(slurm):
     sbatch = "#SBATCH -{} {}\n".format
 
     header = "#! /bin/bash\n"
-    modules = "\nmodule load cp2k/3.0\nsource activate qmworks\n\n"
+    modules = "\nmodule load cp2k/3.0\nsource activate qmflows\n\n"
     time = sbatch('t', slurm.time)
     nodes = sbatch('N', slurm.nodes)
     tasks = sbatch('n', slurm.tasks)
