@@ -47,10 +47,14 @@ def lazy_couplings(paths_overlaps: List, path_hdf5: str, project_name: str,
             paths_overlaps, path_hdf5, project_name, enumerate_from, nHOMO)
     else:
         # Do not track the crossings
-        fixed_phase_overlaps = np.stack(
+        mtx_0 = retrieve_hdf5_data(path_hdf5, paths_overlaps[0])
+        _, dim = mtx_0.shape
+        overlaps = np.stack(
             retrieve_hdf5_data(path_hdf5, paths_overlaps))
-        nOverlaps, nOrbitals, _ = fixed_phase_overlaps.shape
+        nOverlaps, nOrbitals, _ = overlaps.shape
         swaps = np.tile(np.arange(nOrbitals), (nOverlaps + 1, 1))
+        mtx_phases = compute_phases(overlaps, nOverlaps, dim)
+        fixed_phase_overlaps = correct_phases(overlaps, mtx_phases)
 
     # Write the overlaps in text format
     if write_overlaps: 
