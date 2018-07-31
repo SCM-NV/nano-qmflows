@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#!/home/v13/miniconda3/envs/qmworks/bin/python
 """
 This program plots several properties related to the interaction of a pair of states s1 and s2.
 1. The energies of the two states along the MD trajectory
@@ -31,13 +31,13 @@ from nac.analysis import (
     autocorrelate, dephasing, read_couplings, read_energies, spectral_density)
 
 
-def plot_stuff(ens, coupls, acf, sd, deph, rate, s1, s2, ts, wsd, wdeph):
+def plot_stuff(ens, coupls, acf, sd, deph, rate, s1, s2, ts, wsd, wdeph, dt):
     """
     arr - a vector of y-values that are plot
     plot_mean, save_plot - bools telling to plot the mean and save the plot or not,
     respectively
     """
-    dim_x = np.arange(ts)
+    dim_x = np.arange(ts) * dt 
 
     ax1 = plt.subplot(321)
     ax1.set_xlabel('Time (fs)')
@@ -78,6 +78,7 @@ def plot_stuff(ens, coupls, acf, sd, deph, rate, s1, s2, ts, wsd, wdeph):
     ax5.plot(sd[:, 1, 2], sd[:, 0, 2], c='g')
     print('The dephasing time is : {:f} fs'.format(rate))
     print('The homogenous line broadening is  : {:f} nm'.format(1 / rate * fs_to_nm))
+    print('The homogenous line broadening is  : {:f} eV'.format(1 / rate * 4.13567)) # Conversion 1 fs = 4.13567 eV 
 
     ax6 = plt.subplot(322)
     ax6.set_xlabel('Time (fs)')
@@ -93,7 +94,7 @@ def plot_stuff(ens, coupls, acf, sd, deph, rate, s1, s2, ts, wsd, wdeph):
     plt.show()
 
 
-def main(path_hams, s1, s2, ts, wsd, wdeph):
+def main(path_hams, s1, s2, dt, ts, wsd, wdeph):
     if ts == 'All':
         files = glob.glob(os.path.join(path_hams, 'Ham_*_re'))
         ts = len(files)
@@ -110,12 +111,12 @@ def main(path_hams, s1, s2, ts, wsd, wdeph):
         autocorrelate(en_states[:, i]) for i in range(en_states.shape[1])).transpose()
     # Compute the spectral density for each column using the normalized acf
     sd = np.stack(
-        spectral_density(acf[:, 1, i]) for i in range(en_states.shape[1])).transpose()
+        spectral_density(acf[:, 1, i], dt) for i in range(en_states.shape[1])).transpose()
     # Compute the dephasing time for the uncorrelated acf between two states
-    deph, rate = dephasing(acf[:, 0, 2])
+    deph, rate = dephasing(acf[:, 0, 2], dt)
     # Plot stuff
     plot_stuff(
-        en_states, couplings, acf, sd, deph, rate, s1, s2, ts, wsd, wdeph)
+        en_states, couplings, acf, sd, deph, rate, s1, s2, ts, wsd, wdeph, dt)
 
 
 def read_cmd_line(parser):
@@ -124,13 +125,14 @@ def read_cmd_line(parser):
     """
     args = parser.parse_args()
 
-    attributes = ['p', 's1', 's2', 'ts', 'wsd', 'wdeph']
+    attributes = ['p', 's1', 's2', 'dt', 'ts', 'wsd', 'wdeph']
 
     return [getattr(args, p) for p in attributes]
 
 
 if __name__ == "__main__":
     msg = "plot_decho -p <path/to/hamiltonians> -s1 <State 1> -s2 <State 2>\
+     -dt <timestep>\
      -ts <time window for analysis>\
      -wsd <energy window for spectral density plot in cm-1>\
       -wdeph <time window for dephasing time in fs>"
@@ -143,7 +145,9 @@ if __name__ == "__main__":
     parser.add_argument(
         '-s2', required=True, type=int, help='Index of the second state')
     parser.add_argument(
-        '-ts', type=str, default='All', help='Index of the second state')
+        '-dt', required=True, type=float, help='Timestep for MD simulation')
+    parser.add_argument(
+        '-ts', type=str, default='All', help='Time range for plot')
     parser.add_argument(
         '-wsd', type=int, default=1500,
                         help='energy window for spectral density plot in cm-1')
