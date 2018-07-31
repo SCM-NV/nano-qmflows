@@ -4,12 +4,12 @@ from nac.common import retrieve_hdf5_data
 from nac.workflows.workflow_coupling import generate_pyxaid_hamiltonians
 from nac.workflows.workflow_AbsortionSpectrum import workflow_oscillator_strength
 from nac.workflows.initialization import initialize
-from nose.plugins.attrib import attr
 from os.path import join
-from qmworks.utils import dict2Setting
+from qmflows.utils import dict2Setting
 
 import h5py
 import numpy as np
+import pytest
 import os
 import shutil
 
@@ -46,7 +46,7 @@ path_test_hdf5 = join(scratch_path, 'test.hdf5')
 project_name = 'Cd33Se33'
 
 
-@attr('slow')
+@pytest.mark.slow
 def test_couplings_and_oscillators():
     """
     Test couplings and oscillator strength for Cd33Se33

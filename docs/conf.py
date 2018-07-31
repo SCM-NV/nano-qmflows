@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 #
-# qmworks documentation build configuration file, created by
+# qmflows documentation build configuration file, created by
 # sphinx-quickstart on Wed Dec 16 14:33:52 2015.
 #
 # This file is execfile()d with the current directory set to its
@@ -17,8 +17,8 @@
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
-# sys.path.insert(0, os.path.abspath('../qmworks'))
-# sys.path.append(os.path.abspath('../qmworks'))
+# sys.path.insert(0, os.path.abspath('../qmflows'))
+# sys.path.append(os.path.abspath('../qmflows'))
 
 
 # -- General configuration ------------------------------------------------
@@ -53,7 +53,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = 'qmworks-namd'
+project = 'qmflows-namd'
 author = 'felipeZ, iinfante76'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -208,7 +208,7 @@ html_search_language = 'en'
 # html_search_scorer = 'scorer.js'
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'qmworksdoc'
+htmlhelp_basename = 'qmflowsdoc'
 
 # -- Options for LaTeX output ---------------------------------------------
 

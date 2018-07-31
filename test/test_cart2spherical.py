@@ -3,7 +3,7 @@ from nac.basisSet.basisNormalization import compute_normalization_sphericals
 from nac.common import (change_mol_units, triang2mtx)
 from nac.integrals import (calcMtxOverlapP, calc_transf_matrix)
 from nac.basisSet import create_dict_CGFs
-from qmworks.parsers import readXYZ
+from qmflows.parsers import readXYZ
 from scipy import sparse
 
 import h5py

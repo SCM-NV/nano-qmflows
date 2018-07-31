@@ -8,8 +8,8 @@ from nac.integrals import calc_transf_matrix
 from nac.schedule.components import (
     create_point_folder, split_file_geometries)
 from os.path import join
-from qmworks.hdf5.quantumHDF5 import StoreasHDF5
-from qmworks.parsers import parse_string_xyz
+from qmflows.hdf5.quantumHDF5 import StoreasHDF5
+from qmflows.parsers import parse_string_xyz
 from subprocess import (PIPE, Popen)
 from typing import (Dict, List, Tuple)
 
@@ -261,11 +261,11 @@ def log_config(work_dir, path_hdf5, algorithm):
     # Get logger
     logger = logging.getLogger(__name__)
 
-    version = pkg_resources.get_distribution('qmworks-namd').version
+    version = pkg_resources.get_distribution('qmflows-namd').version
     path = nac.__path__
 
-    logger.info("Using qmworks-namd version: {} ".format(version))
-    logger.info("qmworks-namd path is: {}".format(path))
+    logger.info("Using qmflows-namd version: {} ".format(version))
+    logger.info("qmflows-namd path is: {}".format(path))
     logger.info("Working directory is: {}".format(work_dir))
     logger.info("Data will be stored in HDF5 file: {}".format(path_hdf5))
     logger.info("The chosen algorithm to compute the coupling is: {}\n".format(algorithm))

@@ -8,9 +8,9 @@ import fnmatch
 import os
 
 # ==================> Internal modules <==========
-from qmworks import templates
-from qmworks.packages import cp2k
-from qmworks.parsers.xyzParser import string_to_plams_Molecule
+from qmflows import templates
+from qmflows.packages import cp2k
+from qmflows.parsers.xyzParser import string_to_plams_Molecule
 
 from typing import (Dict, Tuple)
 # ==============================> Schedule Tasks <=========================
@@ -27,7 +27,7 @@ def prepare_cp2k_settings(files: Tuple, cp2k_args: Dict, k: int,
     :param k: nth Job
     :param wfn_restart_job: Path to *.wfn cp2k file use as restart file.
     :param cp2k_config:  Parameters required by cp2k.
-   :returns: ~qmworks.Settings
+   :returns: ~qmflows.Settings
     """
     # Search for the environmental variable BASISCP2K containing the path
     # to the Basis set folder
@@ -73,7 +73,7 @@ def prepare_job_cp2k(geometry: str, files: Tuple, dict_input: Dict, k: int,
     :param k: nth Job
     :parameter work_dir: Name of the Working folder
     :param wfn_restart_job: Path to *.wfn cp2k file use as restart file.
-    :returns: ~qmworks.CP2K
+    :returns: ~qmflows.CP2K
     """
     job_settings = prepare_cp2k_settings(files, dict_input, k,
                                          wfn_restart_job, package_config)

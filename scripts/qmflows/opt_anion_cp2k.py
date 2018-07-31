@@ -1,11 +1,10 @@
 #! /usr/bin/env python
 """
-This programs performs a geometry optimization of the cation of a closed-shell
+This programs performs a geometry optimization on the anion of a closed-shell
  molecule with cp2k using generic settings: DFT/PBE.
 
 Note that is mandatory to define a cell_parameter, and a xyz structure.
-If you have a restart file, a basis set and you can also define
- it in the command line.
+If you have a restart file, a basis set and you can also define it in the command line.
 It assumes that the basis and pot files are in $HOME/cp2k_basis
  folder in your home, which can be changed)
 It assumes a DZVP by default, which can be also changed
@@ -13,7 +12,7 @@ It assumes a DZVP by default, which can be also changed
 It is always advised to submit the script using a JOB Manager like Slurm
 """
 
-from qmworks import (cp2k, run, templates)
+from qmflows import (cp2k, run, templates)
 from scm.plams import Molecule
 import argparse
 from os.path import join
@@ -21,7 +20,9 @@ import os
 
 
 def main(file_xyz, cell, restart, basis, basis_folder):
-    # Define which systems need to be calculated
+    """
+    Define which systems need to be calculated
+    """
     system = Molecule(file_xyz)
 
     # Set path for basis set
@@ -36,19 +37,19 @@ def main(file_xyz, cell, restart, basis, basis_folder):
     s.specific.cp2k.force_eval.dft.basis_set_file_name = basisCP2K
     s.specific.cp2k.force_eval.dft.potential_file_name = potCP2K
     s.specific.cp2k.force_eval.dft.uks = ''
-    s.specific.cp2k.force_eval.dft.charge = '1'
+    s.specific.cp2k.force_eval.dft.charge = '-1'
     s.specific.cp2k.force_eval.dft.multiplicity = '2'
     s.specific.cp2k.force_eval.dft.wfn_restart_file_name = '{}'.format(restart)
 
-    # =======================
-    # Compute OPT files with CP2k
-    # =======================
+# =======================
+# Compute OPT files with CP2k
+# =======================
 
     result = run(cp2k(s, system))
 
-    # ======================
-    # Output the results
-    # ======================
+# ======================
+# Output the results
+# ======================
 
     print(result.energy)
 

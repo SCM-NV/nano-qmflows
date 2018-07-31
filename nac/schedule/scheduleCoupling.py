@@ -17,7 +17,7 @@ from nac.common import (
     search_data_in_hdf5, store_arrays_in_hdf5)
 
 from noodles import (gather, schedule)
-from qmworks.parsers import parse_string_xyz
+from qmflows.parsers import parse_string_xyz
 
 # Types hint
 from typing import (Callable, Dict, List, Tuple)
@@ -57,9 +57,8 @@ def lazy_couplings(paths_overlaps: List, path_hdf5: str, project_name: str,
         fixed_phase_overlaps = correct_phases(overlaps, mtx_phases)
 
     # Write the overlaps in text format
-    if write_overlaps: 
-       logger.debug("Writing down the overlaps in ascii format")
-       write_overlaps_in_ascii(fixed_phase_overlaps)
+    logger.debug("Writing down the overlaps in ascii format")
+    write_overlaps_in_ascii(fixed_phase_overlaps)
 
     # Compute the couplings using either the levine method
     # or the 3Points approximation
@@ -79,6 +78,7 @@ def lazy_couplings(paths_overlaps: List, path_hdf5: str, project_name: str,
         path_hdf5, enumerate_from, dt_au) for i in range(nCouplings)]
 
     return swaps, couplings
+
 
 def compute_the_fixed_phase_overlaps(
         paths_overlaps: List, path_hdf5: str, project_name: str,
@@ -135,7 +135,6 @@ def compute_the_fixed_phase_overlaps(
         fixed_phase_overlaps = np.stack(
             retrieve_hdf5_data(path_hdf5, paths_corrected_overlaps))
         swaps = retrieve_hdf5_data(path_hdf5, path_swaps)
-
 
     return fixed_phase_overlaps, swaps
 
@@ -197,8 +196,8 @@ def compute_phases(overlaps: Tensor3D, nCouplings: int,
         mtx_phases[i + 1] = phases
         references = phases
 
-    # Print phases (debug) 
-    np.savetxt('mtx_phases', mtx_phases) 
+    # Print phases (debug)
+    np.savetxt('mtx_phases', mtx_phases)
 
     return mtx_phases
 
@@ -273,7 +272,7 @@ def swap_forward(overlaps: Tensor3D, swaps: Vector) -> Tensor3D:
 
 def calculate_overlap(project_name: str, path_hdf5: str, dictCGFs: Dict,
                       geometries: List, mo_paths_hdf5: List,
-                      hdf5_trans_mtx: str, enumerate_from: int, overlaps_deph: bool, 
+                      hdf5_trans_mtx: str, enumerate_from: int, overlaps_deph: bool,
                       nHOMO: int=None, couplings_range: Tuple=None,
                       units: str='angstrom') -> List:
     """
@@ -308,12 +307,12 @@ def calculate_overlap(project_name: str, path_hdf5: str, dictCGFs: Dict,
     # Compute the Overlaps
     paths_overlaps = []
     for i in range(nPoints):
- 
-        # Extract molecules to compute couplings 
+
+        # Extract molecules to compute couplings
         if overlaps_deph:
             molecules = tuple(map(lambda idx: parse_string_xyz(geometries[idx]),
                                   [0, i + 1]))
-        else: 
+        else:
             molecules = tuple(map(lambda idx: parse_string_xyz(geometries[idx]),
                                   [i, i + 1]))
 
@@ -331,6 +330,7 @@ def calculate_overlap(project_name: str, path_hdf5: str, dictCGFs: Dict,
 
     # Gather all the promised paths
     return gather(*paths_overlaps)
+
 
 def lazy_overlaps(i: int, project_name: str, path_hdf5: str, dictCGFs: Dict,
                   geometries: Tuple, mo_paths: List, hdf5_trans_mtx: str=None,

@@ -8,30 +8,25 @@ install:
   - export PATH="$HOME/miniconda/bin:$PATH"
   - hash -r
   - conda config --set always_yes yes --set changeps1 no --set auto_update_conda False
-  - conda update -q conda
   # Useful for debugging any issues with conda
   - conda info -a
 
   # Install virtual enviroment 
-  - conda create -q -n qmworks python=3.5
-  - conda install --name qmworks -c anaconda hdf5
-  - conda install --name qmworks -c rdkit rdkit
-  - source activate qmworks
-  - pip install cython h5py nose coverage
+  - conda install h5py
+  - conda install -c rdkit rdkit
+  - conda install cython
 
-  - pip install -e git://github.com/SCM-NV/qmworks.git@develop#egg=qmworks
-  - pip install .
+  - pip install "https://github.com/SCM-NV/qmflows/tarball/master#egg=qmflows"
+  - pip install .[test]
   
 
 before_script:
- # RDKit
   - conda list
-  - ls $HOME/miniconda/envs/qmworks/lib/python3.5/site-packages/
+
 
 script:
-  - nosetests --with-coverage --cover-erase --cover-package=nac -v
+  - py.test -m "not (slow or long)" test --cov=nac
 
 branches:
   only:
    - master
-   - develop

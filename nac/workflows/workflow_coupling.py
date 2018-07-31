@@ -10,7 +10,7 @@ from nac.schedule.scheduleCoupling import (
     calculate_overlap, lazy_couplings, write_hamiltonians)
 from noodles import schedule
 from os.path import join
-from qmworks import run
+from qmflows import run
 
 import logging
 import os
