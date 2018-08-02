@@ -92,7 +92,7 @@ cpdef double sab_efg(tuple gs1, tuple gs2, tuple rc, int e, int f, int g) except
     return c1 * c2 * prod
 
 
-cpdef double obaraSaikaMultipole(double p, double s00x, double xpa, double xpb,
+cdef double obaraSaikaMultipole(double p, double s00x, double xpa, double xpb,
                                 double xpc, int i, int j, int e):
     """
     The  Obara-Saika Scheme to calculate overlap integrals. Explicit expressions
@@ -185,7 +185,7 @@ orbitalIndexes = {
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cpdef bool neglect_integral(double r, double e1, double e2, double accuracy):
+cdef bool neglect_integral(double r, double e1, double e2, double accuracy):
     """
     Compute whether an overlap integral should be neglected 
     """
@@ -196,7 +196,7 @@ cpdef bool neglect_integral(double r, double e1, double e2, double accuracy):
 
 @cython.boundscheck(False)
 @cython.wraparound(False)
-cpdef double distance(list xs, list ys):
+cdef double distance(list xs, list ys):
     """
     Distance between 2 points
     """
