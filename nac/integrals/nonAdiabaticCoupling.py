@@ -2,7 +2,6 @@ __all__ = ['calculate_couplings_3points', 'calculate_couplings_levine',
            'compute_overlaps_for_coupling', 'correct_phases']
 
 # ================> Python Standard  and third-party <==========
-# from multipoleObaraSaika import sab_unfolded
 from functools import partial
 from multiprocessing import (cpu_count, Pool)
 from nac.common import (Matrix, Vector, Tensor3D, retrieve_hdf5_data)

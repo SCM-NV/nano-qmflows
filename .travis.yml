@@ -25,7 +25,7 @@ before_script:
 
 
 script:
-  - py.test -m "not (slow or long)" test --cov=nac
+  - py.test -m "not (slow or long)" --cov=nac test
 
 branches:
   only:
