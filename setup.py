@@ -1,6 +1,6 @@
 
 from Cython.Distutils import build_ext
-from setuptools import Extension, setup
+from setuptools import (Extension, find_packages, setup)
 import numpy as np
 import os
 import shutil
@@ -18,9 +18,7 @@ setup(
     author=['Felipe Zapata', 'Ivan Infante'],
     author_email='tifonzafel_gmail.com',
     keywords='chemistry Photochemistry Simulation',
-    packages=[
-        "nac", "nac.analysis", "nac.basisSet", "nac.integrals", "nac.schedule",
-        "nac.workflows"],
+    packages=find_packages(),
     classifiers=[
         'License :: OSI Approved :: MIT License',
         'Intended Audience :: Science/Research',
@@ -30,7 +28,7 @@ setup(
         'topic :: scientific/engineering :: chemistry'
     ],
     install_requires=[
-        'cython', 'numpy', 'h5py', 'noodles==0.2.4', 'numba', 'qmflows', 'pymonad', 'scipy'],
+        'cython', 'numpy', 'h5py', 'noodles==0.2.4', 'qmflows', 'pymonad', 'scipy'],
     dependency_links=[
             "https://github.com/SCM-NV/qmflows/tarball/master#egg=qmflows"],
     cmdclass={'build_ext': build_ext},
