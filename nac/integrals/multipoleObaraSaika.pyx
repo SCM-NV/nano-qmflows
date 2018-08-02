@@ -37,8 +37,8 @@ cpdef double sab(tuple gs1, tuple gs2) except? -1:
         u = e1 * e2 / (e1 + e2)
         p = 1.0 / (2.0 * (e1 + e2))
         for i in range(3):
-            l1x = calcOrbType_ComponentsC(l1, i)
-            l2x = calcOrbType_ComponentsC(l2, i)
+            l1x = orbitalIndexes[l1, i]
+            l2x = orbitalIndexes[l2, i]
             rp = (e1 * r1[i] + e2 * r2[i]) / (e1 + e2)
             rab = r1[i] - r2[i]
             rpa = rp - r1[i]
@@ -78,8 +78,8 @@ cpdef double sab_efg(tuple gs1, tuple gs2, tuple rc, int e, int f, int g) except
 
     i = 0 if e != 0 else (1 if f != 0 else 2)
 
-    l1x = calcOrbType_ComponentsC(l1, i)
-    l2x = calcOrbType_ComponentsC(l2, i)
+    l1x = orbitalIndexes[l1, i]
+    l2x = orbitalIndexes[l2, i]
     rp = (e1 * r1[i] + e2 * r2[i]) / (e1 + e2)
     rab = r1[i] - r2[i]
     rpa = rp - r1[i]
@@ -157,12 +157,6 @@ cpdef double obaraSaikaMultipole(double p, double s00x, double xpa, double xpb,
                  j * obaraSaikaMultipole(p, s00x, xpa, xpb, xpc, i, j - 1, e - 1) +
                  (e - 1) * obaraSaikaMultipole(p, s00x, xpa, xpb, xpc, i, j, e - 2))
     
-
-cdef int calcOrbType_ComponentsC(str l, int x):
-    """
-    Functions related to the orbital momenta indexes
-    """
-    return orbitalIndexes[l, x]
 
 cdef dict orbitalIndexes
 orbitalIndexes = {
