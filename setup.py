@@ -30,7 +30,7 @@ setup(
         'topic :: scientific/engineering :: chemistry'
     ],
     install_requires=[
-        'cython', 'numpy', 'h5py', 'noodles==0.2.4', 'numba', 'qmflows', 'pymonad', 'scipy'],
+        'cython', 'numpy', 'h5py', 'noodles==0.2.4', 'qmflows', 'pymonad', 'scipy'],
     dependency_links=[
             "https://github.com/SCM-NV/qmflows/tarball/master#egg=qmflows"],
     cmdclass={'build_ext': build_ext},
