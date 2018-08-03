@@ -5,7 +5,8 @@ __all__ = ['calculate_couplings_3points', 'calculate_couplings_levine',
 from functools import partial
 from multiprocessing import (cpu_count, Pool)
 from nac.common import (Matrix, Vector, Tensor3D, retrieve_hdf5_data)
-from nac.integrals.multipoleIntegrals import compute_CGFs_indices
+from nac.integrals.multipoleIntegrals import (
+    compute_CGFs_indices, compute_block_triang_indices)
 from nac.integrals.overlapIntegral import sijContracted
 from scipy import sparse
 from typing import Dict, List, Tuple
@@ -215,7 +216,8 @@ def calcOverlapMtx(dictCGFs: Dict, mol0: List, mol1: List) -> Matrix:
     partial_fun = partial(calc_overlap_chunk, dictCGFs, mol0, mol1, indices)
 
     with Pool() as p:
-        xss = p.map(partial_fun, create_rows_range(nOrbs))
+        ncores = cpu_count()
+        xss = p.map(partial_fun, compute_block_triang_indices(nOrbs, ncores))
 
     return np.vstack(xss)
 
@@ -260,32 +262,7 @@ def calc_overlap_row(dictCGFs: Dict, xyz_0: List, cgf_i: List,
         # Extract atom and  CGFs
         atom_j = mol1[at_j]
         cgf_j = dictCGFs[atom_j.symbol.lower()][cgfs_j_idx]
-        xyz_1  = atom_j.xyz
+        xyz_1 = atom_j.xyz
         row[k] = sijContracted((xyz_0, cgf_i), (xyz_1, cgf_j))
 
     return row
-
-
-def create_rows_range(nOrbs: int) -> List:
-    """
-    Create a list of indexes for the row of the overlap matrix
-    that will be calculated by a pool of workers.
-    """
-    # Available CPUs
-    nCPUs = cpu_count()
-
-    # Number of rows to compute for each CPU
-    chunk = nOrbs // nCPUs
-
-    # Remaining entries
-    rest = nOrbs % nCPUs
-
-    xs = []
-    acc = 0
-    for i in range(nCPUs):
-        b = 1 if i < rest else 0
-        upper = acc + chunk + b
-        xs.append((acc, upper))
-        acc = upper
-
-    return xs
