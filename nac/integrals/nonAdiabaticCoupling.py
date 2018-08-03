@@ -3,7 +3,6 @@ __all__ = ['calculate_couplings_3points', 'calculate_couplings_levine',
 
 # ================> Python Standard  and third-party <==========
 from functools import partial
-from multiprocessing import (cpu_count, Pool)
 from nac.common import (Matrix, Vector, Tensor3D, retrieve_hdf5_data)
 from nac.integrals.multipoleIntegrals import (
     compute_CGFs_indices, compute_block_triang_indices)
@@ -204,22 +203,33 @@ def compute_range_orbitals(mtx: Matrix, nHOMO: int,
     return lowest, highest
 
 
-def calcOverlapMtx(dictCGFs: Dict, mol0: List, mol1: List) -> Matrix:
+def calcOverlapMtx(
+        dictCGFs: Dict, mol0: List, mol1: List,
+        runner='multiprocessing', ncores: int=None) -> Matrix:
     """
     Parallel calculation of the overlap matrix using the atomic
     basis at two different geometries: R0 and R1.
+    :param mol0: Atomic label and cartesian coordinates of the first geometry.
+    :param mol1: Atomic label and cartesian coordinates of the second geometry.
+    :param dictCGFs: Contracted gauss functions normalized, represented as
+    a dict of list containing the Contracted Gauss primitives
+    :param calculator: Function to compute the matrix elements.
+    :param runner: function to compute the elements of the matrix
+    :param ncores: number of available cores
     """
     # Compute the indices of the nuclear coordinates and CGFs
     # pairs
     indices, nOrbs = compute_CGFs_indices(mol0, dictCGFs)
-
     partial_fun = partial(calc_overlap_chunk, dictCGFs, mol0, mol1, indices)
 
-    with Pool() as p:
-        ncores = cpu_count()
-        xss = p.map(partial_fun, compute_block_triang_indices(nOrbs, ncores))
+    if runner.lower() == 'mpi':
+        result = runner_mpi(partial_fun, nOrbs, ncores)
+        return result.reshape(nOrbs, nOrbs)
+    else:
+        xss = runner_multiprocessing(
+            partial_fun, create_rows_range(nOrbs, ncores))
 
-    return np.vstack(xss)
+        return np.vstack(xss)
 
 
 def calc_overlap_chunk(dictCGFs: Dict, mol0: List, mol1: List,
@@ -266,3 +276,25 @@ def calc_overlap_row(dictCGFs: Dict, xyz_0: List, cgf_i: List,
         row[k] = sijContracted((xyz_0, cgf_i), (xyz_1, cgf_j))
 
     return row
+
+
+def create_rows_range(nOrbs: int, ncores: int) -> List:
+    """
+    Create a list of indexes for the row of the overlap matrix
+    that will be calculated by a pool of workers.
+    """
+    # Number of rows to compute for each CPU
+    chunk = nOrbs // ncores
+
+    # Remaining entries
+    rest = nOrbs % ncores
+
+    xs = []
+    acc = 0
+    for i in range(ncores):
+        b = 1 if i < rest else 0
+        upper = acc + chunk + b
+        xs.append((acc, upper))
+        acc = upper
+
+    return xs

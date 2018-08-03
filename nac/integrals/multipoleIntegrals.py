@@ -15,7 +15,7 @@ import tempfile
 
 def general_multipole_matrix(
         molecule: List, dictCGFs: List,
-        calculator: Callable=None, runner='mpi',
+        calculator: Callable=None, runner='multiprocessing',
         ncores: int=None) -> Vector:
     """
     Generic function to calculate a matrix using a Gaussian basis set and
@@ -42,23 +42,25 @@ def general_multipole_matrix(
         # Create a list of indices of a triangular matrix to distribute
         # the computation of the matrix uniformly among the available cores
         block_triang_indices = compute_block_triang_indices(nOrbs, ncores)
+        rss = runner_multiprocessing(function, block_triang_indices)
 
-        return runner_multiprocessing(function, block_triang_indices)
+        return np.concatenate(rss)
 
 
 def runner_multiprocessing(
-        function: Callable, block_triang_indices: Matrix) -> Matrix:
+        function: Callable, indices_chunks: List) -> Matrix:
     """
     Compute a multipole matrix using the python multiprocessing module.
 
     :param function: callable to compute the multipole matrix.
-    :param block_triang_indices: indices of the upper triangular multipole matrix.
+    :param indices_chunks: List of Matrices/tuples containing the indices
+    compute for each core/worker.
     :returns: multipole matrix.
     """
     with Pool() as p:
-        rss = p.map(function, block_triang_indices)
+        rss = p.map(function, indices_chunks)
 
-    return np.concatenate(rss)
+    return rss
 
 
 def runner_mpi(
