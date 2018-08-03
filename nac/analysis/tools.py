@@ -61,8 +61,8 @@ def dephasing(f, dt):
     gaussian of the type : exp(-0.5 * (-x / tau) ** 2)
     """
     ts = np.arange(f.shape[0]) * dt
-    cumu_ii = np.stack(np.sum(f[0:i]) for i in range(ts.size)) / hbar
-    cumu_i = np.stack(np.sum(cumu_ii[0:i]) for i in range(ts.size)) / hbar
+    cumu_ii = np.stack(np.sum(f[0:i]) for i in range(ts.size)) * dt / hbar
+    cumu_i = np.stack(np.sum(cumu_ii[0:i]) for i in range(ts.size)) * dt / hbar
     deph = np.exp(-cumu_i)
     np.seterr(over='ignore')
     popt = curve_fit(gauss_function, ts, deph)[0]
