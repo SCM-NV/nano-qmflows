@@ -78,7 +78,7 @@ def spectral_density(f, dt):
     In the case of a FFT of a normalized autocorrelation function,
     this corresponds to a spectral density
     """
-    f_fft = abs(1 / np.sqrt(2 * np.pi) * np.fft.fft(f, 100000)) ** 2
+    f_fft = abs(1 / np.sqrt(2 * np.pi) * np.fft.fft(f, 100000) * dt ) ** 2
     # Fourier Transform of the time axis
     freq = np.fft.fftfreq(len(f_fft), dt)
     # Conversion of the x axis (given in cycles/fs) to cm-1
