@@ -89,6 +89,7 @@ def runner_mpi(
     err = rs[1]
     if err:
         raise RuntimeError("Submission Errors: {}".format(err))
+        clean([output_filename, tmp_fun])
     else:
         output_filename = tmp_out + '.npy'
         arr = np.load(output_filename)
@@ -297,5 +298,8 @@ def compute_block_triang_indices(nOrbs: int, ncores: int) -> List:
     return xs
 
 
-def test_fun(xs):
-    return np.sum(xs, axis=1) ** 2
+def clean(xs):
+    """Remove tmp files"""
+    for x in xs:
+        if os.path.exists(x):
+            os.remove(x)
