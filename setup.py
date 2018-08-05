@@ -35,18 +35,19 @@ setup(
     ext_modules=[Extension(
         'multipoleObaraSaika', ['nac/integrals/multipoleObaraSaika.pyx'])],
     include_dirs=[np.get_include()],
-    extras_require={'test': ['coverage', 'pytest', 'pytest-cov']},
+    extras_require={
+        'test': ['coverage', 'pytest', 'pytest-cov'],
+        'mpi': ['dill', 'mpi4py']},
     scripts=[
+        'scripts/mpi/call_mpi_multipole.py',
         'scripts/hamiltonians/plot_mos_energies.py',
         'scripts/hamiltonians/plot_spectra.py',
         'scripts/pyxaid/plot_average_energy.py',
+        'scripts/pyxaid/plot_cooling.py',
         'scripts/pyxaid/plot_spectra_pyxaid.py',
         'scripts/pyxaid/plot_states_pops.py',
         'scripts/qmflows/mergeHDF5.py',
+        'scripts/qmflows/plot_dos.py',
         'scripts/qmflows/removeHDF5folders.py',
-        'scripts/qmflows/remove_mos_hdf5.py',
-        'scripts/pyxaid/plot_cooling.py',
-        'scripts/distribution/distribute_jobs.py',
-        'scripts/distribution/merge_job.py',
-        'scripts/qmflows/plot_dos.py']
+        'scripts/qmflows/remove_mos_hdf5.py']
 )

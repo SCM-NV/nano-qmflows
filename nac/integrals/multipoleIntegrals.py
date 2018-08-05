@@ -1,21 +1,22 @@
 
-# ==========> Standard libraries and third-party <===============
+from distutils.spawn import find_executable
 from functools import partial
 from multiprocessing import (cpu_count, Pool)
 from nac.common import (Matrix, Vector)
 
-import numpy as np
-# ==================> Internal modules <====================
 from multipoleObaraSaika import sab_efg  # compiled with cython
-
+from subprocess import (PIPE, Popen)
 from typing import (Callable, Dict, List, Tuple)
-
-# ==================================<>======================================
+import dill
+import numpy as np
+import os
+import tempfile
 
 
 def general_multipole_matrix(
         molecule: List, dictCGFs: List,
-        calculator: Callable=None) -> Vector:
+        calculator: Callable=None, runner='multiprocessing',
+        ncores: int=None) -> Vector:
     """
     Generic function to calculate a matrix using a Gaussian basis set and
     the molecular geometry.
@@ -26,22 +27,78 @@ def general_multipole_matrix(
     :param dictCGFs: Contracted gauss functions normalized, represented as
     a dict of list containing the Contracted Gauss primitives
     :param calculator: Function to compute the matrix elements.
+    :param runner: function to compute the elements of the matrix
+    :param ncores: number of available cores
     :returns: Numpy Array representing a flatten triangular matrix.
     """
     # Indices of the cartesian coordinates and corresponding CGFs
     indices, nOrbs = compute_CGFs_indices(molecule, dictCGFs)
+    function = partial(calculator, molecule, dictCGFs, indices)
+    ncores = ncores if ncores is not None else cpu_count()
 
-    # Create a list of indices of a triangular matrix to distribute
-    # the computation of the matrix uniformly among the available CPUs
-    block_triang_indices = compute_block_triang_indices(nOrbs)
+    if runner.lower() == 'mpi':
+        return runner_mpi(function, nOrbs, ncores)
+    else:
+        # Create a list of indices of a triangular matrix to distribute
+        # the computation of the matrix uniformly among the available cores
+        block_triang_indices = compute_block_triang_indices(nOrbs, ncores)
+        rss = runner_multiprocessing(function, block_triang_indices)
+
+        return np.concatenate(rss)
+
+
+def runner_multiprocessing(
+        function: Callable, indices_chunks: List) -> Matrix:
+    """
+    Compute a multipole matrix using the python multiprocessing module.
+
+    :param function: callable to compute the multipole matrix.
+    :param indices_chunks: List of Matrices/tuples containing the indices
+    compute for each core/worker.
+    :returns: multipole matrix.
+    """
     with Pool() as p:
-        rss = p.map(partial(calculator, molecule, dictCGFs, indices),
-                    block_triang_indices)
+        rss = p.map(function, indices_chunks)
 
-    return np.concatenate(rss)
+    return rss
 
 
-def dipoleContracted(
+def runner_mpi(
+        function: Callable, nOrbs: int, ncores: int=None) -> Matrix:
+    """
+    Compute a multipole matrix using the python using mpi.
+    It spawn a subprocess that calls MPI and store the resulting matrix in a numpy
+    file.
+
+    :param function: callable to compute the multipole matrix.
+    :param nOrbs: number of CGFs for the whole molecule.
+    :returns: multipole matrix.
+    """
+    # Serialize the partial applied function
+    tmp_fun = tempfile.mktemp(prefix='serialized_multipole', suffix='.dill', dir='.')
+    with open(tmp_fun, 'wb') as f:
+        dill.dump(function, f)
+
+    # Run the MPI command
+    tmp_out = tempfile.mktemp(prefix='mpi_multipole_', dir='.')
+    executable = find_executable('call_mpi_multipole.py')
+    cmd = "mpiexec -n {} python {} -f {} -n {} -o {}".format(
+        ncores, executable, tmp_fun, nOrbs, tmp_out)
+    p = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, shell=True)
+    rs = p.communicate()
+    err = rs[1]
+    if err:
+        raise RuntimeError("Submission Errors: {}".format(err))
+        clean([output_filename, tmp_fun])
+    else:
+        output_filename = tmp_out + '.npy'
+        arr = np.load(output_filename)
+        os.remove(output_filename)
+        os.remove(tmp_fun)
+        return arr
+
+
+def multipoleContracted(
         t1: Tuple, t2: Tuple, rc: Tuple, e: int, f: int, g: int):
     """
     Matrix entry calculation between two Contracted Gaussian functions.
@@ -97,7 +154,7 @@ def calcMatrixEntry(
         # Contracted Gauss functions and nuclear coordinates
         ti = atom_i.xyz, cgf_i
         tj = atom_j.xyz, cgf_j
-        result[k] = dipoleContracted(ti, tj, rc, e, f, g)
+        result[k] = multipoleContracted(ti, tj, rc, e, f, g)
 
     return result
 
@@ -212,32 +269,37 @@ def compute_CGFs_indices(mol: List, dictCGFs: Dict) -> Tuple:
     return indices, nOrbs
 
 
-def compute_block_triang_indices(nOrbs: int) -> List:
+def compute_block_triang_indices(nOrbs: int, ncores: int) -> List:
     """
     Create the list of indices of the triangular matrix to be
-    distribute approximately uniform among the available CPUs.
+    distribute approximately uniform among the available cores.
     """
+
     # Indices of the triangular matrix
     indices = np.stack(np.triu_indices(nOrbs), axis=1)
 
     # Number of entries in a triangular matrix
     dim_triang = indices.shape[0]
 
-    # Available CPUs
-    nCPUs = cpu_count()
-
-    # Number of entries to compute for each CPU
-    chunk = dim_triang // nCPUs
+    # Number of entries to compute for each cores
+    chunk = dim_triang // ncores
 
     # Remaining entries
-    rest = dim_triang % nCPUs
+    rest = dim_triang % ncores
 
     xs = []
     acc = 0
-    for i in range(nCPUs):
+    for i in range(ncores):
         b = 1 if i < rest else 0
         upper = acc + chunk + b
         xs.append(indices[acc: upper])
         acc = upper
 
     return xs
+
+
+def clean(xs):
+    """Remove tmp files"""
+    for x in xs:
+        if os.path.exists(x):
+            os.remove(x)
