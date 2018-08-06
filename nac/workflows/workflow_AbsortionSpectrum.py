@@ -264,9 +264,10 @@ def calcOscillatorStrenghts(
 
     # Dipole matrix element in spherical coordinates
     path_dipole_matrices = join(project_name, 'point_{}'.format(i),
-                                'dipole_matrices')
+                                'dipole_matrix')
 
     if search_data_in_hdf5(path_hdf5, path_dipole_matrices):
+        print("HDF5 matrix found")
         mtx_integrals_spher = retrieve_hdf5_data(
             path_hdf5, path_dipole_matrices)
     else:
@@ -310,8 +311,9 @@ def compute_oscillator_strength(
         deltaE = energy_j - energy_i
 
         # compute the oscillator strength and the transition dipole components
-        fij, components = oscillator_strength(
+        fij = oscillator_strength(
             css_i, css_j, deltaE, mtx_integrals_spher)
+        components = compute_projection_component(rc, fij)
 
         st = 'transition {:d} -> {:d} Fij = {:f}\n'.format(
             initialS, finalS, fij)
@@ -379,23 +381,20 @@ def calcDipoleCGFS(
     :param trans_mtx: Transformation matrix to translate from Cartesian
     to Sphericals.
     :type trans_mtx: Numpy Matrix
-    :returns: tuple(<ψi | x | ψj>, <ψi | y | ψj>, <ψi | z | ψj> )
+    :returns: Matrix with entries <ψi | x y z | ψj>
     """
     # x,y,z exponents value for the dipole
-    exponents = [{'e': 1, 'f': 0, 'g': 0}, {'e': 0, 'f': 1, 'g': 0},
-                 {'e': 0, 'f': 0, 'g': 1}]
+    exponents = {'e': 1, 'f': 1, 'g': 1}
 
     dimCart = trans_mtx.shape[1]
-    mtx_integrals_triang = tuple(calcMtxMultipoleP(atoms, dictCGFs, rc, **kw)
-                                 for kw in exponents)
-    mtx_integrals_cart = tuple(triang2mtx(xs, dimCart)
-                               for xs in mtx_integrals_triang)
-    return np.stack(transform2Spherical(trans_mtx, x) for x
-                    in mtx_integrals_cart)
+    mtx_integrals_triang = calcMtxMultipoleP(atoms, dictCGFs, rc, **exponents)
+    mtx_integrals_cart = triang2mtx(mtx_integrals_triang, dimCart)
+
+    return transform2Spherical(trans_mtx, mtx_integrals_cart)
 
 
 def oscillator_strength(css_i: Matrix, css_j: Matrix, energy: float,
-                        mtx_integrals_spher: Tensor3D) -> Tuple:
+                        mtx_integrals_spher: Matrix) -> float:
     """
     Calculate the oscillator strength between two state i and j using a
     molecular geometry in atomic units, a set of contracted gauss functions
@@ -406,18 +405,14 @@ def oscillator_strength(css_i: Matrix, css_j: Matrix, energy: float,
     :param css_i: MO coefficients of initial state
     :param css_j: MO coefficients of final state
     :param energy: energy difference i -> j.
-    :param mtx_integrals_triang: Tensor containing the dipole integrals
+    :param mtx_integrals_triang: matrix containing the dipole integrals
     :returns: Oscillator strength
     """
-    components = tuple(
-        map(lambda mtx: np.dot(css_i, np.dot(mtx, css_j)),
-            mtx_integrals_spher))
+    sum_integrals = np.dot(css_i, np.dot(mtx_integrals_spher, css_j))
 
-    sum_integrals = sum(x ** 2 for x in components)
+    fij = (2 / 3) * energy * (sum_integrals ** 2)
 
-    fij = (2 / 3) * energy * sum_integrals
-
-    return fij, components
+    return fij
 
 
 def compute_center_of_mass(atoms: List) -> Tuple:
@@ -437,6 +432,15 @@ def compute_center_of_mass(atoms: List) -> Tuple:
     cm = xs / total_mass
 
     return tuple(cm)
+
+
+def compute_projection_component(rc: tuple, fij: float) -> Vector:
+    """
+    Compute the oscillator strenght projection in the X, Y and Z components
+    """
+    norma_rc = np.sqrt(np.dot(rc, rc))
+
+    return fij * np.array(rc) / norma_rc
 
 
 def build_transitions(
