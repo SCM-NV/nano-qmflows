@@ -38,11 +38,11 @@ cp2k_guess = dict2Setting({
 
 # Environment data
 basisname = 'DZVP-MOLOPT-SR-GTH'
-path_traj_xyz = 'test/test_files/Cd33Se33_fivePoints.xyz'
+path_traj_xyz = 'test/test_files/Cd.xyz'
 scratch_path = 'scratch'
-path_original_hdf5 = 'test/test_files/Cd33Se33.hdf5'
+path_original_hdf5 = 'test/test_files/Cd.hdf5'
 path_test_hdf5 = join(scratch_path, 'test.hdf5')
-project_name = 'Cd33Se33'
+project_name = 'Cd'
 
 
 @pytest.mark.slow
@@ -96,9 +96,15 @@ def calculate_oscillators():
     # mtx_integrals_triang = calcMtxMultipoleP(mol, dictCGFs)
     data = workflow_oscillator_strength(
         'cp2k', project_name, cp2k_main, guess_args=cp2k_guess,
-        nHOMO=50, couplings_range=(50, 30), initial_states=[50],
+        nHOMO=6, initial_states=list(range(1, 7)),
         energy_range=(0, 5),  # eV
-        final_states=[range(51, 60)], **initial_config)
+        final_states=[range(7, 26)], **initial_config)
+
+    # data = workflow_oscillator_strength(
+    #     'cp2k', project_name, cp2k_main, guess_args=cp2k_guess,
+    #     nHOMO=50, couplings_range=(50, 30), initial_states=[50],
+    #     energy_range=(0, 5),  # eV
+    #     final_states=[range(51, 60)], **initial_config)
 
     return data
 
