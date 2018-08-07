@@ -1,13 +1,11 @@
 from functools import partial
-from itertools import chain
 from nac.common import retrieve_hdf5_data
 from nac.workflows.workflow_coupling import generate_pyxaid_hamiltonians
-from nac.workflows.workflow_AbsortionSpectrum import workflow_oscillator_strength
 from nac.workflows.initialization import initialize
 from os.path import join
 from qmflows.utils import dict2Setting
+from .utilsTest import copy_basis_and_orbitals
 
-import h5py
 import numpy as np
 import pytest
 import os
@@ -132,19 +130,3 @@ def stack_retrieve(path_hdf5, path_prop):
     Retrieve a list of Numpy arrays and create a tensor out of it
     """
     return np.stack(retrieve_hdf5_data(path_hdf5, path_prop))
-
-
-def copy_basis_and_orbitals(source, dest, project_name):
-    """
-    Copy the Orbitals and the basis set from one the HDF5 to another
-    """
-    keys = [project_name, 'cp2k']
-    excluded = ['coupling', 'overlaps', 'swaps']
-    with h5py.File(source, 'r') as f5, h5py.File(dest, 'w') as g5:
-        for k in keys:
-            if k not in g5:
-                g5.create_group(k)
-            for l in f5[k].keys():
-                if not any(x in l for x in excluded):
-                    path = join(k, l)
-                    f5.copy(path, g5[k])

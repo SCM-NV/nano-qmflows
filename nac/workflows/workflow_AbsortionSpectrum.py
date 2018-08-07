@@ -118,7 +118,6 @@ def workflow_oscillator_strength(
                np.stack((energies, energies_nm, extinction_coefficients), axis=1),
                header='Energy[eV] Energy[nm^-1] Extinction_coefficients[M^-1 cm^-1]')
 
-    print("Data: ", data)
     print("Calculation Done")
 
     # Write data in human readable format
@@ -267,7 +266,6 @@ def calcOscillatorStrenghts(
                                 'dipole_matrix')
 
     if search_data_in_hdf5(path_hdf5, path_dipole_matrices):
-        print("HDF5 matrix found")
         mtx_integrals_spher = retrieve_hdf5_data(
             path_hdf5, path_dipole_matrices)
     else:

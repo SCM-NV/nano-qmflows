@@ -1,13 +1,9 @@
-from nac.common import (change_mol_units, retrieve_hdf5_data, triang2mtx)
-from nac.integrals import (calcMtxMultipoleP, calcMtxOverlapP)
-from qmflows.parsers import parse_string_xyz
 from nac.workflows.initialization import initialize
-from nac.workflows.workflow_AbsortionSpectrum import (compute_center_of_mass, workflow_oscillator_strength)
+from nac.workflows.workflow_AbsortionSpectrum import workflow_oscillator_strength
 from os.path import join
 from qmflows.utils import dict2Setting
+from .utilsTest import copy_basis_and_orbitals
 
-import h5py
-import numpy as np
 import pytest
 import os
 import shutil
@@ -59,15 +55,12 @@ def test_couplings_and_oscillators():
         # Run the actual test
         copy_basis_and_orbitals(path_original_hdf5, path_test_hdf5,
                                 project_name)
-        calculate_oscillators()
-        # # Check oscillator
-        # fij = list(*chain(*data[0]))[5]
-        # assert abs(fij - 0.130748) < 1e-6
+        data = calculate_oscillators()
+        print(data)
 
     finally:
         # remove tmp data and clean global config
-        # shutil.rmtree(scratch_path)
-        pass
+        shutil.rmtree(scratch_path)
 
 
 def calculate_oscillators():
@@ -82,52 +75,13 @@ def calculate_oscillators():
         calculate_guesses='first', path_hdf5=path_test_hdf5,
         scratch_path=scratch_path)
 
-    # geometry_0 = initial_config['geometries'][0]
-    # mol = change_mol_units(parse_string_xyz(geometry_0))
-    # dictCGFs = initial_config['dictCGFs']
-    # trans_mtx = retrieve_hdf5_data(
-    #     path_test_hdf5, initial_config['hdf5_trans_mtx'])
-    # dimCart = trans_mtx.shape[1]
-
-    # rc = compute_center_of_mass(mol)
-    # print(rc)
-
-    # mtx_overlap = calcMtxOverlapP(mol, dictCGFs)
-    # mtx_integrals_triang = calcMtxMultipoleP(mol, dictCGFs)
     data = workflow_oscillator_strength(
         'cp2k', project_name, cp2k_main, guess_args=cp2k_guess,
         nHOMO=6, initial_states=list(range(1, 7)),
         energy_range=(0, 5),  # eV
         final_states=[range(7, 26)], **initial_config)
 
-    # data = workflow_oscillator_strength(
-    #     'cp2k', project_name, cp2k_main, guess_args=cp2k_guess,
-    #     nHOMO=50, couplings_range=(50, 30), initial_states=[50],
-    #     energy_range=(0, 5),  # eV
-    #     final_states=[range(51, 60)], **initial_config)
-
     return data
-
-    # np.save('overlap_spheric.npy', mtx_overlap)
-    # np.save('overlap_multipole.npy', mtx_integrals_triang)
-
-    # assert np.allclose(mtx_overlap, mtx_integrals_triang)
-
-
-def copy_basis_and_orbitals(source, dest, project_name):
-    """
-    Copy the Orbitals and the basis set from one the HDF5 to another
-    """
-    keys = [project_name, 'cp2k']
-    excluded = ['coupling', 'dipole_matrix' 'overlaps', 'swaps']
-    with h5py.File(source, 'r') as f5, h5py.File(dest, 'w') as g5:
-        for k in keys:
-            if k not in g5:
-                g5.create_group(k)
-            for l in f5[k].keys():
-                if not any(x in l for x in excluded):
-                    path = join(k, l)
-                    f5.copy(path, g5[k])
 
 
 if __name__ == "__main__":
