@@ -82,25 +82,25 @@ def calculate_oscillators():
         calculate_guesses='first', path_hdf5=path_test_hdf5,
         scratch_path=scratch_path)
 
-    geometry_0 = initial_config['geometries'][0]
-    mol = change_mol_units(parse_string_xyz(geometry_0))
-    dictCGFs = initial_config['dictCGFs']
-    trans_mtx = retrieve_hdf5_data(
-        path_test_hdf5, initial_config['hdf5_trans_mtx'])
-    dimCart = trans_mtx.shape[1]
+    # geometry_0 = initial_config['geometries'][0]
+    # mol = change_mol_units(parse_string_xyz(geometry_0))
+    # dictCGFs = initial_config['dictCGFs']
+    # trans_mtx = retrieve_hdf5_data(
+    #     path_test_hdf5, initial_config['hdf5_trans_mtx'])
+    # dimCart = trans_mtx.shape[1]
 
-    rc = compute_center_of_mass(mol)
-    print(rc)
+    # rc = compute_center_of_mass(mol)
+    # print(rc)
 
     # mtx_overlap = calcMtxOverlapP(mol, dictCGFs)
     # mtx_integrals_triang = calcMtxMultipoleP(mol, dictCGFs)
-    # # data = workflow_oscillator_strength(
-    # #     'cp2k', project_name, cp2k_main, guess_args=cp2k_guess,
-    # #     nHOMO=50, couplings_range=(50, 30), initial_states=[50],
-    # #     energy_range=(0, 5),  # eV
-    # #     final_states=[range(51, 60)], **initial_config)
+    data = workflow_oscillator_strength(
+        'cp2k', project_name, cp2k_main, guess_args=cp2k_guess,
+        nHOMO=50, couplings_range=(50, 30), initial_states=[50],
+        energy_range=(0, 5),  # eV
+        final_states=[range(51, 60)], **initial_config)
 
-    # # return data
+    return data
 
     # np.save('overlap_spheric.npy', mtx_overlap)
     # np.save('overlap_multipole.npy', mtx_integrals_triang)
