@@ -60,21 +60,18 @@ def test_couplings_and_oscillators():
         # Run the actual test
         copy_basis_and_orbitals(path_original_hdf5, path_test_hdf5,
                                 project_name)
-        data = calculate_couplings_and_oscillators()
+        calculate_couplings()
         # Check couplings
         check_properties()
-        # Check oscillator
-        fij = list(*chain(*data[0]))[5]
-        assert abs(fij - 0.130748) < 1e-6
 
     finally:
         # remove tmp data and clean global config
         shutil.rmtree(scratch_path)
 
 
-def calculate_couplings_and_oscillators():
+def calculate_couplings():
     """
-    Compute a couple of couplings with the Levine algorithm
+    Compute some of couplings with the Levine algorithm
     using precalculated MOs.
     """
     initial_config = initialize(
@@ -88,14 +85,6 @@ def calculate_couplings_and_oscillators():
         'cp2k', project_name, cp2k_main,
         guess_args=cp2k_guess, nHOMO=50,
         couplings_range=(50, 30), **initial_config)
-
-    data = workflow_oscillator_strength(
-        'cp2k', project_name, cp2k_main, guess_args=cp2k_guess,
-        nHOMO=50, couplings_range=(50, 30), initial_states=[50],
-        energy_range=(0, 5),  # eV
-        final_states=[[52]], **initial_config)
-
-    return data
 
 
 def check_properties():
