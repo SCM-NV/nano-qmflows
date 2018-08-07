@@ -41,8 +41,7 @@ path_test_hdf5 = join(scratch_path, 'test.hdf5')
 project_name = 'Cd'
 
 
-@pytest.mark.slow
-def test_couplings_and_oscillators():
+def test_oscillators():
     """
     Test couplings and oscillator strength for Cd33Se33
     """
@@ -85,4 +84,4 @@ def calculate_oscillators():
 
 
 if __name__ == "__main__":
-    test_couplings_and_oscillators()
+    test_oscillators()
