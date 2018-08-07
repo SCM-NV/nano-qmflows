@@ -1,10 +1,11 @@
+from nac.common import retrieve_hdf5_data
 from nac.workflows.initialization import initialize
 from nac.workflows.workflow_AbsortionSpectrum import workflow_oscillator_strength
 from os.path import join
 from qmflows.utils import dict2Setting
 from .utilsTest import copy_basis_and_orbitals
 
-import pytest
+import numpy as np
 import os
 import shutil
 
@@ -54,8 +55,14 @@ def test_oscillators():
         # Run the actual test
         copy_basis_and_orbitals(path_original_hdf5, path_test_hdf5,
                                 project_name)
-        data = calculate_oscillators()
-        print(data)
+        calculate_oscillators()
+        dipole_matrices = retrieve_hdf5_data(
+            path_test_hdf5, 'Cd/point_0/dipole_matrix')
+
+        # The diagonals of each component of the matrix must be zero
+        # for a single atom
+        diagonals = np.sum([np.diag(dipole_matrices[n]) for n in range(3)])
+        assert abs(diagonals) < 1e-16
 
     finally:
         # remove tmp data and clean global config
@@ -74,13 +81,11 @@ def calculate_oscillators():
         calculate_guesses='first', path_hdf5=path_test_hdf5,
         scratch_path=scratch_path)
 
-    data = workflow_oscillator_strength(
+    workflow_oscillator_strength(
         'cp2k', project_name, cp2k_main, guess_args=cp2k_guess,
         nHOMO=6, initial_states=list(range(1, 7)),
         energy_range=(0, 5),  # eV
         final_states=[range(7, 26)], **initial_config)
-
-    return data
 
 
 if __name__ == "__main__":
