@@ -11,6 +11,14 @@ import dill
 import numpy as np
 import os
 import tempfile
+import warnings
+
+try:
+    from dask.distributed import Client
+except ImportError:
+    msg = """The dask.distributed libraries must be installed if you want to use dask
+    to distribute the computation"""
+    warnings.warn(msg)
 
 
 def general_multipole_matrix(
@@ -36,7 +44,9 @@ def general_multipole_matrix(
     function = partial(calculator, molecule, dictCGFs, indices)
     ncores = ncores if ncores is not None else cpu_count()
 
-    if runner.lower() == 'mpi':
+    if runner.lower() == 'dask':
+        return runner_dask(function, nOrbs)
+    elif runner.lower() == 'mpi':
         return runner_mpi(function, nOrbs, ncores)
     else:
         # Create a list of indices of a triangular matrix to distribute
@@ -45,6 +55,24 @@ def general_multipole_matrix(
         rss = runner_multiprocessing(function, block_triang_indices)
 
         return np.concatenate(rss)
+
+
+def runner_dask(
+        function: Callable, nOrbs: int, ncores: int=None) -> Matrix:
+    """
+    Use the Dask library to distribute the computation of the integrals.
+
+    :param function: callable to compute the multipole matrix.
+    """
+    # setup cluster
+    client = Client()
+    client.cluster
+    ncores = len(client.ncores())
+
+    block_triang_indices = compute_block_triang_indices(nOrbs, ncores)
+    matrix = client.map(function, block_triang_indices)
+
+    return np.array(client.gather(matrix))
 
 
 def runner_multiprocessing(

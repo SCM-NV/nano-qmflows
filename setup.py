@@ -39,7 +39,8 @@ setup(
     include_dirs=[np.get_include()],
     extras_require={
         'test': ['coverage', 'pytest', 'pytest-cov'],
-        'mpi': ['dill', 'mpi4py']},
+        'mpi': ['dill', 'mpi4py'],
+        'dask': ['dask.distributed']},
     scripts=[
         'scripts/mpi/call_mpi_multipole.py',
         'scripts/hamiltonians/plot_mos_energies.py',
