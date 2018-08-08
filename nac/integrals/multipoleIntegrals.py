@@ -4,7 +4,7 @@ from functools import partial
 from multiprocessing import (cpu_count, Pool)
 from nac.common import (Matrix, Vector)
 
-from multipoleObaraSaika import sab_efg  # compiled with cython
+from multipoleObaraSaika import sab_multipole  # compiled with cython
 from subprocess import (PIPE, Popen)
 from typing import (Callable, Dict, List, Tuple)
 import dill
@@ -117,12 +117,12 @@ def multipoleContracted(
     gs1 = build_primitives_gaussian(t1)
     gs2 = build_primitives_gaussian(t2)
 
-    return sum(sab_efg(g1, g2, rc, e, f, g) for g1 in gs1 for g2 in gs2)
+    return sum(sab_multipole(g1, g2, rc, e, f, g) for g1 in gs1 for g2 in gs2)
 
 
 def calcMatrixEntry(
         rc: Tuple, e: int, f: int, g: int, molecule: List, dictCGFs: Dict,
-        indices_cgfs: Matrix, indices_triang: Matrix) -> Vector:
+        indices_cgfs: Matrix, indices_triang: Matrix) -> float:
     """
     Computed each matrix element using an index a tuple containing the
     cartesian coordinates and the primitives gauss functions.
@@ -134,7 +134,7 @@ def calcMatrixEntry(
     :type xyz_cgfs: [(xyz, (Coeff, Expo))]
     :param ixs: Index of the matrix entry to calculate.
     :type ixs: (Int, Int)
-    :returns: float
+    :returns: matrix entry
     """
     # Number of total orbitals
     result = np.empty(indices_triang.shape[0])
@@ -154,7 +154,8 @@ def calcMatrixEntry(
         # Contracted Gauss functions and nuclear coordinates
         ti = atom_i.xyz, cgf_i
         tj = atom_j.xyz, cgf_j
-        result[k] = multipoleContracted(ti, tj, rc, e, f, g)
+        xs = multipoleContracted(ti, tj, rc, e, f, g)
+        result[k] = xs
 
     return result
 

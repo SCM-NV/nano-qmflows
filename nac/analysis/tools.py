@@ -61,8 +61,8 @@ def dephasing(f, dt):
     gaussian of the type : exp(-0.5 * (-x / tau) ** 2)
     """
     ts = np.arange(f.shape[0]) * dt
-    cumu_ii = np.stack(np.sum(f[0:i]) for i in range(ts.size)) / hbar
-    cumu_i = np.stack(np.sum(cumu_ii[0:i]) for i in range(ts.size)) / hbar
+    cumu_ii = np.stack(np.sum(f[0:i]) for i in range(ts.size)) * dt / hbar
+    cumu_i = np.stack(np.sum(cumu_ii[0:i]) for i in range(ts.size)) * dt / hbar
     deph = np.exp(-cumu_i)
     np.seterr(over='ignore')
     popt = curve_fit(gauss_function, ts, deph)[0]
@@ -78,7 +78,7 @@ def spectral_density(f, dt):
     In the case of a FFT of a normalized autocorrelation function,
     this corresponds to a spectral density
     """
-    f_fft = abs(1 / np.sqrt(2 * np.pi) * np.fft.fft(f, 100000)) ** 2
+    f_fft = abs(1 / np.sqrt(2 * np.pi) * np.fft.fft(f, 100000) * dt ) ** 2
     # Fourier Transform of the time axis
     freq = np.fft.fftfreq(len(f_fft), dt)
     # Conversion of the x axis (given in cycles/fs) to cm-1
