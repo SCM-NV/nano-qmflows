@@ -64,7 +64,8 @@ def test_couplings_and_oscillators():
 
     finally:
         # remove tmp data and clean global config
-        shutil.rmtree(scratch_path)
+        # shutil.rmtree(scratch_path)
+        pass
 
 
 def calculate_couplings():
