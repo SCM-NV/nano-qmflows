@@ -79,11 +79,11 @@ def calculate_couplings():
         calculate_guesses='first', path_hdf5=path_test_hdf5,
         scratch_path=scratch_path)
 
-    print(initial_config['dictCGFs'])
-    # generate_pyxaid_hamiltonians(
-    #     'cp2k', project_name, cp2k_main,
-    #     guess_args=cp2k_guess, nHOMO=50,
-    #     couplings_range=(50, 30), **initial_config)
+    # print(initial_config['dictCGFs'])
+    generate_pyxaid_hamiltonians(
+        'cp2k', project_name, cp2k_main,
+        guess_args=cp2k_guess, nHOMO=50,
+        couplings_range=(50, 30), **initial_config)
 
 
 def check_properties():
