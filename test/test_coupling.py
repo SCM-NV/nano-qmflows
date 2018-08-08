@@ -1,13 +1,11 @@
 from functools import partial
-from itertools import chain
 from nac.common import retrieve_hdf5_data
 from nac.workflows.workflow_coupling import generate_pyxaid_hamiltonians
-from nac.workflows.workflow_AbsortionSpectrum import workflow_oscillator_strength
 from nac.workflows.initialization import initialize
 from os.path import join
 from qmflows.utils import dict2Setting
+from .utilsTest import copy_basis_and_orbitals
 
-import h5py
 import numpy as np
 import pytest
 import os
@@ -60,21 +58,18 @@ def test_couplings_and_oscillators():
         # Run the actual test
         copy_basis_and_orbitals(path_original_hdf5, path_test_hdf5,
                                 project_name)
-        data = calculate_couplings_and_oscillators()
+        calculate_couplings()
         # Check couplings
         check_properties()
-        # Check oscillator
-        fij = list(*chain(*data[0]))[5]
-        assert abs(fij - 0.130748) < 1e-6
 
     finally:
         # remove tmp data and clean global config
         shutil.rmtree(scratch_path)
 
 
-def calculate_couplings_and_oscillators():
+def calculate_couplings():
     """
-    Compute a couple of couplings with the Levine algorithm
+    Compute some of couplings with the Levine algorithm
     using precalculated MOs.
     """
     initial_config = initialize(
@@ -84,18 +79,11 @@ def calculate_couplings_and_oscillators():
         calculate_guesses='first', path_hdf5=path_test_hdf5,
         scratch_path=scratch_path)
 
-    generate_pyxaid_hamiltonians(
-        'cp2k', project_name, cp2k_main,
-        guess_args=cp2k_guess, nHOMO=50,
-        couplings_range=(50, 30), **initial_config)
-
-    data = workflow_oscillator_strength(
-        'cp2k', project_name, cp2k_main, guess_args=cp2k_guess,
-        nHOMO=50, couplings_range=(50, 30), initial_states=[50],
-        energy_range=(0, 5),  # eV
-        final_states=[[52]], **initial_config)
-
-    return data
+    print(initial_config['dictCGFs'])
+    # generate_pyxaid_hamiltonians(
+    #     'cp2k', project_name, cp2k_main,
+    #     guess_args=cp2k_guess, nHOMO=50,
+    #     couplings_range=(50, 30), **initial_config)
 
 
 def check_properties():
@@ -143,19 +131,3 @@ def stack_retrieve(path_hdf5, path_prop):
     Retrieve a list of Numpy arrays and create a tensor out of it
     """
     return np.stack(retrieve_hdf5_data(path_hdf5, path_prop))
-
-
-def copy_basis_and_orbitals(source, dest, project_name):
-    """
-    Copy the Orbitals and the basis set from one the HDF5 to another
-    """
-    keys = [project_name, 'cp2k']
-    excluded = ['coupling', 'overlaps', 'swaps']
-    with h5py.File(source, 'r') as f5, h5py.File(dest, 'w') as g5:
-        for k in keys:
-            if k not in g5:
-                g5.create_group(k)
-            for l in f5[k].keys():
-                if not any(x in l for x in excluded):
-                    path = join(k, l)
-                    f5.copy(path, g5[k])

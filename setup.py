@@ -33,7 +33,9 @@ setup(
             "https://github.com/SCM-NV/qmflows/tarball/master#egg=qmflows"],
     cmdclass={'build_ext': build_ext},
     ext_modules=[Extension(
-        'multipoleObaraSaika', ['nac/integrals/multipoleObaraSaika.pyx'])],
+        'multipoleObaraSaika', ['nac/integrals/multipoleObaraSaika.pyx'],
+        extra_compile_args=['-fopenmp'],
+        extra_link_args=['-fopenmp'])],
     include_dirs=[np.get_include()],
     extras_require={
         'test': ['coverage', 'pytest', 'pytest-cov'],
