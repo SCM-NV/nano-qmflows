@@ -57,7 +57,7 @@ def test_oscillators():
                                 project_name)
         calculate_oscillators()
         dipole_matrices = retrieve_hdf5_data(
-            path_test_hdf5, 'Cd/point_0/dipole_matrix')
+            path_test_hdf5, 'Cd/point_0/dipole_matrices')
 
         # The diagonals of each component of the matrix must be zero
         # for a single atom

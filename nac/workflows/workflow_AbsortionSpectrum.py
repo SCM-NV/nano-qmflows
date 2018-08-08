@@ -263,7 +263,7 @@ def calcOscillatorStrenghts(
 
     # Dipole matrix element in spherical coordinates
     path_dipole_matrices = join(project_name, 'point_{}'.format(i),
-                                'dipole_matrix')
+                                'dipole_matrices')
 
     if search_data_in_hdf5(path_hdf5, path_dipole_matrices):
         mtx_integrals_spher = retrieve_hdf5_data(
