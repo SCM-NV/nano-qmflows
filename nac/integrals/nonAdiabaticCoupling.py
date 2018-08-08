@@ -4,8 +4,7 @@ __all__ = ['calculate_couplings_3points', 'calculate_couplings_levine',
 # ================> Python Standard  and third-party <==========
 from functools import partial
 from nac.common import (Matrix, Vector, Tensor3D, retrieve_hdf5_data)
-from nac.integrals.multipoleIntegrals import (
-    compute_CGFs_indices, compute_block_triang_indices)
+from nac.integrals.multipoleIntegrals import compute_CGFs_indices
 from nac.integrals.overlapIntegral import sijContracted
 from scipy import sparse
 from typing import Dict, List, Tuple
