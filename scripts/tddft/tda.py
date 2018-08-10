@@ -139,6 +139,37 @@ d_z = np.hstack(np.trace(np.linalg.multi_dot([pre_factor[i, :, :], cis_new[:, :,
 
 f = 2 / 3 * omega * (d_x **2 + d_y ** 2 + d_z ** 2)
 
+# Write to output 
+
+# Retrieve some useful information from data
+weight = np.hstack(np.max(cis[:, i] ** 2) for i in range(nocc*nvirt)) # weight of the most important transition for an excited state
+index_weight = np.hstack(np.where( cis[:, i] ** 2 == np.max(cis[:, i] ** 2) ) for i in range(nocc*nvirt)).reshape(nocc*nvirt) # Find the index of this transition
+index_i = np.stack(excs[index_weight[i]][0] for i in range(nocc*nvirt)) # Index of the hole
+index_a = np.stack(excs[index_weight[i]][1] for i in range(nocc*nvirt))
+e_orb_i = e[index_i] * 27.211 # These are the energies of the hole for the transition with the larger weight
+e_orb_a = e[index_a] * 27.211  # These are the energies of the electron for the transition with the larger weight
+e_singorb = (e_orb_a - e_orb_i )  # This is the energy for the transition with the larger weight 
+
+output = np.empty((nocc*nvirt, 12))
+output[:, 0] = 0 # State number: we update it after reorder
+output[:, 1] = omega * 27.211 # State energy in eV
+output[:, 2] = f # Oscillator strength
+output[:, 3] = d_x # Transition dipole moment in the x direction
+output[:, 4] = d_y # Transition dipole moment in the y direction
+output[:, 5] = d_z # Transition dipole moment in the z direction
+output[:, 6] = weight # Weight of the most important excitation
+output[:, 7] = index_i # Index of the hole for the most important excitation
+output[:, 8] = e_orb_i # hole energy
+output[:, 9] = index_a 
+output[:, 10] = e_orb_a
+output[:, 11] = e_singorb 
+
+output = output[output[:, 1].argsort()] # Reorder the output in ascending order of energy 
+output[:, 0] = np.arange(nocc * nvirt) # Give a state number in the correct order
+
+np.savetxt('output.txt', output, fmt='%5d %10.3f %10.5f %10.5f %10.5f %10.5f %10.5f %3d %10.3f %3d %10.3f %10.3f')
+
+
 
 
 def get_numberofatoms(fn): 
