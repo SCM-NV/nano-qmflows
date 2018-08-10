@@ -4,7 +4,7 @@ from qmflows.parsers.xyzParser import readXYZ
 from nac.common import change_mol_units
 
 import numpy as np 
-import suprocess 
+import subprocess 
 from scipy.linalg import sqrtm
 
 def hardness(s: str):
@@ -26,7 +26,7 @@ def hardness(s: str):
     return d[s]
 
 def n_sph(s: str):
-    d = {'cd': 25, 'se': 14}
+    d = {'cd': 25, 'se': 13}
     return d[s] 
 
 # Some basic input variables
@@ -34,23 +34,28 @@ project_name = 'Cd33Se33_QD'
 path_hdf5 = 'Cd33Se33.hdf5' 
 basisname='DZVP-MOLOPT-SR-GTH'
 path_overlap = 'overlap_Cd33Se33_cp2k.npy'
+path_tdm = 'tdm_Cd33Se33_cp2k.npy'
 mol_file = 'Cd33Se33.xyz'
 
 # Some basic input variable for the sTDA calculations
-ax = 0.25 # For PBE0 . It changes depending on the functional. A dictionary should be written to store these values. 
+ax = 0.0 # For PBE0 . It changes depending on the functional. A dictionary should be written to store these values. 
 alpha1 = 1.42 # These values are fitted by Grimme (2013)   
 alpha2 = 0.48 # These values are fitted by Grimme (2013)
 beta1 = 0.2 # These values are fitted by Grimme (2013)
 beta2 = 1.83 # These values are fitted by Grimme (2013)
+
 
 # Loading main stuff
 f5 = h5py.File(path_hdf5, 'r') # Open the hdf5 file with MOs and energy values 
 c_ao = f5['{}/point_0/cp2k/mo/coefficients'.format(project_name)].value # Read MOs coefficients in AO basis. Matrix size: NAO x NMO 
 e = f5['{}/point_0/cp2k/mo/eigenvalues'.format(project_name)].value
 s = np.load(path_overlap) # Load Overlap matrix in AO basis 
+tdm = np.load(path_tdm) # Load transition dipole moment matrix in AO basis 
 #mol = change_mol_units(readXYZ(mol_file)) # Load molecule in Angstroms and convert it in atomic units
 n_atoms, n_frames = get_numberofatoms(mol_file) 
 atoms = read_atomlist(mol_file, n_atoms)
+nocc = 50 # Number of occupied orbitals
+nvirt = c_ao.shape[1] - nocc # Number of virtual orbitals 
 
 # Create a dictionary to assign the number of spherical functions for each atom. We will need it later in several places.  
 #dictCGFs = create_dict_CGFs(path_hdf5, basisname, mol)
@@ -61,32 +66,69 @@ atoms = read_atomlist(mol_file, n_atoms)
 # First transform the c_ao in MO basis
 sqrt_s = sqrtm(s)
 c_mo = np.dot(sqrt_s, c_ao)
-
 q = np.zeros((n_atoms, c_mo.shape[1], c_mo.shape[1])) # Size of the transition density tensor : n_atoms x n_mos x n_mos 
-index = 0 
 
+index = 0 
 for i in range(n_atoms):
     q[i, :, :] = np.dot(c_mo[index:(index + n_sph(np.asscalar(atoms[i]))), :].T, c_mo[index:(index + n_sph(np.asscalar(atoms[i]))), :])
-    index += n_sph(mol[i].symbol)
-
-coords = read_xyz_coordinates(fn, n_atoms, 1)
-r_ab = make_bond_matrix_f(coords, n_atoms)
+    index += n_sph(np.asscalar(atoms[i]))
 
 # Compute the Mataga-Nishimoto-Ohno_Klopman damped Columb and Excgange law functions 
+coords = read_xyz_coordinates(mol_file, n_atoms, 1)
+coords = coords * 1.8897259886 # Conversion from Angstroms to atomic units
+r_ab = make_bond_matrix(n_atoms, coords)
+
 beta = beta1 + ax * beta2
 alpha = alpha1 + ax * alpha2 
-gamma_J = np.empty((n_atoms, n_atoms))
-gamma_K = np.empty((n_atoms, n_atoms))
+gamma_J = np.zeros((n_atoms, n_atoms))
+gamma_K = np.zeros((n_atoms, n_atoms))
 
 for b in range(n_atoms):
     for a in range(n_atoms):
-        gamma_J[a, b] = np.power( 1 / ( np.power(r_ab[a, b], beta) + np.power((ax * hardness(np.asscalar(atoms[a])) * hardness(np.asscalar(atoms[b])) / 2), -beta)), 1/beta)
+        if ax == 0 and a != b:
+             gamma_J[a, b] = 1 / r_ab[a, b]
+        else:
+             gamma_J[a, b] = np.power( 1 / ( np.power(r_ab[a, b], beta) + np.power((ax * hardness(np.asscalar(atoms[a])) * hardness(np.asscalar(atoms[b])) / 2), -beta)), 1/beta)
         gamma_K[a, b] = np.power( 1 / ( np.power(r_ab[a, b], alpha) + np.power(hardness(np.asscalar(atoms[a])) * hardness(np.asscalar(atoms[b])) / 2, -alpha)), 1/alpha)
 
-# Compute the integrals
+# Compute the Couloumb and Exchange integrals
+pqrs_J = np.tensordot(q, np.tensordot(q, gamma_J, axes=(0, 1)), axes=(0, 2))
+pqrs_K = np.tensordot(q, np.tensordot(q, gamma_K, axes=(0, 1)), axes=(0, 2))
 
-pqrs_J = np.tensordot(q.T, np.tensordot(gamma_J, q, axes =1), axes=1)
-pqrs_K = np.tensordot(q.T, np.tensordot(gamma_K, q, axes =1), axes=1)
+# Construct the Tamm-Dancoff matrix A for each pair of i->a transition
+# First step is to build the single excited Slater determinanes from one-electron orbitals  
+excs = []
+for i in range(nocc):
+    for a in range(nocc, nvirt+nocc):
+        excs.append((i,a))
+
+# Now fill the A matrix 
+a_mat = np.zeros((nocc*nvirt, nocc*nvirt))
+e_mat = np.zeros((nocc*nvirt, nocc*nvirt))
+
+for I in range(len(excs)):
+    for J in range(len(excs)):
+        a_mat[I, J] = 2 * pqrs_K[excs[I][0], excs[I][1], excs[J][0], excs[J][1]] 
+                      - ax * pqrs_J[excs[I][0], excs[J][0], excs[I][1], excs[J][0]]
+        if excs[I][0] == excs[J][0] and excs[I][1] == excs[J][1]:
+            a_mat[I, J] += e[excs[I][1]] - e[excs[I][0]]
+            e_mat[I, J] = e[excs[I][1]] - e[excs[I][0]]
+
+# Solve the eigenvalue problem = A * cis = omega * cis 
+omega, cis = np.linalg.eig(a_mat)
+
+# Compute transition dipole moments
+pre_factor = np.empty(nocc*nvirt)
+e_vec = np.diag(e_mat)
+
+pre_factor = np.hstack(np.sqrt(2 * e_vec/omega[i]) for i in range(nocc*nvirt)).reshape(nocc*nvirt, nocc, nvirt)
+cis_new = cis.reshape(nocc, nvirt, nocc*nvirt)
+tdmatrix_x = np.linalg.multi_dot([c_ao[:, :nocc].T, tdm[0, :, :], c_ao[:, nocc:]]
+tdmatrix_y = np.linalg.multi_dot([c_ao[:, :nocc].T, tdm[1, :, :], c_ao[:, nocc:]]
+tdmatrix_z = np.linalg.multi_dot([c_ao[:, :nocc].T, tdm[2, :, :], c_ao[:, nocc:]]
+
+
+
 
 def get_numberofatoms(fn): 
     # Retrieve number of lines in trajectory file
@@ -101,7 +143,6 @@ def get_numberofatoms(fn):
 
     # Get the number of frames in the trajectory file
     n_frames = int(int(n_lines)/(n_atoms+2))
-    
     return n_atoms, n_frames 
 
 def read_atomlist(fn, n_atoms):
@@ -115,9 +156,21 @@ def read_xyz_coordinates(fn, n_atoms, iframe):
     # Read xyz coordinate from a (trajectory) xyz file. 
     coords = pd.read_csv(fn, nrows = n_atoms, delim_whitespace=True, header=None, 
              skiprows = (2 + (n_atoms + 2) * (iframe - 1)), usecols=(1,2,3)).astype(float).values
-    
     return coords  
 
+def make_bond_matrix(n_atoms, coords):
+    #Build a tensor made (n_atoms, axes, n_atoms), where axes = x-x0, y-y0, z-z0
+    dist = np.stack(
+            np.stack(
+                    (coords[i_atm, i_ax] - coords[:, i_ax]) ** 2 for i_ax in range(coords.shape[1])
+                    )
+            for i_atm in range(n_atoms)
+            )
+    # Builds the bond distance matrix between atoms 
+    r = np.stack(
+            np.sqrt(np.sum(dist[i_atm, :, :], axis=0)) for i_atm in range(n_atoms)
+            )
+    return r
 
 
 
