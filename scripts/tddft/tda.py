@@ -6,6 +6,8 @@ from nac.common import change_mol_units
 import numpy as np 
 import subprocess 
 from scipy.linalg import sqrtm
+from scipy.spatial.distance import cdist
+
 
 def hardness(s: str):
     d = {'h': 6.4299, 'he': 12.5449, 'li': 2.3746, 'be': 3.4968, 'b': 4.619, 'c': 5.7410, 'n': 6.6824, 'o': 7.9854,
@@ -70,26 +72,22 @@ q = np.zeros((n_atoms, c_mo.shape[1], c_mo.shape[1])) # Size of the transition d
 
 index = 0 
 for i in range(n_atoms):
-    q[i, :, :] = np.dot(c_mo[index:(index + n_sph(np.asscalar(atoms[i]))), :].T, c_mo[index:(index + n_sph(np.asscalar(atoms[i]))), :])
-    index += n_sph(np.asscalar(atoms[i]))
+    q[i, :, :] = np.dot(c_mo[index:(index + n_sph(atoms[i])), :].T, c_mo[index:(index + n_sph(atoms[i])), :])
+    index += n_sph(atoms[i])
 
 # Compute the Mataga-Nishimoto-Ohno_Klopman damped Columb and Excgange law functions 
 coords = read_xyz_coordinates(mol_file, n_atoms, 1)
 coords = coords * 1.8897259886 # Conversion from Angstroms to atomic units
-r_ab = make_bond_matrix(n_atoms, coords)
+r_ab = cdist(coords, coords) # Distance matrix between atoms A and B 
+hardness_vec = np.stack(hardness(atoms[i]) for i in range(n_atoms)).reshape(n_atoms, 1)
+hard = np.dot(hardness_vec, hardness_vec.T) / 2 
 
 beta = beta1 + ax * beta2
 alpha = alpha1 + ax * alpha2 
-gamma_J = np.zeros((n_atoms, n_atoms))
-gamma_K = np.zeros((n_atoms, n_atoms))
 
-for b in range(n_atoms):
-    for a in range(n_atoms):
-        if ax == 0 and a != b:
-             gamma_J[a, b] = 1 / r_ab[a, b]
-        else:
-             gamma_J[a, b] = np.power( 1 / ( np.power(r_ab[a, b], beta) + np.power((ax * hardness(np.asscalar(atoms[a])) * hardness(np.asscalar(atoms[b])) / 2), -beta)), 1/beta)
-        gamma_K[a, b] = np.power( 1 / ( np.power(r_ab[a, b], alpha) + np.power(hardness(np.asscalar(atoms[a])) * hardness(np.asscalar(atoms[b])) / 2, -alpha)), 1/alpha)
+gamma_J = np.power(1 / (np.power(r_ab, beta) + ax * np.power(hard, -beta)), 1/beta)
+gamma_J[gamma_J == np.inf] = 0 # When ax = 0 , you can get infinite values on the diagonal. Just turn them off to 0. 
+gamma_K = np.power(1 / (np.power(r_ab, alpha) + np.power(hard, -alpha)), 1/alpha)
 
 # Compute the Couloumb and Exchange integrals
 pqrs_J = np.tensordot(q, np.tensordot(q, gamma_J, axes=(0, 1)), axes=(0, 2))
@@ -103,30 +101,43 @@ for i in range(nocc):
         excs.append((i,a))
 
 # Now fill the A matrix 
-a_mat = np.zeros((nocc*nvirt, nocc*nvirt))
-e_mat = np.zeros((nocc*nvirt, nocc*nvirt))
+k_iajb = 2 * pqrs_K[:nocc, nocc:, :nocc, nocc:].reshape(nocc*nvirt, nocc*nvirt) # This is the exchange integral entering the A matrix. It is in the format (nocc, nvirt, nocc, nvirt)
+k_ijab = ax * pqrs_J[:nocc, :nocc, nocc:, nocc:] # This is the Coulomb integral entering in the A matrix. It is in the format: (nocc, nocc, nvirt, nvirt)
+k_ijab = np.swapaxes(pqrs_J_tmp, axis1=1, axis2=2).reshape(nocc*nvirt, nocc*nvirt) # To get the correct order in the A matrix, i.e. (nocc, nvirt, nocc, nvirt), we have to swap axes 
 
-for I in range(len(excs)):
-    for J in range(len(excs)):
-        a_mat[I, J] = 2 * pqrs_K[excs[I][0], excs[I][1], excs[J][0], excs[J][1]] 
-                      - ax * pqrs_J[excs[I][0], excs[J][0], excs[I][1], excs[J][0]]
-        if excs[I][0] == excs[J][0] and excs[I][1] == excs[J][1]:
-            a_mat[I, J] += e[excs[I][1]] - e[excs[I][0]]
-            e_mat[I, J] = e[excs[I][1]] - e[excs[I][0]]
+a_mat = k_iajb - k_ijab # They are in the m x m format where m is the number of excitations = nocc * nvirt  
+
+e_diff = -np.subtract(e[:nocc].reshape(nocc,1) , e[nocc:].reshape(nvirt, 1).T).reshape(nocc*nvirt) # Generate a vector with all possible ea - ei energy differences 
+np.fill_diagonal(a_mat, np.diag(a_mat) + e_diff)
+
+#a_mat = np.zeros((nocc*nvirt, nocc*nvirt))
+#e_mat = np.zeros((nocc*nvirt, nocc*nvirt))
+#for I in range(len(excs)):
+#    for J in range(len(excs)):
+#        a_mat[I, J] = 2 * pqrs_K[excs[I][0], excs[I][1], excs[J][0], excs[J][1]] - ax * pqrs_J[excs[I][0], excs[J][0], excs[I][1], excs[J][1]]
+#        if excs[I][0] == excs[J][0] and excs[I][1] == excs[J][1]:
+#            a_mat[I, J] += e[excs[I][1]] - e[excs[I][0]]
+#            e_mat[I, J] = e[excs[I][1]] - e[excs[I][0]]
+
 
 # Solve the eigenvalue problem = A * cis = omega * cis 
 omega, cis = np.linalg.eig(a_mat)
 
 # Compute transition dipole moments
-pre_factor = np.empty(nocc*nvirt)
-e_vec = np.diag(e_mat)
+#pre_factor = np.empty(nocc*nvirt)
+#pre_factor = np.hstack(np.sqrt(2 * e_diff/omega[i]) for i in range(nocc*nvirt)).reshape(nocc*nvirt, nocc, nvirt)
 
-pre_factor = np.hstack(np.sqrt(2 * e_vec/omega[i]) for i in range(nocc*nvirt)).reshape(nocc*nvirt, nocc, nvirt)
+pre_factor = np.sqrt( 2 * np.divide(e_diff.reshape(nocc*nvirt, 1), omega.reshape(1, nocc*nvirt))).T.reshape(nocc*nvirt, nocc, nvirt)
 cis_new = cis.reshape(nocc, nvirt, nocc*nvirt)
-tdmatrix_x = np.linalg.multi_dot([c_ao[:, :nocc].T, tdm[0, :, :], c_ao[:, nocc:]]
-tdmatrix_y = np.linalg.multi_dot([c_ao[:, :nocc].T, tdm[1, :, :], c_ao[:, nocc:]]
-tdmatrix_z = np.linalg.multi_dot([c_ao[:, :nocc].T, tdm[2, :, :], c_ao[:, nocc:]]
+tdmatrix_x = np.linalg.multi_dot([c_ao[:, :nocc].T, tdm[0, :, :], c_ao[:, nocc:]])
+tdmatrix_y = np.linalg.multi_dot([c_ao[:, :nocc].T, tdm[1, :, :], c_ao[:, nocc:]])
+tdmatrix_z = np.linalg.multi_dot([c_ao[:, :nocc].T, tdm[2, :, :], c_ao[:, nocc:]])
 
+d_x = np.hstack(np.trace(np.linalg.multi_dot([pre_factor[i, :, :], cis_new[:, :, i].T, tdmatrix_x])) for i in range(nocc*nvirt))
+d_y = np.hstack(np.trace(np.linalg.multi_dot([pre_factor[i, :, :], cis_new[:, :, i].T, tdmatrix_y])) for i in range(nocc*nvirt))
+d_z = np.hstack(np.trace(np.linalg.multi_dot([pre_factor[i, :, :], cis_new[:, :, i].T, tdmatrix_z])) for i in range(nocc*nvirt))
+
+f = 2 / 3 * omega * (d_x **2 + d_y ** 2 + d_z ** 2)
 
 
 
@@ -148,8 +159,8 @@ def get_numberofatoms(fn):
 def read_atomlist(fn, n_atoms):
     # Read atomic list from xyz file
     atoms = pd.read_csv(fn, nrows = n_atoms, delim_whitespace=True, header=None, 
-                        skiprows = 2, usecols=[0]).astype(str).values
-    return atoms     
+                        skiprows = 2, usecols=[0]).astype(str)
+    return atoms[0][:]      
 
 
 def read_xyz_coordinates(fn, n_atoms, iframe): 
@@ -157,23 +168,5 @@ def read_xyz_coordinates(fn, n_atoms, iframe):
     coords = pd.read_csv(fn, nrows = n_atoms, delim_whitespace=True, header=None, 
              skiprows = (2 + (n_atoms + 2) * (iframe - 1)), usecols=(1,2,3)).astype(float).values
     return coords  
-
-def make_bond_matrix(n_atoms, coords):
-    #Build a tensor made (n_atoms, axes, n_atoms), where axes = x-x0, y-y0, z-z0
-    dist = np.stack(
-            np.stack(
-                    (coords[i_atm, i_ax] - coords[:, i_ax]) ** 2 for i_ax in range(coords.shape[1])
-                    )
-            for i_atm in range(n_atoms)
-            )
-    # Builds the bond distance matrix between atoms 
-    r = np.stack(
-            np.sqrt(np.sum(dist[i_atm, :, :], axis=0)) for i_atm in range(n_atoms)
-            )
-    return r
-
-
-
-
 
 
