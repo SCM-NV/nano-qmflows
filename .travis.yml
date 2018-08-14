@@ -15,6 +15,7 @@ install:
   - conda install -c rdkit rdkit
   - conda install cython dask mpi4py
 
+  - pip install "https://github.com/SCM-NV/PLAMS/tarball/devel#egg=PLAMS"
   - pip install "https://github.com/SCM-NV/qmflows/tarball/master#egg=qmflows"
   - pip install .[test]
   

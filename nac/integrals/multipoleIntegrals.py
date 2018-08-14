@@ -206,7 +206,7 @@ def calcMtxMultipoleP(
     """
     curriedFun = partial(calcMatrixEntry, rc, e, f, g)
 
-    return general_multipole_matrix(atoms, dictCGFs, calculator=curriedFun)
+    return general_multipole_matrix(atoms, dictCGFs, runner=runner, calculator=curriedFun)
 
 
 # ==================================<>=========================================

@@ -43,12 +43,12 @@ path_original_hdf5 = join(root, 'test_files/Cd.hdf5')
 project_name = 'Cd'
 
 
-def test_oscillators_multiprocessing():
-    """
-    test the oscillator strenght computation using the
-    multiprocessing module
-    """
-    compute_oscillators('multiprocessing')
+# def test_oscillators_multiprocessing():
+#     """
+#     test the oscillator strenght computation using the
+#     multiprocessing module
+#     """
+#     compute_oscillators('multiprocessing')
 
 
 def test_oscillators_dask():
@@ -62,15 +62,13 @@ def compute_oscillators(runner):
     scratch_path = join(tempfile.gettempdir(), 'namd')
     path_test_hdf5 = tempfile.mktemp(
         prefix='{}_'.format(runner), suffix='.hdf5', dir=scratch_path)
-    print("path_test_hdf5")
-    print(path_test_hdf5)
     if not os.path.exists(scratch_path):
         os.makedirs(scratch_path)
     try:
         # Run the actual test
         copy_basis_and_orbitals(path_original_hdf5, path_test_hdf5,
                                 project_name)
-        calculate_oscillators(path_test_hdf5, scratch_path)
+        calculate_oscillators(runner, path_test_hdf5, scratch_path)
         check_properties(path_test_hdf5)
 
     finally:
@@ -78,7 +76,7 @@ def compute_oscillators(runner):
         shutil.rmtree(scratch_path)
 
 
-def calculate_oscillators(path_test_hdf5, scratch_path):
+def calculate_oscillators(runner, path_test_hdf5, scratch_path):
     """
     Compute a couple of couplings with the Levine algorithm
     using precalculated MOs.
@@ -92,7 +90,7 @@ def calculate_oscillators(path_test_hdf5, scratch_path):
 
     workflow_oscillator_strength(
         'cp2k', project_name, cp2k_main, guess_args=cp2k_guess,
-        nHOMO=6, initial_states=list(range(1, 7)),
+        runner=runner, nHOMO=6, initial_states=list(range(1, 7)),
         energy_range=(0, 5),  # eV
         final_states=[range(7, 26)], **initial_config)
 

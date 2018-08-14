@@ -36,7 +36,9 @@ hbar_evs = physical_constants['Planck constant over 2 pi in eV s'][0]
 
 def workflow_oscillator_strength(
         package_name: str, project_name: str, package_args: Dict,
-        guess_args: Dict=None, geometries: List=None,
+        guess_args: Dict=None,
+        runner='multiprocessing',
+        geometries: List=None,
         dictCGFs: Dict=None, enumerate_from: int=0,
         calc_new_wf_guess_on_points: str=None,
         path_hdf5: str=None, package_config: Dict=None,
@@ -90,7 +92,7 @@ def workflow_oscillator_strength(
     oscillators = gather(
         *[scheduleOscillator(
             i, project_name, mo_paths_hdf5, dictCGFs, mol,
-            path_hdf5, hdf5_trans_mtx=hdf5_trans_mtx,
+            path_hdf5, runner, hdf5_trans_mtx=hdf5_trans_mtx,
             initial_states=initial_states, final_states=final_states)
           for i, mol in enumerate(molecules_au)
           if i % calculate_oscillator_every == 0])
@@ -220,7 +222,8 @@ def lorentzian_distribution(
 def calcOscillatorStrenghts(
         i: int, project_name: str,
         mo_paths_hdf5: str, dictCGFs: Dict,
-        atoms: List, path_hdf5: str, hdf5_trans_mtx: str=None,
+        atoms: List, path_hdf5: str, runner: str,
+        hdf5_trans_mtx: str=None,
         initial_states: Vector=None, final_states: Matrix=None):
 
     """
@@ -270,7 +273,7 @@ def calcOscillatorStrenghts(
             path_hdf5, path_dipole_matrices)
     else:
         # Compute the Dipole matrices and store them in the HDF5
-        mtx_integrals_spher = calcDipoleCGFS(atoms, dictCGFs, rc, trans_mtx)
+        mtx_integrals_spher = calcDipoleCGFS(atoms, dictCGFs, rc, trans_mtx, runner)
         store_arrays_in_hdf5(path_hdf5, path_dipole_matrices,
                              mtx_integrals_spher)
 
@@ -365,7 +368,7 @@ def transform2Spherical(trans_mtx: Matrix, matrix: Matrix) -> Matrix:
 
 
 def calcDipoleCGFS(
-        atoms: List, dictCGFs: List, rc: Tuple, trans_mtx: Matrix) -> Matrix:
+        atoms: List, dictCGFs: List, rc: Tuple, trans_mtx: Matrix, runner: str) -> Matrix:
     """
     Compute the Multipole matrix in cartesian coordinates and
     expand it to a matrix and finally convert it to spherical coordinates.
@@ -378,6 +381,7 @@ def calcDipoleCGFS(
     :param trans_mtx: Transformation matrix to translate from Cartesian
     to Sphericals.
     :type trans_mtx: Numpy Matrix
+    :param runner: library to distribute the calculations.
     :returns: Matrix with entries <ψi | x y z | ψj>
     """
     # x,y,z exponents value for the dipole
@@ -385,7 +389,7 @@ def calcDipoleCGFS(
                  {'e': 0, 'f': 0, 'g': 1}]
 
     dimCart = trans_mtx.shape[1]
-    mtx_integrals_triang = tuple(calcMtxMultipoleP(atoms, dictCGFs, rc, **kw)
+    mtx_integrals_triang = tuple(calcMtxMultipoleP(atoms, dictCGFs, runner=runner, rc=rc, **kw)
                                  for kw in exponents)
     mtx_integrals_cart = tuple(triang2mtx(xs, dimCart)
                                for xs in mtx_integrals_triang)
