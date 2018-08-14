@@ -35,7 +35,7 @@ def general_multipole_matrix(
     :param dictCGFs: Contracted gauss functions normalized, represented as
     a dict of list containing the Contracted Gauss primitives
     :param calculator: Function to compute the matrix elements.
-    :param runner: function to compute the elements of the matrix
+    :param runner: distributed system to compute the elements of the matrix
     :param ncores: number of available cores
     :returns: Numpy Array representing a flatten triangular matrix.
     """
@@ -188,7 +188,8 @@ def calcMatrixEntry(
     return result
 
 
-def calcMtxMultipoleP(atoms: List, dictCGFs: Dict, rc=(0, 0, 0), e=0, f=0, g=0):
+def calcMtxMultipoleP(
+        atoms: List, dictCGFs: Dict, runner='multiprocessing', rc=(0, 0, 0), e=0, f=0, g=0):
     """
     Multipole matrix entry calculation between two Contracted Gaussian functions.
     It uses a partial applied function to pass the center of the multipole `rc`
@@ -197,10 +198,10 @@ def calcMtxMultipoleP(atoms: List, dictCGFs: Dict, rc=(0, 0, 0), e=0, f=0, g=0):
     :param atoms: Atomic label and cartesian coordinates
     :param cgfsN: Contracted gauss functions normalized, represented as
     a dictionary list of tuples of coefficients and Exponents.
-    :param calcMatrixEntry: Function to compute the matrix elements.
-    :type calcMatrixEntry: Function
+    :param runner: distributed system to compute the elements of the matrix
     :param rc: Multipole center
     :type rc: (Float, Float, Float)
+    :params e,f,g: exponents of X, Y, Z in the multipole operator, respectively.
     :returns: Numpy Array representing a flatten triangular matrix.
     """
     curriedFun = partial(calcMatrixEntry, rc, e, f, g)
