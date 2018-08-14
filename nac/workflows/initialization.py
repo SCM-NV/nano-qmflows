@@ -23,9 +23,9 @@ import os
 import pkg_resources
 import subprocess
 
+
 # Starting logger
 logger = logging.getLogger(__name__)
-# ====================================<>=======================================
 
 
 def initialize(
@@ -228,13 +228,14 @@ def split_trajectory(path: str, nBlocks: int, pathOut: str) -> List:
     :returns: path to block List
     """
     with open(path, 'r') as f:
-            l = f.readline()  # Read First line
-            numat = int(l.split()[0])
+        # Read First line
+        ls = f.readline()
+        numat = int(ls.split()[0])
 
     # Number of lines in the file
     cmd = "wc -l {}".format(path)
-    l = subprocess.check_output(cmd.split()).decode()
-    lines = int(l.split()[0])
+    ls = subprocess.check_output(cmd.split()).decode()
+    lines = int(ls.split()[0])
     # Number of points in the xyz file
     nPoints = lines // (numat + 2)
     # Number of points for each chunk
@@ -269,6 +270,3 @@ def log_config(work_dir, path_hdf5, algorithm):
     logger.info("Working directory is: {}".format(work_dir))
     logger.info("Data will be stored in HDF5 file: {}".format(path_hdf5))
     logger.info("The chosen algorithm to compute the coupling is: {}\n".format(algorithm))
-
-
-    
