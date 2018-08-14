@@ -1,0 +1,48 @@
+workflow:
+  absorptionspectrum
+runner:
+  dask
+basis_name:
+  "DZVP-MOLOPT-SR-GTH"
+project_name:
+  Cd
+path_hdf5:
+  - "test_files/Cd.hdf5"
+path_traj_xyz:
+  - "test_files/Cd.xyz" 
+  
+setting_main:
+  potential: "GTH-PBE"
+  basis: "DZVP-MOLOPT-SR-GTH"
+  specific:
+    cp2k:
+        force_eval:
+        subsys:
+          cell:
+            periodic: "None"
+          dft:
+            scf:
+              eps_scf: 0.0005
+              max_scf: 200
+              added_mos: 30
+    cell_angles: [90.0, 90.0, 90.0]
+
+settings_guess:
+  potential: "GTH-PBE"
+  basis: "DZVP-MOLOPT-SR-GTH"
+  specific:
+    cp2k:
+        force_eval:
+        subsys:
+          cell:
+            periodic: "None"
+          dft:
+            scf:
+              eps_scf: 1e-6
+              added_mos: 0
+              scf_guess: "restart"
+              ot:
+                minimizer: "DIIS"
+                n_diis: 7
+                preconditioner: "FULL_SINGLE_INVERSE"
+    cell_angles: [90.0, 90.0, 90.0]
