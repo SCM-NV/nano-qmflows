@@ -8,7 +8,7 @@ from .utilsTest import copy_basis_and_orbitals
 import numpy as np
 import os
 import shutil
-
+import tempfile
 
 cp2k_main = dict2Setting({
     'cell_parameters': 28.0, 'potential': 'GTH-PBE',
@@ -34,42 +34,47 @@ cp2k_guess = dict2Setting({
     'cell_angles': [90.0, 90.0, 90.0]})
 
 # Environment data
+file_path = os.path.realpath(__file__)
+root = os.path.split(file_path)[0]
+
 basisname = 'DZVP-MOLOPT-SR-GTH'
-path_traj_xyz = 'test/test_files/Cd.xyz'
-scratch_path = 'scratch'
-path_original_hdf5 = 'test/test_files/Cd.hdf5'
-path_test_hdf5 = join(scratch_path, 'test.hdf5')
+path_traj_xyz = join(root, 'test_files/Cd.xyz')
+path_original_hdf5 = join(root, 'test_files/Cd.hdf5')
 project_name = 'Cd'
 
 
-def test_oscillators():
+def test_oscillators_multiprocessing():
     """
-    Test couplings and oscillator strength for Cd33Se33
+    test the oscillator strenght computation using the
+    multiprocessing module
     """
+    compute_oscillators('multiprocessing')
+
+
+def compute_oscillators(runner):
+    """
+    Compute the oscillator strenght and check the results.
+    """
+    scratch_path = join(tempfile.gettempdir(), 'namd')
+    path_test_hdf5 = tempfile.mktemp(
+        prefix='{}_'.format(runner), suffix='.hdf5', dir=scratch_path)
+    print("path_test_hdf5")
+    print(path_test_hdf5)
     if not os.path.exists(scratch_path):
         os.makedirs(scratch_path)
     try:
-        shutil.copy('test/test_files/BASIS_MOLOPT', scratch_path)
-        shutil.copy('test/test_files/GTH_POTENTIALS', scratch_path)
-
         # Run the actual test
         copy_basis_and_orbitals(path_original_hdf5, path_test_hdf5,
                                 project_name)
-        calculate_oscillators()
-        dipole_matrices = retrieve_hdf5_data(
-            path_test_hdf5, 'Cd/point_0/dipole_matrices')
-
-        # The diagonals of each component of the matrix must be zero
-        # for a single atom
-        diagonals = np.sum([np.diag(dipole_matrices[n]) for n in range(3)])
-        assert abs(diagonals) < 1e-16
+        calculate_oscillators(path_test_hdf5, scratch_path)
+        check_properties(path_test_hdf5)
 
     finally:
         # remove tmp data and clean global config
         shutil.rmtree(scratch_path)
 
 
-def calculate_oscillators():
+def calculate_oscillators(path_test_hdf5, scratch_path):
     """
     Compute a couple of couplings with the Levine algorithm
     using precalculated MOs.
@@ -88,5 +93,18 @@ def calculate_oscillators():
         final_states=[range(7, 26)], **initial_config)
 
 
+def check_properties(path_test_hdf5):
+    """
+    Check that the tensor stored in the HDF5 are correct.
+    """
+    dipole_matrices = retrieve_hdf5_data(
+        path_test_hdf5, 'Cd/point_0/dipole_matrices')
+
+    # The diagonals of each component of the matrix must be zero
+    # for a single atom
+    diagonals = np.sum([np.diag(dipole_matrices[n]) for n in range(3)])
+    assert abs(diagonals) < 1e-16
+
+
 if __name__ == "__main__":
-    test_oscillators()
+    test_oscillators_multiprocessing()
