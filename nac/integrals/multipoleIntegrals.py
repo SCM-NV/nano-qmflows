@@ -72,7 +72,7 @@ def runner_dask(
     block_triang_indices = compute_block_triang_indices(nOrbs, ncores)
     matrix = client.map(function, block_triang_indices)
 
-    return np.array(client.gather(matrix))
+    return np.concatenate(client.gather(matrix))
 
 
 def runner_multiprocessing(
