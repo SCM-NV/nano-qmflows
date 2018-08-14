@@ -1,5 +1,5 @@
 workflow:
-  absorptionspectrum
+  absorption_spectrum
 runner:
   dask
 basis_name:

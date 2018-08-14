@@ -1,0 +1,62 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema",
+    "description": "Input to compute simulate the absorption Spectrum",
+    "type": "object",
+    "properties": {
+	"workflow": {
+	    "type": "string",
+	    "description": "Name of the workflow to run",
+	    "enum": [
+		"absorption_spectrum",
+		"derivative_couplings"
+	    ]
+	},
+	"runner": {
+            "type": "string",	    
+	    "description": "Library to distribute the computation",
+	    "default": "multiprocessing",
+	    "enum": [
+		"dask",
+		"mpi",
+		"multiprocessing"
+	    ]
+	},
+	"project_name": {
+	    "type": "string",
+	    "default": "namd_workflow"
+	},
+	"path_hdf5": {
+	    "type": "string",
+	    "description": "path to the HDF5 to store the results"
+	},
+	"enumerate_from": {
+	    "type": "integer",
+	    "description": "Number from where to start enumerating the folders create for each point in the MD",
+	    "default": 0
+	},
+	"calculate_guesses": {
+	    "description": "Calculate the guess wave function in either the first point of the trajectory or in all",
+	    "default": "first",
+	    "enum": [
+		"first",
+		"all"
+	    ]
+	}
+	"settings_main": {
+	    "type": "object",
+	    "default": {},
+	    "description": "Settings describing the input of the quantum package"
+	},
+	"settings_guess": {
+	    "type": "object",
+	    "default": {},
+	    "description": "Settings describing the input of the quantum package to compute the guess wavefunction"
+	}
+
+  },
+    "required": [
+	"workflow",
+	"settings_main",
+	"settings_guess"
+  ]
+}
