@@ -1,11 +1,11 @@
 from nac.workflows.workflow_AbsortionSpectrum import workflow_oscillator_strength
 from nac.workflows.initialization import initialize
-from nose.plugins.attrib import attr
 from os.path import join
 from qmflows.utils import dict2Setting
 
 import h5py
 import os
+import pytest
 import shutil
 
 
@@ -41,7 +41,7 @@ path_test_hdf5 = join(scratch_path, 'test.hdf5')
 project_name = 'Cd33Se33'
 
 
-@attr('slow')
+@pytest.mark.slow
 def test_couplings_and_oscillators():
     """
     Test couplings and oscillator strength for Cd33Se33
@@ -100,3 +100,7 @@ def copy_basis_and_orbitals(source, dest, project_name):
                 if not any(x in l for x in excluded):
                     path = join(k, l)
                     f5.copy(path, g5[k])
+
+
+if __name__ == "__main__":
+    test_couplings_and_oscillators()

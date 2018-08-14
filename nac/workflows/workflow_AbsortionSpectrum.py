@@ -118,7 +118,6 @@ def workflow_oscillator_strength(
                np.stack((energies, energies_nm, extinction_coefficients), axis=1),
                header='Energy[eV] Energy[nm^-1] Extinction_coefficients[M^-1 cm^-1]')
 
-    print("Data: ", data)
     print("Calculation Done")
 
     # Write data in human readable format
@@ -379,7 +378,7 @@ def calcDipoleCGFS(
     :param trans_mtx: Transformation matrix to translate from Cartesian
     to Sphericals.
     :type trans_mtx: Numpy Matrix
-    :returns: tuple(<ψi | x | ψj>, <ψi | y | ψj>, <ψi | z | ψj> )
+    :returns: Matrix with entries <ψi | x y z | ψj>
     """
     # x,y,z exponents value for the dipole
     exponents = [{'e': 1, 'f': 0, 'g': 0}, {'e': 0, 'f': 1, 'g': 0},
@@ -395,7 +394,7 @@ def calcDipoleCGFS(
 
 
 def oscillator_strength(css_i: Matrix, css_j: Matrix, energy: float,
-                        mtx_integrals_spher: Tensor3D) -> Tuple:
+                        mtx_integrals_spher: Matrix) -> float:
     """
     Calculate the oscillator strength between two state i and j using a
     molecular geometry in atomic units, a set of contracted gauss functions
@@ -406,7 +405,7 @@ def oscillator_strength(css_i: Matrix, css_j: Matrix, energy: float,
     :param css_i: MO coefficients of initial state
     :param css_j: MO coefficients of final state
     :param energy: energy difference i -> j.
-    :param mtx_integrals_triang: Tensor containing the dipole integrals
+    :param mtx_integrals_triang: matrix containing the dipole integrals
     :returns: Oscillator strength
     """
     components = tuple(

@@ -37,7 +37,7 @@ def plot_stuff(ens, coupls, acf, sd, deph, rate, s1, s2, ts, wsd, wdeph, dt):
     plot_mean, save_plot - bools telling to plot the mean and save the plot or not,
     respectively
     """
-    dim_x = np.arange(ts) * dt 
+    dim_x = np.arange(ts) * dt
 
     ax1 = plt.subplot(321)
     ax1.set_xlabel('Time (fs)')
@@ -78,7 +78,8 @@ def plot_stuff(ens, coupls, acf, sd, deph, rate, s1, s2, ts, wsd, wdeph, dt):
     ax5.plot(sd[:, 1, 2], sd[:, 0, 2], c='g')
     print('The dephasing time is : {:f} fs'.format(rate))
     print('The homogenous line broadening is  : {:f} nm'.format(1 / rate * fs_to_nm))
-    print('The homogenous line broadening is  : {:f} eV'.format(1 / rate * 4.13567)) # Conversion 1 fs = 4.13567 eV 
+    # Conversion 1 fs = 4.13567 eV
+    print('The homogenous line broadening is  : {:f} eV'.format(1 / rate * 4.13567))
 
     ax6 = plt.subplot(322)
     ax6.set_xlabel('Time (fs)')
@@ -150,7 +151,7 @@ if __name__ == "__main__":
         '-ts', type=str, default='All', help='Time range for plot')
     parser.add_argument(
         '-wsd', type=int, default=1500,
-                        help='energy window for spectral density plot in cm-1')
+        help='energy window for spectral density plot in cm-1')
     parser.add_argument(
         '-wdeph', type=int, default=50, help='time window for dephasing time in fs')
 

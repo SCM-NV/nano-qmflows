@@ -10,4 +10,5 @@
 	- Replace MIT license by Apache-2.0
 	- Allow only fast tests in Travis
 	- Added changelog
+	- made general mergeHDF5 script
 

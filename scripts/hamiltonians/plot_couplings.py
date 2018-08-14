@@ -1,38 +1,42 @@
 #! /usr/bin/env python
 """
-  This programs plots the electronic coupling between two states. It reads all Ham_*_im files and cache them in a tensor saved on disk. 
+  This programs plots the electronic coupling between two states.
+  It reads all Ham_*_im files and cache them in a tensor saved on disk.
   Usage:
   plot_couplings.py -p . -s1 XX -s2 YY -dt 1.0
 
 p = path to the hamiltonian files
 s1 = state 1 index
 s2 = state 2 index
-dt = time step in fs 
+dt = time step in fs
 """
 import numpy as np
 import matplotlib.pyplot as plt
-import argparse 
+import argparse
 import glob
 import os.path
 
-r2meV = 13605.698 # From Rydeberg to eV 
+r2meV = 13605.698  # From Rydeberg to eV
+
 
 def main(path_output, s1, s2, dt):
-   # Check if the file with couplings exists
-   if not os.path.isfile('couplings.npy'):
-      # Check all the files stored
-      files_im = glob.glob('Ham_*_im')
-      # Read the couplings
-      couplings = np.stack(np.loadtxt('Ham_{}_im'.format(file)) for file in range(len(files_im) ) )
-      # Save the file for fast reading afterwards
-      np.save('couplings',couplings)
-   else:
-      couplings = np.load('couplings.npy') 
-      ts = np.arange(couplings.shape[0]) * dt 
-      plt.plot(ts, couplings[:, s1, s2] * r2meV) 
-      plt.xlabel('Time (fs)')
-      plt.ylabel('Energy (meV)') 
-      plt.show() 
+    # Check if the file with couplings exists
+    if not os.path.isfile('couplings.npy'):
+        # Check all the files stored
+        files_im = glob.glob('Ham_*_im')
+        # Read the couplings
+        couplings = np.stack(
+           np.loadtxt('Ham_{}_im'.format(f)) for f in range(len(files_im)))
+        # Save the file for fast reading afterwards
+        np.save('couplings', couplings)
+    else:
+        couplings = np.load('couplings.npy')
+        ts = np.arange(couplings.shape[0]) * dt
+        plt.plot(ts, couplings[:, s1, s2] * r2meV)
+        plt.xlabel('Time (fs)')
+        plt.ylabel('Energy (meV)')
+        plt.show()
+
 
 def read_cmd_line(parser):
     """
@@ -44,11 +48,10 @@ def read_cmd_line(parser):
 
     return [getattr(args, p) for p in attributes]
 
-# ============<>===============
-if __name__ == "__main__":
 
+if __name__ == "__main__":
     msg = "plot_decho -p <path/to/hamiltonians> -s1 <State 1> -s2 <State 2>\
-    -dt <time step>" 
+    -dt <time step>"
 
     parser = argparse.ArgumentParser(description=msg)
     parser.add_argument('-p', required=True,
@@ -60,6 +63,3 @@ if __name__ == "__main__":
     parser.add_argument('-dt', type=float, default=1.0,
                         help='Index of the second state')
     main(*read_cmd_line(parser))
- 
-
-
