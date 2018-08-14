@@ -13,7 +13,7 @@ install:
   # Install virtual enviroment 
   - conda install h5py
   - conda install -c rdkit rdkit
-  - conda install cython
+  - conda install cython dask mpi4py
 
   - pip install "https://github.com/SCM-NV/qmflows/tarball/master#egg=qmflows"
   - pip install .[test]
