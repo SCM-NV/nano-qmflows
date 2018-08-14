@@ -6,6 +6,7 @@ from qmflows.utils import dict2Setting
 from .utilsTest import copy_basis_and_orbitals
 
 import numpy as np
+import pytest
 import os
 import shutil
 import tempfile
@@ -43,14 +44,15 @@ path_original_hdf5 = join(root, 'test_files/Cd.hdf5')
 project_name = 'Cd'
 
 
-# def test_oscillators_multiprocessing():
-#     """
-#     test the oscillator strenght computation using the
-#     multiprocessing module
-#     """
-#     compute_oscillators('multiprocessing')
+def test_oscillators_multiprocessing():
+    """
+    test the oscillator strenght computation using the
+    multiprocessing module
+    """
+    compute_oscillators('multiprocessing')
 
 
+@pytest.mark.slow
 def test_oscillators_dask():
     compute_oscillators('dask')
 
