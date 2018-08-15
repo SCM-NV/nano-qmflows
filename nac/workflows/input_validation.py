@@ -6,8 +6,8 @@ import yaml
 import pkg_resources as pkg
 
 schema_workflows = {
-    'absorption_spectrum': json.loads(pkg.resource_string("nac", "data/schemas/absorption_spectrum.json").decode()),
-    'general_settings': json.loads(pkg.resource_string("nac", "data/schemas/general_settings.json").decode())}
+    'absorption_spectrum': pkg.resource_filename("nac", "data/schemas/absorption_spectrum.json"),
+    'general_settings': pkg.resource_filename("nac", "data/schemas/general_settings.json")}
 
 
 def process_input(input_file: str, workflow_name) -> Dict:
@@ -60,7 +60,7 @@ def load_json_schema(file_path: str) -> Dict:
         xs = f.read()
 
     # replace ref with absolute values to the files
-    return jsonref.loads(xs, base_uri=base_uri, jsonschema=true)
+    return jsonref.loads(xs, base_uri=base_uri, jsonschema=True)
     
 
 def read_json_yaml(input_file: str, fmt: str) -> Dict:
