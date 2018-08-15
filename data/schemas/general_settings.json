@@ -3,14 +3,6 @@
     "description": "Input to compute simulate the absorption Spectrum",
     "type": "object",
     "properties": {
-	"workflow": {
-	    "type": "string",
-	    "description": "Name of the workflow to run",
-	    "enum": [
-		"absorption_spectrum",
-		"derivative_couplings"
-	    ]
-	},
 	"runner": {
             "type": "string",	    
 	    "description": "Library to distribute the computation",
@@ -24,6 +16,9 @@
 	"project_name": {
 	    "type": "string",
 	    "default": "namd_workflow"
+	},
+	"basis_name": {
+	    "description": "Basis set to carry out the quantum chemistry simulation"
 	},
 	"path_hdf5": {
 	    "type": "string",
@@ -41,7 +36,7 @@
 		"first",
 		"all"
 	    ]
-	}
+	},
 	"settings_main": {
 	    "type": "object",
 	    "default": {},
@@ -55,7 +50,8 @@
 
   },
     "required": [
-	"workflow",
+	"basis_name",
+	"path_hdf5",
 	"settings_main",
 	"settings_guess"
   ]
