@@ -9,6 +9,12 @@ if shutil.which('icc') is not None:
     os.environ['CC'] = 'icc'
     os.environ['LDSHARED'] = 'icc -shared'
 
+
+def readme():
+    with open('README.rst') as f:
+        return f.read()
+
+
 setup(
     name='qmflows-namd',
     version='0.3.0',
@@ -18,6 +24,7 @@ setup(
     author=['Felipe Zapata', 'Ivan Infante'],
     author_email='tifonzafel_gmail.com',
     keywords='chemistry Photochemistry Simulation',
+    long_description=readme(),
     packages=find_packages(),
     classifiers=[
         'License :: OSI Approved :: MIT License',
@@ -52,5 +59,11 @@ setup(
         'scripts/qmflows/mergeHDF5.py',
         'scripts/qmflows/plot_dos.py',
         'scripts/qmflows/removeHDF5folders.py',
-        'scripts/qmflows/remove_mos_hdf5.py']
+        'scripts/qmflows/remove_mos_hdf5.py'],
+    package_dir={
+        '': 'data'
+    },
+    package_data={
+        'schemas': ['*yml', '*json']
+    }
 )
