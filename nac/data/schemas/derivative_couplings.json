@@ -1,0 +1,51 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema",
+    "description": "Input to run a given workflow",
+    "type": "object",
+    "properties": {
+	"nHOMO": {
+	    "type": "integer",
+	    "description": "Index of the HOMO"
+	},
+	"dt": {
+	    "type": "number",
+	    "description": "Integration time step used for the MD (femtoseconds)",
+	    "default": 1
+	},
+	"coupling_range": {
+	    "type":  "array",
+	    "description": "Range of Molecular orbitals used to compute the nonadiabatic coupling matrix",
+	    "minItems": 2,
+	    "maxItems": 2
+	},
+	"algorithm": {
+	    "type": "string",
+	    "description": "Algorithm used to compute the derivative couplings",
+	    "default": "levine",
+	    "enum": [
+		"levine",
+		"3points"
+	    ]
+	},
+	"tracking": {
+	    "type": "boolean",
+	    "default": true,
+	    "description": "Track the crossing between states"
+	},
+	"write_overlaps": {
+	    "type": "boolean",
+	    "default": false,
+	    "description": "Write the overlaps in ascii"
+	},
+	"overlaps_deph": {
+	    "type": "boolean",
+	    "description": "Compute the overlap between molecular geometries using a dephase",
+	    "default": 0.1
+	}
+    },
+    "additionalProperties": false,
+    "required": [
+	"nHOMO",
+	"coupling_range"
+  ]
+}
