@@ -26,11 +26,11 @@
 	    "maxItems": 2
 	},
 	"general_settings": {
-	    "$ref": "general_settings"
+	    "$ref": "http://namd/schemas/general_settings.json#"
 	}
     },
+    "additionalProperties": false,
     "required": [
-	"settings_main",
-	"settings_guess"
+	"workflow"
   ]
 }

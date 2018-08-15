@@ -2,8 +2,11 @@ from jsonschema import Draft4Validator, validators
 from typing import Dict
 import json
 import yaml
+import pkg_resources as pkg
 
-schema_workflows = {'absorptionspectrum': "data/schemas/absorptions_pectrum.json"}
+schema_workflows = {
+    'absorptionspectrum': json.loads(pkg.resource_string("nac", "data/schemas/absorption_spectrum.json").decode()),
+    'general_settings': json.loads(pkg.resource_string("nac", "data/schemas/general_settings.json").decode())}
 
 
 def process_input(input_file: str, workflow_name) -> Dict:
@@ -23,7 +26,7 @@ def extend_with_default(validator_class):
     validate_properties = validator_class.VALIDATORS["properties"]
 
     def set_defaults(validator, properties, instance, schema):
-        for prop, subschema in properties.iteritems():
+        for prop, subschema in properties.items():
             if "default" in subschema:
                 instance.setdefault(prop, subschema["default"])
 

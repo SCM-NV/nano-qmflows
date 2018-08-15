@@ -1,6 +1,7 @@
 {
     "$schema": "http://json-schema.org/draft-04/schema",
     "description": "Input to compute simulate the absorption Spectrum",
+    "id": "http://namd/schemas/general_settings.json",
     "type": "object",
     "properties": {
 	"runner": {

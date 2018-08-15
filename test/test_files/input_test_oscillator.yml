@@ -17,9 +17,9 @@ general_settings:
   project_name:
     Cd
   path_hdf5:
-    - "test_files/Cd.hdf5"
+    "test_files/Cd.hdf5"
   path_traj_xyz:
-    - "test_files/Cd.xyz" 
+    "test_files/Cd.xyz" 
     
   setting_main:
     potential: "GTH-PBE"

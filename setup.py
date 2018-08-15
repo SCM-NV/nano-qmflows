@@ -60,10 +60,7 @@ setup(
         'scripts/qmflows/plot_dos.py',
         'scripts/qmflows/removeHDF5folders.py',
         'scripts/qmflows/remove_mos_hdf5.py'],
-    package_dir={
-        '': 'data'
-    },
     package_data={
-        'schemas': ['*yml', '*json']
+        'data/schemas': ['*yml', '*json']
     }
 )
