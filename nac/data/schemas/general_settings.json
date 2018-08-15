@@ -43,6 +43,15 @@
 		"all"
 	    ]
 	},
+	"geometry_units": {
+	    "type": "string",
+	    "default": "angstrom",
+	    "description": "Units of the Geometry of the MD",
+	    "enum": [
+		"angstrom",
+		"au"
+	    ]
+	},
 	"settings_main": {
 	    "type": "object",
 	    "default": {},
