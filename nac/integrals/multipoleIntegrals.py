@@ -16,7 +16,7 @@ import warnings
 try:
     from dask.distributed import Client
 except ImportError:
-    msg = """The dask.distributed libraries must be installed if you want to use dask
+    msg = """The dask and distributed libraries must be installed if you want to use dask
     to distribute the computation"""
     warnings.warn(msg)
 

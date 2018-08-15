@@ -4,6 +4,6 @@ import jsonschema
 path = "test/test_files/input_test_oscillator.yml"
 
 inp = read_json_yaml(path, fmt='yaml')
-schema = schema_workflows['absorptionspectrum']
+schema = schema_workflows['general_settings']
 
 jsonschema.validate(inp, schema)

@@ -1,11 +1,12 @@
 from jsonschema import Draft4Validator, validators
 from typing import Dict
 import json
+import jsonref
 import yaml
 import pkg_resources as pkg
 
 schema_workflows = {
-    'absorptionspectrum': json.loads(pkg.resource_string("nac", "data/schemas/absorption_spectrum.json").decode()),
+    'absorption_spectrum': json.loads(pkg.resource_string("nac", "data/schemas/absorption_spectrum.json").decode()),
     'general_settings': json.loads(pkg.resource_string("nac", "data/schemas/general_settings.json").decode())}
 
 
@@ -16,7 +17,7 @@ def process_input(input_file: str, workflow_name) -> Dict:
     """
     input_dict = read_json_yaml(input_file, fmt='json')
     path_schema = schema_workflows['workflow_name']
-    schema = read_json_yaml(path_schema, fmt='yaml')
+    schema = load_json_schema(path_schema)
 
     return validate_input(input_dict, schema)
 
@@ -46,6 +47,21 @@ def validate_input(input_dict: dict, schema: Dict) -> Dict:
     DefaultValidatingDraft4Validator = extend_with_default(Draft4Validator)
     return DefaultValidatingDraft4Validator(schema).validate(input_dict)
 
+
+def load_json_schema(file_path: str) -> Dict:
+    "Load a schema from `file_path` and use the absolute path for file references"
+
+    # Absolute path prefix
+    root = pkg.resource_filename('nac', 'data')
+
+    base_uri = "file://{}/".format(root)
+    
+    with open(file_path, 'r') as f:
+        xs = f.read()
+
+    # replace ref with absolute values to the files
+    return jsonref.loads(xs, base_uri=base_uri, jsonschema=true)
+    
 
 def read_json_yaml(input_file: str, fmt: str) -> Dict:
     """

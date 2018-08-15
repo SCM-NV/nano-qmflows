@@ -21,7 +21,7 @@ general_settings:
   path_traj_xyz:
     "test_files/Cd.xyz" 
     
-  setting_main:
+  settings_main:
     potential: "GTH-PBE"
     basis: "DZVP-MOLOPT-SR-GTH"
     specific:

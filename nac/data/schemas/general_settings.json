@@ -1,7 +1,7 @@
 {
     "$schema": "http://json-schema.org/draft-04/schema",
     "description": "Input to compute simulate the absorption Spectrum",
-    "id": "http://namd/schemas/general_settings.json",
+    "id":"general_settings.json",
     "type": "object",
     "properties": {
 	"runner": {
@@ -19,11 +19,16 @@
 	    "default": "namd_workflow"
 	},
 	"basis_name": {
+	    "type": "string",
 	    "description": "Basis set to carry out the quantum chemistry simulation"
 	},
 	"path_hdf5": {
 	    "type": "string",
 	    "description": "path to the HDF5 to store the results"
+	},
+	"path_traj_xyz": {
+	    "type": "string",
+	    "description": "path to xyz trajectory of the Molecular dynamics"
 	},
 	"enumerate_from": {
 	    "type": "integer",
@@ -53,6 +58,7 @@
     "required": [
 	"basis_name",
 	"path_hdf5",
+	"path_traj_xyz",
 	"settings_main",
 	"settings_guess"
   ]
