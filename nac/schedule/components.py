@@ -34,11 +34,11 @@ logger = logging.getLogger(__name__)
 # ==============================> Tasks <=====================================
 
 
-def calculate_mos(package_name: str, all_geometries: List, project_name: str,
-                  path_hdf5: str, folders: List, package_args: Dict,
-                  guess_args: Dict=None, calc_new_wf_guess_on_points: List=None,
+def calculate_mos(package_name: str=None, geometries: List=None, project_name: str=None,
+                  path_hdf5: str=None, folders: List=None, settings_main: Dict=None,
+                  settings_guess: Dict=None, calc_new_wf_guess_on_points: List=None,
                   enumerate_from: int=0, package_config: Dict=None,
-                  ignore_warnings=False) -> List:
+                  ignore_warnings=False, **kwargs) -> List:
     """
     Look for the MO in the HDF5 file if they do not exists calculate them by
     splitting the jobs in batches given by the ``restart_chunk`` variables.
@@ -46,13 +46,13 @@ def calculate_mos(package_name: str, all_geometries: List, project_name: str,
     batch uses as guess the wave function of the first calculation in
     the batch.
 
-    :param all_geometries: list of molecular geometries
+    :param geometries: list of molecular geometries
     :param project_name: Name of the project used as root path for storing
     data in HDF5.
     :param path_hdf5: Path to the HDF5 file that contains the
     numerical results.
     :param folders: path to the directories containing the MO outputs
-    :param package_args: Settings for the job to run.
+    :param settings_main: Settings for the job to run.
     :param calc_new_wf_guess_on_points: Calculate a new Wave function guess in
     each of the geometries indicated. By Default only an initial guess is
     computed.
@@ -66,7 +66,7 @@ def calculate_mos(package_name: str, all_geometries: List, project_name: str,
 
     # calculate the rest of the job using the previous point as initial guess
     orbitals = []  # list to the nodes in the HDF5 containing the MOs
-    for j, gs in enumerate(all_geometries):
+    for j, gs in enumerate(geometries):
 
         # number of the point with respect to all the trajectory
         k = j + enumerate_from
@@ -91,13 +91,13 @@ def calculate_mos(package_name: str, all_geometries: List, project_name: str,
             # Compute the MOs and return a new guess
             promise_qm = compute_orbitals(
                 guess_job, package_name, project_name, path_hdf5,
-                package_args, guess_args, package_config,
+                settings_main, settings_guess, package_config,
                 calc_new_wf_guess_on_points, point_dir, job_files, k, gs)
 
             # Check if the job finishes succesfully
             promise_qm = schedule_check(
                 promise_qm, job_name, package_name, project_name, path_hdf5,
-                package_args, guess_args, package_config, point_dir, job_files,
+                settings_main, settings_guess, package_config, point_dir, job_files,
                 k, gs, ignore_warnings=ignore_warnings)
 
             # Store the computation
@@ -135,7 +135,7 @@ def store_in_hdf5(project_name: str, path_hdf5: str, promise_qm,
 
 def compute_orbitals(
         guess_job, package_name: str, project_name: str, path_hdf5: str,
-        package_args: Dict, guess_args: Dict, package_config: Dict,
+        settings_main: Dict, settings_guess: Dict, package_config: Dict,
         calc_new_wf_guess_on_points: List, point_dir: str, job_files: Tuple,
         k: int, gs: List):
     """
@@ -160,12 +160,12 @@ def compute_orbitals(
 
     if pred:
         guess_job = call_schedule_qm(
-            gs, job_files, guess_args,
+            gs, job_files, settings_guess,
             k, point_dir, wfn_restart_job=guess_job,
             package_config=package_config)
 
     promise_qm = call_schedule_qm(
-        gs, job_files, package_args,
+        gs, job_files, settings_main,
         k, point_dir, wfn_restart_job=guess_job,
         package_config=package_config)
 
@@ -174,8 +174,8 @@ def compute_orbitals(
 
 @schedule
 def schedule_check(promise_qm, job_name: str, package_name: str,
-                   project_name: str, path_hdf5: str, package_args: Dict,
-                   guess_args: Dict, package_config: Dict, point_dir: str,
+                   project_name: str, path_hdf5: str, settings_main: Dict,
+                   settings_guess: Dict, package_config: Dict, point_dir: str,
                    job_files: Tuple, k: int, gs: List,
                    ignore_warnings=False):
     """
@@ -205,7 +205,7 @@ def schedule_check(promise_qm, job_name: str, package_name: str,
         calc_new_wf_guess_on_points = [k]
         return compute_orbitals(
             None, package_name, project_name, path_hdf5,
-            package_args, guess_args, package_config,
+            settings_main, settings_guess, package_config,
             calc_new_wf_guess_on_points, point_dir, job_files, k, gs)
     else:
         return promise_qm

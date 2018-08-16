@@ -18,6 +18,11 @@
 	    "type": "string",
 	    "default": "namd_workflow"
 	},
+	"package_name": {
+	    "type": "string",
+	    "description": "default quantum package used",
+	    "default": "cp2k"
+	},
 	"basis_name": {
 	    "type": "string",
 	    "description": "Basis set to carry out the quantum chemistry simulation"

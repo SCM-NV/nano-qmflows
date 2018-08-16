@@ -10,6 +10,7 @@ from nac.common import (
     triang2mtx)
 from nac.integrals.multipoleIntegrals import calcMtxMultipoleP
 from nac.schedule.components import calculate_mos
+from nac.workflows.initialization import initialize
 from os.path import join
 from qmflows import run
 from qmflows.parsers import parse_string_xyz
@@ -34,76 +35,58 @@ Oscillator = namedtuple("Oscillator",
 hbar_evs = physical_constants['Planck constant over 2 pi in eV s'][0]
 
 
-def workflow_oscillator_strength(
-        package_name: str, project_name: str, package_args: Dict,
-        guess_args: Dict=None,
-        runner='multiprocessing',
-        geometries: List=None,
-        dictCGFs: Dict=None, enumerate_from: int=0,
-        calc_new_wf_guess_on_points: str=None,
-        path_hdf5: str=None, package_config: Dict=None,
-        work_dir: str=None,
-        initial_states: Any=None, final_states: Any=None,
-        traj_folders: List=None, hdf5_trans_mtx: str=None,
-        nHOMO: int=None, couplings_range: Tuple=None,
-        calculate_oscillator_every: int=50,
-        convolution: str='gaussian', broadening: float=0.1,  # eV
-        energy_range: Tuple=None,  # eV
-        geometry_units='angstrom', **kwargs):
+def workflow_oscillator_strength(workflow_settings: Dict):
     """
-    Compute the oscillator strength
+    Compute the oscillator strength.
 
-    :param package_name: Name of the package to run the QM simulations.
-    :param project_name: Folder name where the computations
-    are going to be stored.
-    :param geometry:string containing the molecular geometry.
-    :param package_args: Specific settings for the package
-    :param guess_args: Specific settings for guess calculate with `package`.
-    :type package_args: dict
-    :param initial_states: List of the initial Electronic states.
-    :type initial_states: [Int]
-    :param final_states: List containing the sets of possible electronic
-    states.
-    :type final_states: [[Int]]
-    :param calc_new_wf_guess_on_points: Points where the guess wave functions
-    are calculated.
-    :param package_config: Parameters required by the Package.
-    :param  convolution: gaussian | lorentzian
-    :param calculate_oscillator_every: step to compute the oscillator strengths
+    :param workflow_settings: Arguments to compute the oscillators see:
+    `data/schemas/absorption_spectrum.json
     :returns: None
     """
+    # Arguments to compute the orbitals and configure the workflow. see:
+    # `data/schemas/general_settings.json
+    config = workflow_settings['general_settings']
+
+    # Dictionary containing the general configuration
+    config.update(initialize(**config))
+
     # Point calculations Using CP2K
-    mo_paths_hdf5 = calculate_mos(
-        package_name, geometries, project_name, path_hdf5, traj_folders,
-        package_args, guess_args, calc_new_wf_guess_on_points,
-        enumerate_from, package_config=package_config)
+    mo_paths_hdf5 = calculate_mos(**config)
 
     # geometries in atomic units
     molecules_au = [change_mol_units(parse_string_xyz(gs))
-                    for gs in geometries]
+                    for gs in config['geometries']]
 
     # Construct initial and final states ranges
-    initial_states, final_states = build_transitions(
-        initial_states, final_states, nHOMO)
+    transition_args = [workflow_settings[key] for key in
+                       ['initial_states', 'final_states', 'nHOMO']]
+    initial_states, final_states = build_transitions(*transition_args)
 
-    # Schedule the function the compute the Oscillator Strenghts
-    scheduleOscillator = schedule(calcOscillatorStrenghts)
+    # Make a promise object the function the compute the Oscillator Strenghts
+    scheduleOscillator = schedule(calc_oscillator_strenghts)
 
     oscillators = gather(
         *[scheduleOscillator(
-            i, project_name, mo_paths_hdf5, dictCGFs, mol,
-            path_hdf5, runner, hdf5_trans_mtx=hdf5_trans_mtx,
+            i, config['project_name'], mo_paths_hdf5, config['dictCGFs'], mol,
+            config['path_hdf5'], config['runner'], hdf5_trans_mtx=config['hdf5_trans_mtx'],
             initial_states=initial_states, final_states=final_states)
           for i, mol in enumerate(molecules_au)
-          if i % calculate_oscillator_every == 0])
+          if i % workflow_settings['calculate_oscillator_every'] == 0])
 
     energies, promised_cross_section = create_promised_cross_section(
-        oscillators, broadening, energy_range,
-        convolution, calculate_oscillator_every)
+        oscillators, workflow_settings['broadening'], workflow_settings['energy_range'],
+        workflow_settings['convolution'], workflow_settings['calculate_oscillator_every'])
 
     cross_section, data = run(
-        gather(promised_cross_section, oscillators), folder=work_dir)
+        gather(promised_cross_section, oscillators), folder=config['work_dir'])
 
+    return store_data(data, energies, cross_section)
+
+
+def store_data(data: Tuple, energies: Vector, cross_section: Vector):
+    """
+    Print the data into tables.
+    """
     # Transform the energy to nm^-1
     energies_nm = energies * 1240
 
@@ -219,7 +202,7 @@ def lorentzian_distribution(
     return cte * (1 / denominator)
 
 
-def calcOscillatorStrenghts(
+def calc_oscillator_strenghts(
         i: int, project_name: str,
         mo_paths_hdf5: str, dictCGFs: Dict,
         atoms: List, path_hdf5: str, runner: str,

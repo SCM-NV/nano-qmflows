@@ -29,10 +29,10 @@ logger = logging.getLogger(__name__)
 
 
 def initialize(
-        project_name: str, path_traj_xyz: str, basisname: str,
+        project_name: str=None, path_traj_xyz: str=None, basis_name: str=None,
         enumerate_from: int=0, calculate_guesses: int='first',
         path_hdf5: str=None, scratch_path: str=None, path_basis: str=None,
-        path_potential: str=None, geometry_units: str='angstrom') -> Dict:
+        path_potential: str=None, geometry_units: str='angstrom', **kwargs) -> Dict:
     """
     Initialize all the data required to schedule the workflows associated with
     the nonadaibatic coupling
@@ -89,19 +89,19 @@ def initialize(
         atoms = change_mol_units(atoms)
 
     # CGFs per element
-    dictCGFs = create_dict_CGFs(path_hdf5, basisname, atoms,
+    dictCGFs = create_dict_CGFs(path_hdf5, basis_name, atoms,
                                 package_config=cp2k_config)
 
     # Calculcate the matrix to transform from cartesian to spherical
     # representation of the overlap matrix
     hdf5_trans_mtx = store_transf_matrix(
-        path_hdf5, atoms, dictCGFs, basisname, project_name)
+        path_hdf5, atoms, dictCGFs, basis_name, project_name)
 
     d = {'package_config': cp2k_config, 'path_hdf5': path_hdf5,
          'calc_new_wf_guess_on_points': points_guess,
          'geometries': geometries, 'enumerate_from': enumerate_from,
          'dictCGFs': dictCGFs, 'work_dir': scratch_path,
-         'traj_folders': traj_folders, 'basisname': basisname,
+         'traj_folders': traj_folders, 'basis_name': basis_name,
          'hdf5_trans_mtx': hdf5_trans_mtx}
 
     return d
