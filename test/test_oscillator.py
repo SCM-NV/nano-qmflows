@@ -68,6 +68,7 @@ def calculate_oscillators(runner, path_test_hdf5, scratch_path):
     config['work_dir'] = scratch_path
     config['general_settings']['path_traj_xyz'] = join(
         root, config['general_settings']['path_traj_xyz'])
+    config['general_settings']['runner'] = runner
     workflow_oscillator_strength(config)
 
 
