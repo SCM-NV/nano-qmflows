@@ -1,6 +1,6 @@
 from nac.common import retrieve_hdf5_data
 from nac.workflows.initialization import initialize
-from nac.workflows.workflow_AbsortionSpectrum import workflow_oscillator_strength
+from nac.workflows.workflow_absorption_spectrum import workflow_oscillator_strength
 from os.path import join
 from qmflows.utils import dict2Setting
 from .utilsTest import copy_basis_and_orbitals

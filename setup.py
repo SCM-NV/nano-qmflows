@@ -50,6 +50,7 @@ setup(
         'mpi': ['dill', 'mpi4py'],
         'dask': ['dask.distributed']},
     scripts=[
+        'scripts/cli/namd.py',
         'scripts/mpi/call_mpi_multipole.py',
         'scripts/hamiltonians/plot_mos_energies.py',
         'scripts/hamiltonians/plot_spectra.py',
