@@ -1,11 +1,6 @@
 import h5py
-from qmflows.parsers.xyzParser import readXYZ
 from nac.common import (change_mol_units, hardness, h2ev)
-
 import numpy as np 
-import subprocess 
-from scipy.linalg import sqrtm
-from scipy.spatial.distance import cdist
 
 # Some basic input variables
 project_name = 'Cd33Se33_QD'
@@ -19,7 +14,6 @@ scratch_path = '/scratch-shared/v13/test_tda'
 
 # Some basic input variable for the sTDA calculations
 nocc = 50 # Number of occupied orbitals
-nvirt = c_ao.shape[1] - nocc # Number of virtual orbitals 
 ax = 0.0 # For PBE0 . It changes depending on the functional. A dictionary should be written to store these values. 
 alpha1 = 1.42 # These values are fitted by Grimme (2013)   
 alpha2 = 0.48 # These values are fitted by Grimme (2013)
@@ -30,6 +24,7 @@ beta2 = 1.83 # These values are fitted by Grimme (2013)
 f5 = h5py.File(path_hdf5, 'r') # Open the hdf5 file with MOs and energy values 
 c_ao = f5['{}/point_0/cp2k/mo/coefficients'.format(project_name)].value # Read MOs coefficients in AO basis. Matrix size: NAO x NMO 
 e = f5['{}/point_0/cp2k/mo/eigenvalues'.format(project_name)].value
+nvirt = c_ao.shape[1] - nocc # Number of virtual orbitals 
 
 ### Call the function that computes overlaps  
 s = getMultipoleMtx(mol_file, package_name, basisname, path_hdf5, 'overlap')
@@ -37,66 +32,28 @@ s = getMultipoleMtx(mol_file, package_name, basisname, path_hdf5, 'overlap')
 ### Call the function that computes transition dipole moments integrals
 tdm = getMultipoleMtx(mol_file, package_name, basisname, path_hdf5, 'dipole') 
 
-### Make a function to compute the number of spherical functions for each atom 
-n_sph_atoms = n_sph_funcs_per_atom(mol_file, package_name, basisname, path_hdf5)
-
 ### Make a function tha returns in transition density charges 
-# First transform the c_ao in MO basis using lowdin 
-mol = change_mol_units(readXYZ(path_traj_xyz))
-sqrt_s = sqrtm(s)
-c_mo = np.dot(sqrt_s, c_ao)
-q = np.zeros((n_atoms, c_mo.shape[1], c_mo.shape[1])) # Size of the transition density tensor : n_atoms x n_mos x n_mos 
-
-index = 0 
-for i in range(n_atoms):
-    q[i, :, :] = np.dot(c_mo[index:(index + n_sph_atoms[i]), :].T, c_mo[index:(index + n_sph_atoms[i])), :])
-    index += n_sph_atoms[i])
+q = transition_density_charges(mol_file, s, c_ao)  
 
 ### Make a function that compute the Mataga-Nishimoto-Ohno_Klopman damped Columb and Excgange law functions 
-coords = read_xyz_coordinates(mol_file, n_atoms, 1)
-coords = coords * 1.8897259886 # Conversion from Angstroms to atomic units
-r_ab = cdist(coords, coords) # Distance matrix between atoms A and B 
-hardness_vec = np.stack(hardness(atoms[i]) for i in range(n_atoms)).reshape(n_atoms, 1)
-hard = np.dot(hardness_vec, hardness_vec.T) / 2 
-beta = beta1 + ax * beta2
-alpha = alpha1 + ax * alpha2 
-gamma_J = np.power(1 / (np.power(r_ab, beta) + ax * np.power(hard, -beta)), 1/beta)
-gamma_J[gamma_J == np.inf] = 0 # When ax = 0 , you can get infinite values on the diagonal. Just turn them off to 0. 
-gamma_K = np.power(1 / (np.power(r_ab, alpha) + np.power(hard, -alpha)), 1/alpha)
+gamma_J, gamma_K = compute_MNOK_integrals(mol_file, ax, alpha1, alpha2, beta1, beta2)
 
 # Compute the Couloumb and Exchange integrals
 pqrs_J = np.tensordot(q, np.tensordot(q, gamma_J, axes=(0, 1)), axes=(0, 2))
 pqrs_K = np.tensordot(q, np.tensordot(q, gamma_K, axes=(0, 1)), axes=(0, 2))
 
 # Construct the Tamm-Dancoff matrix A for each pair of i->a transition
-# First step is to build the single excited Slater determinanes from one-electron orbitals  
-excs = []
-for i in range(nocc):
-    for a in range(nocc, nvirt+nocc):
-        excs.append((i,a))
+a_mat = construct_A_matrix_tddft(pqrs_J, pqrs_K, nocc, nvirt) 
 
-# Now fill the A matrix 
-k_iajb = 2 * pqrs_K[:nocc, nocc:, :nocc, nocc:].reshape(nocc*nvirt, nocc*nvirt) # This is the exchange integral entering the A matrix. It is in the format (nocc, nvirt, nocc, nvirt)
-k_ijab = ax * pqrs_J[:nocc, :nocc, nocc:, nocc:] # This is the Coulomb integral entering in the A matrix. It is in the format: (nocc, nocc, nvirt, nvirt)
-k_ijab = np.swapaxes(pqrs_J_tmp, axis1=1, axis2=2).reshape(nocc*nvirt, nocc*nvirt) # To get the correct order in the A matrix, i.e. (nocc, nvirt, nocc, nvirt), we have to swap axes 
-
-a_mat = k_iajb - k_ijab # They are in the m x m format where m is the number of excitations = nocc * nvirt  
-
-e_diff = -np.subtract(e[:nocc].reshape(nocc,1) , e[nocc:].reshape(nvirt, 1).T).reshape(nocc*nvirt) # Generate a vector with all possible ea - ei energy differences 
-np.fill_diagonal(a_mat, np.diag(a_mat) + e_diff)
-
-#a_mat = np.zeros((nocc*nvirt, nocc*nvirt))
-#e_mat = np.zeros((nocc*nvirt, nocc*nvirt))
-#for I in range(len(excs)):
-#    for J in range(len(excs)):
-#        a_mat[I, J] = 2 * pqrs_K[excs[I][0], excs[I][1], excs[J][0], excs[J][1]] - ax * pqrs_J[excs[I][0], excs[J][0], excs[I][1], excs[J][1]]
-#        if excs[I][0] == excs[J][0] and excs[I][1] == excs[J][1]:
-#            a_mat[I, J] += e[excs[I][1]] - e[excs[I][0]]
-#            e_mat[I, J] = e[excs[I][1]] - e[excs[I][0]]
-
+if tddft == 'full':
+#  b_mat = 
 
 # Solve the eigenvalue problem = A * cis = omega * cis 
-omega, cis = np.linalg.eig(a_mat)
+if tddft == 'tda':
+   omega, cis = np.linalg.eig(a_mat)
+else:
+   # Solve the full tddft 
+   
 
 # Compute transition dipole moments
 #pre_factor = np.empty(nocc*nvirt)
@@ -117,6 +74,11 @@ f = 2 / 3 * omega * (d_x **2 + d_y ** 2 + d_z ** 2)
 # Write to output 
 
 # Retrieve some useful information from data
+excs = []
+for i in range(nocc):
+    for a in range(nocc, nvirt+nocc):
+        excs.append((i,a))
+
 weight = np.hstack(np.max(cis[:, i] ** 2) for i in range(nocc*nvirt)) # weight of the most important transition for an excited state
 index_weight = np.hstack(np.where( cis[:, i] ** 2 == np.max(cis[:, i] ** 2) ) for i in range(nocc*nvirt)).reshape(nocc*nvirt) # Find the index of this transition
 index_i = np.stack(excs[index_weight[i]][0] for i in range(nocc*nvirt)) # Index of the hole
@@ -264,3 +226,63 @@ def n_sph_funcs_per_atom(mol_file, package_name, basisname, path_hdf5):
     
     return np.stack(np.sum(len(x) for x in ys[i]) for i in range(len(mol)))
  
+def transition_density_charges(mol_file, s, c_ao):
+    from scipy.linalg import sqrtm
+    from qmflows.parsers.xyzParser import readXYZ
+   
+    mol = change_mol_units(readXYZ(mol_file))
+    n_atoms = len(mol) 
+    sqrt_s = sqrtm(s)
+    c_mo = np.dot(sqrt_s, c_ao)
+    q = np.zeros((n_atoms, c_mo.shape[1], c_mo.shape[1])) # Size of the transition density tensor : n_atoms x n_mos x n_mos
+    n_sph_atoms = n_sph_funcs_per_atom(mol_file, package_name, basisname, path_hdf5)
+    
+    index = 0
+    for i in range(n_atoms):
+        q[i, :, :] = np.dot(c_mo[index:(index + n_sph_atoms[i]), :].T, c_mo[index:(index + n_sph_atoms[i])), :])
+        index += n_sph_atoms[i])
+
+    return q 
+
+
+def compute_MNOK_integrals(mol_file, ax, alpha1, alpha2, beta1, beta2):
+    from qmflows.parsers.xyzParser import readXYZ
+    from scipy.spatial.distance import cdist
+    from nac.common import (change_mol_units, hardness) 
+
+    mol = change_mol_units(readXYZ(mol_file)) 
+    n_atoms = len(mol) 
+    coords = np.asarray([mol[i][1] for i in range(len(mol))])
+    r_ab = cdist(coords, coords) # Distance matrix between atoms A and B 
+    hardness_vec = np.stack(hardness(mol[i][0]) for i in range(n_atoms)).reshape(n_atoms, 1)
+    hard = np.dot(hardness_vec, hardness_vec.T) / 2 
+    beta = beta1 + ax * beta2
+    alpha = alpha1 + ax * alpha2 
+    gamma_J = np.power(1 / (np.power(r_ab, beta) + ax * np.power(hard, -beta)), 1/beta)
+    gamma_J[gamma_J == np.inf] = 0 # When ax = 0 , you can get infinite values on the diagonal. Just turn them off to 0. 
+    gamma_K = np.power(1 / (np.power(r_ab, alpha) + np.power(hard, -alpha)), 1/alpha)
+
+    return gamma_J, gamma_K 
+
+
+def construct_A_matrix_tddft(pqrs_J, pqrs_K, nocc, nvirt):
+    
+    k_iajb = 2 * pqrs_K[:nocc, nocc:, :nocc, nocc:].reshape(nocc*nvirt, nocc*nvirt) # This is the exchange integral entering the A matrix. It is in the format (nocc, nvirt, nocc, nvirt)
+    k_ijab_tmp = ax * pqrs_J[:nocc, :nocc, nocc:, nocc:] # This is the Coulomb integral entering in the A matrix. It is in the format: (nocc, nocc, nvirt, nvirt)
+    k_ijab = np.swapaxes(k_ijab_tmp, axis1=1, axis2=2).reshape(nocc*nvirt, nocc*nvirt) # To get the correct order in the A matrix, i.e. (nocc, nvirt, nocc, nvirt), we have to swap axes 
+
+    a_mat = k_iajb - k_ijab # They are in the m x m format where m is the number of excitations = nocc * nvirt  
+
+    e_diff = -np.subtract(e[:nocc].reshape(nocc,1) , e[nocc:].reshape(nvirt, 1).T).reshape(nocc*nvirt) # Generate a vector with all possible ea - ei energy differences 
+    np.fill_diagonal(a_mat, np.diag(a_mat) + e_diff)
+
+    return a_mat 
+
+#a_mat = np.zeros((nocc*nvirt, nocc*nvirt))
+#e_mat = np.zeros((nocc*nvirt, nocc*nvirt))
+#for I in range(len(excs)):
+#    for J in range(len(excs)):
+#        a_mat[I, J] = 2 * pqrs_K[excs[I][0], excs[I][1], excs[J][0], excs[J][1]] - ax * pqrs_J[excs[I][0], excs[J][0], excs[I][1], excs[J][1]]
+#        if excs[I][0] == excs[J][0] and excs[I][1] == excs[J][1]:
+#            a_mat[I, J] += e[excs[I][1]] - e[excs[I][0]]
+#            e_mat[I, J] = e[excs[I][1]] - e[excs[I][0]]
