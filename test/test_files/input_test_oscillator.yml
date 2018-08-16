@@ -11,7 +11,7 @@ energy_range:
 
 general_settings:
   runner:
-    dask
+    multiprocessing
   basis_name:
     "DZVP-MOLOPT-SR-GTH"
   project_name:
