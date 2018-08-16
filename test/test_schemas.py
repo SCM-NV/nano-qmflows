@@ -3,7 +3,7 @@ import jsonschema
 
 
 def test_input_validation():
-    """ 
+    """
     Test the input validation schema
     """
     path = "test/test_files/input_test_oscillator.yml"

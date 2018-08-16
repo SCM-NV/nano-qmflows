@@ -55,13 +55,13 @@ def load_json_schema(file_path: str) -> Dict:
     root = pkg.resource_filename('nac', 'data')
 
     base_uri = "file://{}/".format(root)
-    
+
     with open(file_path, 'r') as f:
         xs = f.read()
 
     # replace ref with absolute values to the files
     return jsonref.loads(xs, base_uri=base_uri, jsonschema=True)
-    
+
 
 def read_json_yaml(input_file: str, fmt: str) -> Dict:
     """
