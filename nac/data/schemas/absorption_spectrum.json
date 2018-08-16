@@ -30,22 +30,21 @@
 	"convolution": {
 	    "type": "string",
 	    "default": "gaussian",
-	    "description": "mathematical function representing the spectrum"
-	    "enum": {
+	    "description": "mathematical function representing the spectrum",
+	    "enum": [
 		"gaussian",
 		"lorentzian"
-	    }
+	    ]
 	},
 	"broadening": {
 	    "type": "number",
 	    "description": "thermal broadening in eV",
 	    "default": 0.1
-	}
+	},
 	"general_settings": {
 	    "$ref": "schemas/general_settings.json"
 	}
     },
-    "additionalProperties": false,
     "required": [
 	"nHOMO",
 	"initial_states",
