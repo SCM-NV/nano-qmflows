@@ -39,7 +39,7 @@
 	    "type": "boolean",
 	    "default": false,
 	    "description": "Ignore the warning issues by the quantum package and keep computing"
-	}
+	},
 	"calculate_guesses": {
 	    "description": "Calculate the guess wave function in either the first point of the trajectory or in all",
 	    "default": "first",
