@@ -4,7 +4,7 @@ from nac.workflows.input_validation import (process_input, read_json_yaml)
 from nac.workflows import (workflow_oscillator_strength, generate_pyxaid_hamiltonians)
 import argparse
 
-msg = "namd.py -i inputxo"
+msg = "namd.py -i input"
 
 parser = argparse.ArgumentParser(description=msg)
 parser.add_argument('-i', required=True,
@@ -23,9 +23,12 @@ def main():
     else:
         workflow_name = dict_input['workflow']
 
-    xs = process_input(input_file, workflow_name)
+    # Read and process input
+    inp = process_input(input_file, workflow_name)
 
-    print(xs)
+    # run workflow
+    function = dict_workflows[workflow_name]
+    function(inp)
 
 
 def read_cmd_line():

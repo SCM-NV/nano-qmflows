@@ -33,6 +33,10 @@ def test_oscillators_dask():
     compute_oscillators('dask')
 
 
+def test_oscillators_mpi():
+    compute_oscillators('mpi')
+
+
 def compute_oscillators(runner):
     """
     Compute the oscillator strenght and check the results.
