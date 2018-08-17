@@ -1,11 +1,8 @@
 from functools import partial
 from nac.common import retrieve_hdf5_data
 from nac.workflows.input_validation import process_input
-from nac.workflows.workflow_coupling import (
-    generate_pyxaid_hamiltonians, workflow_derivative_couplings)
-from nac.workflows.initialization import initialize
+from nac.workflows.workflow_coupling import workflow_derivative_couplings
 from os.path import join
-from qmflows.utils import dict2Setting
 from .utilsTest import copy_basis_and_orbitals
 
 import numpy as np
@@ -16,34 +13,10 @@ import shutil
 import tempfile
 
 
-cp2k_main = dict2Setting({
-    'cell_parameters': 28.0, 'potential': 'GTH-PBE',
-    'basis': 'DZVP-MOLOPT-SR-GTH', 'specific':
-    {'cp2k': {'force_eval':
-              {'subsys': {'cell': {'periodic': 'None'}}, 'dft':
-               {'print': {'mo': {'mo_index_range': '248 327'}},
-                'scf': {'eps_scf': 0.0005, 'max_scf': 200,
-                        'added_mos': 30}}}}},
-    'cell_angles': [90.0, 90.0, 90.0]})
-
-cp2k_guess = dict2Setting({
-    'cell_parameters': 28.0, 'potential': 'GTH-PBE',
-    'basis': 'DZVP-MOLOPT-SR-GTH', 'specific':
-    {'cp2k': {'force_eval':
-              {'subsys': {'cell': {'periodic': 'None'}},
-               'dft': {'scf': {'eps_scf': 1e-06, 'ot':
-                               {'minimizer': 'DIIS',
-                                'n_diis': 7, 'preconditioner':
-                                'FULL_SINGLE_INVERSE'},
-                               'scf_guess': 'restart',
-                               'added_mos': 0}}}}},
-    'cell_angles': [90.0, 90.0, 90.0]})
-
 # Environment data
 file_path = pkg.resource_filename('nac', '')
 root = os.path.split(file_path)[0]
 
-basis_name = 'DZVP-MOLOPT-SR-GTH'
 path_traj_xyz = join(root, 'test/test_files/Cd33Se33_fivePoints.xyz')
 path_original_hdf5 = join(root, 'test/test_files/Cd33Se33.hdf5')
 project_name = 'Cd33Se33'
@@ -72,25 +45,6 @@ def compute_derivative_coupling(runner):
         check_properties(path_test_hdf5)
     finally:
         shutil.rmtree(scratch_path)
-
-
-# def calculate_couplings(runner, path_test_hdf5, scratch_path):
-#     """
-#     Compute some of couplings with the Levine algorithm
-#     using precalculated MOs.
-#     """
-#     initial_config = initialize(
-#         project_name, path_traj_xyz,
-#         basis_name=basis_name, path_basis=None,
-#         path_potential=None, enumerate_from=0,
-#         calculate_guesses='first', path_hdf5=path_test_hdf5,
-#         scratch_path=scratch_path)
-
-#     # print(initial_config['dictCGFs'])
-#     generate_pyxaid_hamiltonians(
-#         'cp2k', project_name, cp2k_main,
-#         guess_args=cp2k_guess, nHOMO=50,
-#         couplings_range=(50, 30), **initial_config)
 
 
 def calculate_couplings(runner, path_test_hdf5, scratch_path):

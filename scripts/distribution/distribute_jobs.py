@@ -213,7 +213,7 @@ def write_python_script(
     if not os.path.exists(path):
         os.makedirs(path)
     xs = """
-from nac.workflows.workflow_coupling import generate_pyxaid_hamiltonians
+from nac.workflows.workflow_coupling import workflow_derivative_couplings
 from nac.workflows.initialization import initialize
 from qmflows import Settings
 
@@ -241,7 +241,7 @@ cp2k_main = Settings()
 cp2k_guess = Settings()
 {}
 
-generate_pyxaid_hamiltonians('cp2k', project_name, cp2k_main,
+workflow_derivative_couplings('cp2k', project_name, cp2k_main,
                              guess_args=cp2k_guess,
                              nHOMO={},
                              algorithm='{}',

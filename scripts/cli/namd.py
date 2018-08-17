@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 from nac.workflows.input_validation import (process_input, read_json_yaml)
-from nac.workflows import (workflow_oscillator_strength, generate_pyxaid_hamiltonians)
+from nac.workflows import (workflow_oscillator_strength, workflow_derivative_couplings)
 import argparse
 
 msg = "namd.py -i input"
@@ -12,7 +12,7 @@ parser.add_argument('-i', required=True,
 
 
 dict_workflows = {'absorption_spectrum': workflow_oscillator_strength,
-                  'derivative_couplings': generate_pyxaid_hamiltonians}
+                  'derivative_couplings': workflow_derivative_couplings}
 
 
 def main():

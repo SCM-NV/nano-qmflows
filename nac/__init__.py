@@ -24,7 +24,7 @@ from .analysis import (
 
 
 from .workflows import (
-    create_map_index_pyxaid, generate_pyxaid_hamiltonians, initialize,
+    create_map_index_pyxaid, initialize,
     store_transf_matrix, workflow_compute_cubes, workflow_derivative_couplings,
     workflow_oscillator_strength)
 
@@ -39,7 +39,6 @@ __all__ = ['Array', 'AtomBasisData', 'AtomBasisKey', 'AtomData', 'AtomXYZ',
            'create_point_folder', 'dephasing', 'expandBasisOneCGF',
            'expandBasis_cp2k', 'expandBasis_turbomole', 'fs_to_cm', 'fs_to_nm',
            'gauss_function', 'general_multipole_matrix',
-           'generate_pyxaid_hamiltonians',
            'getmass', 'hbar', 'initialize', 'lazy_couplings',
            'parse_list_of_lists', 'photo_excitation_rate',
            'prepare_cp2k_settings', 'prepare_job_cp2k', 'r2meV',
