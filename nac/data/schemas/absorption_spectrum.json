@@ -1,0 +1,54 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema",
+    "description": "Input to run a given workflow",
+    "type": "object",
+    "properties": {
+	"nHOMO": {
+	    "type": "integer",
+	    "description": "Index of the HOMO"
+	},
+	"initial_states": {
+	    "type": "array",
+	    "description": "Initial states of the transitions"
+	},
+	"final_states": {
+	    "type": "array",
+	    "description": "final states of the transitions (Array or Arrays)"
+	},
+	"energy_range": {
+	    "type":  "array",
+	    "description": "Range of energy in eV to simulate the spectrum",
+	    "minItems": 2,
+	    "maxItems": 2,
+	    "default": [0, 5]
+	},
+	"calculate_oscillator_every": {
+	    "type": "integer",
+	    "description": "Interval between MD points where the oscillators are computed",
+	    "default": 50
+	},
+	"convolution": {
+	    "type": "string",
+	    "default": "gaussian",
+	    "description": "mathematical function representing the spectrum",
+	    "enum": [
+		"gaussian",
+		"lorentzian"
+	    ]
+	},
+	"broadening": {
+	    "type": "number",
+	    "description": "thermal broadening in eV",
+	    "default": 0.1
+	},
+	"general_settings": {
+	    "$ref": "schemas/general_settings.json"
+	}
+    },
+    "required": [
+	"nHOMO",
+	"initial_states",
+	"final_states",
+	"general_settings"
+  ]
+}

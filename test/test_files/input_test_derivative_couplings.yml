@@ -1,0 +1,54 @@
+workflow:
+  derivative_couplings
+nHOMO:
+  50
+couplings_range:
+  [50, 30]
+
+general_settings:
+  runner:
+    multiprocessing
+  basis_name:
+    "DZVP-MOLOPT-SR-GTH"
+  project_name:
+    Cd33Se33
+  path_hdf5:
+    "test/test_files/Cd33Se33.hdf5"
+  path_traj_xyz:
+    "test/test_files/Cd33Se33_fivePoints.xyz" 
+    
+  settings_main:
+    potential: "GTH-PBE"
+    basis: "DZVP-MOLOPT-SR-GTH"
+    specific:
+      cp2k:
+          force_eval:
+          subsys:
+            cell:
+              periodic: "None"
+            dft:
+              scf:
+                eps_scf: 0.0005
+                max_scf: 200
+                added_mos: 30
+      cell_angles: [90.0, 90.0, 90.0]
+
+  settings_guess:
+    potential: "GTH-PBE"
+    basis: "DZVP-MOLOPT-SR-GTH"
+    specific:
+      cp2k:
+          force_eval:
+          subsys:
+            cell:
+              periodic: "None"
+            dft:
+              scf:
+                eps_scf: 1e-6
+                added_mos: 0
+                scf_guess: "restart"
+                ot:
+                  minimizer: "DIIS"
+                  n_diis: 7
+                  preconditioner: "FULL_SINGLE_INVERSE"
+      cell_angles: [90.0, 90.0, 90.0]

@@ -11,6 +11,14 @@ import dill
 import numpy as np
 import os
 import tempfile
+import warnings
+
+try:
+    from dask.distributed import Client
+except ImportError:
+    msg = """The dask and distributed libraries must be installed if you want to use dask
+    to distribute the computation"""
+    warnings.warn(msg)
 
 
 def general_multipole_matrix(
@@ -27,7 +35,7 @@ def general_multipole_matrix(
     :param dictCGFs: Contracted gauss functions normalized, represented as
     a dict of list containing the Contracted Gauss primitives
     :param calculator: Function to compute the matrix elements.
-    :param runner: function to compute the elements of the matrix
+    :param runner: distributed system to compute the elements of the matrix
     :param ncores: number of available cores
     :returns: Numpy Array representing a flatten triangular matrix.
     """
@@ -36,7 +44,9 @@ def general_multipole_matrix(
     function = partial(calculator, molecule, dictCGFs, indices)
     ncores = ncores if ncores is not None else cpu_count()
 
-    if runner.lower() == 'mpi':
+    if runner.lower() == 'dask':
+        return runner_dask(function, nOrbs)
+    elif runner.lower() == 'mpi':
         return runner_mpi(function, nOrbs, ncores)
     else:
         # Create a list of indices of a triangular matrix to distribute
@@ -45,6 +55,23 @@ def general_multipole_matrix(
         rss = runner_multiprocessing(function, block_triang_indices)
 
         return np.concatenate(rss)
+
+
+def runner_dask(
+        function: Callable, nOrbs: int, ncores: int=None) -> Matrix:
+    """
+    Use the Dask library to distribute the computation of the integrals.
+
+    :param function: callable to compute the multipole matrix.
+    """
+    # setup cluster
+    client = Client()
+    ncores = len(client.ncores())
+
+    block_triang_indices = compute_block_triang_indices(nOrbs, ncores)
+    matrix = client.map(function, block_triang_indices)
+
+    return np.concatenate(client.gather(matrix))
 
 
 def runner_multiprocessing(
@@ -160,7 +187,8 @@ def calcMatrixEntry(
     return result
 
 
-def calcMtxMultipoleP(atoms: List, dictCGFs: Dict, rc=(0, 0, 0), e=0, f=0, g=0):
+def calcMtxMultipoleP(
+        atoms: List, dictCGFs: Dict, runner='multiprocessing', rc=(0, 0, 0), e=0, f=0, g=0):
     """
     Multipole matrix entry calculation between two Contracted Gaussian functions.
     It uses a partial applied function to pass the center of the multipole `rc`
@@ -169,15 +197,15 @@ def calcMtxMultipoleP(atoms: List, dictCGFs: Dict, rc=(0, 0, 0), e=0, f=0, g=0):
     :param atoms: Atomic label and cartesian coordinates
     :param cgfsN: Contracted gauss functions normalized, represented as
     a dictionary list of tuples of coefficients and Exponents.
-    :param calcMatrixEntry: Function to compute the matrix elements.
-    :type calcMatrixEntry: Function
+    :param runner: distributed system to compute the elements of the matrix
     :param rc: Multipole center
     :type rc: (Float, Float, Float)
+    :params e,f,g: exponents of X, Y, Z in the multipole operator, respectively.
     :returns: Numpy Array representing a flatten triangular matrix.
     """
     curriedFun = partial(calcMatrixEntry, rc, e, f, g)
 
-    return general_multipole_matrix(atoms, dictCGFs, calculator=curriedFun)
+    return general_multipole_matrix(atoms, dictCGFs, runner=runner, calculator=curriedFun)
 
 
 # ==================================<>=========================================
