@@ -11,4 +11,8 @@
 	- Allow only fast tests in Travis
 	- Added changelog
 	- made general mergeHDF5 script
+	- Added Runners: DASK, MPI and Multiprocessing(default)
+	- Introduce new input file (yaml)
+	- Validate input files with json schemas
+	- Refactor the workflow API
 
