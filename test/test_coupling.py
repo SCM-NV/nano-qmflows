@@ -31,6 +31,14 @@ def test_couplings_multiprocessing():
     compute_derivative_coupling('multiprocessing')
 
 
+@pytest.mark.slow
+def test_couplings_mpi():
+    """
+    Test couplings calculations for Cd33Se33
+    """
+    compute_derivative_coupling('mpi')
+
+
 def compute_derivative_coupling(runner):
     scratch_path = join(tempfile.gettempdir(), 'namd')
     path_test_hdf5 = tempfile.mktemp(
