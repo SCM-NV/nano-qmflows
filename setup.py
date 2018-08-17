@@ -9,6 +9,12 @@ if shutil.which('icc') is not None:
     os.environ['CC'] = 'icc'
     os.environ['LDSHARED'] = 'icc -shared'
 
+
+def readme():
+    with open('README.rst') as f:
+        return f.read()
+
+
 setup(
     name='qmflows-namd',
     version='0.3.0',
@@ -18,6 +24,7 @@ setup(
     author=['Felipe Zapata', 'Ivan Infante'],
     author_email='tifonzafel_gmail.com',
     keywords='chemistry Photochemistry Simulation',
+    long_description=readme(),
     packages=find_packages(),
     classifiers=[
         'License :: OSI Approved :: MIT License',
@@ -28,7 +35,8 @@ setup(
         'topic :: scientific/engineering :: chemistry'
     ],
     install_requires=[
-        'cython', 'numpy', 'h5py', 'noodles==0.2.4', 'qmflows', 'pymonad', 'scipy'],
+        'cython', 'numpy', 'h5py', 'noodles==0.2.4', 'qmflows', 'pymonad', 'scipy',
+        'jsonref', 'jsonschema'],
     dependency_links=[
             "https://github.com/SCM-NV/qmflows/tarball/master#egg=qmflows"],
     cmdclass={'build_ext': build_ext},
@@ -39,8 +47,10 @@ setup(
     include_dirs=[np.get_include()],
     extras_require={
         'test': ['coverage', 'pytest', 'pytest-cov'],
-        'mpi': ['dill', 'mpi4py']},
+        'mpi': ['dill', 'mpi4py'],
+        'dask': ['dask.distributed']},
     scripts=[
+        'scripts/cli/namd.py',
         'scripts/mpi/call_mpi_multipole.py',
         'scripts/hamiltonians/plot_mos_energies.py',
         'scripts/hamiltonians/plot_spectra.py',
@@ -51,5 +61,8 @@ setup(
         'scripts/qmflows/mergeHDF5.py',
         'scripts/qmflows/plot_dos.py',
         'scripts/qmflows/removeHDF5folders.py',
-        'scripts/qmflows/remove_mos_hdf5.py']
+        'scripts/qmflows/remove_mos_hdf5.py'],
+    package_data={
+        'data/schemas': ['*yml', '*json']
+    }
 )
