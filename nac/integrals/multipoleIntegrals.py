@@ -66,7 +66,6 @@ def runner_dask(
     """
     # setup cluster
     client = Client()
-    client.cluster
     ncores = len(client.ncores())
 
     block_triang_indices = compute_block_triang_indices(nOrbs, ncores)
