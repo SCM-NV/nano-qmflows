@@ -5,19 +5,21 @@ from os.path import join
 from .utilsTest import copy_basis_and_orbitals
 
 import numpy as np
+import pkg_resources as pkg
 import pytest
 import os
 import shutil
 import tempfile
 
+
 # Environment data
-file_path = os.path.realpath(__file__)
+file_path = pkg.resource_filename('nac', '')
 root = os.path.split(file_path)[0]
 
-path_traj_xyz = join(root, 'test_files/Cd.xyz')
-path_original_hdf5 = join(root, 'test_files/Cd.hdf5')
+path_traj_xyz = join(root, 'test/test_files/Cd.xyz')
+path_original_hdf5 = join(root, 'test/test_files/Cd.hdf5')
 project_name = 'Cd'
-input_file = join(root, 'test_files/input_test_oscillator.yml')
+input_file = join(root, 'test/test_files/input_test_oscillator.yml')
 
 
 def test_oscillators_multiprocessing():

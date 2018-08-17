@@ -3,6 +3,11 @@
     "description": "Input to run a given workflow",
     "type": "object",
     "properties": {
+	"workflow": {
+	    "type": "string",
+	    "defaulft": "derivative_coupling",
+	    "description": "Name of the workflow to run"
+	},
 	"nHOMO": {
 	    "type": "integer",
 	    "description": "Index of the HOMO"
@@ -12,7 +17,7 @@
 	    "description": "Integration time step used for the MD (femtoseconds)",
 	    "default": 1
 	},
-	"coupling_range": {
+	"couplings_range": {
 	    "type":  "array",
 	    "description": "Range of Molecular orbitals used to compute the nonadiabatic coupling matrix",
 	    "minItems": 2,
@@ -40,12 +45,15 @@
 	"overlaps_deph": {
 	    "type": "boolean",
 	    "description": "Compute the overlap between molecular geometries using a dephase",
-	    "default": 0.1
+	    "default": false
+	},
+	"general_settings": {
+	    "$ref": "schemas/general_settings.json"
 	}
     },
     "additionalProperties": false,
     "required": [
 	"nHOMO",
-	"coupling_range"
+	"couplings_range"
   ]
 }

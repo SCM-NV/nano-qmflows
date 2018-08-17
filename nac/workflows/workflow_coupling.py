@@ -1,25 +1,84 @@
 __author__ = "Felipe Zapata"
 
-__all__ = ['generate_pyxaid_hamiltonians']
+__all__ = ['generate_pyxaid_hamiltonians', 'workflow_derivative_couplings']
 
-# ================> Python Standard  and third-party <==========
 
 from .initialization import log_config
 from nac.schedule.components import calculate_mos
 from nac.schedule.scheduleCoupling import (
     calculate_overlap, lazy_couplings, write_hamiltonians)
+from nac.workflows.initialization import initialize
 from noodles import schedule
 from os.path import join
 from qmflows import run
 
-import logging
 import os
 import shutil
 
 # Type Hints
 from typing import (Dict, List, Tuple)
 
-# ==============================> Main <==================================
+
+def workflow_derivative_couplings(workflow_settings: Dict):
+    """
+    Compute the derivative couplings from an MD trajectory.
+
+    :param workflow_settings: Arguments to compute the oscillators see:
+    `data/schemas/derivative_couplings.json
+    :returns: None
+    """
+    # Arguments to compute the orbitals and configure the workflow. see:
+    # `data/schemas/general_settings.json
+    config = workflow_settings['general_settings']
+
+    # Dictionary containing the general configuration
+    config.update(initialize(**config))
+
+    # compute the molecular orbitals
+    mo_paths_hdf5 = calculate_mos(**config)
+
+    # Overlap matrix at two different times
+    promised_overlaps = calculate_overlap(
+        config['project_name'], config['path_hdf5'], config['dictCGFs'],
+        config['geometries'], mo_paths_hdf5,
+        config['hdf5_trans_mtx'], config['enumerate_from'],
+        workflow_settings['overlaps_deph'], nHOMO=workflow_settings['nHOMO'],
+        couplings_range=workflow_settings['couplings_range'])
+
+    # Create a function that returns a proxime array of couplings
+    schedule_couplings = schedule(lazy_couplings)
+
+    # Calculate Non-Adiabatic Coupling
+    promised_crossing_and_couplings = schedule_couplings(
+        promised_overlaps, config['path_hdf5'], config['project_name'],
+        config['enumerate_from'], workflow_settings['nHOMO'],
+        workflow_settings['dt'], workflow_settings['tracking'],
+        workflow_settings['write_overlaps'],
+        algorithm=workflow_settings['algorithm'])
+
+    # Write the results in PYXAID format
+    work_dir = config['work_dir']
+    path_hamiltonians = join(work_dir, 'hamiltonians')
+    if not os.path.exists(path_hamiltonians):
+        os.makedirs(path_hamiltonians)
+
+    # Inplace scheduling of write_hamiltonians function.
+    # Equivalent to add @schedule on top of the function
+    schedule_write_ham = schedule(write_hamiltonians)
+
+    # Number of matrix computed
+    nPoints = len(config['geometries']) - 2
+
+    # Write Hamilotians in PYXAID format
+    promise_files = schedule_write_ham(
+        config['path_hdf5'], mo_paths_hdf5, promised_crossing_and_couplings,
+        nPoints, path_dir_results=path_hamiltonians,
+        enumerate_from=config['enumerate_from'], nHOMO=workflow_settings['nHOMO'],
+        couplings_range=workflow_settings['couplings_range'])
+
+    run(promise_files, folder=work_dir)
+
+    remove_folders(config['traj_folders'])
 
 
 def generate_pyxaid_hamiltonians(
@@ -30,8 +89,8 @@ def generate_pyxaid_hamiltonians(
         path_hdf5: str=None, enumerate_from: int=0,
         package_config: Dict=None, dt: float=1,
         traj_folders: List=None, work_dir: str=None,
-        basisname: str=None, hdf5_trans_mtx: str=None, overlaps_deph=False, 
-        nHOMO: int=None, couplings_range: Tuple=None, write_overlaps=False, 
+        basis_name: str=None, hdf5_trans_mtx: str=None, overlaps_deph=False,
+        nHOMO: int=None, couplings_range: Tuple=None, write_overlaps=False,
         algorithm='levine', ignore_warnings=False, tracking=True) -> None:
     """
     Use a md trajectory to generate the hamiltonian components to run PYXAID

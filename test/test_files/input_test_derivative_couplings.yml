@@ -1,13 +1,9 @@
 workflow:
-  absorption_spectrum
+  derivative_couplings
 nHOMO:
-  6
-initial_states:
-  [0, 1, 2, 3, 4, 5, 6]
-final_states:
-  [[7, 8, 9]]
-energy_range:
-  [0, 5]
+  50
+couplings_range:
+  [50, 30]
 
 general_settings:
   runner:
@@ -15,11 +11,11 @@ general_settings:
   basis_name:
     "DZVP-MOLOPT-SR-GTH"
   project_name:
-    Cd
+    Cd33Se33
   path_hdf5:
-    "test/test_files/Cd.hdf5"
+    "test/test_files/Cd33Se33.hdf5"
   path_traj_xyz:
-    "test/test_files/Cd.xyz" 
+    "test/test_files/Cd33Se33_fivePoints.xyz" 
     
   settings_main:
     potential: "GTH-PBE"

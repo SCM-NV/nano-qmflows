@@ -7,6 +7,7 @@ import pkg_resources as pkg
 
 schema_workflows = {
     'absorption_spectrum': pkg.resource_filename("nac", "data/schemas/absorption_spectrum.json"),
+    'derivative_couplings': pkg.resource_filename("nac", "data/schemas/derivative_couplings.json"),
     'general_settings': pkg.resource_filename("nac", "data/schemas/general_settings.json")}
 
 

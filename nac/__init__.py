@@ -25,7 +25,8 @@ from .analysis import (
 
 from .workflows import (
     create_map_index_pyxaid, generate_pyxaid_hamiltonians, initialize,
-    store_transf_matrix, workflow_compute_cubes, workflow_oscillator_strength)
+    store_transf_matrix, workflow_compute_cubes, workflow_derivative_couplings,
+    workflow_oscillator_strength)
 
 
 __all__ = ['Array', 'AtomBasisData', 'AtomBasisKey', 'AtomData', 'AtomXYZ',
@@ -45,5 +46,5 @@ __all__ = ['Array', 'AtomBasisData', 'AtomBasisKey', 'AtomData', 'AtomXYZ',
            'read_couplings', 'read_energies', 'retrieve_hdf5_data',
            'search_data_in_hdf5', 'spectral_density', 'split_file_geometries',
            'store_arrays_in_hdf5', 'store_transf_matrix', 'triang2mtx',
-           'workflow_compute_cubes', 'workflow_oscillator_strength',
-           'write_hamiltonians']
+           'workflow_compute_cubes', 'workflow_derivative_couplings',
+           'workflow_oscillator_strength', 'write_hamiltonians']
