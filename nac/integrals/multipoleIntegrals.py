@@ -116,7 +116,7 @@ def runner_mpi(
     err = rs[1]
     if err:
         raise RuntimeError("Submission Errors: {}".format(err))
-        clean([output_filename, tmp_fun])
+        clean([tmp_fun])
     else:
         output_filename = tmp_out + '.npy'
         arr = np.load(output_filename)

@@ -59,7 +59,7 @@ def calc_overlap_triang(
     return result
 
 
-def calcMtxOverlapP(molecule: List, dictCGFs: Dict) -> Vector:
+def calcMtxOverlapP(molecule: List, dictCGFs: Dict, runner='mutiprocessing') -> Vector:
     """
     Overlap matrix entries calculated using Contracted Gaussian
     functions.
@@ -67,4 +67,4 @@ def calcMtxOverlapP(molecule: List, dictCGFs: Dict) -> Vector:
     :returns: flatten upper triangular matrix
     """
     return general_multipole_matrix(
-        molecule, dictCGFs, calculator=calc_overlap_triang)
+        molecule, dictCGFs, runner=runner, calculator=calc_overlap_triang)

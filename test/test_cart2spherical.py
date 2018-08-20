@@ -19,13 +19,14 @@ def test_compare_with_cp2k():
     # Overlap matrix in cartesian coordinates
     basisname = "DZVP-MOLOPT-SR-GTH"
     # Molecular geometry in a.u.
-    atoms = change_mol_units(readXYZ('test/test_files/Cd33Se33_fivePoints.xyz'))
+    atoms = change_mol_units(readXYZ('test/test_files/ethylene.xyz'))
 
     dictCGFs = create_dict_CGFs(path_hdf5, basisname, atoms)
 
     # Compute the overlap matrix using the general multipole expression
     rs = calcMtxOverlapP(atoms, dictCGFs)
-    mtx_overlap = triang2mtx(rs, 1452)  # there are 1452 Cartesian basis CGFs
+    number_of_contracted = sum(len(dictCGFs[at.symbol]) for at in atoms)
+    mtx_overlap = triang2mtx(rs, number_of_contracted)
 
     dict_global_norms = compute_normalization_sphericals(dictCGFs)
 
@@ -39,9 +40,12 @@ def test_compare_with_cp2k():
 
     # Compare the results with CP2K overlap matrix
     test = transf_mtx.dot(sparse.csr_matrix.dot(mtx_overlap, transpose))
-    expected = np.load('test/test_files/overlap_Cd33Se33_cp2k.npy')
 
-    assert np.allclose(test, expected, atol=1e-5)
+    sum_diag = np.sum(np.diag(test))
+    number_of_sphericals = transf_mtx.shape[0]
+
+    assert abs(sum_diag - number_of_sphericals) < 1e-16
+
 
 if __name__ == '__main__':
     test_compare_with_cp2k()
