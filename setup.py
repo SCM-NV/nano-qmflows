@@ -48,7 +48,7 @@ setup(
     extras_require={
         'test': ['coverage', 'pytest', 'pytest-cov'],
         'mpi': ['dill', 'mpi4py'],
-        'dask': ['dask.distributed']},
+        'dask': ['dask', 'distributed']},
     scripts=[
         'scripts/cli/namd.py',
         'scripts/mpi/call_mpi_multipole.py',
