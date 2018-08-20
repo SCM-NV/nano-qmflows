@@ -9,6 +9,7 @@ from nac.common import (
     retrieve_hdf5_data)
 from nac.schedule.scheduleET import (
     compute_overlaps_ET, photo_excitation_rate)
+from nac.workflows.initialization import initialize
 from noodles import (gather, schedule)
 from qmflows import run
 from qmflows.parsers import parse_string_xyz
@@ -17,66 +18,36 @@ from scipy import integrate
 import logging
 import numpy as np
 
-from typing import (Dict, List, Tuple)
+from typing import (Dict, List)
 
 # Get logger
 logger = logging.getLogger(__name__)
 
-# ==============================> Main <==================================
 
-
-def calculate_ETR(
-        package_name: str, project_name: str, package_args: Dict,
-        path_time_coeffs: str=None, geometries: List=None,
-        initial_conditions: List=None, path_hdf5: str=None,
-        basis_name: str=None,
-        enumerate_from: int=0, package_config: Dict=None,
-        calc_new_wf_guess_on_points: str=None, guess_args: Dict=None,
-        work_dir: str=None, traj_folders: List=None,
-        dictCGFs: Dict=None, orbitals_range: Tuple=None,
-        pyxaid_HOMO: int=None, pyxaid_Nmin: int=None, pyxaid_Nmax: int=None,
-        pyxaid_iconds: List=None,
-        fragment_indices: None=List, dt: float=1, **kwargs):
+def workflow_electron_transfer(workflow_settings: Dict):
     """
-    Use a md trajectory to calculate the Electron transfer rate.
+    Use a MD trajectory to calculate the Electron transfer rate.
 
-    :param package_name: Name of the package to run the QM simulations.
-    :param project_name: Folder name where the computations
-    are going to be stored.
-    :param package_args: Specific settings for the package.
-    :param path_hdf5: Path to the HDF5 file that contains the
-    numerical results.
-    :param geometries: List of string cotaining the molecular geometries.
-    :paramter dictCGFS: Dictionary from Atomic Label to basis set
-    :type     dictCGFS: Dict String [CGF],
-              CGF = ([Primitives], AngularMomentum),
-              Primitive = (Coefficient, Exponent)
-    :param calc_new_wf_guess_on_points: number of Computations that used a
-                                        previous calculation as guess for the
-                                        wave function.
-    :param nHOMO: index of the HOMO orbital.
-    :param couplings_range: Range of MO use to compute the nonadiabatic
-    :param pyxaid_range: range of HOMOs and LUMOs used by pyxaid.
-    :param enumerate_from: Number from where to start enumerating the folders
-                           create for each point in the MD.
-    :param traj_folders: List of paths to where the CP2K MOs are printed.
-    :param package_config: Parameters required by the Package.
-    :param pyxaid_iconds = List of initial conditions in the pyxaid dynamics
-    :param fragment_indices: indices of atoms belonging to a fragment.
-    :param dt: integration time used in the molecular dynamics.
+    :param workflow_settings: Arguments to compute the oscillators see:
+    `data/schemas/electron_transfer.json
     :returns: None
     """
-    # prepare Cp2k Job point calculations Using CP2K
-    mo_paths_hdf5 = calculate_mos(
-        package_name, geometries, project_name, path_hdf5, traj_folders,
-        package_args, guess_args, calc_new_wf_guess_on_points,
-        enumerate_from, package_config=package_config)
+    # Arguments to compute the orbitals and configure the workflow. see:
+    # `data/schemas/general_settings.json
+    config = workflow_settings['general_settings']
+
+    # Dictionary containing the general configuration
+    config.update(initialize(**config))
+
+    # Point calculations Using CP2K
+    mo_paths_hdf5 = calculate_mos(**config)
 
     # geometries in atomic units
     molecules_au = [change_mol_units(parse_string_xyz(gs))
-                    for gs in geometries]
+                    for gs in config['geometries']]
 
     # Time-dependent coefficients
+    path_time_coeffs = workflow_settings['path_time_coeffs']
     time_depend_coeffs = read_time_dependent_coeffs(path_time_coeffs)
     msg = "Reading time_dependent coefficients from: {}".format(
         path_time_coeffs)
@@ -85,39 +56,42 @@ def calculate_ETR(
     # compute_overlaps_ET
     scheduled_overlaps = schedule(compute_overlaps_ET)
     fragment_overlaps = scheduled_overlaps(
-        project_name, molecules_au, basis_name, path_hdf5, dictCGFs,
-        mo_paths_hdf5, fragment_indices, enumerate_from, package_name)
+        config['project_name'], molecules_au, config['basis_name'], config['path_hdf5'],
+        config['dictCGFs'], mo_paths_hdf5, workflow_settings['fragment_indices'],
+        config['enumerate_from'], config['package_name'])
 
     # Delta time in a.u.
+    dt = workflow_settings['dt']
     dt_au = dt * femtosec2au
 
     # Indices relation between the PYXAID active space and the orbitals
     # stored in the HDF5
-    map_index_pyxaid_hdf5 = create_map_index_pyxaid(
-        orbitals_range, pyxaid_HOMO, pyxaid_Nmin, pyxaid_Nmax)
+    args_map_index = [workflow_settings[key] for key in
+                      ['orbitals_range', 'pyxaid_HOMO', 'pyxaid_Nmin', 'pyxaid_Nmax']]
+    map_index_pyxaid_hdf5 = create_map_index_pyxaid(*args_map_index)
 
     # Number of points in the pyxaid trajectory:
     # shape: (initial_conditions, n_points, n_states)
-    n_points = len(geometries) - 2
+    n_points = len(config['geometries']) - 2
 
     # Read the swap between Molecular orbitals obtained from a previous
     # Coupling calculation
-    swaps = read_swaps(path_hdf5, project_name)
+    swaps = read_swaps(['path_hdf5'], ['project_name'])
 
     # Electron transfer rate for each frame of the Molecular dynamics
     scheduled_photoexcitation = schedule(compute_photoexcitation)
     etrs = scheduled_photoexcitation(
-        path_hdf5, time_depend_coeffs, fragment_overlaps,
-        map_index_pyxaid_hdf5, swaps, n_points, pyxaid_iconds, dt_au)
+        config['path_hdf5'], time_depend_coeffs, fragment_overlaps,
+        map_index_pyxaid_hdf5, swaps, n_points, ['pyxaid_iconds'], dt_au)
 
     # Execute the workflow
     electronTransferRates, path_overlaps = run(
-        gather(etrs, fragment_overlaps), folder=work_dir)
+        gather(etrs, fragment_overlaps), folder=config['work_dir'])
 
     for i, mtx in enumerate(electronTransferRates):
         write_ETR(mtx, dt, i)
 
-    write_overlap_densities(path_hdf5, path_overlaps, swaps, dt)
+    write_overlap_densities(config['path_hdf5'], path_overlaps, swaps, dt)
 
 
 def compute_photoexcitation(

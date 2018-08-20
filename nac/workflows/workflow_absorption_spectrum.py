@@ -5,7 +5,7 @@ from collections import namedtuple
 from itertools import chain
 from noodles import (gather, schedule)
 from nac.common import (
-    Matrix, Tensor3D, Vector, change_mol_units, getmass, h2ev,
+    Matrix, Vector, change_mol_units, getmass, h2ev,
     retrieve_hdf5_data, search_data_in_hdf5, store_arrays_in_hdf5,
     triang2mtx)
 from nac.integrals.multipoleIntegrals import calcMtxMultipoleP
