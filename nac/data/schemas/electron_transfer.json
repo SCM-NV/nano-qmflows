@@ -1,0 +1,50 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema",
+    "description": "Input to run a given workflow",
+    "type": "object",
+    "properties": {
+	"path_time_coeffs": {
+	    "type": "string",
+	    "description": "Path to the PYXAID output containing the time-dependent coefficients"
+	}
+	"dt": {
+	    "type": "number",
+	    "description": "Integration time step used for the MD (femtoseconds)",
+	    "default": 1
+	},
+	"pyxaid_HOMO": {
+	    "type": "integer",
+	    "description": "Index of the HOMO"
+	},
+	"pyxaid_LUMO": {
+	    "type": "integer",
+	    "description": "Index of the LUMO"
+	},
+	"pyxaid_Nmax":
+	 {
+	    "type": "integer",
+	    "description": "Index of the LUMO"
+	 },
+	"pyxaid_iconds": {
+	    "type": "array",
+	    "description": "List of initial conditions of the Pyxaid dynamics"
+	},
+	"fragment_indices": {
+	    "type": "array",
+	    "description": "Indices of the atoms belonging to a fragment"
+	},
+	"couplings_range": {
+	    "type": "array",
+	    "description": "Range of Molecular orbitals use to compute the derivative couplings"
+	},
+	"general_settings": {
+	    "$ref": "schemas/general_settings.json"
+	}
+    },
+    "required": [
+	"nHOMO",
+	"initial_states",
+	"final_states",
+	"general_settings"
+  ]
+}
