@@ -35,6 +35,16 @@
 	    "type": "string",
 	    "description": "path to xyz trajectory of the Molecular dynamics"
 	},
+	"path_basis": {
+	    "type": "string",
+	    "description": "Path to the folder containing the basis set specifications",
+	    "default": "null"
+	},
+	"path_potential": {
+	    "type": "string",
+	    "description": "Path to the folder containing the pseudo potential specifications",
+	    "default": "null"
+	},
 	"enumerate_from": {
 	    "type": "integer",
 	    "description": "Number from where to start enumerating the folders create for each point in the MD",
