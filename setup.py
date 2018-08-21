@@ -50,7 +50,7 @@ setup(
         'mpi': ['dill', 'mpi4py'],
         'dask': ['dask', 'distributed']},
     scripts=[
-        'scripts/cli/namd.py',
+        'scripts/cli/run_workflow.py',
         'scripts/mpi/call_mpi_multipole.py',
         'scripts/hamiltonians/plot_mos_energies.py',
         'scripts/hamiltonians/plot_spectra.py',
@@ -62,7 +62,8 @@ setup(
         'scripts/qmflows/plot_dos.py',
         'scripts/qmflows/removeHDF5folders.py',
         'scripts/qmflows/remove_mos_hdf5.py'],
+    include_package_data=True,
     package_data={
-        'data/schemas': ['*yml', '*json']
+        'nac': ['data/schemas/*json']
     }
 )
