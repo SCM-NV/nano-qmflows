@@ -15,6 +15,14 @@
 	    "type": "array",
 	    "description": "final states of the transitions (Array or Arrays)"
 	},
+	"ci_range": {
+	    "type": "array",
+	    "description": "CI Space used to build the excited states",
+	},
+	"tddft": {
+	    "type": "string",
+	    "description": "Type of TDDFT calculations. Available: sing_orb, stda, stddft",
+	},
 	"energy_range": {
 	    "type":  "array",
 	    "description": "Range of energy in eV to simulate the spectrum",
@@ -26,6 +34,11 @@
 	    "type": "integer",
 	    "description": "Interval between MD points where the oscillators are computed",
 	    "default": 50
+	},
+	"xc_dft": {
+	    "type": "string",
+	    "description": "Exchange-correlation functional used in the DFT calculations",
+	    "default": "pbe"
 	},
 	"convolution": {
 	    "type": "string",
@@ -49,6 +62,8 @@
 	"nHOMO",
 	"initial_states",
 	"final_states",
+        "ci_range", 
+        "tddft", 
 	"general_settings"
   ]
 }

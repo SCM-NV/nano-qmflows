@@ -12,27 +12,27 @@ import numpy as np
 from typing import (Any, Dict, List, Tuple)
 
 # General Settings 
-project_name = 'Cd33Se33_QD'
-package_name = 'cp2k'
-path_basis = '/home/v13/cp2k_basis/BASIS_MOLOPT'
-path_traj_xyz = 'Cd33Se33.xyz'
-basis_name='DZVP-MOLOPT-SR-GTH'
-calculate_guesses = 'all' 
-path_hdf5 = 'Cd33Se33.hdf5' 
-runner = 'multiprocessing' 
+#project_name = 'Cd33Se33_QD'
+#package_name = 'cp2k'
+#path_basis = '/home/v13/cp2k_basis/BASIS_MOLOPT'
+#path_traj_xyz = 'Cd33Se33.xyz'
+#basis_name='DZVP-MOLOPT-SR-GTH'
+#calculate_guesses = 'all' 
+#path_hdf5 = 'Cd33Se33.hdf5' 
+#runner = 'multiprocessing' 
 
 # Absorption Spectrum 
 # Required
-nHOMO = 50
-calculate_oscillators_every = 1, 
-xc_dft = 'pbe' 
-ci_range = (1, 100) 
-tddft = 'stda' # Level of simplified TDDFT 
-path_potential = '/home/v13/cp2k_basis/GTH_POTENTIALS'
-scratch_path = '/scratch-shared/v13/test_tda' 
+#nHOMO = 50
+#calculate_oscillators_every = 1, 
+#xc_dft = 'pbe' 
+#ci_range = (1, 100) 
+#tddft = 'stda' # Level of simplified TDDFT 
+#path_potential = '/home/v13/cp2k_basis/GTH_POTENTIALS'
+#scratch_path = '/scratch-shared/v13/test_tda' 
 
 # Some basic input variable for the sTDA calculations
-nocc = nHOMO # Number of occupied orbitals
+#nocc = nHOMO # Number of occupied orbitals
 #ax = 0.0 # For PBE0 . It changes depending on the functional. A dictionary should be written to store these values. 
 #alpha1 = 1.42 # These values are fitted by Grimme (2013)   
 #alpha2 = 0.48 # These values are fitted by Grimme (2013)
