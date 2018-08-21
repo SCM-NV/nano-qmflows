@@ -1,89 +1,142 @@
+__all__ = ['workflow_stddft']
+
+from nac.common import change_mol_units
+from nac.workflows.initialization import initialize
+from nac.schedule.components import calculate_mos
+from qmflows.parsers import parse_string_xyz
+from qmflows import run
+
+from noodles import (gather, schedule)
 import h5py
 import numpy as np 
+from typing import (Any, Dict, List, Tuple)
 
-# Some basic input variables
+# General Settings 
 project_name = 'Cd33Se33_QD'
 package_name = 'cp2k'
 path_basis = '/home/v13/cp2k_basis/BASIS_MOLOPT'
-path_potential = '/home/v13/cp2k_basis/GTH_POTENTIALS'
-basisname='DZVP-MOLOPT-SR-GTH'
+path_traj_xyz = 'Cd33Se33.xyz'
+basis_name='DZVP-MOLOPT-SR-GTH'
+calculate_guesses = 'all' 
 path_hdf5 = 'Cd33Se33.hdf5' 
-mol_file = 'Cd33Se33.xyz'
+runner = 'multiprocessing' 
+
+# Absorption Spectrum 
+# Required
+nHOMO = 50
+calculate_oscillators_every = 1, 
+xc_dft = 'pbe' 
+ci_range = (1, 100) 
+tddft = 'stda' # Level of simplified TDDFT 
+path_potential = '/home/v13/cp2k_basis/GTH_POTENTIALS'
 scratch_path = '/scratch-shared/v13/test_tda' 
 
 # Some basic input variable for the sTDA calculations
-tddft = 'stda' # Level of simplified TDDFT 
-nocc = 50 # Number of occupied orbitals
-ax = 0.0 # For PBE0 . It changes depending on the functional. A dictionary should be written to store these values. 
-alpha1 = 1.42 # These values are fitted by Grimme (2013)   
-alpha2 = 0.48 # These values are fitted by Grimme (2013)
-beta1 = 0.2 # These values are fitted by Grimme (2013)
-beta2 = 1.83 # These values are fitted by Grimme (2013)
+nocc = nHOMO # Number of occupied orbitals
+#ax = 0.0 # For PBE0 . It changes depending on the functional. A dictionary should be written to store these values. 
+#alpha1 = 1.42 # These values are fitted by Grimme (2013)   
+#alpha2 = 0.48 # These values are fitted by Grimme (2013)
+#beta1 = 0.2 # These values are fitted by Grimme (2013)
+#beta2 = 1.83 # These values are fitted by Grimme (2013)
 
 #### Call the calculate MOs function 
-#config = workflow_settings['general_settings']
-# Dictionary containing the general configuration
-#config.update(initialize(**config))
-# Point calculations Using CP2K
-#mo_paths_hdf5 = calculate_mos(**config)
-#e = retrieve_hdf5_data(path_hdf5, mo_paths_hdf5[0])
-#c_ao = retrieve_hdf5_data(path_hdf5, mo_paths_hdf5[1])
+def workflow_stddft(workflow_settings: Dict):
+    """
+    Compute the excited states using simplified TDDFT 
 
-f5 = h5py.File(path_hdf5, 'r') # Open the hdf5 file with MOs and energy values 
-c_ao = f5['{}/point_0/cp2k/mo/coefficients'.format(project_name)].value # Read MOs coefficients in AO basis. Matrix size: NAO x NMO 
-e = f5['{}/point_0/cp2k/mo/eigenvalues'.format(project_name)].value
+    :param workflow_settings: Arguments to compute the oscillators see:
+    `data/schemas/absorption_spectrum.json
+    :returns: None
+    """
+    # Arguments to compute the orbitals and configure the workflow. see:
+    # `data/schemas/general_settings.json
+    config = workflow_settings['general_settings']
 
-nvirt = c_ao.shape[1] - nocc # Number of virtual orbitals 
+    # Dictionary containing the general configuration
+    config.update(initialize(**config))
 
-### Call the function that computes overlaps  
-s = getMultipoleMtx(mol_file, package_name, basisname, path_hdf5, 'overlap')
+    # Single Point calculations settings using CP2K
+    mo_paths_hdf5 = calculate_mos(**config)
 
-### Call the function that computes transition dipole moments integrals
-tdm = getMultipoleMtx(mol_file, package_name, basisname, path_hdf5, 'dipole') 
+    #f5 = h5py.File(path_hdf5, 'r') # Open the hdf5 file with MOs and energy values 
+    #c_ao = f5['{}/point_0/cp2k/mo/coefficients'.format(project_name)].value # Read MOs coefficients in AO basis. Matrix size: NAO x NMO 
+    #e = f5['{}/point_0/cp2k/mo/eigenvalues'.format(project_name)].value
 
-### Make a function tha returns in transition density charges 
-q = transition_density_charges(mol_file, s, c_ao)  
+    molecules_au = [change_mol_units(parse_string_xyz(gs))
+                    for gs in config['geometries']]
 
-### Make a function that compute the Mataga-Nishimoto-Ohno_Klopman damped Columb and Excgange law functions 
-gamma_J, gamma_K = compute_MNOK_integrals(mol_file, ax, alpha1, alpha2, beta1, beta2)
+    # Noodles promised call
+    scheduleTDDFT = schedule(compute_excited_states_tddft) 
+    
+    gather(
+       *[scheduleTDDFT(
+             i, mol, config['project_name'], config['package_name'], config['basis_name'], mo_paths_hdf5,  
+             config['path_hdf5'], config['xc_dft'], config['mo_range'], config['nHOMO'], config['tddft'], config['runner'])
+             for i, mol in enumerate(molecules_au)
+             if i % workflow_settings['calculate_oscillator_every'] == 0])
 
-# Compute the Couloumb and Exchange integrals
-pqrs_J = np.tensordot(q, np.tensordot(q, gamma_J, axes=(0, 1)), axes=(0, 2))
-pqrs_K = np.tensordot(q, np.tensordot(q, gamma_K, axes=(0, 1)), axes=(0, 2))
 
-# Construct the Tamm-Dancoff matrix A for each pair of i->a transition
-a_mat = construct_A_matrix_tddft(pqrs_J, pqrs_K, nocc, nvirt) 
+def compute_excited_states_tddft(
+           i: int, atoms: List, project_name: str, package_name: str,
+           basisname: str, path_hdf5: str, xc_dft: str, mo_range: tuple,
+           nocc: int, tddft: str, runner: str):
 
-if tddft == 'stddft':
-#  b_mat = 
+    from nac.common import retrieve_hdf5_data 
+     
+    e, c_ao = retrieve_hdf5_data(path_hdf5, mo_paths_hdf5[i])
 
-# Solve the eigenvalue problem = A * cis = omega * cis 
-elif: tddft == 'stda':
-   omega, xia = np.linalg.eig(a_mat)
+    nvirt = c_ao.shape[1] - nocc # Number of virtual orbitals 
+
+    ### Call the function that computes overlaps  
+    s = getMultipoleMtx(mol, package_name, basisname, path_hdf5, 'overlap')
+
+    ### Make a function tha returns in transition density charges 
+    q = transition_density_charges(mol, s, c_ao)  
+
+    ### Make a function that compute the Mataga-Nishimoto-Ohno_Klopman damped Columb and Excgange law functions 
+#    gamma_J, gamma_K = compute_MNOK_integrals(mol, ax, alpha1, alpha2, beta1, beta2)
+    gamma_J, gamma_K = compute_MNOK_integrals(mol, xc_dft)
+
+    # Compute the Couloumb and Exchange integrals
+    pqrs_J = np.tensordot(q, np.tensordot(q, gamma_J, axes=(0, 1)), axes=(0, 2))
+    pqrs_K = np.tensordot(q, np.tensordot(q, gamma_K, axes=(0, 1)), axes=(0, 2))
+
+    # Construct the Tamm-Dancoff matrix A for each pair of i->a transition
+    a_mat = construct_A_matrix_tddft(pqrs_J, pqrs_K, nocc, nvirt) 
+
+    if tddft == 'stddft':
+       #  b_mat = 
+
+    # Solve the eigenvalue problem = A * cis = omega * cis 
+    elif: tddft == 'stda':
+       omega, xia = np.linalg.eig(a_mat)
    
-# Compute oscillator strengths
+    # Compute oscillator strengths
 
-# 1) Get the pre-factor for each electronic excited state i->a. Size: n_exc_states * Nocc * Nvirt 
-e_diff = -np.subtract(e[:nocc].reshape(nocc,1) , e[nocc:].reshape(nvirt, 1).T).reshape(nocc*nvirt)
-pre_factor = np.sqrt( 2 * np.divide(e_diff.reshape(nocc*nvirt, 1), omega.reshape(1, nocc*nvirt))).T.reshape(nocc*nvirt, nocc, nvirt)
+    # 1) Get the pre-factor for each electronic excited state i->a. Size: n_exc_states * Nocc * Nvirt 
+    e_diff = -np.subtract(e[:nocc].reshape(nocc,1) , e[nocc:].reshape(nvirt, 1).T).reshape(nocc*nvirt)
+    pre_factor = np.sqrt( 2 * np.divide(e_diff.reshape(nocc*nvirt, 1), omega.reshape(1, nocc*nvirt))).T.reshape(nocc*nvirt, nocc, nvirt)
 
-# 2) Compute the transition dipole matrix TDM(i->a) 
-tdmatrix_x = np.linalg.multi_dot([c_ao[:, :nocc].T, tdm[0, :, :], c_ao[:, nocc:]])
-tdmatrix_y = np.linalg.multi_dot([c_ao[:, :nocc].T, tdm[1, :, :], c_ao[:, nocc:]])
-tdmatrix_z = np.linalg.multi_dot([c_ao[:, :nocc].T, tdm[2, :, :], c_ao[:, nocc:]])
+    # 2) Compute the transition dipole matrix TDM(i->a) 
+    ### Call the function that computes transition dipole moments integrals
+    tdm = getMultipoleMtx(mol, package_name, basisname, path_hdf5, 'dipole') 
+    tdmatrix_x = np.linalg.multi_dot([c_ao[:, :nocc].T, tdm[0, :, :], c_ao[:, nocc:]])
+    tdmatrix_y = np.linalg.multi_dot([c_ao[:, :nocc].T, tdm[1, :, :], c_ao[:, nocc:]])
+    tdmatrix_z = np.linalg.multi_dot([c_ao[:, :nocc].T, tdm[2, :, :], c_ao[:, nocc:]])
 
-# 3) Compute the transition dipole moments for each excited state i->a. Size: n_exc_states
-xia_new = xia.reshape(nocc, nvirt, nocc*nvirt)
-d_x = np.hstack(np.trace(np.linalg.multi_dot([pre_factor[i, :, :], xia_new[:, :, i].T, tdmatrix_x])) for i in range(nocc*nvirt))
-d_y = np.hstack(np.trace(np.linalg.multi_dot([pre_factor[i, :, :], xia_new[:, :, i].T, tdmatrix_y])) for i in range(nocc*nvirt))
-d_z = np.hstack(np.trace(np.linalg.multi_dot([pre_factor[i, :, :], xia_new[:, :, i].T, tdmatrix_z])) for i in range(nocc*nvirt))
+    # 3) Compute the transition dipole moments for each excited state i->a. Size: n_exc_states
+    xia_new = xia.reshape(nocc, nvirt, nocc*nvirt)
+    d_x = np.hstack(np.trace(np.linalg.multi_dot([pre_factor[i, :, :], xia_new[:, :, i].T, tdmatrix_x])) for i in range(nocc*nvirt))
+    d_y = np.hstack(np.trace(np.linalg.multi_dot([pre_factor[i, :, :], xia_new[:, :, i].T, tdmatrix_y])) for i in range(nocc*nvirt))
+    d_z = np.hstack(np.trace(np.linalg.multi_dot([pre_factor[i, :, :], xia_new[:, :, i].T, tdmatrix_z])) for i in range(nocc*nvirt))
 
-# 4) Compute the oscillator strength 
-f = 2 / 3 * omega * (d_x **2 + d_y ** 2 + d_z ** 2)
+    # 4) Compute the oscillator strength 
+    f = 2 / 3 * omega * (d_x **2 + d_y ** 2 + d_z ** 2)
 
-# Write to output 
-output = write_output_tddft(nocc, nvirt, omega, f, d_x, d_y, d_z, xia, e)
-np.savetxt('output.txt', output, fmt='%5d %10.3f %10.5f %10.5f %10.5f %10.5f %10.5f %3d %10.3f %3d %10.3f %10.3f')
+    # Write to output 
+    output = write_output_tddft(nocc, nvirt, omega, f, d_x, d_y, d_z, xia, e)
+    np.savetxt('output_{}.txt'.format(i), output, fmt='%5d %10.3f %10.5f %10.5f %10.5f %10.5f %10.5f %3d %10.3f %3d %10.3f %10.3f')
+
 
 # Retrieve some useful information from data
 def write_output_tddft(nocc, nvirt, omega, f, d_x, d_y, d_z, xia, e):
@@ -117,10 +170,10 @@ def write_output_tddft(nocc, nvirt, omega, f, d_x, d_y, d_z, xia, e):
 
    return output 
 
-def getMultipoleMtx(mol_file, package_name, basisname, path_hdf5, multipole):
+def getMultipoleMtx(mol, package_name, basisname, path_hdf5, multipole):
 
     from nac.basisSet import create_dict_CGFs
-    from nac.common import (change_mol_units, triang2mtx, search_data_in_hdf5, store_arrays_in_hdf5) 
+    from nac.common import (triang2mtx, search_data_in_hdf5, store_arrays_in_hdf5) 
     from nac.integrals import (calcMtxOverlapP, calc_transf_matrix)
     from nac.integrals.multipoleIntegrals import calcMtxMultipoleP 
     from nac.basisSet.basisNormalization import compute_normalization_sphericals    
@@ -131,7 +184,6 @@ def getMultipoleMtx(mol_file, package_name, basisname, path_hdf5, multipole):
     root = join(project_name, 'multipole')
 
     # Compute the number of cartesian basis functions 
-    mol = change_mol_units(readXYZ(mol_file))
     dictCGFs = create_dict_CGFs(path_hdf5, basisname, mol) 
     n_cart_funcs = np.sum(np.stack(len(dictCGFs[mol[i].symbol]) for i in range(len(mol)))) 
 
@@ -200,30 +252,24 @@ def getMultipoleMtx(mol_file, package_name, basisname, path_hdf5, multipole):
 
     return m
 
-def n_sph_funcs_per_atom(mol_file, package_name, basisname, path_hdf5):
+def n_sph_funcs_per_atom(mol, package_name, basisname, path_hdf5):
 
-    from nac.common import change_mol_units
     from nac.integrals.spherical_Cartesian_cgf import (calc_orbital_Slabels, read_basis_format)
-    from qmflows.parsers.xyzParser import readXYZ
 
-    mol = change_mol_units(readXYZ(mol_file))    
     with h5py.File(path_hdf5, 'r') as f5:
          xs = [f5['{}/basis/{}/{}/coefficients'.format(package_name, mol[i][0], basisname)] for i in range(len(mol))]
          ys = [calc_orbital_Slabels(package_name, read_basis_format(package_name, xs[i].attrs['basisFormat'])) for i in range(len(mol))] 
     
     return np.stack(np.sum(len(x) for x in ys[i]) for i in range(len(mol)))
  
-def transition_density_charges(mol_file, s, c_ao):
+def transition_density_charges(mol, s, c_ao):
     from scipy.linalg import sqrtm
-    from nac.common import change_mol_units
-    from qmflows.parsers.xyzParser import readXYZ
    
-    mol = change_mol_units(readXYZ(mol_file))
     n_atoms = len(mol) 
     sqrt_s = sqrtm(s)
     c_mo = np.dot(sqrt_s, c_ao)
     q = np.zeros((n_atoms, c_mo.shape[1], c_mo.shape[1])) # Size of the transition density tensor : n_atoms x n_mos x n_mos
-    n_sph_atoms = n_sph_funcs_per_atom(mol_file, package_name, basisname, path_hdf5)
+    n_sph_atoms = n_sph_funcs_per_atom(mol, package_name, basisname, path_hdf5)
     
     index = 0
     for i in range(n_atoms):
@@ -233,19 +279,17 @@ def transition_density_charges(mol_file, s, c_ao):
     return q 
 
 
-def compute_MNOK_integrals(mol_file, ax, alpha1, alpha2, beta1, beta2):
-    from qmflows.parsers.xyzParser import readXYZ
+def compute_MNOK_integrals(mol, xc_dft):
     from scipy.spatial.distance import cdist
-    from nac.common import (change_mol_units, hardness) 
+    from nac.common import (hardness, xc)
 
-    mol = change_mol_units(readXYZ(mol_file)) 
     n_atoms = len(mol) 
     coords = np.asarray([mol[i][1] for i in range(len(mol))])
     r_ab = cdist(coords, coords) # Distance matrix between atoms A and B 
     hardness_vec = np.stack(hardness(mol[i][0]) for i in range(n_atoms)).reshape(n_atoms, 1)
     hard = np.dot(hardness_vec, hardness_vec.T) / 2 
-    beta = beta1 + ax * beta2
-    alpha = alpha1 + ax * alpha2 
+    beta = xc[xc_dft]['beta1'] + xc[xc_dft]['ax'] * xc[xc_dft]['beta2']
+    alpha = xc[xc_dft]['alpha1'] + xc[xc_dft]['ax'] * xc[xc_dft]['alpha2']
     gamma_J = np.power(1 / (np.power(r_ab, beta) + ax * np.power(hard, -beta)), 1/beta)
     gamma_J[gamma_J == np.inf] = 0 # When ax = 0 , you can get infinite values on the diagonal. Just turn them off to 0. 
     gamma_K = np.power(1 / (np.power(r_ab, alpha) + np.power(hard, -alpha)), 1/alpha)
