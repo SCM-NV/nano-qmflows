@@ -1,5 +1,4 @@
 import h5py
-from nac.common import (change_mol_units, hardness, h2ev)
 import numpy as np 
 
 # Some basic input variables
@@ -13,6 +12,7 @@ mol_file = 'Cd33Se33.xyz'
 scratch_path = '/scratch-shared/v13/test_tda' 
 
 # Some basic input variable for the sTDA calculations
+tddft = 'stda' # Level of simplified TDDFT 
 nocc = 50 # Number of occupied orbitals
 ax = 0.0 # For PBE0 . It changes depending on the functional. A dictionary should be written to store these values. 
 alpha1 = 1.42 # These values are fitted by Grimme (2013)   
@@ -21,9 +21,18 @@ beta1 = 0.2 # These values are fitted by Grimme (2013)
 beta2 = 1.83 # These values are fitted by Grimme (2013)
 
 #### Call the calculate MOs function 
+#config = workflow_settings['general_settings']
+# Dictionary containing the general configuration
+#config.update(initialize(**config))
+# Point calculations Using CP2K
+#mo_paths_hdf5 = calculate_mos(**config)
+#e = retrieve_hdf5_data(path_hdf5, mo_paths_hdf5[0])
+#c_ao = retrieve_hdf5_data(path_hdf5, mo_paths_hdf5[1])
+
 f5 = h5py.File(path_hdf5, 'r') # Open the hdf5 file with MOs and energy values 
 c_ao = f5['{}/point_0/cp2k/mo/coefficients'.format(project_name)].value # Read MOs coefficients in AO basis. Matrix size: NAO x NMO 
 e = f5['{}/point_0/cp2k/mo/eigenvalues'.format(project_name)].value
+
 nvirt = c_ao.shape[1] - nocc # Number of virtual orbitals 
 
 ### Call the function that computes overlaps  
@@ -45,93 +54,68 @@ pqrs_K = np.tensordot(q, np.tensordot(q, gamma_K, axes=(0, 1)), axes=(0, 2))
 # Construct the Tamm-Dancoff matrix A for each pair of i->a transition
 a_mat = construct_A_matrix_tddft(pqrs_J, pqrs_K, nocc, nvirt) 
 
-if tddft == 'full':
+if tddft == 'stddft':
 #  b_mat = 
 
 # Solve the eigenvalue problem = A * cis = omega * cis 
-if tddft == 'tda':
-   omega, cis = np.linalg.eig(a_mat)
-else:
-   # Solve the full tddft 
+elif: tddft == 'stda':
+   omega, xia = np.linalg.eig(a_mat)
    
+# Compute oscillator strengths
 
-# Compute transition dipole moments
-#pre_factor = np.empty(nocc*nvirt)
-#pre_factor = np.hstack(np.sqrt(2 * e_diff/omega[i]) for i in range(nocc*nvirt)).reshape(nocc*nvirt, nocc, nvirt)
-
+# 1) Get the pre-factor for each electronic excited state i->a. Size: n_exc_states * Nocc * Nvirt 
+e_diff = -np.subtract(e[:nocc].reshape(nocc,1) , e[nocc:].reshape(nvirt, 1).T).reshape(nocc*nvirt)
 pre_factor = np.sqrt( 2 * np.divide(e_diff.reshape(nocc*nvirt, 1), omega.reshape(1, nocc*nvirt))).T.reshape(nocc*nvirt, nocc, nvirt)
-cis_new = cis.reshape(nocc, nvirt, nocc*nvirt)
+
+# 2) Compute the transition dipole matrix TDM(i->a) 
 tdmatrix_x = np.linalg.multi_dot([c_ao[:, :nocc].T, tdm[0, :, :], c_ao[:, nocc:]])
 tdmatrix_y = np.linalg.multi_dot([c_ao[:, :nocc].T, tdm[1, :, :], c_ao[:, nocc:]])
 tdmatrix_z = np.linalg.multi_dot([c_ao[:, :nocc].T, tdm[2, :, :], c_ao[:, nocc:]])
 
-d_x = np.hstack(np.trace(np.linalg.multi_dot([pre_factor[i, :, :], cis_new[:, :, i].T, tdmatrix_x])) for i in range(nocc*nvirt))
-d_y = np.hstack(np.trace(np.linalg.multi_dot([pre_factor[i, :, :], cis_new[:, :, i].T, tdmatrix_y])) for i in range(nocc*nvirt))
-d_z = np.hstack(np.trace(np.linalg.multi_dot([pre_factor[i, :, :], cis_new[:, :, i].T, tdmatrix_z])) for i in range(nocc*nvirt))
+# 3) Compute the transition dipole moments for each excited state i->a. Size: n_exc_states
+xia_new = xia.reshape(nocc, nvirt, nocc*nvirt)
+d_x = np.hstack(np.trace(np.linalg.multi_dot([pre_factor[i, :, :], xia_new[:, :, i].T, tdmatrix_x])) for i in range(nocc*nvirt))
+d_y = np.hstack(np.trace(np.linalg.multi_dot([pre_factor[i, :, :], xia_new[:, :, i].T, tdmatrix_y])) for i in range(nocc*nvirt))
+d_z = np.hstack(np.trace(np.linalg.multi_dot([pre_factor[i, :, :], xia_new[:, :, i].T, tdmatrix_z])) for i in range(nocc*nvirt))
 
+# 4) Compute the oscillator strength 
 f = 2 / 3 * omega * (d_x **2 + d_y ** 2 + d_z ** 2)
 
 # Write to output 
-
-# Retrieve some useful information from data
-excs = []
-for i in range(nocc):
-    for a in range(nocc, nvirt+nocc):
-        excs.append((i,a))
-
-weight = np.hstack(np.max(cis[:, i] ** 2) for i in range(nocc*nvirt)) # weight of the most important transition for an excited state
-index_weight = np.hstack(np.where( cis[:, i] ** 2 == np.max(cis[:, i] ** 2) ) for i in range(nocc*nvirt)).reshape(nocc*nvirt) # Find the index of this transition
-index_i = np.stack(excs[index_weight[i]][0] for i in range(nocc*nvirt)) # Index of the hole
-index_a = np.stack(excs[index_weight[i]][1] for i in range(nocc*nvirt))
-e_orb_i = e[index_i] * h2ev # These are the energies of the hole for the transition with the larger weight
-e_orb_a = e[index_a] * h2ev  # These are the energies of the electron for the transition with the larger weight
-e_singorb = (e_orb_a - e_orb_i )  # This is the energy for the transition with the larger weight 
-
-output = np.empty((nocc*nvirt, 12))
-output[:, 0] = 0 # State number: we update it after reorder
-output[:, 1] = omega * h2ev # State energy in eV
-output[:, 2] = f # Oscillator strength
-output[:, 3] = d_x # Transition dipole moment in the x direction
-output[:, 4] = d_y # Transition dipole moment in the y direction
-output[:, 5] = d_z # Transition dipole moment in the z direction
-output[:, 6] = weight # Weight of the most important excitation
-output[:, 7] = index_i # Index of the hole for the most important excitation
-output[:, 8] = e_orb_i # hole energy
-output[:, 9] = index_a 
-output[:, 10] = e_orb_a
-output[:, 11] = e_singorb 
-
-output = output[output[:, 1].argsort()] # Reorder the output in ascending order of energy 
-output[:, 0] = np.arange(nocc * nvirt) # Give a state number in the correct order
-
+output = write_output_tddft(nocc, nvirt, omega, f, d_x, d_y, d_z, xia, e)
 np.savetxt('output.txt', output, fmt='%5d %10.3f %10.5f %10.5f %10.5f %10.5f %10.5f %3d %10.3f %3d %10.3f %10.3f')
 
-def get_numberofatoms(fn): 
-    # Retrieve number of lines in trajectory file
-    cmd = "wc -l {}".format(fn)
-    l = subprocess.check_output(cmd.split()).decode()
-    n_lines = int(l.split()[0]) # Number of lines in traj file
+# Retrieve some useful information from data
+def write_output_tddft(nocc, nvirt, omega, f, d_x, d_y, d_z, xia, e):
 
-    # Read number of atoms in the molecule. It is usually the first line in a xyz file  
-    with open(fn) as f:
-       l = f.readline()
-       n_atoms = int(l.split()[0])
+   from nac.common import h2ev 
 
-    # Get the number of frames in the trajectory file
-    n_frames = int(int(n_lines)/(n_atoms+2))
-    return n_atoms, n_frames 
+   excs = []
+   for i in range(nocc):
+      for a in range(nocc, nvirt+nocc):
+        excs.append((i,a))
 
-def read_atomlist(fn, n_atoms):
-    # Read atomic list from xyz file
-    atoms = pd.read_csv(fn, nrows = n_atoms, delim_whitespace=True, header=None, 
-                        skiprows = 2, usecols=[0]).astype(str)
-    return atoms[0][:]      
+   output = np.empty((nocc*nvirt, 12))
+   output[:, 0] = 0 # State number: we update it after reorder
+   output[:, 1] = omega * h2ev # State energy in eV
+   output[:, 2] = f # Oscillator strength
+   output[:, 3] = d_x # Transition dipole moment in the x direction
+   output[:, 4] = d_y # Transition dipole moment in the y direction
+   output[:, 5] = d_z # Transition dipole moment in the z direction
+   output[:, 6] = np.hstack(np.max(xia[:, i] ** 2) for i in range(nocc*nvirt)) # Weight of the most important excitation
 
-def read_xyz_coordinates(fn, n_atoms, iframe): 
-    # Read xyz coordinate from a (trajectory) xyz file. 
-    coords = pd.read_csv(fn, nrows = n_atoms, delim_whitespace=True, header=None, 
-             skiprows = (2 + (n_atoms + 2) * (iframe - 1)), usecols=(1,2,3)).astype(float).values
-    return coords  
+   index_weight = np.hstack(np.where(xia[:, i] ** 2 == np.max(xia[:, i] ** 2) ) for i in range(nocc*nvirt)).reshape(nocc*nvirt) # Find the index of this transition
+
+   output[:, 7] = np.stack(excs[index_weight[i]][0] for i in range(nocc*nvirt)) # Index of the hole for the most important excitation
+   output[:, 8] = e[output[:, 7].astype(int)] * h2ev # These are the energies of the hole for the transition with the larger weight 
+   output[:, 9] = np.stack(excs[index_weight[i]][1] for i in range(nocc*nvirt)) # Index of the electron for the most important excitation
+   output[:, 10] = e[output[:, 9].astype(int)] * h2ev # These are the energies of the electron for the transition with the larger weight 
+   output[:, 11] = ( e[output[:, 9].astype(int)] - e[output[:, 7].astype(int)] ) * h2ev  # This is the energy for the transition with the larger weight
+
+   output = output[output[:, 1].argsort()] # Reorder the output in ascending order of energy 
+   output[:, 0] = np.arange(nocc * nvirt) # Give a state number in the correct order
+
+   return output 
 
 def getMultipoleMtx(mol_file, package_name, basisname, path_hdf5, multipole):
 
@@ -140,12 +124,14 @@ def getMultipoleMtx(mol_file, package_name, basisname, path_hdf5, multipole):
     from nac.integrals import (calcMtxOverlapP, calc_transf_matrix)
     from nac.integrals.multipoleIntegrals import calcMtxMultipoleP 
     from nac.basisSet.basisNormalization import compute_normalization_sphericals    
+    from qmflows.parsers.xyzParser import readXYZ
     from scipy import sparse
+    from os.path import join
 
     root = join(project_name, 'multipole')
 
     # Compute the number of cartesian basis functions 
-    mol = change_mol_units(readXYZ(path_traj_xyz))
+    mol = change_mol_units(readXYZ(mol_file))
     dictCGFs = create_dict_CGFs(path_hdf5, basisname, mol) 
     n_cart_funcs = np.sum(np.stack(len(dictCGFs[mol[i].symbol]) for i in range(len(mol)))) 
 
@@ -160,9 +146,9 @@ def getMultipoleMtx(mol_file, package_name, basisname, path_hdf5, multipole):
     if multipole == 'overlap':
        overlaps_paths_hdf5 = join(root, 'overlaps')        
        if search_data_in_hdf5(path_hdf5, overlaps_paths_hdf5):
-          logger.info("{} Overlaps are already in the HDF5".format(root))
+#          logger.info("{} Overlaps are already in the HDF5".format(root))
           with h5py.File(path_hdf5, 'r') as f5:
-             m = f5['{}'.format(overlaps_path_hdf5)].value
+             m = f5['{}'.format(overlaps_paths_hdf5)].value
           print('Retrieving overlap from hdf5') 
        else: 
           print('Computing overlap') 
@@ -174,9 +160,9 @@ def getMultipoleMtx(mol_file, package_name, basisname, path_hdf5, multipole):
     elif multipole == 'dipole':
        dipole_paths_hdf5 = join(root, 'dipole')
        if search_data_in_hdf5(path_hdf5, dipole_paths_hdf5):
-          logger.info("{} Dipoles are already in the HDF5".format(root))
+#          logger.info("{} Dipoles are already in the HDF5".format(root))
           with h5py.File(path_hdf5, 'r') as f5:
-             m = f5['{}'.format(quadrupole_path_hdf5)].value
+             m = f5['{}'.format(dipole_paths_hdf5)].value
           print('Retrieving transition dipole matrix from hdf5')  
        else: 
           print('Computing transition dipole matrix')
@@ -184,6 +170,7 @@ def getMultipoleMtx(mol_file, package_name, basisname, path_hdf5, multipole):
           exponents = [{'e': 1, 'f': 0, 'g': 0}, 
                        {'e': 0, 'f': 1, 'g': 0}, 
                        {'e': 0, 'f': 0, 'g': 1}]
+          runner='multiprocessing' # You need to place this in the call of the function.  
           mtx_integrals_triang = tuple(calcMtxMultipoleP(mol, dictCGFs, rc, **kw)
                                        for kw in exponents)
           mtx_integrals_cart = tuple(triang2mtx(xs, n_cart_funcs)
@@ -194,9 +181,9 @@ def getMultipoleMtx(mol_file, package_name, basisname, path_hdf5, multipole):
     elif multipole == 'quadrupole':
        quadrupole_paths_hdf5 = join(root, 'quadrupole')
        if search_data_in_hdf5(path_hdf5, quadrupole_paths_hdf5):
-          logger.info("{} Quadrupole are already in the HDF5".format(root))
+#          logger.info("{} Quadrupole are already in the HDF5".format(root))
           with h5py.File(path_hdf5, 'r') as f5:
-             m = f5['{}'.format(quadrupole_path_hdf5)].value
+             m = f5['{}'.format(quadrupole_paths_hdf5)].value
           print('Retrieving transition quadrupole matrix from hdf5')
        else:
           print('Computing transition quadrupole matrix')
@@ -228,6 +215,7 @@ def n_sph_funcs_per_atom(mol_file, package_name, basisname, path_hdf5):
  
 def transition_density_charges(mol_file, s, c_ao):
     from scipy.linalg import sqrtm
+    from nac.common import change_mol_units
     from qmflows.parsers.xyzParser import readXYZ
    
     mol = change_mol_units(readXYZ(mol_file))
@@ -239,8 +227,8 @@ def transition_density_charges(mol_file, s, c_ao):
     
     index = 0
     for i in range(n_atoms):
-        q[i, :, :] = np.dot(c_mo[index:(index + n_sph_atoms[i]), :].T, c_mo[index:(index + n_sph_atoms[i])), :])
-        index += n_sph_atoms[i])
+        q[i, :, :] = np.dot(c_mo[index:(index + n_sph_atoms[i]), :].T, c_mo[index:(index + n_sph_atoms[i]), :]) 
+        index += n_sph_atoms[i]
 
     return q 
 
@@ -278,11 +266,3 @@ def construct_A_matrix_tddft(pqrs_J, pqrs_K, nocc, nvirt):
 
     return a_mat 
 
-#a_mat = np.zeros((nocc*nvirt, nocc*nvirt))
-#e_mat = np.zeros((nocc*nvirt, nocc*nvirt))
-#for I in range(len(excs)):
-#    for J in range(len(excs)):
-#        a_mat[I, J] = 2 * pqrs_K[excs[I][0], excs[I][1], excs[J][0], excs[J][1]] - ax * pqrs_J[excs[I][0], excs[J][0], excs[I][1], excs[J][1]]
-#        if excs[I][0] == excs[J][0] and excs[I][1] == excs[J][1]:
-#            a_mat[I, J] += e[excs[I][1]] - e[excs[I][0]]
-#            e_mat[I, J] = e[excs[I][1]] - e[excs[I][0]]
