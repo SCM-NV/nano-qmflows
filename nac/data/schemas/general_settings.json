@@ -30,7 +30,7 @@
 	"scratch_path": {
 	    "type":"string",
 	    "description": "Working directory",
-	    "default": "null"
+	    "default": null
 	},
 	"path_hdf5": {
 	    "type": "string",
