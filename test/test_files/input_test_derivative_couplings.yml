@@ -4,7 +4,8 @@ nHOMO:
   50
 couplings_range:
   [50, 30]
-
+ci_range:
+  [0, 0]
 general_settings:
   runner:
     multiprocessing
