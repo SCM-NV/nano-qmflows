@@ -101,7 +101,7 @@ def initialize(
          'calc_new_wf_guess_on_points': points_guess,
          'geometries': geometries, 'enumerate_from': enumerate_from,
          'dictCGFs': dictCGFs, 'work_dir': scratch_path,
-         'traj_folders': traj_folders, 'basis_name': basis_name,
+         'folders': traj_folders, 'basis_name': basis_name,
          'hdf5_trans_mtx': hdf5_trans_mtx}
 
     return d

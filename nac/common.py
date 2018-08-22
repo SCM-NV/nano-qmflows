@@ -82,7 +82,7 @@ def hardness(s: str):
          'fm': 4.8051, 'md': 5.0100, 'no': 5.3926, 'lr': 5.4607 }
     return d[s]
 
-def xc(s: str) 
+def xc(s: str): 
     d = {'pbe':  {'alpha1': 1.42, 'alpha2': 0.48, 'ax': 0.0, 'beta1': 0.2, 'beta2': 1.83},
          'blyp': {'alpha1': 1.42, 'alpha2': 0.48, 'ax': 0.0, 'beta1': 0.2, 'beta2': 1.83},
          'bp':   {'alpha1': 1.42, 'alpha2': 0.48, 'ax': 0.0, 'beta1': 0.2, 'beta2': 1.83},
