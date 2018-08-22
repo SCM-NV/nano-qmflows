@@ -1,5 +1,6 @@
 from jsonschema import (Draft4Validator, validate,  validators)
 from typing import Dict
+from qmflows.settings import Settings
 import json
 import jsonref
 import yaml
@@ -51,6 +52,12 @@ def validate_input(input_dict: dict, schema: Dict) -> Dict:
     # Next add defaults
     DefaultValidatingDraft4Validator = extend_with_default(Draft4Validator)
     DefaultValidatingDraft4Validator(schema).validate(input_dict)
+
+    # convert QM package input to settings
+    input_dict['general_settings']['settings_main'] = Settings(
+        input_dict['general_settings']['settings_main'])
+    input_dict['general_settings']['settings_guess'] = Settings(
+        input_dict['general_settings']['settings_guess'])
 
     return input_dict
 
