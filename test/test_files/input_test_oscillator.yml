@@ -20,7 +20,9 @@ general_settings:
     "test/test_files/Cd.hdf5"
   path_traj_xyz:
     "test/test_files/Cd.xyz" 
-    
+  scratch_path:
+    "/tmp/namd/absorption_spectrum"
+
   settings_main:
     potential: "GTH-PBE"
     basis: "DZVP-MOLOPT-SR-GTH"

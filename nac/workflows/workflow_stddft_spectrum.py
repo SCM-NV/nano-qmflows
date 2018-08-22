@@ -11,35 +11,6 @@ import h5py
 import numpy as np 
 from typing import (Any, Dict, List, Tuple)
 
-# General Settings 
-#project_name = 'Cd33Se33_QD'
-#package_name = 'cp2k'
-#path_basis = '/home/v13/cp2k_basis/BASIS_MOLOPT'
-#path_traj_xyz = 'Cd33Se33.xyz'
-#basis_name='DZVP-MOLOPT-SR-GTH'
-#calculate_guesses = 'all' 
-#path_hdf5 = 'Cd33Se33.hdf5' 
-#runner = 'multiprocessing' 
-
-# Absorption Spectrum 
-# Required
-#nHOMO = 50
-#calculate_oscillators_every = 1, 
-#xc_dft = 'pbe' 
-#ci_range = (1, 100) 
-#tddft = 'stda' # Level of simplified TDDFT 
-#path_potential = '/home/v13/cp2k_basis/GTH_POTENTIALS'
-#scratch_path = '/scratch-shared/v13/test_tda' 
-
-# Some basic input variable for the sTDA calculations
-#nocc = nHOMO # Number of occupied orbitals
-#ax = 0.0 # For PBE0 . It changes depending on the functional. A dictionary should be written to store these values. 
-#alpha1 = 1.42 # These values are fitted by Grimme (2013)   
-#alpha2 = 0.48 # These values are fitted by Grimme (2013)
-#beta1 = 0.2 # These values are fitted by Grimme (2013)
-#beta2 = 1.83 # These values are fitted by Grimme (2013)
-
-#### Call the calculate MOs function 
 def workflow_stddft(workflow_settings: Dict):
     """
     Compute the excited states using simplified TDDFT 
@@ -58,23 +29,22 @@ def workflow_stddft(workflow_settings: Dict):
     # Single Point calculations settings using CP2K
     mo_paths_hdf5 = calculate_mos(**config)
 
-    #f5 = h5py.File(path_hdf5, 'r') # Open the hdf5 file with MOs and energy values 
-    #c_ao = f5['{}/point_0/cp2k/mo/coefficients'.format(project_name)].value # Read MOs coefficients in AO basis. Matrix size: NAO x NMO 
-    #e = f5['{}/point_0/cp2k/mo/eigenvalues'.format(project_name)].value
-
+    # Read structures 
     molecules_au = [change_mol_units(parse_string_xyz(gs))
                     for gs in config['geometries']]
 
     # Noodles promised call
     scheduleTDDFT = schedule(compute_excited_states_tddft) 
     
-    gather(
+    results = gather(
        *[scheduleTDDFT(
              i, mol, config['project_name'], config['package_name'], config['basis_name'], mo_paths_hdf5,  
              config['path_hdf5'], workflow_settings['xc_dft'], workflow_settings['ci_range'], 
              workflow_settings['nHOMO'], workflow_settings['tddft'], config['runner'])
              for i, mol in enumerate(molecules_au)
              if i % workflow_settings['calculate_oscillator_every'] == 0])
+    
+    run(results, folder=config['work_dir'])
 
 
 def compute_excited_states_tddft(
@@ -89,7 +59,7 @@ def compute_excited_states_tddft(
     nvirt = c_ao.shape[1] - nocc # Number of virtual orbitals 
 
     ### Call the function that computes overlaps  
-    s = getMultipoleMtx(mol, package_name, basisname, path_hdf5, 'overlap')
+    s = getMultipoleMtx(mol, package_name, basisname, path_hdf5, workflow_settings['runner'], 'overlap')
 
     ### Make a function tha returns in transition density charges 
     q = transition_density_charges(mol, s, c_ao)  
@@ -122,7 +92,7 @@ def compute_excited_states_tddft(
 
     # 2) Compute the transition dipole matrix TDM(i->a) 
     ### Call the function that computes transition dipole moments integrals
-    tdm = getMultipoleMtx(mol, package_name, basisname, path_hdf5, 'dipole') 
+    tdm = getMultipoleMtx(mol, package_name, basisname, path_hdf5, workflow_settings['runner'], 'dipole') 
     tdmatrix_x = np.linalg.multi_dot([c_ao[:, :nocc].T, tdm[0, :, :], c_ao[:, nocc:]])
     tdmatrix_y = np.linalg.multi_dot([c_ao[:, :nocc].T, tdm[1, :, :], c_ao[:, nocc:]])
     tdmatrix_z = np.linalg.multi_dot([c_ao[:, :nocc].T, tdm[2, :, :], c_ao[:, nocc:]])
@@ -173,7 +143,7 @@ def write_output_tddft(nocc, nvirt, omega, f, d_x, d_y, d_z, xia, e):
 
    return output 
 
-def getMultipoleMtx(mol, package_name, basisname, path_hdf5, multipole):
+def getMultipoleMtx(mol, package_name, basisname, path_hdf5, runner, multipole):
 
     from nac.basisSet import create_dict_CGFs
     from nac.common import (triang2mtx, search_data_in_hdf5, store_arrays_in_hdf5) 
@@ -225,8 +195,7 @@ def getMultipoleMtx(mol, package_name, basisname, path_hdf5, multipole):
           exponents = [{'e': 1, 'f': 0, 'g': 0}, 
                        {'e': 0, 'f': 1, 'g': 0}, 
                        {'e': 0, 'f': 0, 'g': 1}]
-          runner='multiprocessing' # You need to place this in the call of the function.  
-          mtx_integrals_triang = tuple(calcMtxMultipoleP(mol, dictCGFs, rc, **kw)
+          mtx_integrals_triang = tuple(calcMtxMultipoleP(mol, dictCGFs, runner, rc, **kw)
                                        for kw in exponents)
           mtx_integrals_cart = tuple(triang2mtx(xs, n_cart_funcs)
                                      for xs in mtx_integrals_triang)
@@ -246,7 +215,7 @@ def getMultipoleMtx(mol, package_name, basisname, path_hdf5, multipole):
           exponents = [{'e': 2, 'f': 0, 'g': 0},
                        {'e': 0, 'f': 2, 'g': 0},
                        {'e': 0, 'f': 0, 'g': 2}]
-          mtx_integrals_triang = tuple(calcMtxMultipoleP(mol, dictCGFs, rc, **kw)
+          mtx_integrals_triang = tuple(calcMtxMultipoleP(mol, dictCGFs, runner, rc, **kw)
                                        for kw in exponents)
           mtx_integrals_cart = tuple(triang2mtx(xs, n_cart_funcs)
                                      for xs in mtx_integrals_triang)

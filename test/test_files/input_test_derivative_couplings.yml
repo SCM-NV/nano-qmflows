@@ -16,7 +16,9 @@ general_settings:
     "test/test_files/Cd33Se33.hdf5"
   path_traj_xyz:
     "test/test_files/Cd33Se33_fivePoints.xyz" 
-    
+  scratch_path:
+    "/tmp/namd/derivative_couplings"
+      
   settings_main:
     potential: "GTH-PBE"
     basis: "DZVP-MOLOPT-SR-GTH"
