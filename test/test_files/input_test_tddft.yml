@@ -1,0 +1,79 @@
+workflow:
+  absorption_spectrum
+tddft:
+ "stda"
+xc_dft:
+ "pbe"
+ci_range:
+ [1, 100]
+nHOMO:
+  6
+calculate_oscillators_every:
+  1
+initial_states:
+ [0, 1, 2, 3, 4, 5, 6]
+final_states:
+ [[7, 8, 9]]
+energy_range:
+ [0, 5]
+
+general_settings:
+  runner:
+    "multiprocessing"
+  basis_name:
+    "DZVP-MOLOPT-SR-GTH"
+  project_name:
+    "ethylene"
+  path_hdf5:
+    "ethylene.hdf5"
+  path_traj_xyz:
+    "ethylene.xyz"
+  calculate_guesses:
+    "all"
+  path_basis:
+    "/home/v13/cp2k_basis/BASIS_MOLOPT"
+  path_potential:
+    "/home/v13/cp2k_basis/GTH_POTENTIALS"
+  scratch_path:
+    "/scratch/shared/v13/ethylene"
+
+  settings_main:
+    potential: "GTH-PBE"
+    basis: "DZVP-MOLOPT-SR-GTH"
+    cell_parameters: 20.0
+    cell_angles: [90.0, 90.0, 90.0]
+    specific:
+      cp2k:
+        force_eval:
+          subsys:
+            cell:
+              periodic: "None"
+          dft:
+            scf:
+              eps_scf: 0.0005
+              max_scf: 200
+              added_mos: 200
+              print:
+                mo:
+                  mo_index_range: "1 1000"
+
+  settings_guess:
+    potential: "GTH-PBE"
+    basis: "DZVP-MOLOPT-SR-GTH"
+    cell_angles: [90.0, 90.0, 90.0]
+    cell_parameters: 20.0
+    specific:
+      cp2k:
+        force_eval:
+          subsys:
+            cell:
+              periodic: "None"
+          dft:
+            scf:
+              eps_scf: 1e-6
+              added_mos: 0
+              scf_guess: "restart"
+              ot:
+                minimizer: "DIIS"
+                n_diis: 7
+                preconditioner: "FULL_SINGLE_INVERSE"
