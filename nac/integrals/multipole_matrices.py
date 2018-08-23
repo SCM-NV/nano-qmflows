@@ -32,7 +32,7 @@ def search_multipole_in_hdf5(path_hdf5: str, path_multipole_hdf5: str, multipole
         print("retrieving multipole: {} from the hdf5".format(multipole))
         return retrieve_hdf5_data(path_hdf5, path_multipole_hdf5)
     else:
-        print("computing multipole: ".format(multipole))
+        print("computing multipole: {}".format(multipole))
         return None
 
 
