@@ -43,7 +43,7 @@ def workflow_stddft(workflow_settings: Dict):
        *[scheduleTDDFT(
            i, mol, mo_paths_hdf5, workflow_settings['xc_dft'],
            workflow_settings['ci_range'], workflow_settings['nHOMO'],
-           workflow_settings['tddft'])
+           workflow_settings['tddft'], config)
          for i, mol in enumerate(molecules_au)
          if i % workflow_settings['calculate_oscillator_every'] == 0])
 
@@ -58,7 +58,7 @@ def compute_excited_states_tddft(
     """
     project_name, package_name, basis_name, path_hdf5, transf_mtx, runner = [
         config[key] for key in
-        ['project_name', 'package_name', 'basis_name', 'path_hdf5', 'transf_mtx', 'runner']]
+        ['project_name', 'package_name', 'basis_name', 'path_hdf5', 'hdf5_trans_mtx', 'runner']]
 
     e, c_ao = retrieve_hdf5_data(path_hdf5, mo_paths_hdf5[i])
 
@@ -70,7 +70,7 @@ def compute_excited_states_tddft(
         mol, project_name, package_name, basis_name, path_hdf5, transf_mtx, runner, 'overlap')
 
     # Make a function tha returns in transition density charges
-    q = transition_density_charges(mol, package_name, basis_name, path_hdf5, s, c_ao)
+    q = transition_density_charges(mol, config, s, c_ao)
 
     # Make a function that compute the Mataga-Nishimoto-Ohno_Klopman damped Columb and Excgange law functions
     gamma_J, gamma_K = compute_MNOK_integrals(mol, xc_dft)
@@ -287,27 +287,20 @@ def construct_A_matrix_tddft(pqrs_J, pqrs_K, nocc, nvirt, xc_dft, e):
     """
     ADD Documentation
     """
-    # This is the exchange integral entering the A matrix. It is in the format (nocc, nvirt, nocc, nvirt)
-    k_iajb = 2 * pqrs_K[:nocc, nocc:, :nocc, nocc:].reshape(nocc*nvirt, nocc*nvirt)
-    # This is the Coulomb integral entering in the A matrix. It is in the format: (nocc, nocc, nvirt, nvirt)
-    k_ijab_tmp = xc(xc_dft)['ax'] * pqrs_J[:nocc, :nocc, nocc:, nocc:]
-    # To get the correct order in the A matrix, i.e. (nocc, nvirt, nocc, nvirt), we have to swap axes
-    k_ijab = np.swapaxes(k_ijab_tmp, axis1=1, axis2=2).reshape(nocc*nvirt, nocc*nvirt)
-
     # This is the exchange integral entering the A matrix.
     #  It is in the format (nocc, nvirt, nocc, nvirt)
-    k_iajb = 2 * pqrs_K[:nocc, nocc:, :nocc, nocc:].reshape(nocc*nvirt, nocc*nvirt)
+    k_iajb = pqrs_K[:nocc, nocc:, :nocc, nocc:].reshape(nocc*nvirt, nocc*nvirt)
 
     # This is the Coulomb integral entering in the A matrix.
     # It is in the format: (nocc, nocc, nvirt, nvirt)
-    k_ijab_tmp = xc(xc_dft['ax']) * pqrs_J[:nocc, :nocc, nocc:, nocc:]
+    k_ijab_tmp = pqrs_J[:nocc, :nocc, nocc:, nocc:]
 
     # To get the correct order in the A matrix, i.e. (nocc, nvirt, nocc, nvirt),
     # we have to swap axes
     k_ijab = np.swapaxes(k_ijab_tmp, axis1=1, axis2=2).reshape(nocc*nvirt, nocc*nvirt)
 
     # They are in the m x m format where m is the number of excitations = nocc * nvirt
-    a_mat = k_iajb - k_ijab
+    a_mat = 2 * k_iajb - xc(xc_dft)['ax'] * k_ijab
 
     # Generate a vector with all possible ea - ei energy differences
     e_diff = -np.subtract(
