@@ -1,18 +1,14 @@
 __all__ = ['workflow_stddft']
 
 from nac.common import (
-    Matrix, change_mol_units, h2ev, hardness, retrieve_hdf5_data, search_data_in_hdf5,
-    store_arrays_in_hdf5, triang2mtx, xc)
-from nac.integrals import calcMtxOverlapP
-from nac.integrals.multipoleIntegrals import calcMtxMultipoleP
+    change_mol_units, h2ev, hardness, retrieve_hdf5_data, xc)
+from nac.integrals.multipole_matrices import get_multipole_matrix
 from nac.integrals.spherical_Cartesian_cgf import (calc_orbital_Slabels, read_basis_format)
 from nac.schedule.components import calculate_mos
 from nac.workflows.initialization import initialize
 from qmflows.parsers import parse_string_xyz
 from qmflows import run
 from noodles import (gather, schedule)
-from os.path import join
-from scipy import sparse
 from scipy.linalg import sqrtm
 from scipy.spatial.distance import cdist
 from typing import (Dict, List)
@@ -72,7 +68,7 @@ def compute_excited_states_tddft(
     nvirt = c_ao.shape[1] - nocc
 
     # Call the function that computes overlaps
-    s = getMultipoleMtx(
+    s = get_multipole_matrix(
         mol, config, 'overlap')
 
     # Make a function tha returns in transition density charges
@@ -105,7 +101,7 @@ def compute_excited_states_tddft(
 
     # 2) Compute the transition dipole matrix TDM(i->a)
     # Call the function that computes transition dipole moments integrals
-    tdm = getMultipoleMtx(mol, config, 'dipole')
+    tdm = get_multipole_matrix(mol, config, 'dipole')
     tdmatrix_x = np.linalg.multi_dot([c_ao[:, :nocc].T, tdm[0, :, :], c_ao[:, nocc:]]).reshape(nocc*nvirt)
     tdmatrix_y = np.linalg.multi_dot([c_ao[:, :nocc].T, tdm[1, :, :], c_ao[:, nocc:]]).reshape(nocc*nvirt)
     tdmatrix_z = np.linalg.multi_dot([c_ao[:, :nocc].T, tdm[2, :, :], c_ao[:, nocc:]]).reshape(nocc*nvirt)
@@ -162,73 +158,6 @@ def write_output_tddft(nocc, nvirt, omega, f, d_x, d_y, d_z, xia, e):
     output[:, 0] = np.arange(nocc * nvirt) + 1
 
     return output
-
-
-def getMultipoleMtx(mol: List, config: Dict, multipole: str) -> Matrix:
-    """
-    """
-    root = join(config['project_name'], 'multipole')
-    path_hdf5 = config['path_hdf5']
-    path_multipole_hdf5 = join(root, multipole)
-    matrix_multipole = search_multipole_in_hdf5(path_hdf5, path_multipole_hdf5, multipole)
-
-    if matrix_multipole is None:
-        matrix_multipole = compute_matrix_multipole(mol, config, multipole)
-
-    store_arrays_in_hdf5(path_hdf5, path_multipole_hdf5, matrix_multipole)
-
-    return matrix_multipole
-
-
-def compute_matrix_multipole(
-        mol: List, config: Dict, multipole: str) -> Matrix:
-    """
-    """
-    path_hdf5 = config['path_hdf5']
-    runner = config['runner']
-
-    # Compute the number of cartesian basis functions
-    dictCGFs = config['dictCGFs']
-    n_cart_funcs = np.sum(np.stack(len(dictCGFs[at.symbol]) for at in mol))
-
-    # Compute the transformation matrix from cartesian to spherical
-    transf_mtx = retrieve_hdf5_data(path_hdf5, config['transf_mtx'])
-    transf_mtx = sparse.csr_matrix(transf_mtx)
-    transpose = transf_mtx.transpose()
-
-    if multipole == 'overlap':
-        rs = calcMtxOverlapP(mol, dictCGFs, runner)
-        mtx_overlap = triang2mtx(rs, n_cart_funcs)  # there are 1452 Cartesian basis CGFs
-        matrix_multipole = transf_mtx.dot(sparse.csr_matrix.dot(mtx_overlap, transpose))
-
-    else:
-        rc = (0, 0, 0)
-        exponents = {
-            'dipole': [
-                {'e': 1, 'f': 0, 'g': 0}, {'e': 0, 'f': 1, 'g': 0}, {'e': 0, 'f': 0, 'g': 1}],
-            'quadrupole': [
-                {'e': 2, 'f': 0, 'g': 0}, {'e': 0, 'f': 2, 'g': 0}, {'e': 0, 'f': 0, 'g': 2}]
-        }
-        mtx_integrals_triang = tuple(calcMtxMultipoleP(mol, dictCGFs, runner, rc, **kw)
-                                     for kw in exponents[multipole])
-        mtx_integrals_cart = tuple(triang2mtx(xs, n_cart_funcs)
-                                   for xs in mtx_integrals_triang)
-        matrix_multipole = np.stack(
-            transf_mtx.dot(sparse.csr_matrix.dot(x, transpose)) for x in mtx_integrals_cart)
-
-    return matrix_multipole
-
-
-def search_multipole_in_hdf5(path_hdf5: str, path_multipole_hdf5: str, multipole: str):
-    """
-    Search if the multipole is already store in the HDFt
-    """
-    if search_data_in_hdf5(path_hdf5, path_multipole_hdf5):
-        print("retrieving multipole: {} from the hdf5".format(multipole))
-        return retrieve_hdf5_data(path_hdf5, path_multipole_hdf5)
-    else:
-        print("computing multipole: ".format(multipole))
-        return None
 
 
 def number_spherical_functions_per_atom(mol, package_name, basis_name, path_hdf5):
