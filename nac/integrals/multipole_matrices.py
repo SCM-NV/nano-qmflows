@@ -1,6 +1,6 @@
 from nac.common import (
     Matrix, retrieve_hdf5_data, search_data_in_hdf5, store_arrays_in_hdf5, triang2mtx)
-from nac.integrals import calcMtxOverlapP
+from nac.integrals.overlapIntegral import calcMtxOverlapP
 from nac.integrals.multipoleIntegrals import calcMtxMultipoleP
 from os.path import join
 from scipy import sparse
