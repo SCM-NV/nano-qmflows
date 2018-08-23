@@ -48,7 +48,7 @@ def compute_matrix_multipole(
     n_cart_funcs = np.sum(np.stack(len(dictCGFs[at.symbol]) for at in mol))
 
     # Compute the transformation matrix from cartesian to spherical
-    transf_mtx = retrieve_hdf5_data(path_hdf5, config['transf_mtx'])
+    transf_mtx = retrieve_hdf5_data(path_hdf5, config['hdf5_trans_mtx'])
     transf_mtx = sparse.csr_matrix(transf_mtx)
     transpose = transf_mtx.transpose()
 
