@@ -1,5 +1,5 @@
 from .fourierTransform import (calculate_fourier_trasform_cartesian)
-from .matrix_multipole import (compute_matrix_multipole, get_multipole_matrix)
+from .multipole_matrices import (compute_matrix_multipole, get_multipole_matrix)
 from .multipoleIntegrals import (calcMtxMultipoleP, general_multipole_matrix)
 from .nonAdiabaticCoupling import (calculate_couplings_levine,
                                    calculate_couplings_3points,
