@@ -1,8 +1,9 @@
 __all__ = ['workflow_stddft']
 
-from nac.common import (change_mol_units, hardness, retrieve_hdf5_data, xc)
-from nac.workflows.initialization import initialize
+from nac.common import (change_mol_units, h2ev, hardness, retrieve_hdf5_data, xc)
+from nac.integrals.spherical_Cartesian_cgf import (calc_orbital_Slabels, read_basis_format)
 from nac.schedule.components import calculate_mos
+from nac.workflows.initialization import initialize
 from qmflows.parsers import parse_string_xyz
 from qmflows import run
 from noodles import (gather, schedule)
@@ -55,8 +56,9 @@ def compute_excited_states_tddft(
     """
     ADD DOCUMENTATION
     """
-    project_name, package_name, basis_name, path_hdf5, runner = [
-        config[key] for key in ['project_name', 'package_name', 'basis_name', 'path_hdf5', 'runner']]
+    project_name, package_name, basis_name, path_hdf5, transf_mtx, runner = [
+        config[key] for key in
+        ['project_name', 'package_name', 'basis_name', 'path_hdf5', 'transf_mtx', 'runner']]
 
     e, c_ao = retrieve_hdf5_data(path_hdf5, mo_paths_hdf5[i])
 
@@ -65,7 +67,7 @@ def compute_excited_states_tddft(
 
     # Call the function that computes overlaps
     s = getMultipoleMtx(
-        mol, project_name, package_name, basis_name, path_hdf5, runner, 'overlap')
+        mol, project_name, package_name, basis_name, path_hdf5, transf_mtx, runner, 'overlap')
 
     # Make a function tha returns in transition density charges
     q = transition_density_charges(mol, package_name, basis_name, path_hdf5, s, c_ao)
@@ -108,20 +110,19 @@ def compute_excited_states_tddft(
     d_z = np.stack(np.sum(np.sqrt(delta_ia) * xia[:, i] * tdmatrix_z) for i in range(nocc*nvirt))
 
     # 4) Compute the oscillator strength
-    f = 2 / 3 * np.sqrt(2 * omega) * (d_x **2 + d_y ** 2 + d_z ** 2)
+    f = 2 / 3 * np.sqrt(2 * omega) * (d_x ** 2 + d_y ** 2 + d_z ** 2)
 
     # Write to output
     output = write_output_tddft(nocc, nvirt, omega, f, d_x, d_y, d_z, xia, e)
     np.savetxt('output_{}.txt'.format(i), output, fmt='%5d %10.3f %10.5f %10.5f %10.5f %10.5f %10.5f %3d %10.3f %3d %10.3f %10.3f')
 
 
-# Retrieve some useful information from data
 def write_output_tddft(nocc, nvirt, omega, f, d_x, d_y, d_z, xia, e):
-    from nac.common import h2ev
+    """ Write out as a table in plane text"""
 
     excs = []
     for i in range(nocc):
-        for a in range(nocc, nvirt+nocc):
+        for a in range(nocc, nvirt + nocc):
             excs.append((i, a))
 
     output = np.empty((nocc*nvirt, 12))
@@ -235,16 +236,14 @@ def getMultipoleMtx(mol, project_name, package_name, basis_name, path_hdf5, runn
             return m
 
 
-def n_sph_funcs_per_atom(mol, package_name, basis_name, path_hdf5):
+def number_spherical_functions_per_atom(mol, package_name, basis_name, path_hdf5):
     """
     ADD Documentation
     """
-
-    from nac.integrals.spherical_Cartesian_cgf import (calc_orbital_Slabels, read_basis_format)
-
     with h5py.File(path_hdf5, 'r') as f5:
-        xs = [f5['{}/basis/{}/{}/coefficients'.format(package_name, mol[i][0], basis_name)] for i in range(len(mol))]
-        ys = [calc_orbital_Slabels(package_name, read_basis_format(package_name, xs[i].attrs['basisFormat'])) for i in range(len(mol))]
+        xs = [f5['{}/basis/{}/{}/coefficients'.format(package_name, atom[0], basis_name)] for atom in mol]
+        ys = [calc_orbital_Slabels(
+            package_name, read_basis_format(package_name, path.attrs['basisFormat'])) for path in xs]
 
     return np.stack(np.sum(len(x) for x in ys[i]) for i in range(len(mol)))
 
@@ -258,7 +257,8 @@ def transition_density_charges(mol, config, s, c_ao):
     c_mo = np.dot(sqrt_s, c_ao)
     # Size of the transition density tensor : n_atoms x n_mos x n_mos
     q = np.zeros((n_atoms, c_mo.shape[1], c_mo.shape[1]))
-    n_sph_atoms = n_sph_funcs_per_atom(mol, config['package_name'], config['basis_name'], config['path_hdf5'])
+    n_sph_atoms = number_spherical_functions_per_atom(
+        mol, config['package_name'], config['basis_name'], config['path_hdf5'])
 
     index = 0
     for i in range(n_atoms):
@@ -269,7 +269,9 @@ def transition_density_charges(mol, config, s, c_ao):
 
 
 def compute_MNOK_integrals(mol, xc_dft):
-
+    """
+    ADD Documentation
+    """
     n_atoms = len(mol)
     coords = np.asarray([mol[i][1] for i in range(len(mol))])
     # Distance matrix between atoms A and B
@@ -287,12 +289,15 @@ def compute_MNOK_integrals(mol, xc_dft):
 
 
 def construct_A_matrix_tddft(pqrs_J, pqrs_K, nocc, nvirt, xc_dft, e):
-
-    from nac.common import xc
-
-    k_iajb = 2 * pqrs_K[:nocc, nocc:, :nocc, nocc:].reshape(nocc*nvirt, nocc*nvirt) # This is the exchange integral entering the A matrix. It is in the format (nocc, nvirt, nocc, nvirt)
-    k_ijab_tmp = xc(xc_dft)['ax'] * pqrs_J[:nocc, :nocc, nocc:, nocc:] # This is the Coulomb integral entering in the A matrix. It is in the format: (nocc, nocc, nvirt, nvirt)
-    k_ijab = np.swapaxes(k_ijab_tmp, axis1=1, axis2=2).reshape(nocc*nvirt, nocc*nvirt) # To get the correct order in the A matrix, i.e. (nocc, nvirt, nocc, nvirt), we have to swap axes
+    """
+    ADD Documentation
+    """
+    # This is the exchange integral entering the A matrix. It is in the format (nocc, nvirt, nocc, nvirt)
+    k_iajb = 2 * pqrs_K[:nocc, nocc:, :nocc, nocc:].reshape(nocc*nvirt, nocc*nvirt)
+    # This is the Coulomb integral entering in the A matrix. It is in the format: (nocc, nocc, nvirt, nvirt)
+    k_ijab_tmp = xc(xc_dft)['ax'] * pqrs_J[:nocc, :nocc, nocc:, nocc:]
+    # To get the correct order in the A matrix, i.e. (nocc, nvirt, nocc, nvirt), we have to swap axes
+    k_ijab = np.swapaxes(k_ijab_tmp, axis1=1, axis2=2).reshape(nocc*nvirt, nocc*nvirt)
 
     # This is the exchange integral entering the A matrix.
     #  It is in the format (nocc, nvirt, nocc, nvirt)
@@ -300,7 +305,7 @@ def construct_A_matrix_tddft(pqrs_J, pqrs_K, nocc, nvirt, xc_dft, e):
 
     # This is the Coulomb integral entering in the A matrix.
     # It is in the format: (nocc, nocc, nvirt, nvirt)
-    k_ijab_tmp = ax * pqrs_J[:nocc, :nocc, nocc:, nocc:]
+    k_ijab_tmp = xc(xc_dft['ax']) * pqrs_J[:nocc, :nocc, nocc:, nocc:]
 
     # To get the correct order in the A matrix, i.e. (nocc, nvirt, nocc, nvirt),
     # we have to swap axes
