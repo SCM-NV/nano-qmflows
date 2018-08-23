@@ -58,11 +58,7 @@ def compute_excited_states_tddft(
     """
     ADD DOCUMENTATION
     """
-    project_name, package_name, path_hdf5, transf_mtx, runner = [
-        config[key] for key in
-        ['project_name', 'package_name', 'path_hdf5', 'hdf5_trans_mtx', 'runner']]
-
-    e, c_ao = retrieve_hdf5_data(path_hdf5, mo_paths_hdf5[i])
+    e, c_ao = retrieve_hdf5_data(config['path_hdf5'], mo_paths_hdf5[i])
 
     # Number of virtual orbitals
     nvirt = c_ao.shape[1] - nocc
