@@ -197,11 +197,11 @@ def compute_MNOK_integrals(mol, xc_dft):
     # Distance matrix between atoms A and B
     r_ab = cdist(coords, coords)
     hardness_vec = np.stack(hardness(mol[i][0]) for i in range(n_atoms)).reshape(n_atoms, 1)
-    hard = np.add(hardness_vec, hardness_vec.T) / 2
+    hard = np.add(hardness_vec, hardness_vec.T) 
     beta = xc(xc_dft)['beta1'] + xc(xc_dft)['ax'] * xc(xc_dft)['beta2']
     alpha = xc(xc_dft)['alpha1'] + xc(xc_dft)['ax'] * xc(xc_dft)['alpha2']
     if (xc(xc_dft)['ax'] == 0): 
-       gamma_J = 1 r_ab
+       gamma_J = 1 / r_ab
        gamma_J[gamma_J == np.inf] = 0
     else: 
        gamma_J = np.power(1 / (np.power(r_ab, beta) + np.power((xc(xc_dft)['ax'] * hard), -beta)), 1/beta)
@@ -227,7 +227,7 @@ def construct_A_matrix_tddft(pqrs_J, pqrs_K, nocc, nvirt, xc_dft, e):
     k_ijab = np.swapaxes(k_ijab_tmp, axis1=1, axis2=2).reshape(nocc*nvirt, nocc*nvirt)
 
     # They are in the m x m format where m is the number of excitations = nocc * nvirt
-    a_mat = 2 * k_iajb - xc(xc_dft)['ax'] * k_ijab
+    a_mat = 2 * k_iajb - k_ijab
 
     # Generate a vector with all possible ea - ei energy differences
     e_diff = -np.subtract(
