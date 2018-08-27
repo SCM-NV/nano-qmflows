@@ -1,11 +1,11 @@
 workflow:
-  absorption_spectrum
+  workflow_stddft
 tddft:
  "stda"
 xc_dft:
  "pbe"
 ci_range:
- [1, 100]
+ [1, 46]
 nHOMO:
   6
 calculate_oscillators_every:
@@ -27,20 +27,16 @@ general_settings:
   path_hdf5:
     "ethylene.hdf5"
   path_traj_xyz:
-    "ethylene.xyz"
+    "test/test_files/ethylene.xyz"
   calculate_guesses:
     "all"
-  path_basis:
-    "/home/v13/cp2k_basis/BASIS_MOLOPT"
-  path_potential:
-    "/home/v13/cp2k_basis/GTH_POTENTIALS"
   scratch_path:
-    "/scratch/shared/v13/ethylene"
+    "/tmp/namd/derivative_couplings"
 
   settings_main:
     potential: "GTH-PBE"
     basis: "DZVP-MOLOPT-SR-GTH"
-    cell_parameters: 20.0
+    cell_parameters: 25.0
     cell_angles: [90.0, 90.0, 90.0]
     specific:
       cp2k:
@@ -55,13 +51,13 @@ general_settings:
               added_mos: 200
               print:
                 mo:
-                  mo_index_range: "1 1000"
+                  mo_index_range: "1 46"
 
   settings_guess:
     potential: "GTH-PBE"
     basis: "DZVP-MOLOPT-SR-GTH"
     cell_angles: [90.0, 90.0, 90.0]
-    cell_parameters: 20.0
+    cell_parameters: 25.0
     specific:
       cp2k:
         force_eval:
@@ -69,6 +65,8 @@ general_settings:
             cell:
               periodic: "None"
           dft:
+            xc:
+              xc_functional: "pbe"
             scf:
               eps_scf: 1e-6
               added_mos: 0

@@ -14,6 +14,7 @@ from scipy.spatial.distance import cdist
 from typing import (Dict, List)
 import h5py
 import numpy as np
+import os
 
 
 def workflow_stddft(workflow_settings: Dict):
@@ -49,12 +50,12 @@ def workflow_stddft(workflow_settings: Dict):
          for i, mol in enumerate(molecules_au)
          if i % workflow_settings['calculate_oscillator_every'] == 0])
 
-    run(results, folder=config['work_dir'])
+    return run(results, folder=config['work_dir'])
 
 
 def compute_excited_states_tddft(
            i: int, mol: List, mo_paths_hdf5, xc_dft: str, ci_range: list,
-           nocc: int, tddft: str, config: Dict):
+        nocc: int, tddft: str, config: Dict):
     """
     ADD DOCUMENTATION
     """
@@ -112,7 +113,10 @@ def compute_excited_states_tddft(
 
     # Write to output
     output = write_output_tddft(nocc, nvirt, omega, f, d_x, d_y, d_z, xia, e)
-    np.savetxt('output_{}.txt'.format(i), output, fmt='%5d %10.3f %10.5f %10.5f %10.5f %10.5f %10.5f %3d %10.3f %3d %10.3f %10.3f')
+    path_output = os.path.join(config['work_dir'], 'output_{}.txt'.format(i))
+    np.savetxt(path_output, output, fmt='%5d %10.3f %10.5f %10.5f %10.5f %10.5f %10.5f %3d %10.3f %3d %10.3f %10.3f')
+
+    return path_output
 
 
 def write_output_tddft(nocc, nvirt, omega, f, d_x, d_y, d_z, xia, e):
