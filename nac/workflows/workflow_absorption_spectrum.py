@@ -5,16 +5,13 @@ from collections import namedtuple
 from itertools import chain
 from noodles import (gather, schedule)
 from nac.common import (
-    Matrix, Vector, change_mol_units, getmass, h2ev,
-    retrieve_hdf5_data, search_data_in_hdf5, store_arrays_in_hdf5,
-    triang2mtx)
-from nac.integrals.multipoleIntegrals import calcMtxMultipoleP
+    Matrix, Vector, change_mol_units, compute_center_of_mass, h2ev,
+    retrieve_hdf5_data)
+from nac.integrals.multipole_matrices import get_multipole_matrix
 from nac.schedule.components import calculate_mos
 from nac.workflows.initialization import initialize
-from os.path import join
 from qmflows import run
 from qmflows.parsers import parse_string_xyz
-from scipy import sparse
 from scipy.constants import physical_constants
 
 import logging
@@ -67,10 +64,8 @@ def workflow_oscillator_strength(workflow_settings: Dict):
 
     oscillators = gather(
         *[scheduleOscillator(
-            i, config['project_name'], mo_paths_hdf5, config['dictCGFs'], mol,
-            config['path_hdf5'], config['runner'], hdf5_trans_mtx=config['hdf5_trans_mtx'],
-            initial_states=initial_states, final_states=final_states)
-          for i, mol in enumerate(molecules_au)
+            i, mol,  mo_paths_hdf5, initial_states, final_states,
+            config) for i, mol in enumerate(molecules_au)
           if i % workflow_settings['calculate_oscillator_every'] == 0])
 
     energies, promised_cross_section = create_promised_cross_section(
@@ -203,66 +198,37 @@ def lorentzian_distribution(
 
 
 def calc_oscillator_strenghts(
-        i: int, project_name: str,
-        mo_paths_hdf5: str, dictCGFs: Dict,
-        atoms: List, path_hdf5: str, runner: str,
-        hdf5_trans_mtx: str=None,
-        initial_states: Vector=None, final_states: Matrix=None):
-
+        i: int, atoms: List, mo_paths_hdf5: str, initial_states: Vector, final_states: Matrix,
+        config: Dict):
     """
     Use the Molecular orbital Energies and Coefficients to compute the
     oscillator_strength.
 
     :param i: time frame
-    :param project_name: Folder name where the computations
-    are going to be stored.
-    :param mo_paths_hdf5: Path to the MO coefficients and energies in the
-    HDF5 file.
-    :paramter dictCGFS: Dictionary from Atomic Label to basis set.
-    :type     dictCGFS: Dict String [CGF],
-              CGF = ([Primitives], AngularMomentum),
-              Primitive = (Coefficient, Exponent)
     :param atoms: Molecular geometry.
     :type atoms: [namedtuple("AtomXYZ", ("symbol", "xyz"))]
-    :param path_hdf5: Path to the HDF5 file that contains the
-    numerical results.
-    :param hdf5_trans_mtx: path to the transformation matrix in the HDF5 file.
     :param initial_states: List of the initial Electronic states.
     :type initial_states: [Int]
     :param final_states: List containing the sets of possible electronic
     states.
     :type final_states: [[Int]]
+    :param config: Configuration to perform the calculations
     """
+    path_hdf5 = config['path_hdf5']
     # Energy and coefficients at time t
     es, coeffs = retrieve_hdf5_data(path_hdf5, mo_paths_hdf5[i])
-
-    # If the MO orbitals are given in Spherical Coordinates transform then to
-    # Cartesian Coordinates.
-    if hdf5_trans_mtx is not None:
-        trans_mtx = retrieve_hdf5_data(path_hdf5, hdf5_trans_mtx)
 
     logger.info("Computing the oscillator strength at time: {}".format(i))
     # Overlap matrix
 
+    # Dipole matrix in sphericals
+    mtx_integrals_spher = get_multipole_matrix(i, atoms, config, 'dipole')
     # Origin of the dipole
     rc = compute_center_of_mass(atoms)
 
-    # Dipole matrix element in spherical coordinates
-    path_dipole_matrices = join(project_name, 'point_{}'.format(i),
-                                'dipole_matrices')
-
-    if search_data_in_hdf5(path_hdf5, path_dipole_matrices):
-        mtx_integrals_spher = retrieve_hdf5_data(
-            path_hdf5, path_dipole_matrices)
-    else:
-        # Compute the Dipole matrices and store them in the HDF5
-        mtx_integrals_spher = calcDipoleCGFS(atoms, dictCGFs, rc, trans_mtx, runner)
-        store_arrays_in_hdf5(path_hdf5, path_dipole_matrices,
-                             mtx_integrals_spher)
-
     oscillators = [
         compute_oscillator_strength(
-            rc, atoms, dictCGFs, es, coeffs, mtx_integrals_spher, initialS, fs)
+            rc, atoms, config['dictCGFs'], es, coeffs, mtx_integrals_spher, initialS, fs)
         for initialS, fs in zip(initial_states, final_states)]
 
     return oscillators
@@ -340,46 +306,6 @@ def write_oscillator(
         f.write(fmt)
 
 
-def transform2Spherical(trans_mtx: Matrix, matrix: Matrix) -> Matrix:
-    """
-    Transform from spherical to cartesians using the sparse representation
-    """
-    trans_mtx = sparse.csr_matrix(trans_mtx)
-    transpose = trans_mtx.transpose()
-
-    return trans_mtx.dot(sparse.csr_matrix.dot(matrix, transpose))
-
-
-def calcDipoleCGFS(
-        atoms: List, dictCGFs: List, rc: Tuple, trans_mtx: Matrix, runner: str) -> Matrix:
-    """
-    Compute the Multipole matrix in cartesian coordinates and
-    expand it to a matrix and finally convert it to spherical coordinates.
-
-    :param atoms: Atomic label and cartesian coordinates in au.
-    type atoms: List of namedTuples
-    :param cgfsN: Contracted gauss functions normalized, represented as
-    a list of tuples of coefficients and Exponents.
-    type cgfsN: [(Coeff, Expo)]
-    :param trans_mtx: Transformation matrix to translate from Cartesian
-    to Sphericals.
-    :type trans_mtx: Numpy Matrix
-    :param runner: library to distribute the calculations.
-    :returns: Matrix with entries <ψi | x y z | ψj>
-    """
-    # x,y,z exponents value for the dipole
-    exponents = [{'e': 1, 'f': 0, 'g': 0}, {'e': 0, 'f': 1, 'g': 0},
-                 {'e': 0, 'f': 0, 'g': 1}]
-
-    dimCart = trans_mtx.shape[1]
-    mtx_integrals_triang = tuple(calcMtxMultipoleP(atoms, dictCGFs, runner=runner, rc=rc, **kw)
-                                 for kw in exponents)
-    mtx_integrals_cart = tuple(triang2mtx(xs, dimCart)
-                               for xs in mtx_integrals_triang)
-    return np.stack(transform2Spherical(trans_mtx, x) for x
-                    in mtx_integrals_cart)
-
-
 def oscillator_strength(css_i: Matrix, css_j: Matrix, energy: float,
                         mtx_integrals_spher: Matrix) -> float:
     """
@@ -404,25 +330,6 @@ def oscillator_strength(css_i: Matrix, css_j: Matrix, energy: float,
     fij = (2 / 3) * energy * sum_integrals
 
     return fij, components
-
-
-def compute_center_of_mass(atoms: List) -> Tuple:
-    """
-    Compute the center of mass of a molecule
-    """
-    # Get the masses of the atoms
-    symbols = map(lambda at: at.symbol, atoms)
-    masses = np.array([getmass(s) for s in symbols])
-    total_mass = np.sum(masses)
-
-    # Multiple the mass by the coordinates
-    mrs = [getmass(at.symbol) * np.array(at.xyz) for at in atoms]
-    xs = np.sum(mrs, axis=0)
-
-    # Center of mass
-    cm = xs / total_mass
-
-    return tuple(cm)
 
 
 def build_transitions(
