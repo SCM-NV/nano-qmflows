@@ -9,10 +9,11 @@ from typing import (Dict, List)
 import numpy as np
 
 
-def get_multipole_matrix(mol: List, config: Dict, multipole: str) -> Matrix:
+def get_multipole_matrix(i: int, mol: List, config: Dict, multipole: str) -> Matrix:
     """
+    Retrieve the `multipole` number `i` from the trajectory. Otherwise compute it.
     """
-    root = join(config['project_name'], 'multipole')
+    root = join(config['project_name'], 'multipole', 'point_{}'.format(i))
     path_hdf5 = config['path_hdf5']
     path_multipole_hdf5 = join(root, multipole)
     matrix_multipole = search_multipole_in_hdf5(path_hdf5, path_multipole_hdf5, multipole)
@@ -41,6 +42,10 @@ def compute_matrix_multipole(
         mol: List, config: Dict, multipole: str) -> Matrix:
     """
     Compute the some `multipole` matrix: overlap, dipole, etc. for a given geometry `mol`.
+    Compute the Multipole matrix in cartesian coordinates and
+    expand it to a matrix and finally convert it to spherical coordinates.
+
+    :returns: Matrix with entries <ψi | x y z | ψj>
     """
     path_hdf5 = config['path_hdf5']
     runner = config['runner']

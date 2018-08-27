@@ -65,7 +65,7 @@ def compute_excited_states_tddft(
 
     # Call the function that computes overlaps
     s = get_multipole_matrix(
-        mol, config, 'overlap')
+        i, mol, config, 'overlap')
 
     # Make a function tha returns in transition density charges
     q = transition_density_charges(mol, config, s, c_ao)

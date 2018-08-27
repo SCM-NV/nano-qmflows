@@ -79,7 +79,7 @@ def check_properties(path_test_hdf5):
     Check that the tensor stored in the HDF5 are correct.
     """
     dipole_matrices = retrieve_hdf5_data(
-        path_test_hdf5, 'Cd/point_0/dipole_matrices')
+        path_test_hdf5, 'Cd/multipole/point_0/dipole')
 
     # The diagonals of each component of the matrix must be zero
     # for a single atom
