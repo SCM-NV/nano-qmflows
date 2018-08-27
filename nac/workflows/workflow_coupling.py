@@ -76,7 +76,7 @@ def workflow_derivative_couplings(workflow_settings: Dict):
 
     run(promise_files, folder=work_dir)
 
-    remove_folders(config['traj_folders'])
+    remove_folders(config['folders'])
 
 
 def remove_folders(folders):
