@@ -5,7 +5,7 @@ from collections import namedtuple
 from itertools import chain
 from noodles import (gather, schedule)
 from nac.common import (
-    Matrix, Vector, change_mol_units, getmass, h2ev,
+    Matrix, Vector, change_mol_units, compute_center_of_mass, h2ev,
     retrieve_hdf5_data, search_data_in_hdf5, store_arrays_in_hdf5,
     triang2mtx)
 from nac.integrals.multipoleIntegrals import calcMtxMultipoleP
@@ -404,25 +404,6 @@ def oscillator_strength(css_i: Matrix, css_j: Matrix, energy: float,
     fij = (2 / 3) * energy * sum_integrals
 
     return fij, components
-
-
-def compute_center_of_mass(atoms: List) -> Tuple:
-    """
-    Compute the center of mass of a molecule
-    """
-    # Get the masses of the atoms
-    symbols = map(lambda at: at.symbol, atoms)
-    masses = np.array([getmass(s) for s in symbols])
-    total_mass = np.sum(masses)
-
-    # Multiple the mass by the coordinates
-    mrs = [getmass(at.symbol) * np.array(at.xyz) for at in atoms]
-    xs = np.sum(mrs, axis=0)
-
-    # Center of mass
-    cm = xs / total_mass
-
-    return tuple(cm)
 
 
 def build_transitions(

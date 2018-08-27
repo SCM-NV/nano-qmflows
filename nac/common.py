@@ -9,7 +9,7 @@ __all__ = ['Array', 'AtomBasisData', 'AtomBasisKey', 'AtomData', 'AtomXYZ',
 from collections import namedtuple
 from functools import reduce
 from scipy.constants import physical_constants
-from typing import Dict
+from typing import (Dict, List, Tuple)
 
 import h5py
 import numpy as np
@@ -180,7 +180,24 @@ def change_mol_units(mol, factor=angs2au):
         newMol.append(AtomXYZ(atom.symbol, coord))
     return newMol
 
-# Utilities
+
+def compute_center_of_mass(atoms: List) -> Tuple:
+    """
+    Compute the center of mass of a molecule
+    """
+    # Get the masses of the atoms
+    symbols = map(lambda at: at.symbol, atoms)
+    masses = np.array([getmass(s) for s in symbols])
+    total_mass = np.sum(masses)
+
+    # Multiple the mass by the coordinates
+    mrs = [getmass(at.symbol) * np.array(at.xyz) for at in atoms]
+    xs = np.sum(mrs, axis=0)
+
+    # Center of mass
+    cm = xs / total_mass
+
+    return tuple(cm)
 
 
 def product(xs):

@@ -1,5 +1,6 @@
 from nac.common import (
-    Matrix, retrieve_hdf5_data, search_data_in_hdf5, store_arrays_in_hdf5, triang2mtx)
+    Matrix, compute_center_of_mass, retrieve_hdf5_data, search_data_in_hdf5,
+    store_arrays_in_hdf5, triang2mtx)
 from nac.integrals.overlapIntegral import calcMtxOverlapP
 from nac.integrals.multipoleIntegrals import calcMtxMultipoleP
 from os.path import join
@@ -39,6 +40,7 @@ def search_multipole_in_hdf5(path_hdf5: str, path_multipole_hdf5: str, multipole
 def compute_matrix_multipole(
         mol: List, config: Dict, multipole: str) -> Matrix:
     """
+    Compute the some `multipole` matrix: overlap, dipole, etc. for a given geometry `mol`.
     """
     path_hdf5 = config['path_hdf5']
     runner = config['runner']
@@ -58,7 +60,7 @@ def compute_matrix_multipole(
         matrix_multipole = transf_mtx.dot(sparse.csr_matrix.dot(mtx_overlap, transpose))
 
     else:
-        rc = (0, 0, 0)
+        rc = compute_center_of_mass(mol)
         exponents = {
             'dipole': [
                 {'e': 1, 'f': 0, 'g': 0}, {'e': 0, 'f': 1, 'g': 0}, {'e': 0, 'f': 0, 'g': 1}],
