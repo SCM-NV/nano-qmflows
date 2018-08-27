@@ -197,14 +197,15 @@ def compute_MNOK_integrals(mol, xc_dft):
     # Distance matrix between atoms A and B
     r_ab = cdist(coords, coords)
     hardness_vec = np.stack(hardness(mol[i][0]) for i in range(n_atoms)).reshape(n_atoms, 1)
-    hard = np.add(hardness_vec, hardness_vec.T) 
+    hard = np.add(hardness_vec, hardness_vec.T)
     beta = xc(xc_dft)['beta1'] + xc(xc_dft)['ax'] * xc(xc_dft)['beta2']
     alpha = xc(xc_dft)['alpha1'] + xc(xc_dft)['ax'] * xc(xc_dft)['alpha2']
-    if (xc(xc_dft)['ax'] == 0): 
-       gamma_J = 1 / r_ab
-       gamma_J[gamma_J == np.inf] = 0
-    else: 
-       gamma_J = np.power(1 / (np.power(r_ab, beta) + np.power((xc(xc_dft)['ax'] * hard), -beta)), 1/beta)
+    if (xc(xc_dft)['ax'] == 0):
+        gamma_J = 1 / r_ab
+        gamma_J[gamma_J == np.inf] = 0
+    else:
+        gamma_J = np.power(
+            1 / (np.power(r_ab, beta) + np.power((xc(xc_dft)['ax'] * hard), -beta)), 1/beta)
     gamma_K = np.power(1 / (np.power(r_ab, alpha) + np.power(hard, -alpha)), 1/alpha)
 
     return gamma_J, gamma_K
