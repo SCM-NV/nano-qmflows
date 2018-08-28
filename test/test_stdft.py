@@ -1,4 +1,3 @@
-from nac.common import retrieve_hdf5_data
 from nac.workflows.input_validation import process_input
 from nac.workflows.workflow_stddft_spectrum import workflow_stddft
 from os.path import join
@@ -47,7 +46,7 @@ def compute_stdft(runner):
 
     finally:
         # remove tmp data and clean global config
-        # shutil.rmtree(scratch_path)
+        shutil.rmtree(scratch_path)
         pass
 
 
