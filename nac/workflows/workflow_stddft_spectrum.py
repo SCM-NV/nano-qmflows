@@ -59,40 +59,52 @@ def compute_excited_states_tddft(
     """
     ADD DOCUMENTATION
     """
+    print("Reading energies and mo coefficients")
     e, c_ao = retrieve_hdf5_data(config['path_hdf5'], mo_paths_hdf5[i])
 
     # Number of virtual orbitals
     nvirt = c_ao.shape[1] - nocc
 
     # Call the function that computes overlaps
+    print("Reading or computing the overlap matrix")
     s = get_multipole_matrix(
         i, mol, config, 'overlap')
 
     # Make a function tha returns in transition density charges
+    print("Computing the transition density charges") 
     q = transition_density_charges(mol, config, s, c_ao)
 
     # Make a function that compute the Mataga-Nishimoto-Ohno_Klopman damped Columb and Excgange law functions
+    print("Computing the gamma functions for Exchange and Coulomb integrals") 
     gamma_J, gamma_K = compute_MNOK_integrals(mol, xc_dft)
 
     # Compute the Couloumb and Exchange integrals
-    pqrs_J = np.tensordot(q, np.tensordot(q, gamma_J, axes=(0, 1)), axes=(0, 2))
+    # If xc_dft is a pure functional, ax=0, thus the pqrs_J ints are not needed and can be set to 0.  
+    print("Computing the Exchange and Coulomb integrals") 
+    if (xc(xc_dft)['type'] == 'pure'):
+        pqrs_J = np.zeros((e.size, e.size, e.size, e.size))
+    else:
+        pqrs_J = np.tensordot(q, np.tensordot(q, gamma_J, axes=(0, 1)), axes=(0, 2))
     pqrs_K = np.tensordot(q, np.tensordot(q, gamma_K, axes=(0, 1)), axes=(0, 2))
 
     # Construct the Tamm-Dancoff matrix A for each pair of i->a transition
+    print("Constructing the A matrix for TDDFT calculation")
     a_mat = construct_A_matrix_tddft(pqrs_J, pqrs_K, nocc, nvirt, xc_dft, e)
 
     if tddft == 'stddft':
         print('sTDDFT has not been implemented yet !')
     # Solve the eigenvalue problem = A * cis = omega * cis
     elif tddft == 'stda':
+        print("This is a TDA calculation ! \n Solving the eigenvalue problem")
         omega, xia = np.linalg.eig(a_mat)
     else:
         msg = "Only the stda method is available"
         raise RuntimeError(msg)
+
     # Compute oscillator strengths
+    print("Computing the oscillator strengths") 
     # The formula can be rearranged like this:
     # f_I = 2/3 * np.sqrt(2 * omega_I) * sum_ia ( np.sqrt(e_diff_ia) * xia * tdm_x) ** 2 + y^2 + z^2
-
     # 1) Get the energy matrix i->a. Size: Nocc * Nvirt
     delta_ia = -np.subtract(e[:nocc].reshape(nocc, 1), e[nocc:].reshape(nvirt, 1).T).reshape(nocc*nvirt)
 
@@ -204,9 +216,8 @@ def compute_MNOK_integrals(mol, xc_dft):
     hard = np.add(hardness_vec, hardness_vec.T)
     beta = xc(xc_dft)['beta1'] + xc(xc_dft)['ax'] * xc(xc_dft)['beta2']
     alpha = xc(xc_dft)['alpha1'] + xc(xc_dft)['ax'] * xc(xc_dft)['alpha2']
-    if (xc(xc_dft)['ax'] == 0):
-        gamma_J = 1 / r_ab
-        gamma_J[gamma_J == np.inf] = 0
+    if (xc(xc_dft)['type'] == 'pure'):
+        gamma_J = np.zeros((n_atoms, n_atoms)) 
     else:
         gamma_J = np.power(
             1 / (np.power(r_ab, beta) + np.power((xc(xc_dft)['ax'] * hard), -beta)), 1/beta)

@@ -87,15 +87,15 @@ def hardness(s: str):
 
 
 def xc(s: str) -> Dict:
-    d = {'pbe':  {'alpha1': 1.42, 'alpha2': 0.48, 'ax': 0.0, 'beta1': 0.2, 'beta2': 1.83},
-         'blyp': {'alpha1': 1.42, 'alpha2': 0.48, 'ax': 0.0, 'beta1': 0.2, 'beta2': 1.83},
-         'bp':   {'alpha1': 1.42, 'alpha2': 0.48, 'ax': 0.0, 'beta1': 0.2, 'beta2': 1.83},
-         'pbe0': {'alpha1': 1.42, 'alpha2': 0.48, 'ax': 0.25, 'beta1': 0.2, 'beta2': 1.83},
-         'b3lyp': {'alpha1': 1.42, 'alpha2': 0.48, 'ax': 0.20, 'beta1': 0.2, 'beta2': 1.83},
-         'bhlyp': {'alpha1': 1.42, 'alpha2': 0.48, 'ax': 0.50, 'beta1': 0.2, 'beta2': 1.83},
-         'cam-b3lyp': {'alpha1': 1.86, 'alpha2': 0.00, 'ax': 0.38, 'beta1': 0.90, 'beta2': 0.0},
-         'lc-blyp': {'alpha1': 8.0, 'alpha2': 0.00, 'ax': 0.53, 'beta1': 4.50, 'beta2': 0.0},
-         'wb97': {'alpha1': 8.0, 'alpha2': 0.00, 'ax': 0.61, 'beta1': 4.41, 'beta2': 0.0}}
+    d = {'pbe':  {'type':'pure', 'alpha1': 1.42, 'alpha2': 0.48, 'ax': 0.0, 'beta1': 0.2, 'beta2': 1.83},
+         'blyp': {'type':'pure','alpha1': 1.42, 'alpha2': 0.48, 'ax': 0.0, 'beta1': 0.2, 'beta2': 1.83},
+         'bp':   {'type':'pure','alpha1': 1.42, 'alpha2': 0.48, 'ax': 0.0, 'beta1': 0.2, 'beta2': 1.83},
+         'pbe0': {'type':'hybrid','alpha1': 1.42, 'alpha2': 0.48, 'ax': 0.25, 'beta1': 0.2, 'beta2': 1.83},
+         'b3lyp': {'type':'hybrid','alpha1': 1.42, 'alpha2': 0.48, 'ax': 0.20, 'beta1': 0.2, 'beta2': 1.83},
+         'bhlyp': {'type':'hybrid','alpha1': 1.42, 'alpha2': 0.48, 'ax': 0.50, 'beta1': 0.2, 'beta2': 1.83},
+         'cam-b3lyp': {'type':'rhs','alpha1': 1.86, 'alpha2': 0.00, 'ax': 0.38, 'beta1': 0.90, 'beta2': 0.0},
+         'lc-blyp': {'type':'rhs', 'alpha1': 8.0, 'alpha2': 0.00, 'ax': 0.53, 'beta1': 4.50, 'beta2': 0.0},
+         'wb97': {'type':'rhs', 'alpha1': 8.0, 'alpha2': 0.00, 'ax': 0.61, 'beta1': 4.41, 'beta2': 0.0}}
     return d[s]
 
 
