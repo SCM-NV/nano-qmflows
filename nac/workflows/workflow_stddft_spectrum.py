@@ -65,7 +65,7 @@ def compute_excited_states_tddft(
     # Number of virtual orbitals
     nvirt = c_ao.shape[1] - nocc
 
-    if tddft == 'sing_orbs': 
+    if tddft == 'sing_orb': 
        omega = -np.subtract(e[:nocc].reshape(nocc, 1), e[nocc:].reshape(nvirt, 1).T).reshape(nocc*nvirt)  
        xia = np.eye(nocc*nvirt)  
     else:  
