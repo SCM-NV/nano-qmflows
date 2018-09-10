@@ -116,20 +116,17 @@ def compute_excited_states_tddft(
     # Call the function that computes transition dipole moments integrals
     print("Reading or computing the transition dipole matrix")
     tdm = get_multipole_matrix(i, mol, config, 'dipole')
-    print("Reading or computing the transition quadrupole matrix")
-    tqm = get_multipole_matrix(
-         i, mol, config, 'quadrupole')
     tdmatrix_x = np.linalg.multi_dot([c_ao[:, :nocc].T, tdm[0, :, :], c_ao[:, nocc:]]).reshape(nocc*nvirt)
     tdmatrix_y = np.linalg.multi_dot([c_ao[:, :nocc].T, tdm[1, :, :], c_ao[:, nocc:]]).reshape(nocc*nvirt)
     tdmatrix_z = np.linalg.multi_dot([c_ao[:, :nocc].T, tdm[2, :, :], c_ao[:, nocc:]]).reshape(nocc*nvirt)
 
     # 3) Compute the transition dipole moments for each excited state i->a. Size: n_exc_states
-    d_x = np.stack(np.sum(np.sqrt(delta_ia) * xia[:, i] * tdmatrix_x) for i in range(nocc*nvirt))
-    d_y = np.stack(np.sum(np.sqrt(delta_ia) * xia[:, i] * tdmatrix_y) for i in range(nocc*nvirt))
-    d_z = np.stack(np.sum(np.sqrt(delta_ia) * xia[:, i] * tdmatrix_z) for i in range(nocc*nvirt))
+    d_x = np.stack(np.sum(np.sqrt(2 * delta_ia / omega[i]) * xia[:, i] * tdmatrix_x) for i in range(nocc*nvirt))
+    d_y = np.stack(np.sum(np.sqrt(2 * delta_ia / omega[i]) * xia[:, i] * tdmatrix_y) for i in range(nocc*nvirt))
+    d_z = np.stack(np.sum(np.sqrt(2 * delta_ia / omega[i]) * xia[:, i] * tdmatrix_z) for i in range(nocc*nvirt))
 
     # 4) Compute the oscillator strength
-    f = 2 / 3 * np.sqrt(2 * omega) * (d_x ** 2 + d_y ** 2 + d_z ** 2)
+    f = 2 / 3 * omega * (d_x ** 2 + d_y ** 2 + d_z ** 2)
 
     # Write to output
     output = write_output_tddft(nocc, nvirt, omega, f, d_x, d_y, d_z, xia, e)
@@ -167,7 +164,7 @@ def compute_excited_states_tddft(
        y_e = np.stack(np.trace(np.linalg.multi_dot([d0I_ao[i, :, :].T, s, d0I_ao[i, :, :],  tdm[1, :, :]])) for i in range(n_lowest)) 
        z_e = np.stack(np.trace(np.linalg.multi_dot([d0I_ao[i, :, :].T, s, d0I_ao[i, :, :],  tdm[2, :, :]])) for i in range(n_lowest))
 
-       print("Reading or computing the overlap matrix")
+       print("Reading or computing the quadrupole matrix")
        tqm = get_multipole_matrix(
            i, mol, config, 'quadrupole')
 
@@ -191,8 +188,6 @@ def compute_excited_states_tddft(
 
        cov = ( x_h_x_e - x_h * x_e ) + ( y_h_y_e - y_h * y_e ) + ( z_h_z_e - z_h * z_e )
        r_e_h = cov / (sigma_h * sigma_e) 
-
-       
 
     return path_output
 
