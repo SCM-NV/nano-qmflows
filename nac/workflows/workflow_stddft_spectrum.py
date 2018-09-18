@@ -76,7 +76,7 @@ def compute_excited_states_tddft(
 
        # Make a function tha returns in transition density charges
        print("Computing the transition density charges") 
-       q = transition_density_charges(mol, config, s, c_ao)
+       q, n_sph_atoms = transition_density_charges(mol, config, s, c_ao)
 
        # Make a function that compute the Mataga-Nishimoto-Ohno_Klopman damped Columb and Excgange law functions
        print("Computing the gamma functions for Exchange and Coulomb integrals") 
@@ -116,6 +116,9 @@ def compute_excited_states_tddft(
     # Call the function that computes transition dipole moments integrals
     print("Reading or computing the transition dipole matrix")
     tdm = get_multipole_matrix(i, mol, config, 'dipole')
+    print("Reading or computing the quadrupole matrix")
+    tqm = get_multipole_matrix(
+           i, mol, config, 'quadrupole')
     tdmatrix_x = np.linalg.multi_dot([c_ao[:, :nocc].T, tdm[0, :, :], c_ao[:, nocc:]]).reshape(nocc*nvirt)
     tdmatrix_y = np.linalg.multi_dot([c_ao[:, :nocc].T, tdm[1, :, :], c_ao[:, nocc:]]).reshape(nocc*nvirt)
     tdmatrix_z = np.linalg.multi_dot([c_ao[:, :nocc].T, tdm[2, :, :], c_ao[:, nocc:]]).reshape(nocc*nvirt)
@@ -137,57 +140,102 @@ def compute_excited_states_tddft(
 
     descriptors = False   
     if descriptors:
-       xia_I = xia.reshape(nocc, nvirt, nocc*nvirt)
-       # Find the index of the n_lowest excitations
-       idx = np.argsort(omega[:n_lowest])
-       # Generate NTOs for each excited state
-       # Solve the SVD for each state and store it into a list
-       xs = []
-       for i in range(n_lowest):
-           xs.append(np.linalg.svd(xia_I[:, :, idx[i] ]))
-       # Do some renaming it for clearness
-       v_ip_I = np.array([xs[i][0] for i in range(n_lowest)])
-       lamb_p_I = np.array([xs[i][1] for i in range(n_lowest)])
-       w_ip_I = np.array([xs[i][2] for i in range(n_lowest)])
-       # Compute the NTO participation ratio 
-       pr_nto = np.stack( ( np.sum(lamb_p_I[i, :] ** 2) ) ** 2 / np.sum(lamb_p_I[i, :] ** 4) for i in range(n_lowest) )
-
-       # Transform the transition density matrix into AO basis 
-       d0I_ao = np.stack(np.linalg.multi_dot([c_ao[:, :nocc], xia_I[:, :, i], c_ao[:, nocc:].T]) for i in range(n_lowest))
-       om = np.stack(np.trace(np.linalg.multi_dot([d0I_ao[i, :, :].T, s, d0I_ao[i, :, :], s])) for i in range(n_lowest))
-       
-       x_h = np.stack(np.trace(np.linalg.multi_dot([d0I_ao[i, :, :].T, tdm[0, :, :], d0I_ao[i, :, :], s])) for i in range(n_lowest)) 
-       y_h = np.stack(np.trace(np.linalg.multi_dot([d0I_ao[i, :, :].T, tdm[1, :, :], d0I_ao[i, :, :], s])) for i in range(n_lowest)) 
-       z_h = np.stack(np.trace(np.linalg.multi_dot([d0I_ao[i, :, :].T, tdm[2, :, :], d0I_ao[i, :, :], s])) for i in range(n_lowest))
-
-       x_e = np.stack(np.trace(np.linalg.multi_dot([d0I_ao[i, :, :].T, s, d0I_ao[i, :, :],  tdm[0, :, :]])) for i in range(n_lowest)) 
-       y_e = np.stack(np.trace(np.linalg.multi_dot([d0I_ao[i, :, :].T, s, d0I_ao[i, :, :],  tdm[1, :, :]])) for i in range(n_lowest)) 
-       z_e = np.stack(np.trace(np.linalg.multi_dot([d0I_ao[i, :, :].T, s, d0I_ao[i, :, :],  tdm[2, :, :]])) for i in range(n_lowest))
-
        print("Reading or computing the quadrupole matrix")
        tqm = get_multipole_matrix(
            i, mol, config, 'quadrupole')
+       
+       ex_descriptor(omega, xia, n_lowest, c_ao, s, tdm, tqm, nocc, nvirt, mol, n_sph_atoms)
 
-       x2_h = np.stack(np.trace(np.linalg.multi_dot([d0I_ao[i, :, :].T, tqm[0, :, :], d0I_ao[i, :, :], s])) for i in range(n_lowest)) 
-       y2_h = np.stack(np.trace(np.linalg.multi_dot([d0I_ao[i, :, :].T, tqm[1, :, :], d0I_ao[i, :, :], s])) for i in range(n_lowest)) 
-       z2_h = np.stack(np.trace(np.linalg.multi_dot([d0I_ao[i, :, :].T, tqm[2, :, :], d0I_ao[i, :, :], s])) for i in range(n_lowest))
+def ex_descriptor(omega, xia, n_lowest, c_ao, s, tdm, tqm, nocc, nvirt, mol, n_sph_atoms):
+    """
+    ADD DOCUMENTATION
+    """
+    xia_I = xia.reshape(nocc, nvirt, nocc*nvirt)
+    # Transform the transition density matrix into AO basis 
+    d0I_ao = np.stack(np.linalg.multi_dot([c_ao[:, :nocc], xia_I[:, :, i], c_ao[:, nocc:].T]) for i in range(n_lowest))
+    # Compute omega in excition analsis for the lowest n excitations 
+    om = get_omega(d0I_ao, s, n_lowest)
+    # Compute the distribution of positions for the hole and electron
+    xh, yh, zh = get_exciton_positions(d0I_ao, s, tdm, n_lowest, 'hole')
+    xe, ye, ze = get_exciton_positions(d0I_ao, s, tdm, n_lowest, 'electron')
+    # Compute the distribution of the square of position for the hole and electron
+    x2h, y2h, z2h = get_exciton_positions(d0I_ao, s, tqm, n_lowest, 'hole')
+    x2e, y2e, z2e = get_exciton_positions(d0I_ao, s, tqm, n_lowest, 'electron')
+    # Compute the distribution of both hole and electron positions
+    xhxe, yhye, zhze = get_exciton_positions(d0I_ao, s, tdm, n_lowest, 'both') 
+    # Compute Descriptors
+    # Compute exciton size:
+    d_exc = np.sqrt( ( (x2h - 2 * xhxe + x2e) + (y2h - 2 * yhye + y2e) + (z2h - 2 * zhze + z2e) ) / om )
+    # Compute centroid electron_hole distance 
+    d_he = np.abs(( ( xe - xh) + (ye - yh) + (ze - zh) ) / om)
+    # Compute hole and electron size 
+    sigma_h = np.sqrt( (x2h / om - (xh / om ) ** 2) + (y2h / om - (yh / om ) ** 2) + (z2h / om - (zh / om ) ** 2) )
+    sigma_e = np.sqrt( (x2e / om - (xe / om ) ** 2) + (y2e / om - (ye / om ) ** 2) + (z2e / om - (ze / om ) ** 2) )
+    cov = ( xhxe - xh * xe ) + ( yhye - yh * ye ) + ( zhze - zh * ze )
+    r_eh = cov / (sigma_h * sigma_e) 
+    # Compute approximate d_exc and binding energy 
+    # Lowding transformation of the transition density matrix in 
+    s_sqrt = sqrtm(s) 
+    d0I_mo = np.linalg.multi_dot([s_sqrt, d0I_ao[0, :, :], s_sqrt])
 
-       x2_e = np.stack(np.trace(np.linalg.multi_dot([d0I_ao[i, :, :].T, s, d0I_ao[i, :, :],  tqm[0, :, :]])) for i in range(n_lowest)) 
-       y2_e = np.stack(np.trace(np.linalg.multi_dot([d0I_ao[i, :, :].T, s, d0I_ao[i, :, :],  tqm[1, :, :]])) for i in range(n_lowest)) 
-       z2_e = np.stack(np.trace(np.linalg.multi_dot([d0I_ao[i, :, :].T, s, d0I_ao[i, :, :],  tqm[2, :, :]])) for i in range(n_lowest))
+    omega_ab, r_ab = get_omega_ab(d0I_mo, n_lowest, mol, n_sph_atoms) 
+    d_exc_apprx = np.sqrt( np.sum(omega_ab * (r_ab ** 2)) / om)
+    # binding energy
+    xs = omega_ab / r_ab
+    xs[np.isinf(xs)] = 0 
+    binding_en_apprx = np.sum(xs) / om * 27.211 # in eV 
 
+def get_omega(d0I_ao, s, n_lowest):
+    return np.stack(np.trace(np.linalg.multi_dot([d0I_ao[i, :, :].T, s, d0I_ao[i, :, :], s])) for i in range(n_lowest))
+
+def get_omega_ab(d0I_mo, n_lowest, mol, n_sph_atoms):
+    n_atoms = len(mol)
+    coords = np.asarray([mol[i][1] for i in range(len(mol))])
+    # Distance matrix between atoms A and B
+    r_ab = cdist(coords, coords)
+    omega_ab = np.zeros((n_atoms, n_atoms))   
+    index_a = 0 
+    for a in range(n_atoms):
+        index_b = 0
+        for b in range(n_atoms):
+            omega_ab[a, b] = np.sum(d0I_mo[index_a:(index_a + n_sph_atoms[a]), index_b:(index_b + n_sph_atoms[b])] ** 2)
+            index_b += n_sph_atoms[b]
+        index_a += n_sph_atoms[a]
+
+    return omega_ab, r_ab 
+
+def get_exciton_positions(d0I_ao, s, moment, n_lowest, carrier):
+    if carrier == 'hole':
+       x_h = np.stack(np.trace(np.linalg.multi_dot([d0I_ao[i, :, :].T, moment[0, :, :], d0I_ao[i, :, :], s])) for i in range(n_lowest)) 
+       y_h = np.stack(np.trace(np.linalg.multi_dot([d0I_ao[i, :, :].T, moment[1, :, :], d0I_ao[i, :, :], s])) for i in range(n_lowest)) 
+       z_h = np.stack(np.trace(np.linalg.multi_dot([d0I_ao[i, :, :].T, moment[2, :, :], d0I_ao[i, :, :], s])) for i in range(n_lowest))
+       return x_h, y_h, z_h
+    else if carrier == 'electron':
+       x_e = np.stack(np.trace(np.linalg.multi_dot([d0I_ao[i, :, :].T, s, d0I_ao[i, :, :],  moment[0, :, :]])) for i in range(n_lowest)) 
+       y_e = np.stack(np.trace(np.linalg.multi_dot([d0I_ao[i, :, :].T, s, d0I_ao[i, :, :],  moment[1, :, :]])) for i in range(n_lowest)) 
+       z_e = np.stack(np.trace(np.linalg.multi_dot([d0I_ao[i, :, :].T, s, d0I_ao[i, :, :],  moment[2, :, :]])) for i in range(n_lowest))
+       return x_e, y_e, z_e
+    else:
        x_h_x_e = np.stack(np.trace(np.linalg.multi_dot([d0I_ao[i, :, :].T, tdm[0, :, :], d0I_ao[i, :, :], tdm[0, :, :]])) for i in range(n_lowest))
        y_h_y_e = np.stack(np.trace(np.linalg.multi_dot([d0I_ao[i, :, :].T, tdm[1, :, :], d0I_ao[i, :, :], tdm[1, :, :]])) for i in range(n_lowest))
        z_h_z_e = np.stack(np.trace(np.linalg.multi_dot([d0I_ao[i, :, :].T, tdm[2, :, :], d0I_ao[i, :, :], tdm[2, :, :]])) for i in range(n_lowest))
+       return x_h_x_e, y_h_y_e, z_h_z_e
 
-       d_exc = np.sqrt( ( (x2_h - 2 * x_h_x_e + x2_e) + (y2_h - 2 * y_h_y_e + y2_e) + (z2_h - 2 * z_h_z_e + z2_e) ) / om )
-       d_h_e = np.abs(( ( x_e - x_h) + (y_e - y_h) + (z_e - z_h) ) / om)
 
-       sigma_h = np.sqrt( (x2_h / om - (x_h / om ) ** 2) + (y2_h / om - (y_h / om ) ** 2) + (z2_h / om - (z_h / om ) ** 2) )
-       sigma_e = np.sqrt( (x2_e / om - (x_e / om ) ** 2) + (y2_e / om - (y_e / om ) ** 2) + (z2_e / om - (z_e / om ) ** 2) )
+    # Find the index of the n_lowest excitations
+    idx = np.argsort(omega[:n_lowest])
+    # Generate NTOs for each excited state
+    # Solve the SVD for each state and store it into a list
+    xs = []
+    for i in range(n_lowest):
+        xs.append(np.linalg.svd(xia_I[:, :, idx[i] ]))
+    # Do some renaming it for clearness
+    v_ip_I = np.array([xs[i][0] for i in range(n_lowest)])
+    lamb_p_I = np.array([xs[i][1] for i in range(n_lowest)])
+    w_ip_I = np.array([xs[i][2] for i in range(n_lowest)])
+    # Compute the NTO participation ratio 
+    pr_nto = np.stack( ( np.sum(lamb_p_I[i, :] ** 2) ) ** 2 / np.sum(lamb_p_I[i, :] ** 4) for i in range(n_lowest) )
 
-       cov = ( x_h_x_e - x_h * x_e ) + ( y_h_y_e - y_h * y_e ) + ( z_h_z_e - z_h * z_e )
-       r_e_h = cov / (sigma_h * sigma_e) 
 
     return path_output
 
@@ -261,7 +309,7 @@ def transition_density_charges(mol, config, s, c_ao):
         q[i, :, :] = np.dot(c_mo[index:(index + n_sph_atoms[i]), :].T, c_mo[index:(index + n_sph_atoms[i]), :])
         index += n_sph_atoms[i]
 
-    return q
+    return q, n_sph_atoms
 
 
 def compute_MNOK_integrals(mol, xc_dft):
