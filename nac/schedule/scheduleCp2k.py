@@ -29,14 +29,7 @@ def prepare_cp2k_settings(files: Tuple, cp2k_args: Dict, k: int,
     :param cp2k_config:  Parameters required by cp2k.
    :returns: ~qmflows.Settings
     """
-    # Search for the environmental variable BASISCP2K containing the path
-    # to the Basis set folder
-    basis_file = cp2k_config["basis"]
-    potential_file = cp2k_config["potential"]
-
     dft = cp2k_args.specific.cp2k.force_eval.dft
-    dft.basis_set_file_name = basis_file
-    dft.potential_file_name = potential_file
     dft['print']['mo']['filename'] = files.get_MO
 
     # Global parameters for CP2K
