@@ -71,9 +71,7 @@
   },
     "required": [
 	"nHOMO",
-	"initial_states",
-	"final_states",
-	"ci_range",
+        "ci_range", 
 	"general_settings"
   ]
 }
