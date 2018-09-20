@@ -145,14 +145,14 @@ def compute_excited_states_tddft(
        tqm = get_multipole_matrix(
            i, mol, config, 'quadrupole')
        
-       descriptors = ex_descriptor(omega, xia, n_lowest, c_ao, s, tdm, tqm, nocc, nvirt, mol, config)
+       descriptors = ex_descriptor(omega, f, xia, n_lowest, c_ao, s, tdm, tqm, nocc, nvirt, mol, config)
        path_ex_output = os.path.join(config['work_dir'], 'descriptors_{}_{}.txt'.format(i, tddft))
-       ex_header = '{:^5s}{:^14s}{:^10s}{:^10s}{:^12s}{:^10s}{:^10s}{:^12s}'.format(
-             'state', 'd_exc', 'd_exc_app', 'd_he', 'sigma_h', 'sigma_e', 'r_eh', 'bind_en')
-       np.savetxt(path_ex_output, descriptors, fmt='%5d %10.3f %10.3f %10.3f %10.3f %10.3f %10.3f %10.3f', header=ex_header) 
+       ex_header = '{:^5s}{:^14s}{:^10s}{:^10s}{:^12s}{:^10s}{:^10s}{:^10s}{:^10s}{:^10s}'.format(
+             'state', 'd_exc', 'd_exc_app', 'd_he', 'sigma_h', 'sigma_e', 'r_eh', 'bind_en', 'energy', 'f')
+       np.savetxt(path_ex_output, descriptors, fmt='%5d %10.3f %10.3f %10.3f %10.3f %10.3f %10.3f %10.3f %10.3f %10.3f', header=ex_header) 
 
 
-def ex_descriptor(omega, xia, n_lowest, c_ao, s, tdm, tqm, nocc, nvirt, mol, config):
+def ex_descriptor(omega, f, xia, n_lowest, c_ao, s, tdm, tqm, nocc, nvirt, mol, config):
     """
     ADD DOCUMENTATION
     """
@@ -202,7 +202,7 @@ def ex_descriptor(omega, xia, n_lowest, c_ao, s, tdm, tqm, nocc, nvirt, mol, con
     xs[np.isinf(xs)] = 0 
     binding_en_apprx = np.stack( ( np.sum(xs[i, :, :]) / om[i] ) for i in range(n_lowest) )   
    
-    descriptors = write_output_descriptors(d_exc, d_exc_apprx, d_he, sigma_h, sigma_e, r_eh, binding_en_apprx, n_lowest)
+    descriptors = write_output_descriptors(d_exc, d_exc_apprx, d_he, sigma_h, sigma_e, r_eh, binding_en_apprx, n_lowest, omega, f)
 
     return descriptors
 
@@ -220,12 +220,12 @@ def ex_descriptor(omega, xia, n_lowest, c_ao, s, tdm, tqm, nocc, nvirt, mol, con
     # Compute the NTO participation ratio 
 #    pr_nto = np.stack( ( np.sum(lamb_p_I[i, :] ** 2) ) ** 2 / np.sum(lamb_p_I[i, :] ** 4) for i in range(n_lowest) )
 
-def write_output_descriptors(d_exc, d_exc_apprx, d_he, sigma_h, sigma_e, r_eh, binding_ex_apprx, n_lowest):
+def write_output_descriptors(d_exc, d_exc_apprx, d_he, sigma_h, sigma_e, r_eh, binding_ex_apprx, n_lowest, omega, f):
     """
     ADD Documentation
     """
     au2ang = 0.529177249 
-    ex_output = np.empty((n_lowest, 8)) 
+    ex_output = np.empty((n_lowest, 10)) 
     ex_output[:, 0] = np.arange(n_lowest) + 1 
     ex_output[:, 1] = d_exc * au2ang
     ex_output[:, 2] = d_exc_apprx * au2ang
@@ -233,7 +233,9 @@ def write_output_descriptors(d_exc, d_exc_apprx, d_he, sigma_h, sigma_e, r_eh, b
     ex_output[:, 4] = sigma_h * au2ang
     ex_output[:, 5] = sigma_e * au2ang
     ex_output[:, 6] = r_eh * au2ang
-    ex_output[:, 7] = binding_ex_apprx * 27.211 # in eV  
+    ex_output[:, 7] = binding_ex_apprx * 27.211 / 2 # in eV
+    ex_output[:, 8] = omega[:n_lowest] * 27.211 
+    ex_output[:, 9] = f[:n_lowest] 
     
     return ex_output
 
