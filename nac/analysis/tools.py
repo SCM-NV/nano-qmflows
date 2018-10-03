@@ -71,7 +71,7 @@ def dephasing(f, dt):
     deph = np.column_stack((deph, xs))
     deph_time = popt[0] # in fs 
     line_broadening = hbar / deph_time # in eV 
-    return deph, rate, line_broadening 
+    return deph, deph_time, line_broadening 
 
 def spectral_density(f, dt):
     """
