@@ -69,9 +69,9 @@ def dephasing(f, dt):
     popt = curve_fit(gauss_function, ts, deph)[0]
     xs = np.exp(-0.5 * (-ts / popt[0]) ** 2)
     deph = np.column_stack((deph, xs))
-    rate = popt[0]
-    return deph, rate
-
+    deph_time = popt[0] # in fs 
+    line_broadening = hbar / deph_time # in eV 
+    return deph, rate, line_broadening 
 
 def spectral_density(f, dt):
     """
