@@ -6,7 +6,6 @@ from .utilsTest import copy_basis_and_orbitals
 
 import numpy as np
 import pkg_resources as pkg
-import pytest
 import os
 import shutil
 import tempfile
@@ -28,11 +27,6 @@ def test_oscillators_multiprocessing():
     multiprocessing module
     """
     compute_oscillators('multiprocessing')
-
-
-@pytest.mark.slow
-def test_oscillators_dask():
-    compute_oscillators('dask')
 
 
 def test_oscillators_mpi():

@@ -9,7 +9,6 @@
 	    "description": "Library to distribute the computation",
 	    "default": "multiprocessing",
 	    "enum": [
-		"dask",
 		"mpi",
 		"multiprocessing"
 	    ]

@@ -47,8 +47,7 @@ setup(
     include_dirs=[np.get_include()],
     extras_require={
         'test': ['coverage', 'pytest', 'pytest-cov'],
-        'mpi': ['dill', 'mpi4py'],
-        'dask': ['dask', 'distributed']},
+        'mpi': ['dill', 'mpi4py']},
     scripts=[
         'scripts/cli/run_workflow.py',
         'scripts/mpi/call_mpi_multipole.py',
