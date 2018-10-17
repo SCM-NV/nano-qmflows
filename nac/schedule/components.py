@@ -25,7 +25,6 @@ from qmflows.warnings_qmflows import SCF_Convergence_Warning
 # Type Hints
 from typing import (Dict, List, Tuple)
 
-# ==============================<>=========================
 # Tuple contanining file paths
 JobFiles = namedtuple("JobFiles", ("get_xyz", "get_inp", "get_out", "get_MO"))
 

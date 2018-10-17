@@ -1,7 +1,6 @@
 
 __all__ = ['workflow_oscillator_strength']
 
-from collections import namedtuple
 from itertools import chain
 from noodles import (gather, schedule)
 from nac.common import (
@@ -22,11 +21,6 @@ from typing import (Any, Dict, List, Tuple)
 
 # Get logger
 logger = logging.getLogger(__name__)
-
-# Named tuple
-Oscillator = namedtuple("Oscillator",
-                        ('initialS', 'finalS', 'initialE', 'finalE',
-                         'deltaE', 'fij', 'components'))
 
 # Planck con`stant in ev . s
 hbar_evs = physical_constants['Planck constant over 2 pi in eV s'][0]
@@ -117,14 +111,16 @@ def create_promised_cross_section(
     initial_energy = energy_range[0]
     final_energy = energy_range[1]
     npoints = 10 * (final_energy - initial_energy) // broadening
-    energies = np.linspace(initial_energy, final_energy, npoints)
-
+    energies = np.linspace(initial_energy, final_energy, int(npoints))
     # Compute the cross section
+
     schedule_cross_section = schedule(compute_cross_section_grid)
 
-    return energies, schedule_cross_section(
+    cross_section = schedule_cross_section(
         oscillators, convolution, energies, broadening,
         calculate_oscillator_every)
+
+    return energies, cross_section
 
 
 def compute_cross_section_grid(
@@ -161,7 +157,7 @@ def compute_cross_section_grid(
         # Photo absorption in length
         grid_ev = cte * sum(
             sum(
-                sum(osc.fij * fun_convolution(energy, osc.deltaE * h2ev, broadening)
+                sum(osc['fij'] * fun_convolution(energy, osc['deltaE'] * h2ev, broadening)
                     for osc in ws) / len(ws)
                 for ws in zip(*arr)) for arr in zip(*oscillators))
 
@@ -230,7 +226,6 @@ def calc_oscillator_strenghts(
         compute_oscillator_strength(
             rc, atoms, config['dictCGFs'], es, coeffs, mtx_integrals_spher, initialS, fs)
         for initialS, fs in zip(initial_states, final_states)]
-
     return oscillators
 
 
@@ -267,8 +262,8 @@ def compute_oscillator_strength(
         st = 'transition {:d} -> {:d} Fij = {:f}\n'.format(
             initialS, finalS, fij)
         logger.info(st)
-        osc = Oscillator(
-            initialS, finalS, energy_i, energy_j, deltaE, fij, components)
+        osc = {'initialS': initialS, 'finalS': finalS, 'energy_i': energy_i,
+               'energy_j': energy_j, 'deltaE': deltaE, 'fij': fij, 'components': components}
         xs.append(osc)
 
     return xs
@@ -284,23 +279,22 @@ def write_information(data: Tuple) -> None:
         f.write(header)
     for xs in list(chain(*data)):
         for args in xs:
-            write_oscillator(filename, *args)
+            write_oscillator(filename, args)
 
 
 def write_oscillator(
-        filename: str, initialS: int, finalS: int, initialE: float,
-        finalE: float, deltaE: float, fij: float, components: Tuple) -> None:
+        filename: str, osc: Dict) -> None:
     """
     Write oscillator strenght information in one file
     """
-    energy_ev = deltaE * h2ev
-    initial_ev = initialE * h2ev
-    final_ev = finalE * h2ev
+    energy_ev = osc['deltaE'] * h2ev
+    initial_ev = osc['energy_i'] * h2ev
+    final_ev = osc['energy_j'] * h2ev
     energy_nm = 1240 / energy_ev
     fmt = '{} -> {} {:12.5f} {:12.5f} {:12.5f} {:12.5f} {:12.5f} \
     {:11.5f} {:11.5f} {:11.5f}\n'.format(
-        initialS + 1, finalS + 1, initial_ev, final_ev, energy_ev,
-        energy_nm, fij, *components)
+        osc['initialS'] + 1, osc['finalS'] + 1, initial_ev, final_ev, energy_ev,
+        energy_nm, osc['fij'], *osc['components'])
 
     with open(filename, 'a') as f:
         f.write(fmt)

@@ -169,7 +169,7 @@ def number_spherical_functions_per_atom(mol, package_name, basis_name, path_hdf5
         ys = [calc_orbital_Slabels(
             package_name, read_basis_format(package_name, path.attrs['basisFormat'])) for path in xs]
 
-    return np.stack(np.sum(len(x) for x in ys[i]) for i in range(len(mol)))
+        return np.stack(sum(len(x) for x in ys[i]) for i in range(len(mol)))
 
 
 def transition_density_charges(mol, config, s, c_ao):
