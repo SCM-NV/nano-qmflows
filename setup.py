@@ -35,7 +35,7 @@ setup(
         'topic :: scientific/engineering :: chemistry'
     ],
     install_requires=[
-        'cython', 'numpy', 'h5py', 'noodles==0.2.4', 'qmflows', 'pymonad', 'scipy',
+        'cython', 'numpy', 'h5py', 'noodles==0.3.1', 'qmflows', 'pymonad', 'scipy',
         'jsonref', 'jsonschema'],
     dependency_links=[
             "https://github.com/SCM-NV/qmflows/tarball/master#egg=qmflows"],
