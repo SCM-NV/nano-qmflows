@@ -7,7 +7,7 @@ import pyparsing as pa
 from scipy.optimize import curve_fit
 
 # ==================> Internal modules <==========
-from nac.common import (hbar, r2meV, fs_to_cm)
+from nac.common import (hbar, h2ev, r2meV, fs_to_cm)
 # ==========================<>=================================
 
 
@@ -60,17 +60,18 @@ def dephasing(f, dt):
     To calculate the dephasing time tau we fit the dephasing function to a
     gaussian of the type : exp(-0.5 * (-x / tau) ** 2)
     """
+    hbar_au = hbar / h2ev # Conversion of hbar to hartree * fs  
     ts = np.arange(f.shape[0]) * dt
-    cumu_ii = np.stack(np.sum(f[0:i]) for i in range(ts.size)) * dt / hbar
-    cumu_i = np.stack(np.sum(cumu_ii[0:i]) for i in range(ts.size)) * dt / hbar
+    cumu_ii = np.stack(np.sum(f[0:i]) for i in range(ts.size)) * dt / hbar_au 
+    cumu_i = np.stack(np.sum(cumu_ii[0:i]) for i in range(ts.size)) * dt / hbar_au 
     deph = np.exp(-cumu_i)
     np.seterr(over='ignore')
     popt = curve_fit(gauss_function, ts, deph)[0]
     xs = np.exp(-0.5 * (-ts / popt[0]) ** 2)
     deph = np.column_stack((deph, xs))
-    rate = popt[0]
-    return deph, rate
-
+    deph_time = popt[0] # in fs 
+    line_broadening = hbar / deph_time # in eV 
+    return deph, deph_time, line_broadening 
 
 def spectral_density(f, dt):
     """
