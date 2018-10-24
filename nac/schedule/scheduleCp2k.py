@@ -37,7 +37,7 @@ def prepare_cp2k_settings(files: Tuple, cp2k_args: Dict, k: int,
     cp2k_args.specific.cp2k['global']['run_type'] = 'Energy'
 
     if wfn_restart_job is not None:
-        output_dir = getattr(wfn_restart_job.archive['plams_dir'], 'path')
+        output_dir = wfn_restart_job.archive['plams_dir']
         xs = os.listdir(output_dir)
         wfn_file = list(filter(lambda x: fnmatch.fnmatch(x, '*wfn'), xs))[0]
         file_path = join(output_dir, wfn_file)
