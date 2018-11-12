@@ -1,46 +1,46 @@
 {
-  "$schema": "http://json-schema.org/draft-04/schema",
-  "description": "Input to run a given workflow",
-  "type": "object",
+    "$schema": "http://json-schema.org/draft-04/schema",
+    "description": "Input to run a given workflow",
+    "type": "object",
     "properties": {
-      "nHOMO": {
-	"type": "integer",
-      "description": "Index of the HOMO"
-    },
-      "initial_states": {
-	"type": "array",
-      "description": "Initial states of the transitions"
-    },
-      "final_states": {
-	"type": "array",
-	"description": "final states of the transitions (Array or Arrays)"
-    },
-      "ci_range": {
-	"type": "array",
-	"description": "CI Space used to build the excited states",
-	"minItems": 2,
-	"maxItems": 2
-    },
-    "tddft": {
-	"type": "string",
-	"description": "Type of TDDFT calculations. Available: sing_orb, stda, stddft",
-	"default": "stda",
-	"enum": [
-	    "sing_orb",
-	    "stda",
-	    "stdft"
-	]
-    },
-    "energy_range": {
-	"type": "array",
-	"description": "Range of energy in eV to simulate the spectrum",
-	"minItems": 2,
-	"maxItems": 2,
-	"default": [
-            0,
-            5
-	]
-    },
+	"nHOMO": {
+	    "type": "integer",
+	    "description": "Index of the HOMO"
+	},
+	"initial_states": {
+	    "type": "array",
+	    "description": "Initial states of the transitions"
+	},
+	"final_states": {
+	    "type": "array",
+	    "description": "final states of the transitions (Array or Arrays)"
+	},
+	"ci_range": {
+	    "type": "array",
+	    "description": "CI Space used to build the excited states",
+	    "minItems": 2,
+	    "maxItems": 2
+	},
+	"tddft": {
+	    "type": "string",
+	    "description": "Type of TDDFT calculations. Available: sing_orb, stda, stddft",
+	    "default": "stda",
+	    "enum": [
+		"sing_orb",
+		"stda",
+		"stdft"
+	    ]
+	},
+	"energy_range": {
+	    "type": "array",
+	    "description": "Range of energy in eV to simulate the spectrum",
+	    "minItems": 2,
+	    "maxItems": 2,
+	    "default": [
+		0,
+		5
+	    ]
+	},
 	"calculate_oscillator_every": {
 	    "type": "integer",
 	    "description": "Interval between MD points where the oscillators are computed",
@@ -68,13 +68,14 @@
 	"general_settings": {
 	    "$ref": "schemas/general_settings.json"
 	}
-  },
+    },
     "required": [
 	"nHOMO",
 	"initial_states",
 	"final_states",
 	"ci_range",
-	"general_settings"
+	"general_settings",
+	"calculate_oscillator_every"
   ]
 }
 
