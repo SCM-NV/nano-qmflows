@@ -74,8 +74,6 @@
 	"initial_states",
 	"final_states",
 	"ci_range",
-	"general_settings",
-	"calculate_oscillator_every"
-  ]
+	"general_settings"]
 }
 
