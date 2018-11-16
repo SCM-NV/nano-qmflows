@@ -1,6 +1,8 @@
+#!/usr/bin/env python
 import numpy as np
 import matplotlib.pyplot as plt 
 import argparse
+from nac.analysis import rdf 
 
 def main(fn, atoms_i, atoms_j, dr, rmax):
     x, y = rdf(fn, atoms_i, atoms_j, dr, rmax)  
