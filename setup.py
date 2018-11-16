@@ -59,6 +59,7 @@ setup(
         'scripts/pyxaid/plot_states_pops.py',
         'scripts/qmflows/mergeHDF5.py',
         'scripts/qmflows/plot_dos.py',
+        'scripts/qmflows/rdf.py',
         'scripts/qmflows/removeHDF5folders.py',
         'scripts/qmflows/remove_mos_hdf5.py'],
     include_package_data=True,

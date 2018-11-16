@@ -5,9 +5,13 @@ import numpy as np
 import os
 import pyparsing as pa
 from scipy.optimize import curve_fit
+from scipy.spatial.distance import cdist
 
 # ==================> Internal modules <==========
 from nac.common import (hbar, h2ev, r2meV, fs_to_cm)
+from nac.common import compute_center_of_mass
+from qmflows.parsers import parse_string_xyz
+from nac.schedule.components import split_file_geometries
 # ==========================<>=================================
 
 
@@ -134,6 +138,56 @@ def read_pops_pyxaid(path, fn, nstates, nconds):
     xs = xs.swapaxes(0, 1)
     return xs
 
+def rdf(fn, atoms_i, atoms_j, dr, rmax):
+    """
+    A function that computes the radial distribution function between a pair of atoms 
+    """
+# Read the geometries from the MD file 
+    geometries = split_file_geometries(fn)
+    molecs = [parse_string_xyz(gs) for gs in geometries ]
+
+# Get the number of atoms and number of frames in trajectory file 
+    n_frames = len(molecs)
+    n_atoms = len(molecs[0])
+
+# Create grid of r values to compute the pair correlation function g_ij 
+    r_grid = np.arange(0, rmax, dr)
+    n_bins = r_grid.size # Used for the histogram 
+
+# Find the indexes in the bond_matrix of the atomic types involved in the calculation of g_ij
+    atoms = np.asarray([molecs[0][i].symbol for i in range(n_atoms) ] )
+    index_i = np.where( atoms == atoms_i )
+    index_j = np.where( atoms == atoms_j )
+
+    rdf_tot = np.zeros(n_bins)
+    for iframe in range(n_frames):
+        # Read coordinates from iframe
+        coords = np.asarray([molecs[iframe][i].xyz for i in range(n_atoms)])
+        # Compute bond distance matrix for iframe
+        bond_mtx = cdist(coords, coords)
+        # Slice the bond_matrix with only the atom types
+        sliced_mtx = np.triu(bond_mtx[np.ix_(index_i[0], index_j[0])])
+        # Count the number of atoms within r and r+dr  
+        rdf, r_grid = np.histogram(sliced_mtx, bins = n_bins, range=(0, rmax))
+        # Sum over all rdf 
+        rdf_tot += rdf
+
+    # Center radii 
+    r = 0.5 * ( r_grid[1:] + r_grid[:-1] )
+    # Compute the volume in a concentric sphere of size dr at a distance r from the origin  
+    volume = (4/3) * np.pi * ( np.power(r_grid[1:], 3) - np.power(r_grid[:-1], 3) )  # elemental volume dV = 4*pi*r^2*dr
+    vol_tot = np.sum(volume)
+    # Compute the rho_ab(r) : 
+    rho_ab = rdf_tot / ( volume * n_frames ) # This is the pair density distribution for each frame   
+    # Compute the bulk density 
+    n_tot = np.sum(rdf_tot[1:]) / n_frames # skip first element otherwise it counts an atom with itself  
+    rho_bulk = n_tot / vol_tot
+    # Density = counts / volume[1:] # skip the first element dV which is 0 
+    g_ab = rho_ab / rho_bulk
+    # Compute also the potential of mean force 
+    w_ab = -np.log(g_ab)
+
+    return r[1:], g_ab[1:], w_ab[1:] # we skip the first element at r=0, which in the histogram is counted many times: counts an atom with itself 
 
 def parse_list_of_lists(xs):
     """
