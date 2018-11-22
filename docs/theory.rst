@@ -61,12 +61,7 @@ binary file and subsequently calculations retrieve sets of three molecular orbit
 use to calculate the nonadiabatic coupling matrix using equations **4** to **7**.
 These coupling matrices are them feed to the PYXAID_ package to carry out nonadiabatic molecular dynamics.
 
-.. image:: _images/nac_worflow.png
-
-`Workflow for the calculation of the Nonadiabatic coupling using CP2K.`
-
-The Overlap between primitives are calculated using the Obara-Saika recursive scheme,
-that has been implemented as a Cython_ module for efficiency reasons. The nonadiabatic coupling module uses the aforementioned
+The Overlap between primitives are calculated using the Obara-Saika recursive scheme and has been implemented as a Cython_ module for efficiency reasons. The nonadiabatic coupling module uses the aforementioned
 module together with the multiprocessing_ Python library to distribute the overlap matrix computations among the CPUs available. Also, all the heavy numerical processing is carried out by the highly optimized functions in NumPy_.
 
  The **nonadiabaticCoupling** package relies on *QMWorks* to run the Quantum mechanical simulations using the [CP2K](https://www.cp2k.org/) package.  Also, the [noodles](library) is used  to schedule expensive numerical computations that are required to calculate the nonadiabatic coupling matrix.

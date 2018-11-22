@@ -1,12 +1,13 @@
 .. image:: https://travis-ci.org/SCM-NV/qmflows-namd.svg?branch=0.1.7
     :target: https://travis-ci.org/SCM-NV/qmflows-namd
-.. image:: https://img.shields.io/github/release/SCM-NV/qmflows-namd.svg
-    :target: https://github.com/SCM-NV/qmflows-namd/releases
-.. image:: https://img.shields.io/badge/python-3.5-blue.svg
+.. image:: https://img.shields.io/badge/python-3.6-blue.svg
+
 .. image:: https://api.codacy.com/project/badge/Grade/2bb0085352354caa9dd2ca655c2a8db3
-    :target: https://www.codacy.com/app/tifonzafel/nonAdiabaticCoupling?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=felipeZ/nonAdiabaticCoupling&amp;utm_campaign=Badge_Grade
+   :target: https://www.codacy.com/app/tifonzafel/nonAdiabaticCoupling?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=felipeZ/nonAdiabaticCoupling&amp;utm_campaign=Badge_Grade
 .. image:: https://api.codacy.com/project/badge/Coverage/2bb0085352354caa9dd2ca655c2a8db3
-    :target: https://www.codacy.com/app/tifonzafel/nonAdiabaticCoupling?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=felipeZ/nonAdiabaticCoupling&amp;utm_campaign=Badge_Coverage
+   :target: https://www.codacy.com/app/tifonzafel/nonAdiabaticCoupling?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=felipeZ/nonAdiabaticCoupling&amp;utm_campaign=Badge_Coverage
+.. image:: https://readthedocs.org/projects/qmflows-namd/badge/?version=latest
+   :target: https://qmflows-namd.readthedocs.io/en/latest/?badge=latest
 	     
 ====================
 QMFlows-NAMD
@@ -16,7 +17,7 @@ QMFlows-NAMD is a generic python library with the purpose of computing (numerica
 
 One of the main problems to calculate (numerically) NACVs by standard QM software is the computation of the overlap matrices between two electronically excited states at two consecutive time-steps that are needed in the numerical differentiation to evaluate the coupling. This happens because most of these softwares are inherently static, i.e. properties are computed for a given structural configuration, and the computation of the overlap matrices at different times requires complicated scripting tools to handle input/outputs of several QM packages. 
 
-For further information on the theory behind QMFlows-NAMD and how to use the program, you can visit the following webpage:
+For further information on the theory behind QMFlows-NAMD and how to use the program see the documentation_.
 
  
 ==========================
@@ -62,3 +63,4 @@ The figure represents schematically a Worflow to compute the **Hamiltonians** th
 .. image:: _images/nac_worflow.png
 
 .. _PYXAID: https://www.acsu.buffalo.edu/~alexeyak/pyxaid/overview.html
+.. _documentation: https://qmflows-namd.readthedocs.io/en/latest/
