@@ -1,11 +1,7 @@
 .. image:: https://travis-ci.org/SCM-NV/qmflows-namd.svg?branch=0.1.7
     :target: https://travis-ci.org/SCM-NV/qmflows-namd
-.. image:: https://img.shields.io/badge/python-3.6-blue.svg
-
 .. image:: https://api.codacy.com/project/badge/Grade/2bb0085352354caa9dd2ca655c2a8db3
    :target: https://www.codacy.com/app/tifonzafel/nonAdiabaticCoupling?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=felipeZ/nonAdiabaticCoupling&amp;utm_campaign=Badge_Grade
-.. image:: https://api.codacy.com/project/badge/Coverage/2bb0085352354caa9dd2ca655c2a8db3
-   :target: https://www.codacy.com/app/tifonzafel/nonAdiabaticCoupling?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=felipeZ/nonAdiabaticCoupling&amp;utm_campaign=Badge_Coverage
 .. image:: https://readthedocs.org/projects/qmflows-namd/badge/?version=latest
    :target: https://qmflows-namd.readthedocs.io/en/latest/?badge=latest
 	     
