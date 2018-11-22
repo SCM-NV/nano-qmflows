@@ -55,7 +55,7 @@ Worflow to calculate Hamiltonians for nonadiabatic molecular simulations
 ************************************************************************
 The figure represents schematically a Worflow to compute the **Hamiltonians** that described the behavior and coupling between the excited state of a molecular system. These **Hamiltonians** are used by thy PYXAID_ simulation package to carry out nonadiabatic molecular dynamics.
 
-.. image:: _images/nac_worflow.png
+.. image:: docs/_images/nac_worflow.png
 
 .. _PYXAID: https://www.acsu.buffalo.edu/~alexeyak/pyxaid/overview.html
 .. _documentation: https://qmflows-namd.readthedocs.io/en/latest/
