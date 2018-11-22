@@ -18,7 +18,6 @@ One of the main problems to calculate (numerically) NACVs by standard QM softwar
 
 For further information on the theory behind QMFlows-NAMD and how to use the program, you can visit the following webpage:
 
-http://scm-nv.github.io/qmflows-namd/ 
  
 ==========================
 Advantages and Limitations
@@ -41,13 +40,13 @@ In this framework, QMFlows-NAMD requires as input the coordinates of a pre-compu
 Installation
 ============
 
-In order to install the *QMFlows-NAMD* library you need to install first the **QMFlows** package and its environment using *Anaconda* as detailed here_.
+In order to install the *QMFlows-NAMD* library you need to install first the **QMFlows** package and its environment using *Miniconda* as detailed here_.
 
 .. _here: https://github.com/SCM-NV/qmflows
 
 Then,  to install the **QMFlows-NAMD** library type the following command inside the conda environment::
 
-  (qmflows) user@server> pip install https://github.com/SCM-NV/qmflows-namd/tarball/master#egg=nac --upgrade
+  pip install git+https://github.com/SCM-NV/qmflows-namd#egg=qmflows-namd --upgrade
 
 Overview
 ========
@@ -60,6 +59,6 @@ Worflow to calculate Hamiltonians for nonadiabatic molecular simulations
 ************************************************************************
 The figure represents schematically a Worflow to compute the **Hamiltonians** that described the behavior and coupling between the excited state of a molecular system. These **Hamiltonians** are used by thy PYXAID_ simulation package to carry out nonadiabatic molecular dynamics.
 
-.. image:: docs/images/nac_worflow.png
+.. image:: _images/nac_worflow.png
 
 .. _PYXAID: https://www.acsu.buffalo.edu/~alexeyak/pyxaid/overview.html
