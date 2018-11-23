@@ -25,6 +25,7 @@ before_script:
 
 script:
   - py.test -m "not (slow or long)" --cov=nac test
+  - coverage xml && coverage report -m
 
 after_success:
   - python-codacy-coverage -r coverage.xml
