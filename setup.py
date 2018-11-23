@@ -46,7 +46,7 @@ setup(
         extra_link_args=['-fopenmp'])],
     include_dirs=[np.get_include()],
     extras_require={
-        'test': ['coverage', 'pytest', 'pytest-cov'],
+        'test': ['coverage', 'pytest', 'pytest-cov', 'codacy-coverage'],
         'mpi': ['dill', 'mpi4py']},
     scripts=[
         'scripts/cli/run_workflow.py',
