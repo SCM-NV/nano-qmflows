@@ -24,39 +24,110 @@ general_settings:
     "test/test_files/Cd.xyz" 
   scratch_path:
     "/tmp/namd/absorption_spectrum"
-
   settings_main:
     potential: "GTH-PBE"
     basis: "DZVP-MOLOPT-SR-GTH"
+    cell_parameters: 45.0
+    cell_angles: [90.0, 90.0, 90.0]
     specific:
       cp2k:
-          force_eval:
+        force_eval:
           subsys:
             cell:
               periodic: "None"
-            dft:
-              scf:
-                eps_scf: 0.0005
-                max_scf: 200
-                added_mos: 30
-      cell_angles: [90.0, 90.0, 90.0]
+            kind:
+              Cd:
+                 basis_set: "DZVP-MOLOPT-SR-GTH"
+                 Basis_set: "AUX_FIT SZV-MOLOPT-SR-GTH"
+                 potential: "GTH-PBE-q12"
+              Se:
+                 basis_set: "DZVP-MOLOPT-SR-GTH"
+                 Basis_set: "AUX_FIT SZV-MOLOPT-SR-GTH"
+                 potential: "GTH-PBE-q6"
 
+          dft:
+            basis_set_file_name: "test/test_files/BASIS_MOLOPT"
+            potential_file_name: "test/test_files/GTH_POTENTIALS"
+            auxiliary_density_matrix_method:
+              method: "basis_projection"
+              admm_purification_method: "none"
+            poisson:
+              periodic: "None"
+              psolver: "MT"
+            qs:
+              method: "gpw"
+              eps_pgf_orb: "1.0E-8"
+            xc:
+              xc_functional:
+                pbe:
+                  scale_x: "0.75"
+                  scale_c: "1.00"
+              hf:
+                fraction: "0.25"
+                screening:
+                  eps_schwarz: 1.0E-6
+                  screen_on_initial_p: "True"
+                memory:
+                  max_memory: "5000"
+                  eps_storage_scaling: "0.1"
+            scf:
+              eps_scf: 0.0005
+              max_scf: 200
+              added_mos: 35
+            print:
+              mo:
+                mo_index_range: "278 332"
+  
   settings_guess:
     potential: "GTH-PBE"
     basis: "DZVP-MOLOPT-SR-GTH"
+    cell_angles: [90.0, 90.0, 90.0]
+    cell_parameters: 45.0
     specific:
       cp2k:
-          force_eval:
+        force_eval:
           subsys:
             cell:
               periodic: "None"
-            dft:
-              scf:
-                eps_scf: 1e-6
-                added_mos: 0
-                scf_guess: "restart"
-                ot:
-                  minimizer: "DIIS"
-                  n_diis: 7
-                  preconditioner: "FULL_SINGLE_INVERSE"
-      cell_angles: [90.0, 90.0, 90.0]
+            kind:
+              Cd:
+                 basis_set: "DZVP-MOLOPT-SR-GTH"
+                 Basis_set: "AUX_FIT SZV-MOLOPT-SR-GTH"
+                 potential: "GTH-PBE-q12"
+              Se:
+                 basis_set: "DZVP-MOLOPT-SR-GTH"
+                 Basis_set: "AUX_FIT SZV-MOLOPT-SR-GTH"
+                 potential: "GTH-PBE-q6"
+
+          dft:
+            basis_set_file_name: "test/test_files/BASIS_MOLOPT"
+            potential_file_name: "test/test_files/GTH_POTENTIALS"
+            auxiliary_density_matrix_method:
+              method: "basis_projection"
+              admm_purification_method: "mo_diag"
+            poisson:
+              periodic: "None"
+              psolver: "MT"
+            qs:
+              method: "gpw"
+            xc:
+              xc_functional:
+                pbe:
+                  scale_x: "0.75"
+                  scale_c: "1.00"
+              hf:
+                fraction: "0.25"
+                screening:
+                  eps_schwarz: 1.0E-6
+                  screen_on_initial_p: "True"
+                memory:
+                  max_memory: "5000"
+                  eps_storage_scaling: "0.1"
+            scf:
+              eps_scf: 1e-6
+              added_mos: 0
+              scf_guess: "restart"
+              ot:
+                minimizer: "DIIS"
+                n_diis: 7
+                preconditioner: "FULL_SINGLE_INVERSE"
