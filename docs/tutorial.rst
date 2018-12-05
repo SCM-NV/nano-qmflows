@@ -1,74 +1,72 @@
-Cp2k Input generation
-#####################
 
-A minimal cp2k_
+Tutorial
+=========
 
-    cp2k_args = Settings()
-    cp2k_args.basis = "DZVP-MOLOPT-SR-GTH"
-    cp2k_args.potential = "GTH-PBE"
-    cp2k_args.cell_parameters = [50.0] * 3
-    cp2k_args.specific.cp2k.force_eval.dft.scf.added_mos = 100
-    cp2k_args.specific.cp2k.force_eval.dft.scf.diagonalization.jacobi_threshold = 1e-6
+The *qmflows-namd* packages offers a set of workflows to compute different properties like:
 
+ * derivative_Coupling
+ * absorption_spectrum
 
+   
+Derivative coupling calculation
+-------------------------------
 
-qmflows_ automatically create the indented structure of the previous example together with the special character *&* at
-the beginning and end of each section, and finally the keyword *END* at the end of each section.
+This workflow computes the derivative coupling matrix for a given molecular system and returns
+a set of files in PYXAID_ format. The input is described in YAML_ format as showed in the
+following example:
 
-    
-Notice that *CP2K* requires the explicit declaration of the basis set together with the charge and the name of
-the potential used for each one of the atoms. In the previous example the basis for the carbon is *DZVP-MOLOPT-SR-GTH*,
-while the potential is *GTH-PBE* and the charge *q4*.Also, the simulation cell can be specified using the x, y, z vectors
-like in the previous example. but also, a cubic box can be easily specified by: ::
-  
-  penta.input.force_eval.subsys.cell.ABC = "[angstrom] 50 50 50"
+.. literalinclude:: ../test/test_files/input_test_derivative_couplings.yml
+    :linenos:
 
-that result in a simulation cube of 50 cubic angstroms.
+The `workflow` keyword in lines 1-2 described the name of the workflow to run, while in lines 3-4 the index
+of the **HOMO** orbital is provided (starting from 1). Subsequently the `coupling_range` keyword states
+the number of orbitals to compute the couple, where the first number is the index of the starting orbital and the
+second number the number of orbitals to include *after the first number*. In the previous example, the Coupling
+for orbitals 50 to 79 will be computed.
 
-For a more detailed description of cp2k_ input see manual_.
-    
+the keyword `path_hdf5` point to the file where all the orbitals and couplings will be stored. Moreover, the
+`path_traj_xyz` variable is the name of the file containing the molecular dynamic trajectory in *xyz* format.
 
+From Line 22 to the end the input for CP2K is provided.Using the aforemention Settings QMflows_ automatically create the CP2K input. You do not need to add the & or &END symbols, QMFlows adds them automatically for you.
 
-WOrkFlow to compute PYXAID Hamiltonian
-######################################
+CP2K requires the explicit declaration of the basis set together with the name of the potential used for each one of the atoms. In the previous example the basis for the carbon is DZVP-MOLOPT-SR-GTH, while the potential is GTH-PBE.
 
+.. note::
+   There are several way to declare the parameters of the unit cell, you can passed to the cell_parameters
+   variable either a number, a list or a list or list. A single number represent a cubic box, while a list
+   represent a parallelepiped and finally a list of list contains the ABC vectors describing the unit cell.
+   Alternatively, you can pass the angles of the cell using the cell_angles variable.
 
-The function to calculate the Hamiltonian to carry out *Nonadiabatic molecular dynamics* using PYXAID_: ::
+Restarting a Job
+----------------
 
-   def generate_pyxaid_hamiltonians(package_name, project_name, all_geometries,
-                                    cp2k_args, guess_args=None,
-                                    calc_new_wf_guess_on_points=[0],
-                                    path_hdf5=None, enumerate_from=0,
-                                    package_config=None):
-       """
-       Use a md trajectory to generate the hamiltonian components to tun PYXAID
-       nmad.
+Both the *molecular orbitals* and the *derivative couplings* for a given molecular dynamic trajectory are stored in a HDF5_. The library check wether the *MO* orbitals or the coupling under consideration are already present in the HDF5_ file, otherwise compute it. Therefore  if the workflow computation fails due to a recoverable issue like:
 
-       :param package_name: Name of the package to run the QM simulations.
-       :type  package_name: String
-       :param project_name: Folder name where the computations
-       are going to be stored.
-       :type project_name: String
-       :param all_geometries: List of string cotaining the molecular geometries
-       numerical results.
-       :type path_traj_xyz: [String]
-       :param package_args: Specific settings for the package
-       :type package_args: dict
-       :param use_wf_guess_each: number of Computations that used a previous
-       calculation as guess for the wave function.
-       :type use_wf_guess_each: Int
-       :param enumerate_from: Number from where to start enumerating the folders
-       create for each point in the MD
-       :type enumerate_from: Int
-       :param package_config: Parameters required by the Package.
-       :type package_config: Dict
-       :returns: None
-       """
+  * Cancelation due to time limit.
+  * Manual suspension or cancelation for another reasons.
 
-.. image:: docs/images/nac_worflow.png
+Then, in order to restart the job you need to perform the following actions:
 
+  * **Do Not remove** the file called ``cache.db`` from the current work  directory.
 
+Known Issues
+------------
 
-.. _cp2k: https://www.cp2k.org/
+Coupling distribution in multiple nodes
+#########################################
 
-.. _manual: https://manual.cp2k.org/#gsc.tab=0
+`CP2K` can uses multiple nodes to perform the computation of the molecular orbitals using the **MPI** protocol. Unfortunately, the `MPI` implementation for the computation of the *derivative coupling matrix* is experimental and unestable. The practical consequences of the aforemention issues, is that **the calculation of the coupling matrices are carried out in only 1 computational node**. It means that if you want ask for more than 1 node to compute the molecular orbitals with `CP2K`, once the workflow starts to compute the *derivative couplings* only 1 node will be used at a time and the rest will remain idle wating computational resources. 
+
+Memory allocation
+#################
+The *derivative couplings* computations are started once all the molecular orbitals have been calculated. Then, all the coupling calculation are scheduled, holding in memory all the molecular orbitals until they are requested.  It cause a huge memory consumption. 
+
+Reporting a bug or requesting a feature
+---------------------------------------
+To report an issue or request a new feature you can use the github issues_ tracker.
+
+.. _HDF5: http://www.h5py.org/
+.. _issues: https://github.com/SCM-NV/qmflows-namd/issues
+.. _QMflows: https://github.com/SCM-NV/qmflows
+.. _PYXAID: https://www.acsu.buffalo.edu/~alexeyak/pyxaid/overview.html
+.. _YAML: https://pyyaml.org/wiki/PyYAML
