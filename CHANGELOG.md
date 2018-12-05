@@ -1,5 +1,13 @@
 # Change Log
 
+
+## 0.3.1
+
+### Changed
+
+* Replace the `json schemas` with the [schemas](https://github.com/keleshev/schema) library.
+
+
 ## 0.3.0
 
 ### Added
