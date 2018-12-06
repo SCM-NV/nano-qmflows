@@ -1,7 +1,10 @@
-__all__ = ['schema_general_settings', 'schema_derivative_couplings']
+__all__ = [
+    'schema_general_settings', 'schema_derivative_couplings',
+    'schema_absorption_spectrum', 'schema_electron_transfer']
 
 
-from schema import (And, Optional, Or, Schema, Use)
+from numbers import Real
+from schema import (And, Optional, Schema, Use)
 
 
 schema_general_settings = Schema({
@@ -11,6 +14,9 @@ schema_general_settings = Schema({
         lambda s: s in ("multiprocessing", "mpi")),
 
     # "default quantum package used"
+    Optional("package_name", default="cp2k"): str,
+
+    # project
     Optional("project_name", default="namd"): str,
 
     # "Basis set to carry out the quantum chemistry simulation"
@@ -31,7 +37,7 @@ schema_general_settings = Schema({
     # Path to the folder containing the pseudo potential specifications
     Optional("path_potential", default=None): str,
 
-    # Number from where to start enumerating the folders create for each point in the MD
+    # Real from where to start enumerating the folders create for each point in the MD
     Optional("enumerate_from", default=0): int,
 
     # Ignore the warning issues by the quantum package and keep computing
@@ -55,20 +61,20 @@ schema_general_settings = Schema({
 })
 
 
-definitions_derivative_couplings = Schema({
+schema_derivative_couplings = Schema({
 
     # Name of the workflow to run
     "workflow": And(
-        str, Use(str.lower), lambda s: s == "derivative_coupling"),
+        str, Use(str.lower), lambda s: s == "derivative_couplings"),
 
     # Index of the HOMO
     "nHOMO": int,
 
     # Integration time step used for the MD (femtoseconds)
-    Optional("dt", default=1): float,
+    Optional("dt", default=1): Real,
 
     # Range of Molecular orbitals used to compute the nonadiabatic coupling matrix
-    "couplings_range": Schema((int, int)),
+    "couplings_range": Schema([int, int]),
 
     # Algorithm used to compute the derivative couplings
     Optional("algorithm", default="levine"):
@@ -81,15 +87,86 @@ definitions_derivative_couplings = Schema({
     Optional("write_overlaps", default=False): bool,
 
     # Compute the overlap between molecular geometries using a dephase"
-    Optional("overlaps_deph", default=False): bool
+    Optional("overlaps_deph", default=False): bool,
 
+    # General settings
+    "general_settings": schema_general_settings
 })
 
 
-definitions_absorption_spectrum = Schema({
-    
+schema_absorption_spectrum = Schema({
+
+    # Name of the workflow to run
+    "workflow": And(
+        str, Use(str.lower), lambda s: s == "absorption_spectrum"),
+
+    # Index of the HOMO
+    "nHOMO": int,
+
+    # Initial states of the transitions
+    "initial_states": list,
+
+    # final states of the transitions (Array or Arrays)
+    "final_states": list,
+
+    # CI Space used to build the excited states
+    "ci_range": Schema([int, int]),
+
+    # Type of TDDFT calculations. Available: sing_orb, stda, stddft
+    Optional("tddft", default="stda"): And(
+        str, Use(str.lower), lambda s: s in ("sing_orb", "stda", "stdft")),
+
+    # Range of energy in eV to simulate the spectrum"
+    Optional("energy_range", default=[0, 5]): Schema([Real, Real]),
+
+    # Interval between MD points where the oscillators are computed"
+    Optional("calculate_oscillator_every",  default=50): int,
+
+
+    # description: Exchange-correlation functional used in the DFT calculations,
+    Optional("xc_dft", default="pbe"): str,
+
+    # mathematical function representing the spectrum,
+    Optional("convolution", default="gaussian"): And(
+        str, Use(str.lower), lambda s: s in ("gaussian", "lorentzian")),
+
+    # thermal broadening in eV
+    Optional("broadening", default=0.1): Real,
+
+    # General settings
+    "general_settings": schema_general_settings
 })
 
 
-schema_derivative_couplings = Schema(
-    And(schema_general_settings, definitions_derivative_couplings))
+schema_electron_transfer = Schema({
+    # Name of the workflow to run
+    "workflow": And(
+        str, Use(str.lower), lambda s: s == "electron_transfer"),
+
+    # Path to the PYXAID output containing the time-dependent coefficients
+    "path_time_coeffs": str,
+
+    # Integration time step used for the MD (femtoseconds)
+    Optional("dt", default=1): float,
+
+    # Index of the HOMO
+    "pyxaid_HOMO": int,
+
+    # Index of the LUMO
+    "pyxaid_LUMO": int,
+
+    # Index of the LUMO
+    "pyxaid_Nmax": int,
+
+    # List of initial conditions of the Pyxaid dynamics
+    "pyxaid_iconds": list,
+
+    # Indices of the atoms belonging to a fragment
+    "fragment_indices": list,
+
+    # Range of Molecular orbitals use to compute the derivative couplings
+    "couplings_range": list,
+
+    # General settings
+    "general_settings": schema_general_settings
+})

@@ -1,12 +1,14 @@
 from .schemas import (
-    schema_absorption_spectrum, schema_derivative_couplings, schema_general_settings)
+    schema_absorption_spectrum, schema_derivative_couplings,
+    schema_electron_transfer, schema_general_settings)
 from typing import Dict
 import yaml
 
 
 schema_workflows = {
     'absorption_spectrum': schema_absorption_spectrum,
-    'derivative_couplings': schema_derivative_couplings.json,
+    'derivative_couplings': schema_derivative_couplings,
+    'electron_transfer': schema_electron_transfer,
     'general_settings': schema_general_settings}
 
 
