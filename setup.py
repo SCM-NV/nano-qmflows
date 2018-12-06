@@ -22,7 +22,7 @@ setup(
     license='Apache-2.0',
     url='https://github.com/SCM-NV/qmflows-namd',
     author=['Felipe Zapata', 'Ivan Infante'],
-    author_email='tifonzafel_gmail.com',
+    author_email='f.zapata@esciencecenter.nl',
     keywords='chemistry Photochemistry Simulation',
     long_description=readme(),
     packages=find_packages(),
@@ -35,7 +35,8 @@ setup(
         'topic :: scientific/engineering :: chemistry'
     ],
     install_requires=[
-        'cython', 'numpy', 'h5py', 'noodles==0.3.1', 'qmflows>=0.3.0', 'pymonad', 'scipy'],
+        'cython', 'numpy', 'h5py', 'noodles==0.3.1', 'qmflows>=0.3.0', 'pymonad', 'scipy',
+        'schema'],
     dependency_links=[
             "https://github.com/SCM-NV/qmflows/tarball/master#egg=qmflows"],
     cmdclass={'build_ext': build_ext},
