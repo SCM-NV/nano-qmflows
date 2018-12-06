@@ -116,9 +116,6 @@ def compute_excited_states_tddft(
     # Call the function that computes transition dipole moments integrals
     print("Reading or computing the transition dipole matrix")
     tdm = get_multipole_matrix(i, mol, config, 'dipole')
-    print("Reading or computing the quadrupole matrix")
-    tqm = get_multipole_matrix(
-           i, mol, config, 'quadrupole')
     tdmatrix_x = np.linalg.multi_dot([c_ao[:, :nocc].T, tdm[0, :, :], c_ao[:, nocc:]]).reshape(nocc*nvirt)
     tdmatrix_y = np.linalg.multi_dot([c_ao[:, :nocc].T, tdm[1, :, :], c_ao[:, nocc:]]).reshape(nocc*nvirt)
     tdmatrix_z = np.linalg.multi_dot([c_ao[:, :nocc].T, tdm[2, :, :], c_ao[:, nocc:]]).reshape(nocc*nvirt)
@@ -138,7 +135,7 @@ def compute_excited_states_tddft(
              'state', 'energy', 'f', 't_dip_x', 't_dip_y', 't_dip_y', 'weight', 'from', 'energy', 'to', 'energy', 'delta_E') 
     np.savetxt(path_output, output, fmt='%5d %10.3f %10.5f %10.5f %10.5f %10.5f %10.5f %3d %10.3f %3d %10.3f %10.3f', header=header)
 
-    descriptors = True   
+    descriptors = False 
     n_lowest = 3 
     if descriptors:
        print("Reading or computing the quadrupole matrix")
