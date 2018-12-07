@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-from nac.workflows.input_validation import (process_input, read_json_yaml)
-from nac.workflows import (workflow_oscillator_strength, workflow_derivative_couplings)
+from nac.workflows.input_validation import process_input
+from nac.workflows import (workflow_stddft, workflow_derivative_couplings)
 import argparse
 
 msg = "namd.py -i input"
@@ -11,7 +11,7 @@ parser.add_argument('-i', required=True,
                     help="Input file in YAML format")
 
 
-dict_workflows = {'absorption_spectrum': workflow_oscillator_strength,
+dict_workflows = {'absorption_spectrum': workflow_stddft,
                   'derivative_couplings': workflow_derivative_couplings}
 
 

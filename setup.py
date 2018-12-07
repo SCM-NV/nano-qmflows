@@ -36,7 +36,7 @@ setup(
     ],
     install_requires=[
         'cython', 'numpy', 'h5py', 'noodles==0.3.1', 'qmflows>=0.3.0', 'pymonad', 'scipy',
-        'schema'],
+        'schema', 'yaml'],
     dependency_links=[
             "https://github.com/SCM-NV/qmflows/tarball/master#egg=qmflows"],
     cmdclass={'build_ext': build_ext},

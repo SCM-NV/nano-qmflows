@@ -1,6 +1,6 @@
 from nac.common import retrieve_hdf5_data
 from nac.workflows.input_validation import process_input
-from nac.workflows.workflow_absorption_spectrum import workflow_oscillator_strength
+from nac.workflows import workflow_stddft
 from os.path import join
 from .utilsTest import copy_basis_and_orbitals
 
@@ -67,7 +67,7 @@ def calculate_oscillators(runner, path_test_hdf5, scratch_path):
     config['general_settings']['runner'] = runner
     print(config)
 
-    workflow_oscillator_strength(config)
+    workflow_stddft(config)
 
 
 def check_properties(path_test_hdf5):
