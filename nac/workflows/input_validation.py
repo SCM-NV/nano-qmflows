@@ -1,8 +1,10 @@
 from .schemas import (
     schema_absorption_spectrum, schema_derivative_couplings,
     schema_electron_transfer, schema_general_settings)
+from schema import SchemaError
 from typing import Dict
 import yaml
+from qmflows.settings import Settings
 
 
 schema_workflows = {
@@ -26,4 +28,17 @@ def process_input(input_file: str, workflow_name: str) -> Dict:
     with open(input_file, 'r') as f:
         dict_input = yaml.load(f.read())
 
-    return schema.validate(dict_input)
+    try:
+        d = schema.validate(dict_input)
+
+        # Convert cp2k definitions to settings
+        d['general_settings']['settings_main'] = Settings(
+            d['general_settings']['settings_main'])
+        d['general_settings']['settings_guess'] = Settings(
+            d['general_settings']['settings_guess'])
+
+        return d
+
+    except SchemaError as e:
+        msg = "There was an error in the input provided:\n{}".format(e)
+        raise RuntimeError(msg)
