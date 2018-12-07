@@ -31,14 +31,42 @@ def process_input(input_file: str, workflow_name: str) -> Dict:
     try:
         d = schema.validate(dict_input)
 
-        # Convert cp2k definitions to settings
-        d['general_settings']['settings_main'] = Settings(
-            d['general_settings']['settings_main'])
-        d['general_settings']['settings_guess'] = Settings(
-            d['general_settings']['settings_guess'])
-
-        return d
+        return create_settings(d)
 
     except SchemaError as e:
         msg = "There was an error in the input provided:\n{}".format(e)
         raise RuntimeError(msg)
+
+
+def create_settings(d: Dict) -> Dict:
+    """
+    Transform the input dict into Cp2K settings and add the `added_mos` and `mo_index_range`
+    keywords
+    :param d: input dict
+    :return: dictionary with Settings to call Cp2k
+    """
+    general = d['general_settings']
+
+    # Convert cp2k definitions to settings
+    general['settings_main'] = Settings(
+        general['settings_main'])
+    general['settings_guess'] = Settings(
+        general['settings_guess'])
+
+    # Add keywords if missing
+    settings_main = general['settings_main']
+    mo_index_range = general['mo_index_range']
+    nHOMO = general["nHOMO"]
+    dft = settings_main.specific.cp2k.force_eval.dft
+
+    # Added_mos keyword
+    scf = dft.get("scf", None)
+    if scf is not None and scf.get("added_mos", None) is not None:
+        dft.scf.added_mos = mo_index_range[1] - mo_index_range[0] - nHOMO + 1
+
+    # mo_index_range keyword
+    pr = dft.get("print", None)
+    if pr is not None and pr.get('mo', None) is not None:
+        pr.mo.mo_index_range = "{} {}".format(mo_index_range[0], mo_index_range[1])
+
+    return d
