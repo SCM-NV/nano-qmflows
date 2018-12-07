@@ -41,7 +41,7 @@ def compute_oscillators(runner):
     path_test_hdf5 = tempfile.mktemp(
         prefix='{}_'.format(runner), suffix='.hdf5', dir=scratch_path)
     if not os.path.exists(scratch_path):
-        os.makedirs(scratch_path)
+        os.makedirs(scratch_path, exist_ok=True)
     try:
         # Run the actual test
         copy_basis_and_orbitals(path_original_hdf5, path_test_hdf5,
@@ -65,6 +65,8 @@ def calculate_oscillators(runner, path_test_hdf5, scratch_path):
     config['general_settings']['path_traj_xyz'] = join(
         root, config['general_settings']['path_traj_xyz'])
     config['general_settings']['runner'] = runner
+    print(config)
+
     workflow_oscillator_strength(config)
 
 

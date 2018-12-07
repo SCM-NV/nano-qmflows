@@ -17,12 +17,12 @@ def readme():
 
 setup(
     name='qmflows-namd',
-    version='0.3.0',
+    version='0.3.1',
     description='Derivative coupling calculation',
     license='Apache-2.0',
     url='https://github.com/SCM-NV/qmflows-namd',
     author=['Felipe Zapata', 'Ivan Infante'],
-    author_email='tifonzafel_gmail.com',
+    author_email='f.zapata@esciencecenter.nl',
     keywords='chemistry Photochemistry Simulation',
     long_description=readme(),
     packages=find_packages(),
@@ -36,7 +36,7 @@ setup(
     ],
     install_requires=[
         'cython', 'numpy', 'h5py', 'noodles==0.3.1', 'qmflows>=0.3.0', 'pymonad', 'scipy',
-        'jsonref', 'jsonschema'],
+        'schema'],
     dependency_links=[
             "https://github.com/SCM-NV/qmflows/tarball/master#egg=qmflows"],
     cmdclass={'build_ext': build_ext},
@@ -60,9 +60,5 @@ setup(
         'scripts/qmflows/mergeHDF5.py',
         'scripts/qmflows/plot_dos.py',
         'scripts/qmflows/removeHDF5folders.py',
-        'scripts/qmflows/remove_mos_hdf5.py'],
-    include_package_data=True,
-    package_data={
-        'nac': ['data/schemas/*json']
-    }
+        'scripts/qmflows/remove_mos_hdf5.py']
 )
