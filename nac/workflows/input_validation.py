@@ -1,88 +1,29 @@
-from jsonschema import (Draft4Validator, validate,  validators)
+from .schemas import (
+    schema_absorption_spectrum, schema_derivative_couplings,
+    schema_electron_transfer, schema_general_settings)
 from typing import Dict
-from qmflows.settings import Settings
-import json
-import jsonref
 import yaml
-import pkg_resources as pkg
+
 
 schema_workflows = {
-    'absorption_spectrum': pkg.resource_filename("nac", "data/schemas/absorption_spectrum.json"),
-    'derivative_couplings': pkg.resource_filename("nac", "data/schemas/derivative_couplings.json"),
-    'general_settings': pkg.resource_filename("nac", "data/schemas/general_settings.json")}
+    'absorption_spectrum': schema_absorption_spectrum,
+    'derivative_couplings': schema_derivative_couplings,
+    'electron_transfer': schema_electron_transfer,
+    'general_settings': schema_general_settings}
 
 
-def process_input(input_file: str, workflow_name) -> Dict:
+def process_input(input_file: str, workflow_name: str) -> Dict:
     """
-    Read the input file in YAML format, validate it again the schema
-    of `workflow_name` and return a nested dictionary with the input.
+    Read the `input_file` in YAML format, validate it against the
+    corresponding `workflow_name` schema and return a nested dictionary with the input.
+
+    :param str input_file: path to the input
+    :return: Input as dictionary
+    :raise SchemaError: If the input is not valid
     """
-    input_dict = read_json_yaml(input_file, fmt='yaml')
-    path_schema = schema_workflows[workflow_name]
-    schema = load_json_schema(path_schema)
+    schema = schema_workflows[workflow_name]
 
-    return validate_input(input_dict, schema)
-
-
-def extend_with_default(validator_class):
-    """ Extend the json schema validator so it fills in the defaults"""
-    validate_properties = validator_class.VALIDATORS["properties"]
-
-    def set_defaults(validator, properties, instance, schema):
-        for prop, subschema in properties.items():
-            if "default" in subschema:
-                instance.setdefault(prop, subschema["default"])
-
-        for error in validate_properties(
-                validator, properties, instance, schema):
-            yield error
-
-    return validators.extend(
-        validator_class, {"properties": set_defaults})
-
-
-def validate_input(input_dict: dict, schema: Dict) -> Dict:
-    """
-    Check that the input is correct following `schema` and get
-    the default values from the schema.
-    """
-    # first validate input
-    validate(input_dict, schema)
-
-    # Next add defaults
-    DefaultValidatingDraft4Validator = extend_with_default(Draft4Validator)
-    DefaultValidatingDraft4Validator(schema).validate(input_dict)
-
-    # convert QM package input to settings
-    input_dict['general_settings']['settings_main'] = Settings(
-        input_dict['general_settings']['settings_main'])
-    input_dict['general_settings']['settings_guess'] = Settings(
-        input_dict['general_settings']['settings_guess'])
-
-    return input_dict
-
-
-def load_json_schema(file_path: str) -> Dict:
-    "Load a schema from `file_path` and use the absolute path for file references"
-
-    # Absolute path prefix
-    root = pkg.resource_filename('nac', 'data')
-
-    base_uri = "file://{}/".format(root)
-
-    with open(file_path, 'r') as f:
-        xs = f.read()
-
-    # replace ref with absolute values to the files
-    return jsonref.loads(xs, base_uri=base_uri, jsonschema=True)
-
-
-def read_json_yaml(input_file: str, fmt: str) -> Dict:
-    """
-    Read a file in json or yaml format.
-    """
-    mod = yaml if fmt is 'yaml' else json
     with open(input_file, 'r') as f:
-        xs = mod.load(f)
+        dict_input = yaml.load(f.read())
 
-    return xs
+    return schema.validate(dict_input)

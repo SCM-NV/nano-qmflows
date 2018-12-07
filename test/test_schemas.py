@@ -1,12 +1,16 @@
-from nac.workflows.input_validation import (load_json_schema, read_json_yaml, schema_workflows)
-import jsonschema
+
+from nac.workflows.input_validation import process_input
+from os.path import join
 
 
 def test_input_validation():
     """
     Test the input validation schema
     """
-    path = "test/test_files/input_test_oscillator.yml"
-    inp = read_json_yaml(path, fmt='yaml')
-    schema = load_json_schema(schema_workflows['general_settings'])
-    jsonschema.validate(inp['general_settings'], schema)
+    root = "test/test_files"
+    schemas = ("absorption_spectrum", "derivative_couplings")
+    paths = [join(root, x) for x in
+             ["input_test_oscillator.yml", "input_test_derivative_couplings.yml"]]
+    for s, p in zip(schemas, paths):
+        d = process_input(p, s)
+        assert isinstance(d, dict)
