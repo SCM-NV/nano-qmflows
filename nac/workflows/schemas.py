@@ -104,10 +104,10 @@ schema_absorption_spectrum = Schema({
     "nHOMO": int,
 
     # Initial states of the transitions
-    "initial_states": list,
+    Optional("initial_states"): list,
 
     # final states of the transitions (Array or Arrays)
-    "final_states": list,
+    Optional("final_states"): list,
 
     # CI Space used to build the excited states
     "ci_range": Schema([int, int]),
