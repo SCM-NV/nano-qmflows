@@ -1,9 +1,5 @@
 workflow:
   derivative_couplings
-nHOMO:
-  50
-couplings_range:
-  [50, 30]
 
 general_settings:
   runner:
@@ -12,18 +8,23 @@ general_settings:
     "DZVP-MOLOPT-SR-GTH"
   project_name:
     Cd33Se33
+  nHOMO:
+    50
+  mo_index_range:
+    [50, 30]
   path_hdf5:
     "test/test_files/Cd33Se33.hdf5"
   path_traj_xyz:
     "test/test_files/Cd33Se33_fivePoints.xyz" 
   scratch_path:
     "/tmp/namd/derivative_couplings"
-
+    
   settings_main:
     potential: "GTH-PBE"
     basis: "DZVP-MOLOPT-SR-GTH"
     cell_parameters: 45.0
     cell_angles: [90.0, 90.0, 90.0]
+
     specific:
       cp2k:
         force_eval:
@@ -68,10 +69,6 @@ general_settings:
             scf:
               eps_scf: 0.0005
               max_scf: 200
-              added_mos: 35
-            print:
-              mo:
-                mo_index_range: "278 332"
   
   settings_guess:
     potential: "GTH-PBE"

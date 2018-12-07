@@ -102,7 +102,8 @@ def initialize(
          'geometries': geometries, 'enumerate_from': enumerate_from,
          'dictCGFs': dictCGFs, 'work_dir': scratch_path,
          'folders': traj_folders, 'basis_name': basis_name,
-         'hdf5_trans_mtx': hdf5_trans_mtx}
+         'hdf5_trans_mtx': hdf5_trans_mtx, "nHOMO": kwargs["nHOMO"],
+         "mo_index_range": kwargs["mo_index_range"]}
 
     return d
 

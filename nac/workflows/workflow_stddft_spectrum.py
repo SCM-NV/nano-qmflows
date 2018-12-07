@@ -45,7 +45,7 @@ def workflow_stddft(workflow_settings: Dict):
     results = gather(
        *[scheduleTDDFT(
            i, mol, mo_paths_hdf5, workflow_settings['xc_dft'],
-           workflow_settings['ci_range'], workflow_settings['nHOMO'],
+           config['mo_index_range'], config['nHOMO'],
            workflow_settings['tddft'], config)
          for i, mol in enumerate(molecules_au)
          if i % workflow_settings['calculate_oscillator_every'] == 0])
@@ -54,11 +54,11 @@ def workflow_stddft(workflow_settings: Dict):
 
 
 def compute_excited_states_tddft(
-           i: int, mol: List, mo_paths_hdf5, xc_dft: str, ci_range: list,
+           i: int, mol: List, mo_paths_hdf5, xc_dft: str, mo_index_range: list,
         nocc: int, tddft: str, config: Dict):
     """
     Compute the excited states properties (energy and coefficients) for a given
-    `ci_range` using the `tddft` method and `xc_dft` exchange functional.
+    `mo_index_range` using the `tddft` method and `xc_dft` exchange functional.
     """
     print("Reading energies and mo coefficients")
     energy, c_ao = retrieve_hdf5_data(config['path_hdf5'], mo_paths_hdf5[i])
