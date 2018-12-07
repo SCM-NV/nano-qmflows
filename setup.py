@@ -36,7 +36,7 @@ setup(
     ],
     install_requires=[
         'cython', 'numpy', 'h5py', 'noodles==0.3.1', 'qmflows>=0.3.0', 'pymonad', 'scipy',
-        'schema'],
+        'schema', 'pyyaml'],
     dependency_links=[
             "https://github.com/SCM-NV/qmflows/tarball/master#egg=qmflows"],
     cmdclass={'build_ext': build_ext},
@@ -59,6 +59,7 @@ setup(
         'scripts/pyxaid/plot_states_pops.py',
         'scripts/qmflows/mergeHDF5.py',
         'scripts/qmflows/plot_dos.py',
+        'scripts/qmflows/rdf.py',
         'scripts/qmflows/removeHDF5folders.py',
         'scripts/qmflows/remove_mos_hdf5.py']
 )

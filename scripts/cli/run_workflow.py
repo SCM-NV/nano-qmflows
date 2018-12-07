@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 
-from nac.workflows.input_validation import (process_input, read_json_yaml)
-from nac.workflows import (workflow_oscillator_strength, workflow_derivative_couplings)
+from nac.workflows.input_validation import process_input
+from nac.workflows import (workflow_stddft, workflow_derivative_couplings)
 import argparse
+import yaml
 
 msg = "namd.py -i input"
 
@@ -11,13 +12,15 @@ parser.add_argument('-i', required=True,
                     help="Input file in YAML format")
 
 
-dict_workflows = {'absorption_spectrum': workflow_oscillator_strength,
+dict_workflows = {'absorption_spectrum': workflow_stddft,
                   'derivative_couplings': workflow_derivative_couplings}
 
 
 def main():
     input_file = read_cmd_line()
-    dict_input = read_json_yaml(input_file, fmt='yaml')
+    with open(input_file, 'r') as f:
+        dict_input = yaml.load(f.read())
+
     if 'workflow' not in dict_input:
         raise RuntimeError("The name of the workflow is required in the input file")
     else:

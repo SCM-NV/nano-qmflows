@@ -20,7 +20,7 @@ from .schedule import (
 
 from .analysis import (
     autocorrelate, dephasing, gauss_function, parse_list_of_lists,
-    read_couplings, read_energies, spectral_density)
+    read_couplings, read_energies, rdf, spectral_density)
 
 
 from .workflows import (
@@ -41,7 +41,7 @@ __all__ = ['Array', 'AtomBasisData', 'AtomBasisKey', 'AtomData', 'AtomXYZ',
            'getmass', 'hbar', 'hardness', 'initialize', 'lazy_couplings',
            'parse_list_of_lists', 'photo_excitation_rate',
            'prepare_cp2k_settings', 'prepare_job_cp2k', 'r2meV',
-           'read_couplings', 'read_energies', 'retrieve_hdf5_data',
+           'read_couplings', 'read_energies', 'retrieve_hdf5_data', 'rdf',
            'search_data_in_hdf5', 'spectral_density', 'split_file_geometries',
            'store_arrays_in_hdf5', 'store_transf_matrix', 'triang2mtx',
            'workflow_derivative_couplings',
