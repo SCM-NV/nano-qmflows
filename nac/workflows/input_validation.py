@@ -3,6 +3,7 @@ from .schemas import (
     schema_electron_transfer, schema_general_settings)
 from typing import Dict
 import yaml
+from qmflows.settings import Settings
 
 
 schema_workflows = {
@@ -26,4 +27,12 @@ def process_input(input_file: str, workflow_name: str) -> Dict:
     with open(input_file, 'r') as f:
         dict_input = yaml.load(f.read())
 
-    return schema.validate(dict_input)
+    d = schema.validate(dict_input)
+
+    # Convert cp2k definitions to settings
+    d['general_settings']['settings_main'] = Settings(
+        d['general_settings']['settings_main'])
+    d['general_settings']['settings_guess'] = Settings(
+        d['general_settings']['settings_guess'])
+
+    return d
