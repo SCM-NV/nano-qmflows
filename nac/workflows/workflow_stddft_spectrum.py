@@ -1,7 +1,7 @@
 __all__ = ['workflow_stddft']
 
 from nac.common import (
-    change_mol_units, h2ev, hardness, retrieve_hdf5_data, xc)
+    Matrix, Vector, change_mol_units, h2ev, hardness, retrieve_hdf5_data, xc)
 from nac.integrals.multipole_matrices import get_multipole_matrix
 from nac.integrals.spherical_Cartesian_cgf import (calc_orbital_Slabels, read_basis_format)
 from nac.schedule.components import calculate_mos
@@ -57,27 +57,28 @@ def compute_excited_states_tddft(
            i: int, mol: List, mo_paths_hdf5, xc_dft: str, ci_range: list,
         nocc: int, tddft: str, config: Dict):
     """
-    ADD DOCUMENTATION
+    Compute the excited states properties (energy and coefficients) for a given
+    `ci_range` using the `tddft` method and `xc_dft` exchange functional.
     """
     print("Reading energies and mo coefficients")
-    e, c_ao = retrieve_hdf5_data(config['path_hdf5'], mo_paths_hdf5[i])
+    energy, c_ao = retrieve_hdf5_data(config['path_hdf5'], mo_paths_hdf5[i])
 
     # Number of virtual orbitals
     nvirt = c_ao.shape[1] - nocc
 
     if tddft == 'sing_orb':
         omega = -np.subtract(
-            e[:nocc].reshape(nocc, 1), e[nocc:].reshape(nvirt, 1).T).reshape(nocc*nvirt)  
+            energy[:nocc].reshape(nocc, 1), energy[nocc:].reshape(nvirt, 1).T).reshape(nocc*nvirt)
         xia = np.eye(nocc*nvirt)
     else:
         # Call the function that computes overlaps
         print("Reading or computing the overlap matrix")
-        s = get_multipole_matrix(
+        multipoles = get_multipole_matrix(
             i, mol, config, 'overlap')
 
         # Make a function tha returns in transition density charges
         print("Computing the transition density charges")
-        q = transition_density_charges(mol, config, s, c_ao)
+        q = transition_density_charges(mol, config, multipoles, c_ao)
 
         # Make a function that compute the Mataga-Nishimoto-Ohno_Klopman
         # damped Columb and Excgange law functions
@@ -89,14 +90,15 @@ def compute_excited_states_tddft(
         # and can be set to 0
         print("Computing the Exchange and Coulomb integrals")
         if (xc(xc_dft)['type'] == 'pure'):
-            pqrs_J = np.zeros((e.size, e.size, e.size, e.size))
+            size = energy.size
+            pqrs_J = np.zeros((size, size, size, size))
         else:
             pqrs_J = np.tensordot(q, np.tensordot(q, gamma_J, axes=(0, 1)), axes=(0, 2))
         pqrs_K = np.tensordot(q, np.tensordot(q, gamma_K, axes=(0, 1)), axes=(0, 2))
 
         # Construct the Tamm-Dancoff matrix A for each pair of i->a transition
         print("Constructing the A matrix for TDDFT calculation")
-        a_mat = construct_A_matrix_tddft(pqrs_J, pqrs_K, nocc, nvirt, xc_dft, e)
+        a_mat = construct_A_matrix_tddft(pqrs_J, pqrs_K, nocc, nvirt, xc_dft, energy)
 
         if tddft == 'stddft':
             print('sTDDFT has not been implemented yet !')
@@ -108,38 +110,58 @@ def compute_excited_states_tddft(
             msg = "Only the stda method is available"
             raise RuntimeError(msg)
 
-    # Compute oscillator strengths
-    # The formula can be rearranged like this:
-    # f_I = 2/3 * np.sqrt(2 * omega_I) * sum_ia ( np.sqrt(e_diff_ia) * xia * tdm_x) ** 2 + y^2 + z^2
+    return compute_oscillator_strengths(
+        i, mol, tddft, config, energy, c_ao, multipoles, nocc, nvirt, omega, xia)
 
+
+def compute_oscillator_strengths(
+        i: int, mol: object, tddft: str, config: Dict, energy: Vector, c_ao: Matrix,
+        multipoles: Matrix, nocc: int, nvirt: int, omega: Vector, xia: Matrix):
+    """
+    Compute oscillator strengths
+    The formula can be rearranged like this:
+    f_I = 2/3 * np.sqrt(2 * omega_I) * sum_ia ( np.sqrt(e_diff_ia) * xia * tdm_x) ** 2 + y^2 + z^2
+
+    :param i: index
+    :param mol: molecular geometry
+    :param tddft: type of calculation
+    :param config: Setting for the current calculation
+    :param energy: energy of the orbitals
+    :param c_ao: coefficients of the molecular orbitals
+    :param nocc: number of occupied orbitals
+    :param nvirt: number of virtual orbitals
+    :param omega: Omega parameter
+    """
     # 1) Get the energy matrix i->a. Size: Nocc * Nvirt
     delta_ia = -np.subtract(
-        e[:nocc].reshape(nocc, 1), e[nocc:].reshape(nvirt, 1).T).reshape(nocc*nvirt)
+        energy[:nocc].reshape(nocc, 1), energy[nocc:].reshape(nvirt, 1).T).reshape(nocc*nvirt)
+
+    def compute_transition_matrix(matrix):
+        return np.stack(
+            np.sum(
+                np.sqrt(2 * delta_ia / omega[i]) * xia[:, i] * matrix)
+            for i in range(nocc*nvirt))
 
     # 2) Compute the transition dipole matrix TDM(i->a)
     # Call the function that computes transition dipole moments integrals
     print("Reading or computing the transition dipole matrix")
     tdm = get_multipole_matrix(i, mol, config, 'dipole')
-    tdmatrix_x = np.linalg.multi_dot(
-        [c_ao[:, :nocc].T, tdm[0, :, :], c_ao[:, nocc:]]).reshape(nocc*nvirt)
-    tdmatrix_y = np.linalg.multi_dot(
-        [c_ao[:, :nocc].T, tdm[1, :, :], c_ao[:, nocc:]]).reshape(nocc*nvirt)
-    tdmatrix_z = np.linalg.multi_dot(
-        [c_ao[:, :nocc].T, tdm[2, :, :], c_ao[:, nocc:]]).reshape(nocc*nvirt)
+
+    def compute_tdmatrix(k):
+        return np.linalg.multi_dot(
+            [c_ao[:, :nocc].T, tdm[k, :, :], c_ao[:, nocc:]]).reshape(nocc*nvirt)
+
+    td_matrices = (compute_tdmatrix(k) for k in range(3))
 
     # 3) Compute the transition dipole moments for each excited state i->a. Size: n_exc_states
-    d_x = np.stack(
-        np.sum(np.sqrt(2 * delta_ia / omega[i]) * xia[:, i] * tdmatrix_x) for i in range(nocc*nvirt))
-    d_y = np.stack(
-        np.sum(np.sqrt(2 * delta_ia / omega[i]) * xia[:, i] * tdmatrix_y) for i in range(nocc*nvirt))
-    d_z = np.stack(
-        np.sum(np.sqrt(2 * delta_ia / omega[i]) * xia[:, i] * tdmatrix_z) for i in range(nocc*nvirt))
+    d_x, d_y, d_z = tuple(
+        compute_transition_matrix(m) for m in td_matrices)
 
     # 4) Compute the oscillator strength
     f = 2 / 3 * omega * (d_x ** 2 + d_y ** 2 + d_z ** 2)
 
     # Write to output
-    output = write_output_tddft(nocc, nvirt, omega, f, d_x, d_y, d_z, xia, e)
+    output = write_output_tddft(nocc, nvirt, omega, f, d_x, d_y, d_z, xia, energy)
     path_output = os.path.join(config['work_dir'], 'output_{}_{}.txt'.format(i, tddft))
     header = '{:^5s}{:^14s}{:^8s}{:^11s}{:^11s}{:^11s}{:^11s}{:<5s}{:^10s}{:<5s}{:^11s}{:^11s}'.format(
         'state', 'energy', 'f', 't_dip_x', 't_dip_y', 't_dip_y', 'weight', 'from', 'energy',
@@ -156,10 +178,11 @@ def compute_excited_states_tddft(
             i, mol, config, 'quadrupole')
 
         descriptors = ex_descriptor(
-            omega, f, xia, n_lowest, c_ao, s, tdm, tqm, nocc, nvirt, mol, config)
+            omega, f, xia, n_lowest, c_ao, multipoles, tdm, tqm, nocc, nvirt, mol, config)
         path_ex_output = os.path.join(config['work_dir'], 'descriptors_{}_{}.txt'.format(i, tddft))
         ex_header = '{:^5s}{:^14s}{:^10s}{:^10s}{:^12s}{:^10s}{:^10s}{:^10s}{:^10s}{:^10s}'.format(
-             'state', 'd_exc', 'd_exc_app', 'd_he', 'sigma_h', 'sigma_e', 'r_eh', 'bind_en', 'energy', 'f')
+            'state', 'd_exc', 'd_exc_app', 'd_he', 'sigma_h', 'sigma_e', 'r_eh', 'bind_en',
+            'energy', 'f')
         np.savetxt(
             path_ex_output, descriptors,
             fmt='%5d %10.3f %10.3f %10.3f %10.3f %10.3f %10.3f %10.3f %10.3f %10.3f',
@@ -175,7 +198,8 @@ def ex_descriptor(omega, f, xia, n_lowest, c_ao, s, tdm, tqm, nocc, nvirt, mol, 
 
     # Transform the transition density matrix into AO basis
     d0I_ao = np.stack(
-        np.linalg.multi_dot([c_ao[:, :nocc], xia_I[:, :, i], c_ao[:, nocc:].T]) for i in range(n_lowest))
+        np.linalg.multi_dot(
+            [c_ao[:, :nocc], xia_I[:, :, i], c_ao[:, nocc:].T]) for i in range(n_lowest))
 
     # Compute omega in excition analysis for the lowest n excitations
     om = get_omega(d0I_ao, s, n_lowest)
@@ -194,7 +218,8 @@ def ex_descriptor(omega, f, xia, n_lowest, c_ao, s, tdm, tqm, nocc, nvirt, mol, 
     # Compute Descriptors
 
     # Compute exciton size:
-    d_exc = np.sqrt(((x2h - 2 * xhxe + x2e) + (y2h - 2 * yhye + y2e) + (z2h - 2 * zhze + z2e)) / om)
+    d_exc = np.sqrt(
+        ((x2h - 2 * xhxe + x2e) + (y2h - 2 * yhye + y2e) + (z2h - 2 * zhze + z2e)) / om)
 
     # Compute centroid electron_hole distance
     d_he = np.abs(((xe - xh) + (ye - yh) + (ze - zh)) / om)
@@ -365,7 +390,8 @@ def write_output_tddft(nocc, nvirt, omega, f, d_x, d_y, d_z, xia, e):
     # Find the index of this transition
     index_weight = np.hstack(
         np.where(
-            xia[:, i] ** 2 == np.max(xia[:, i] ** 2)) for i in range(nocc*nvirt)).reshape(nocc*nvirt)
+            xia[:, i] ** 2 == np.max(
+                xia[:, i] ** 2)) for i in range(nocc*nvirt)).reshape(nocc*nvirt)
 
     # Index of the hole for the most important excitation
     output[:, 7] = np.stack(excs[index_weight[i]][0] for i in range(nocc*nvirt)) + 1
