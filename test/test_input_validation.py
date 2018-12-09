@@ -1,10 +1,10 @@
 from nac.workflows.input_validation import process_input
-from pytest import skip
 from qmflows import (cp2k, run)
 from scm import plams
+import pytest
 
 
-@skip
+@pytest.mark.skip
 def test_input_validation():
     """
     test the templates and keywords completion
