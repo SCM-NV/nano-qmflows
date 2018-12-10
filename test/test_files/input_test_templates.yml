@@ -21,7 +21,7 @@ general_settings:
     cell_parameters: 45.0
     cell_angles: [90.0, 90.0, 90.0]
     specific:
-      template: pbe
+      template: pbe_main
   
   settings_guess:
     potential: "GTH-PBE"
@@ -30,4 +30,4 @@ general_settings:
     cell_parameters: 45.0
     specific:
       template:
-        pbe
+        pbe_guess

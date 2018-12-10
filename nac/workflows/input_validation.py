@@ -1,7 +1,8 @@
 from .schemas import (
     schema_absorption_spectrum, schema_derivative_couplings,
     schema_electron_transfer, schema_general_settings)
-from .templates import (cp2k_pbe0, cp2k_pbe)
+from .templates import (
+    cp2k_pbe0_guess, cp2k_pbe0_main, cp2k_pbe_guess, cp2k_pbe_main)
 from qmflows.settings import Settings
 from schema import SchemaError
 from typing import Dict
@@ -68,7 +69,9 @@ def apply_templates(d: Dict):
     general = d['general_settings']
 
     # available templates
-    templates_dict = {"pbe": cp2k_pbe, "pbe0": cp2k_pbe0}
+    templates_dict = {
+        "pbe_guess": cp2k_pbe_guess, "pbe_main": cp2k_pbe_main,
+        "pbe0_guess": cp2k_pbe0_guess, "pbe0_main": cp2k_pbe0_main}
 
     for s in [general[x] for x in ['settings_main', 'settings_guess']]:
         val = s['specific']
