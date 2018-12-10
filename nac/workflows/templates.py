@@ -1,5 +1,5 @@
 
-__all__ = ["cp2k_pbe_guess", "cp2k_pbe_main", "cp2k_pbe0_guess"]
+__all__ = ["cp2k_pbe_guess", "cp2k_pbe_main", "cp2k_pbe0_guess", "cp2k_pbe0_main"]
 
 from qmflows.settings import Settings
 import yaml
@@ -10,8 +10,8 @@ def generate_auxiliar_basis(sett: Settings, auxiliar_basis: str) -> Settings:
     Generate the `auxiliar_basis` for all the atoms in the `sett`
     """
     kind = sett.cp2k.force_eval.subsys.kind
-    for atom in kinds.keys():
-        kind[atom]["BASIS_SET"] = "AUX_FIT " + auxiliar_basis
+    for atom in kind.keys():
+        kind[atom]["BASIS_SET"] = ("AUX_FIT " + auxiliar_basis)
 
     return sett
 
