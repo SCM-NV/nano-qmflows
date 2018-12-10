@@ -17,7 +17,7 @@ def readme():
 
 setup(
     name='qmflows-namd',
-    version='0.4',
+    version='0.4.0',
     description='Derivative coupling calculation',
     license='Apache-2.0',
     url='https://github.com/SCM-NV/qmflows-namd',
