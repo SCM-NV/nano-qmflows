@@ -94,14 +94,12 @@ def add_missing_keywords(d: Dict) -> Dict:
     dft_main = settings_main.specific.cp2k.force_eval.dft
 
     # Added_mos keyword
-    scf = dft_main.get("scf", None)
-    if scf is not None and scf.get("added_mos", None) is not None:
-        dft_main.scf.added_mos = mo_index_range[1] - mo_index_range[0] - nHOMO + 1
+    scf = dft_main.scf
+    dft_main.scf.added_mos = mo_index_range[1] - mo_index_range[0] - nHOMO + 1
 
     # mo_index_range keyword
-    pr = dft_main.get("print", None)
-    if pr is not None and pr.get('mo', None) is not None:
-        pr.mo.mo_index_range = "{} {}".format(mo_index_range[0], mo_index_range[1])
+    pr = dft_main.print
+    pr.mo.mo_index_range = "{} {}".format(mo_index_range[0], mo_index_range[1])
 
     # Add basis sets
     dft_guess = settings_guess.specific.cp2k.force_eval.dft
