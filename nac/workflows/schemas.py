@@ -58,6 +58,9 @@ schema_general_settings = Schema({
     And(str, Use(str.lower), lambda s: s in (
         "angstrom", "au")),
 
+    # Restart File Name
+    Optional("wfn_restart_file_name", default=None): str,
+
     # Settings describing the input of the quantum package
     "settings_main": object,
 

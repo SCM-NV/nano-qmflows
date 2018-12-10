@@ -103,7 +103,10 @@ def add_missing_keywords(d: Dict) -> Dict:
     # Add basis sets
     dft_guess = settings_guess.specific.cp2k.force_eval.dft
 
-    print(general)
+    # Add restart point
+    if general['wfn_restart_file_name'] is not None:
+        dft_guess.wfn_restart_file_name = general['wfn_restart_file_name']
+
     if all(general[x] is not None for x in ["path_basis", "path_potential"]):
         print("Here")
         logger.info("path_basis and path_potential added to cp2k settings")
