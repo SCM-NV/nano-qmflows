@@ -79,14 +79,14 @@ cp2k:
           memory:
             max_memory: "5000"
             eps_storage_scaling: "0.1"
-        scf:
-           eps_scf: 1e-6
-           added_mos: 0
-           scf_guess: "restart"
-           ot:
-             minimizer: "DIIS"
-             n_diis: 7
-             preconditioner: "FULL_SINGLE_INVERSE"
+       scf:
+          eps_scf: 1e-6
+          added_mos: 0
+          scf_guess: "restart"
+          ot:
+            minimizer: "DIIS"
+            n_diis: 7
+            preconditioner: "FULL_SINGLE_INVERSE"
 
 """))
 
@@ -108,21 +108,21 @@ cp2k:
          method: "gpw"
          eps_pgf_orb: "1.0E-8"
        xc:
-        xc_functional:
-          pbe:
-            scale_x: "0.75"
-            scale_c: "1.00"
-        hf:
-          fraction: "0.25"
-          screening:
-            eps_schwarz: 1.0E-6
-            screen_on_initial_p: "True"
-          memory:
-            max_memory: "5000"
-            eps_storage_scaling: "0.1"
-        scf:
-           eps_scf: 5e-4
-           max_scf: 200
+         xc_functional:
+           pbe:
+             scale_x: "0.75"
+             scale_c: "1.00"
+         hf:
+           fraction: "0.25"
+           screening:
+             eps_schwarz: 1.0E-6
+             screen_on_initial_p: "True"
+           memory:
+             max_memory: "5000"
+             eps_storage_scaling: "0.1"
+       scf:
+          eps_scf: 5e-4
+          max_scf: 200
 """))
 
 kinds = Settings(yaml.load("""
