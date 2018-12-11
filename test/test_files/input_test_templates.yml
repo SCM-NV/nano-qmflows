@@ -28,6 +28,7 @@ general_settings:
     basis: "DZVP-MOLOPT-SR-GTH"
     cell_angles: [90.0, 90.0, 90.0]
     cell_parameters: 45.0
+    wfn_restart_file_name: "../point_0-RESTART.wfn"
     specific:
       template:
         pbe_guess
