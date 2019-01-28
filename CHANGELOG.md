@@ -1,5 +1,19 @@
 # Change Log
 
+# 0.4.0
+
+### Deleted
+
+* removed `workflow_oscillator_strength`. Use `workflow_stddft` instead
+
+### Changed
+
+* Moved `nHomo` keyword to `general_setting`
+* Renamed the `ci_range` keyword and replaced it by the *CP2K* keyword `mo_index_range`
+
+### New
+* Templates to call functionals **pbe** and **pbe0** to compute the Molecular orbitals
+
 
 ## 0.3.1
 

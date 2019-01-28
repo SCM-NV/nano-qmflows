@@ -22,6 +22,12 @@ schema_general_settings = Schema({
     # "Basis set to carry out the quantum chemistry simulation"
     "basis_name": str,
 
+    # Index of the HOMO
+    "nHOMO": int,
+
+    # Range of orbitals to print
+    "mo_index_range": Schema([int, int]),
+
     # Working directory
     Optional("scratch_path", default="/tmp"): str,
 
@@ -52,6 +58,9 @@ schema_general_settings = Schema({
     And(str, Use(str.lower), lambda s: s in (
         "angstrom", "au")),
 
+    # Restart File Name
+    Optional("wfn_restart_file_name", default=None): str,
+
     # Settings describing the input of the quantum package
     "settings_main": object,
 
@@ -67,14 +76,8 @@ schema_derivative_couplings = Schema({
     "workflow": And(
         str, Use(str.lower), lambda s: s == "derivative_couplings"),
 
-    # Index of the HOMO
-    "nHOMO": int,
-
     # Integration time step used for the MD (femtoseconds)
     Optional("dt", default=1): Real,
-
-    # Range of Molecular orbitals used to compute the nonadiabatic coupling matrix
-    "couplings_range": Schema([int, int]),
 
     # Algorithm used to compute the derivative couplings
     Optional("algorithm", default="levine"):
@@ -100,17 +103,11 @@ schema_absorption_spectrum = Schema({
     "workflow": And(
         str, Use(str.lower), lambda s: s == "absorption_spectrum"),
 
-    # Index of the HOMO
-    "nHOMO": int,
-
     # Initial states of the transitions
     Optional("initial_states"): list,
 
     # final states of the transitions (Array or Arrays)
     Optional("final_states"): list,
-
-    # CI Space used to build the excited states
-    "ci_range": Schema([int, int]),
 
     # Type of TDDFT calculations. Available: sing_orb, stda, stddft
     Optional("tddft", default="stda"): And(
@@ -121,7 +118,6 @@ schema_absorption_spectrum = Schema({
 
     # Interval between MD points where the oscillators are computed"
     Optional("calculate_oscillator_every",  default=50): int,
-
 
     # description: Exchange-correlation functional used in the DFT calculations,
     Optional("xc_dft", default="pbe"): str,

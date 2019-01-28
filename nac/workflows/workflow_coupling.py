@@ -40,8 +40,8 @@ def workflow_derivative_couplings(workflow_settings: Dict):
         config['project_name'], config['path_hdf5'], config['dictCGFs'],
         config['geometries'], mo_paths_hdf5,
         config['hdf5_trans_mtx'], config['enumerate_from'],
-        workflow_settings['overlaps_deph'], nHOMO=workflow_settings['nHOMO'],
-        couplings_range=workflow_settings['couplings_range'])
+        workflow_settings['overlaps_deph'], nHOMO=config['nHOMO'],
+        mo_index_range=config['mo_index_range'])
 
     # Create a function that returns a proxime array of couplings
     schedule_couplings = schedule(lazy_couplings)
@@ -71,8 +71,8 @@ def workflow_derivative_couplings(workflow_settings: Dict):
     promise_files = schedule_write_ham(
         config['path_hdf5'], mo_paths_hdf5, promised_crossing_and_couplings,
         nPoints, path_dir_results=path_hamiltonians,
-        enumerate_from=config['enumerate_from'], nHOMO=workflow_settings['nHOMO'],
-        couplings_range=workflow_settings['couplings_range'])
+        enumerate_from=config['enumerate_from'], nHOMO=config['nHOMO'],
+        mo_index_range=config['mo_index_range'])
 
     run(promise_files, folder=work_dir)
 
