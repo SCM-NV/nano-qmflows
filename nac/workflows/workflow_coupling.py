@@ -49,7 +49,7 @@ def workflow_derivative_couplings(workflow_settings: Dict):
     # Calculate Non-Adiabatic Coupling
     promised_crossing_and_couplings = schedule_couplings(
         promised_overlaps, config['path_hdf5'], config['project_name'],
-        config['enumerate_from'], workflow_settings['nHOMO'],
+        config['enumerate_from'], config['nHOMO'],
         workflow_settings['dt'], workflow_settings['tracking'],
         workflow_settings['write_overlaps'],
         algorithm=workflow_settings['algorithm'])

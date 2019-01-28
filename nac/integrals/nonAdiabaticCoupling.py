@@ -111,7 +111,7 @@ def correct_phases(overlaps: Tensor3D, mtx_phases: Matrix) -> List:
 def compute_overlaps_for_coupling(
         geometries: Tuple, path_hdf5: str,
         mo_paths: List, dictCGFs: Dict,
-        nHOMO: int, couplings_range: Tuple,
+        nHOMO: int, mo_index_range: Tuple,
         hdf5_trans_mtx: str=None) -> Tuple:
     """
     Compute the Overlap matrices used to compute the couplings
@@ -132,7 +132,7 @@ def compute_overlaps_for_coupling(
     suv_0 = calcOverlapMtx(dictCGFs, mol0, mol1)
 
     css0, css1, trans_mtx = read_overlap_data(
-        path_hdf5, mo_paths, hdf5_trans_mtx, nHOMO, couplings_range)
+        path_hdf5, mo_paths, hdf5_trans_mtx, nHOMO, mo_index_range)
 
     # Convert the transformation matrix to sparse representation
     trans_mtx = sparse.csr_matrix(trans_mtx)
@@ -147,14 +147,14 @@ def compute_overlaps_for_coupling(
 
 
 def read_overlap_data(path_hdf5: str, mo_paths: str, hdf5_trans_mtx: str,
-                      nHOMO: int, couplings_range: tuple) -> None:
+                      nHOMO: int, mo_index_range: tuple) -> None:
     """
     Read the Molecular orbital coefficients and the transformation matrix
     """
     mos = retrieve_hdf5_data(path_hdf5, mo_paths)
 
     # Extract a subset of molecular orbitals to compute the coupling
-    lowest, highest = compute_range_orbitals(mos[0], nHOMO, couplings_range)
+    lowest, highest = compute_range_orbitals(mos[0], nHOMO, mo_index_range)
     css0, css1 = tuple(map(lambda xs: xs[:, lowest: highest], mos))
 
     # Read the transformation matrix to convert from Cartesian to
@@ -181,7 +181,7 @@ def calculate_spherical_overlap(trans_mtx: Matrix, suv: Matrix, css0: Matrix,
 
 
 def compute_range_orbitals(mtx: Matrix, nHOMO: int,
-                           couplings_range: Tuple) -> Tuple:
+                           mo_index_range: Tuple) -> Tuple:
     """
     Compute the lowest and highest index used to extract
     a subset of Columns from the MOs
@@ -192,11 +192,11 @@ def compute_range_orbitals(mtx: Matrix, nHOMO: int,
     _, nOrbitals = mtx.shape
     nHOMO = nHOMO if nHOMO is not None else nOrbitals // 2
 
-    # If the couplings_range variable is not define I assume
+    # If the mo_index_range variable is not define I assume
     # that the number of LUMOs is equal to the HOMOs.
-    if all(x is not None for x in [nHOMO, couplings_range]):
-        lowest = nHOMO - couplings_range[0]
-        highest = nHOMO + couplings_range[1]
+    if all(x is not None for x in [nHOMO, mo_index_range]):
+        lowest = nHOMO - mo_index_range[0]
+        highest = nHOMO + mo_index_range[1]
     else:
         lowest = 0
         highest = nOrbitals

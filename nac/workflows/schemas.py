@@ -1,5 +1,6 @@
 __all__ = [
     'schema_general_settings', 'schema_derivative_couplings',
+    'schema_distribute_derivative_couplings',
     'schema_absorption_spectrum', 'schema_electron_transfer']
 
 
@@ -96,6 +97,47 @@ schema_derivative_couplings = Schema({
     "general_settings": schema_general_settings
 })
 
+schema_job_scheduler = Schema({
+    Optional("scheduler", default="SLURM"): str,
+    Optional("nodes", default=1): int,
+    Optional("tasks", default=1): int,
+    Optional("time", default="01:00:00"): str,
+    Optional("name", default="namd"): str
+})
+
+
+schema_distribute_derivative_couplings = Schema({
+
+    # Name of the workflow to run
+    "workflow": And(
+        str, Use(str.lower), lambda s: s == "distribute_derivative_couplings"),
+
+    # Integration time step used for the MD (femtoseconds)
+    Optional("dt", default=1): Real,
+
+    # Algorithm used to compute the derivative couplings
+    Optional("algorithm", default="levine"):
+    And(str, Use(str.lower), lambda s: ("levine", "3points")),
+
+    # Track the crossing between states
+    Optional("tracking", default=True): bool,
+
+    # Write the overlaps in ascii
+    Optional("write_overlaps", default=False): bool,
+
+    # Compute the overlap between molecular geometries using a dephase"
+    Optional("overlaps_deph", default=False): bool,
+
+    # General settings
+    "general_settings": schema_general_settings,
+
+    # Number of chunks to split the trajectory
+    "blocks": int,
+
+    # Resource manager configuration
+    "job_scheduler": schema_job_scheduler
+})
+
 
 schema_absorption_spectrum = Schema({
 
@@ -161,7 +203,7 @@ schema_electron_transfer = Schema({
     "fragment_indices": list,
 
     # Range of Molecular orbitals use to compute the derivative couplings
-    "couplings_range": list,
+    "mo_index_range": list,
 
     # General settings
     "general_settings": schema_general_settings

@@ -273,7 +273,7 @@ def swap_forward(overlaps: Tensor3D, swaps: Vector) -> Tensor3D:
 def calculate_overlap(project_name: str, path_hdf5: str, dictCGFs: Dict,
                       geometries: List, mo_paths_hdf5: List,
                       hdf5_trans_mtx: str, enumerate_from: int, overlaps_deph: bool,
-                      nHOMO: int=None, couplings_range: Tuple=None,
+                      nHOMO: int=None, mo_index_range: Tuple=None,
                       units: str='angstrom') -> List:
     """
     Calculate the Overlap matrices before computing the non-adiabatic
@@ -294,7 +294,7 @@ def calculate_overlap(project_name: str, path_hdf5: str, dictCGFs: Dict,
     create for each point in the MD
     :type enumerate_from: Int
     :param nHOMO: index of the HOMO orbital in the HDF5
-    :param couplings_range: range of Molecular orbitals used to compute the
+    :param mo_index_range: range of Molecular orbitals used to compute the
     coupling.
     :returns: paths to the Overlap matrices inside the HDF5.
     """
@@ -324,7 +324,7 @@ def calculate_overlap(project_name: str, path_hdf5: str, dictCGFs: Dict,
         overlaps = schedule_overlaps(
             i, project_name, path_hdf5, dictCGFs, molecules, mo_paths_hdf5,
             hdf5_trans_mtx=hdf5_trans_mtx, enumerate_from=enumerate_from,
-            nHOMO=nHOMO, couplings_range=couplings_range)
+            nHOMO=nHOMO, mo_index_range=mo_index_range)
 
         paths_overlaps.append(overlaps)
 
@@ -335,7 +335,7 @@ def calculate_overlap(project_name: str, path_hdf5: str, dictCGFs: Dict,
 def lazy_overlaps(i: int, project_name: str, path_hdf5: str, dictCGFs: Dict,
                   geometries: Tuple, mo_paths: List, hdf5_trans_mtx: str=None,
                   enumerate_from: int=0, nHOMO: int=None,
-                  couplings_range: Tuple=None) -> str:
+                  mo_index_range: Tuple=None) -> str:
     """
     Calculate the 4 overlap matrix used to compute the subsequent couplings.
     The overlap matrices are computed using 3 consecutive set of MOs and
@@ -355,7 +355,7 @@ def lazy_overlaps(i: int, project_name: str, path_hdf5: str, dictCGFs: Dict,
     :param enumerate_from: Number from where to start enumerating the folders
     create for each point in the MD
     :param nHOMO: index of the HOMO orbital in the HDF5
-    :param couplings_range: range of Molecular orbitals used to compute the
+    :param mo_index_range: range of Molecular orbitals used to compute the
     coupling.
 
     :returns: path to the Coupling inside the HDF5
@@ -377,7 +377,7 @@ def lazy_overlaps(i: int, project_name: str, path_hdf5: str, dictCGFs: Dict,
         # Partial application of the function computing the overlap
         overlaps = compute_overlaps_for_coupling(
             geometries, path_hdf5, hdf5_mos_path, dictCGFs, nHOMO,
-            couplings_range, hdf5_trans_mtx)
+            mo_index_range, hdf5_trans_mtx)
 
         # Store the matrices in the HDF5 file
         store_arrays_in_hdf5(path_hdf5, overlaps_paths_hdf5, overlaps)
@@ -389,7 +389,7 @@ def write_hamiltonians(path_hdf5: str, mo_paths: List,
                        crossing_and_couplings: Tuple,
                        nPoints: int, path_dir_results: str=None,
                        enumerate_from: int=0, nHOMO: int=None,
-                       couplings_range: Tuple=None) -> None:
+                       mo_index_range: Tuple=None) -> None:
     """
     Write the real and imaginary components of the hamiltonian using both
     the orbitals energies and the derivative coupling accoring to:
@@ -416,9 +416,9 @@ def write_hamiltonians(path_hdf5: str, mo_paths: List,
         energies = np.average((energies_t0, energies_t1), axis=0)
 
         # Print Energies in the range given by the user
-        if all(x is not None for x in [nHOMO, couplings_range]):
-            lowest = nHOMO - couplings_range[0]
-            highest = nHOMO + couplings_range[1]
+        if all(x is not None for x in [nHOMO, mo_index_range]):
+            lowest = nHOMO - mo_index_range[0]
+            highest = nHOMO + mo_index_range[1]
             energies = energies[lowest: highest]
 
         # Swap the energies of the states that are crossing

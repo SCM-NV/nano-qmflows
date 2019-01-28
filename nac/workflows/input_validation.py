@@ -1,6 +1,6 @@
 from .schemas import (
-    schema_absorption_spectrum, schema_derivative_couplings,
-    schema_electron_transfer, schema_general_settings)
+    schema_absorption_spectrum, schema_distribute_derivative_couplings,
+    schema_derivative_couplings, schema_electron_transfer, schema_general_settings)
 from .templates import (
     cp2k_pbe0_guess, cp2k_pbe0_main, cp2k_pbe_guess, cp2k_pbe_main)
 from qmflows.settings import Settings
@@ -16,7 +16,8 @@ schema_workflows = {
     'absorption_spectrum': schema_absorption_spectrum,
     'derivative_couplings': schema_derivative_couplings,
     'electron_transfer': schema_electron_transfer,
-    'general_settings': schema_general_settings}
+    'general_settings': schema_general_settings,
+    'distribute_computations': schema_distribute_derivative_couplings}
 
 
 def process_input(input_file: str, workflow_name: str) -> Dict:
