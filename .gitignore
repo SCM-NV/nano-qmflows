@@ -74,7 +74,9 @@ target/
 .pytest*
 
 # results
-cache.json
+nac/integrals/multipoleObaraSaika.c
+cache.db
+plams_workdir
 cross_section_cm.txt
 molar_extinction_coefficients.txt
 mtx_phases

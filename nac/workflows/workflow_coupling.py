@@ -28,6 +28,7 @@ def workflow_derivative_couplings(workflow_settings: Dict):
     # Arguments to compute the orbitals and configure the workflow. see:
     # `data/schemas/general_settings.json
     config = workflow_settings['general_settings']
+    print("config: ", config)
 
     # Dictionary containing the general configuration
     config.update(initialize(**config))
@@ -49,7 +50,7 @@ def workflow_derivative_couplings(workflow_settings: Dict):
     # Calculate Non-Adiabatic Coupling
     promised_crossing_and_couplings = schedule_couplings(
         promised_overlaps, config['path_hdf5'], config['project_name'],
-        config['enumerate_from'], workflow_settings['nHOMO'],
+        config['enumerate_from'], config['nHOMO'],
         workflow_settings['dt'], workflow_settings['tracking'],
         workflow_settings['write_overlaps'],
         algorithm=workflow_settings['algorithm'])
