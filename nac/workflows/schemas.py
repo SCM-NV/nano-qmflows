@@ -6,7 +6,7 @@ __all__ = [
 
 from numbers import Real
 from schema import (And, Optional, Schema, Use)
-
+import os
 
 schema_general_settings = Schema({
     # "Library to distribute the computation"
@@ -98,10 +98,11 @@ schema_derivative_couplings = Schema({
 })
 
 schema_job_scheduler = Schema({
-    Optional("scheduler", default="SLURM"): str,
+    Optional("scheduler", default="SLURM"):
+    And(str, Use(str.upper), lambda s: ("SLURM", "PBS")),
     Optional("nodes", default=1): int,
     Optional("tasks", default=1): int,
-    Optional("time", default="01:00:00"): str,
+    Optional("wall_time", default="01:00:00"): str,
     Optional("name", default="namd"): str
 })
 
@@ -114,6 +115,8 @@ schema_distribute_derivative_couplings = Schema({
 
     # Integration time step used for the MD (femtoseconds)
     Optional("dt", default=1): Real,
+
+    Optional("workdir", default=os.getcwd()): str,
 
     # Algorithm used to compute the derivative couplings
     Optional("algorithm", default="levine"):

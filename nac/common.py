@@ -5,7 +5,7 @@ __all__ = ['Array', 'AtomBasisData', 'AtomBasisKey', 'AtomData', 'AtomXYZ',
            'hardness', 'odd', 'product', 'retrieve_hdf5_data',
            'search_data_in_hdf5', 'store_arrays_in_hdf5', 'triang2mtx']
 
-# ================> Python Standard  and third-party <==========
+
 from collections import namedtuple
 from functools import reduce
 from scipy.constants import physical_constants
@@ -16,7 +16,7 @@ import numpy as np
 import operator as op
 import os
 
-# ======================================================================
+
 # Named Tuples
 AtomData = namedtuple("AtomData", ("label", "coordinates", "cgfs"))
 AtomBasisKey = namedtuple("AtomBasisKey", ("atom", "basis", "basisFormat"))
