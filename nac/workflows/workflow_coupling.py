@@ -28,7 +28,6 @@ def workflow_derivative_couplings(workflow_settings: Dict):
     # Arguments to compute the orbitals and configure the workflow. see:
     # `data/schemas/general_settings.json
     config = workflow_settings['general_settings']
-    print("config: ", config)
 
     # Dictionary containing the general configuration
     config.update(initialize(**config))
