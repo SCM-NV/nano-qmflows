@@ -23,6 +23,10 @@ general_settings:
     50
   mo_index_range:
     [50, 30]
+  path_basis:
+    "test/test_files/BASIS_MOLOPT"
+  path_potential:
+    "test/test_files/GTH_POTENTIALS"
   path_hdf5:
     "test/test_files/Cd33Se33.hdf5"
   path_traj_xyz:
