@@ -78,7 +78,6 @@ def distribute_computations(dict_input: dict) -> None:
         folder_path = join(workdir, 'chunk_{}'.format(index))
 
         # Move xyz to temporal file
-        path_xyz = join(folder_path, file_xyz)
         os.makedirs(folder_path, exist_ok=True)
         shutil.move(file_xyz, folder_path)
 
@@ -90,14 +89,14 @@ def distribute_computations(dict_input: dict) -> None:
         path_hdf5 = join(scratch_path, 'chunk_{}.hdf5'.format(index))
 
         # Change hdf5 and trajectory path of each batch
-        config["path_traj_xyz"] = path_xyz
+        config["path_traj_xyz"] = file_xyz
         config["path_hdf5"] = path_hdf5
 
         # files with PYXAID
         hamiltonians_dir = join(scratch_path, 'hamiltonians')
 
         # number of geometries per batch
-        dim_batch = compute_number_of_geometries(path_xyz)
+        dim_batch = compute_number_of_geometries(join(folder_path, file_xyz))
 
         # Edit the number of geometries to compute
         config["enumerate_from"] = enumerate_from
@@ -123,6 +122,10 @@ def write_input(folder_path: str, config: dict) -> None:
     # transform settings to standard dictionary
     config["settings_main"] = settings2Dict(config["settings_main"])
     config["settings_guess"] = settings2Dict(config["settings_guess"])
+
+    # basis and potential
+    config["path_basis"] = os.path.abspath(config["path_basis"])
+    config["path_potential"] = os.path.abspath(config["path_potential"])
 
     d = {"workflow": "derivative_couplings", "general_settings": config}
 
