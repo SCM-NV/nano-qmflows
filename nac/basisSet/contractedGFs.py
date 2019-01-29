@@ -53,9 +53,9 @@ def readBasisSet(f5, basis_name, package_name, l):
         msg = ('The basis set named:{} is not stored in the HDF5 \
         file'.format(basis_name))
         raise RuntimeError(msg)
-    ess = f5[path_expo].value
+    ess = f5[path_expo][()]
     dsetCoef = f5[path_coef]
-    css = dsetCoef.value
+    css = dsetCoef[()]
     formatB = dsetCoef.attrs["basisFormat"]
 
     return generateCGF(ess, css, formatB, package_name)

@@ -1,15 +1,29 @@
+#!/usr/bin/env python
 
-from collections import namedtuple
+from nac.workflows.input_validation import process_input
 from nac.workflows.initialization import split_trajectory
 from os.path import join
-from qmflows import Settings
+from qmflows.utils import settings2Dict
 
+import argparse
 import os
 import shutil
-import string
 import subprocess
+import yaml
 
-SLURM = namedtuple("SLURM", ("nodes", "tasks", "time", "name"))
+
+def read_cmd_line():
+    """
+    Read the input file and the workflow name from the command line
+    """
+    msg = "distribute_jobs.py -i input.yml"
+
+    parser = argparse.ArgumentParser(description=msg)
+    parser.add_argument('-i', required=True,
+                        help="Input file in YAML format")
+
+    args = parser.parse_args()
+    return args.i
 
 
 def main():
@@ -31,260 +45,112 @@ def main():
        * name       namd
 
     """
-    # USER DEFINED CONFIGURATION
+    # command line argument
+    input_file = read_cmd_line()
 
-    # Algorithm use to compute the derivative coupling
-    # Either levine or 3points
-    algorithm = 'levine'
+    # Read and process input
+    dict_input = process_input(input_file, "distribute_derivative_couplings")
 
-    # Varaible to define the Path ehere the Cp2K jobs will be computed
-    scratch = "<Path/where/the/Molecular_Orbitals/and/Couplings/are/computed>"
-    # name use to create folders
-    project_name = 'replace_with_Name_of_the_Project'
-
-    # Path to the basis set used by Cp2k
-    basisCP2K = "<Path/to/the/BASIS_MOLOPT>"
-    potCP2K = "<Path/to/the/GTH_POTENTIALS>"
-
-    # Cell parameter can be a:
-    # * number.
-    # * list contaning 3 Number.
-    # * list of list containing the matrix describing the cell.
-    cell_parameters = None
-
-    # Angles of the cell
-    cell_angles = [90.0, 90.0, 90.0]
-
-    # Range of Molecular orbitals use to print.
-    # They will be used to compute the derivative coupling. If you want
-    # to compute the coupling with 40 Orbitals: 20 occupied and 20 virtual,
-    # you should choose the following index in such a way that you
-    # print 20 HOMOs and 20 LUMOs.
-
-    range_orbitals = Lower_Index, Highest_Index
-
-    # In relation to the above range
-    # The store orbitals store in the HDF5 are going to be reindex in
-    # such way tha the Molecular corresponding with Lower_Index
-    # is assigned the index 1.
-    # Then, What is the index from the HOMO?
-    # If you are asking for 100 orbitals, 50 HOMOs and 50 LUMOs then nHOMO = 50
-    # If you are asking for 100 orbitals, 30 HOMOS and 70 LUMos then nHOMO = 30
-    nHOMO = None
-
-    # Given the range_orbitals define above, which of those orbitals are going
-    # to be used to compute the nonadiabatic copling?
-
-    # If you are asking for 100 orbitals of which 50 are HOMOs and 50 are
-    # LUMOs, and you want to compute the coupling btween all of then
-    # then coupling_range = (50, 50)
-
-    # If you want to compute only a subset of the orbitals specify which orbitals
-    # you want to use. For instance if nHOMO = 50, the value
-    # coupling_range = (30, 20) means that you want to compute the coupling
-    # between the 30 Highest Occupied Molecular Orbitals  and the 20
-    # Lowest Unoccupied Molecular Orbitals
-    coupling_range = None
-
-    # The keyword added_mos takes as input the number of LUMOs that are needed
-    # to compute the desired number of couplings
-    added_mos = coupling_range[1]
-
-    # Trajectory splitting
-    path_to_trajectory = "<Path/to/the/trajectory/in/xyz/format"
-
-    # Number of chunks to split the trajectory
-    blocks = 5
-
-    # Time step in femtoseconds use to compute the derivative coupling.
-    # It corresponds with the integration step of the MD.
-    dt = 1  # 1 femtosecond
-
-    # SLURM Configuration
-    slurm = SLURM(
-        nodes=2,
-        tasks=24,
-        time="48:00:00",
-        name="namd"
-    )
-
-    # Generate the CP2K inputs that will be then broadcasted to different nodes
-    cp2k_main, cp2k_guess = cp2k_input(range_orbitals, cell_parameters,
-                                       cell_angles, added_mos)
-
-    # Path where the data will be copy back
-    cwd = os.getcwd()
-
-    distribute_computations(scratch, project_name, basisCP2K, potCP2K,
-                            cp2k_main, cp2k_guess, path_to_trajectory, blocks,
-                            slurm, cwd, nHOMO, coupling_range, algorithm, dt)
+    # Write scripts to run calculations
+    distribute_computations(dict_input)
 
 
-def cp2k_input(
-        range_orbitals, cell_parameters, cell_angles, added_mos,
-        basis="DZVP-MOLOPT-SR-GTH", potential="GTH-PBE"):
+def distribute_computations(dict_input: dict) -> None:
     """
-    # create ``Settings`` for the Cp2K Jobs.
+    Prepare the computation
     """
-    # Main Cp2k Jobs
-    cp2k_args = Settings()
-    cp2k_args.basis = fun_format(basis)
-    cp2k_args.potential = fun_format(potential)
-    cp2k_args.cell_parameters = cell_parameters
-    cp2k_args.cell_angles = cell_angles
-    main_dft = cp2k_args.specific.cp2k.force_eval.dft
-    main_dft.scf.added_mos = added_mos
-    main_dft.scf.max_scf = 40
-    main_dft.scf.eps_scf = 5e-4
-    main_dft['print']['mo']['mo_index_range'] = '"{} {}"'.format(*range_orbitals)
-    cp2k_args.specific.cp2k.force_eval.subsys.cell.periodic = fun_format('None')
+    config = dict_input['general_settings']
+    workdir = dict_input["workdir"]
+    scratch_path = config["scratch_path"]
+    enumerate_from = config["enumerate_from"]
+    job_scheduler = dict_input["job_scheduler"]
 
-    # Setting to calculate the wave function used as guess
-    cp2k_OT = Settings()
-    cp2k_OT.basis = fun_format(basis)
-    cp2k_OT.potential = fun_format(potential)
-    cp2k_OT.cell_parameters = cell_parameters
-    cp2k_OT.cell_angles = cell_angles
-    ot_dft = cp2k_OT.specific.cp2k.force_eval.dft
-    ot_dft.scf.scf_guess = fun_format('atomic')
-    ot_dft.scf.ot.minimizer = fun_format('DIIS')
-    ot_dft.scf.ot.n_diis = 7
-    ot_dft.scf.ot.preconditioner = fun_format('FULL_SINGLE_INVERSE')
-    ot_dft.scf.added_mos = 0
-    ot_dft.scf.eps_scf = 1e-06
-    ot_dft.scf.scf_guess = fun_format('restart')
-    cp2k_OT.specific.cp2k.force_eval.subsys.cell.periodic = fun_format('None')
+    # Check if workdir exits otherwise create it
+    os.makedirs(workdir, exist_ok=True)
 
-    return cp2k_args, cp2k_OT
-
-
-def fun_format(s):
-    """
-    Wrapped a string inside a string for printing purposes
-    """
-    return '"{}"'.format(s)
-
-
-# ============================> Distribution <=================================
-
-
-def distribute_computations(scratch_path, project_name, basisCP2K, potCP2K,
-                            cp2k_main, cp2k_guess, path_to_trajectory, blocks,
-                            slurm, cwd, nHOMO, couplings_range,
-                            algorithm, dt):
-
-    script_name = "script_remote_function.py"
     # Split the trajectory in Chunks and move each chunk to its corresponding
     # directory.
-    chunks_trajectory = split_trajectory(path_to_trajectory, blocks, '.')
+    chunks_trajectory = split_trajectory(
+        config["path_traj_xyz"], dict_input["blocks"], workdir)
     chunks_trajectory.sort()
-    enumerate_from = 0
-    for i, (file_xyz, l) in enumerate(
-            zip(chunks_trajectory, string.ascii_lowercase)):
-        folder = 'chunk_{}'.format(l)
-        os.mkdir(folder)
-        shutil.move(file_xyz, folder)
+
+    for index, file_xyz in enumerate(chunks_trajectory):
+        folder_path = join(workdir, 'chunk_{}'.format(index))
+
+        # Move xyz to temporal file
+        path_xyz = join(folder_path, file_xyz)
+        os.makedirs(folder_path, exist_ok=True)
+        shutil.move(file_xyz, folder_path)
+
+        # Scratch directory
+        batch_dir = join(scratch_path, 'batch_{}'.format(index))
+        os.makedirs(batch_dir, exist_ok=True)
 
         # HDF5 file where both the Molecular orbitals and coupling are stored
-        path_hdf5 = join(scratch_path, '{}.hdf5'.format(folder))
+        path_hdf5 = join(scratch_path, 'chunk_{}.hdf5'.format(index))
+
+        # Change hdf5 and trajectory path of each batch
+        config["path_traj_xyz"] = path_xyz
+        config["path_hdf5"] = path_hdf5
+
+        # files with PYXAID
         hamiltonians_dir = join(scratch_path, 'hamiltonians')
-        # function to be execute remotely
-        work_dir = join(scratch_path, 'batch_{}'.format(i))
-        write_python_script(work_dir, folder, file_xyz, project_name,
-                            basisCP2K, potCP2K, cp2k_main,
-                            cp2k_guess, enumerate_from, script_name,
-                            path_hdf5, nHOMO, couplings_range, algorithm, dt)
 
         # number of geometries per batch
-        dim_batch = number_of_geometries(join(folder, file_xyz))
+        dim_batch = compute_number_of_geometries(path_xyz)
+
+        # Edit the number of geometries to compute
+        config["enumerate_from"] = enumerate_from
+        # Write input file
+        write_input(folder_path, config)
+
         # Slurm executable
-        write_slurm_script(cwd, folder, slurm, script_name, path_hdf5,
-                           hamiltonians_dir, (dim_batch * i,
-                                              dim_batch * (i + 1) - 3))
+        if job_scheduler["scheduler"].upper() == "SLURM":
+            write_slurm_script(
+                folder_path, index, job_scheduler, path_hdf5, hamiltonians_dir, dim_batch)
+        else:
+            msg = "The request job_scheduler: {} It is not implemented".formant()
+            raise RuntimeError(msg)
+
+        # change the window of molecules to compute
         enumerate_from += dim_batch
 
 
-def write_python_script(
-        scratch, folder, file_xyz, project_name, basisCP2K, potCP2K, cp2k_main,
-        cp2k_guess, enumerate_from, script_name, path_hdf5, nHOMO,
-        couplings_range, algorithm, dt):
+def write_input(folder_path: str, config: dict) -> None:
     """ Write the python script to compute the PYXAID hamiltonians"""
-    path = join(scratch, project_name)
-    if not os.path.exists(path):
-        os.makedirs(path)
-    xs = """
-from nac.workflows.workflow_coupling import workflow_derivative_couplings
-from nac.workflows.initialization import initialize
-from qmflows import Settings
+    file_path = join(folder_path, "input.yml")
 
-project_name = '{}'
-path_basis = '{}'
-path_potential = '{}'
-path_hdf5 = '{}'
-path_traj_xyz = '{}'
-basisname = {}
+    # transform settings to standard dictionary
+    config["settings_main"] = settings2Dict(config["settings_main"])
+    config["settings_guess"] = settings2Dict(config["settings_guess"])
 
-initial_config = initialize(project_name, path_traj_xyz,
-                            basisname=basisname,
-                            path_basis=path_basis,
-                            path_potential=path_potential,
-                            enumerate_from={},
-                            calculate_guesses='first',
-                            path_hdf5=path_hdf5,
-                            scratch_path='{}')
+    d = {"workflow": "derivative_couplings", "general_settings": config}
 
-# Molecular orbitals calculation input
-cp2k_main = Settings()
-{}
-
-#Guess Molecular orbitals
-cp2k_guess = Settings()
-{}
-
-workflow_derivative_couplings('cp2k', project_name, cp2k_main,
-                             guess_args=cp2k_guess,
-                             nHOMO={},
-                             algorithm='{}',
-                             dt={},
-                             couplings_range=({},{}),
-                             **initial_config)
- """.format(
-     project_name, basisCP2K, potCP2K, path_hdf5, file_xyz, cp2k_main.basis,
-     enumerate_from, scratch, dot_print(cp2k_main, parent='cp2k_main'),
-     dot_print(cp2k_guess, parent='cp2k_guess'), nHOMO,
-     algorithm, dt, *couplings_range)
-
-    with open(join(folder, script_name), 'w') as f:
-        f.write(xs)
-
-    return script_name
+    with open(file_path, "w") as f:
+        yaml.dump(d, f, default_flow_style=False, allow_unicode=True)
 
 
-def write_slurm_script(cwd, folder, slurm, python_script, path_hdf5,
-                       hamiltonians, range_batch=None):
+def write_slurm_script(
+        folder_path: str, index: int, slurm_config: dict, path_hdf5: str,
+        hamiltonians_dir: str, dim_batch: int):
     """
     write an Slurm launch script
     """
-    python = "python {}\n".format(python_script)
-    results_dir = "{}/results_{}".format(cwd, folder)
-    mkdir = "mkdir {}\n".format(results_dir)
+    python = "\n\nrun_workflow.py -i input.yml\n"
+    results_dir = join(folder_path, "results_chunk_" + str(index))
+    mkdir = "\nmkdir {}\n".format(results_dir)
 
     # Copy a subset of Hamiltonians
-    if range_batch is not None:
-        files_hams = '{}/Ham_{{{}..{}}}_*'.format(hamiltonians, *range_batch)
-    else:
-        files_hams = hamiltonians
+    range_batch = (dim_batch * index, dim_batch * (index + 1) - 3)
+    files_hams = '{}/Ham_{{{}..{}}}_*'.format(hamiltonians_dir, *range_batch)
 
     copy = 'cp -r {} {} {}\n'.format(path_hdf5, files_hams, results_dir)
     # Script content
-    content = format_slurm_parameters(slurm) + python + mkdir + copy
+    content = format_slurm_parameters(slurm_config) + python + mkdir + copy
 
     # Write the script
-    file_name = join(folder, "launch.sh")
-
-    with open(file_name, 'w') as f:
+    with open(join(folder_path, "launch.sh"), 'w') as f:
         f.write(content)
-    return file_name
 
 
 def format_slurm_parameters(slurm):
@@ -294,16 +160,17 @@ def format_slurm_parameters(slurm):
     sbatch = "#SBATCH -{} {}\n".format
 
     header = "#! /bin/bash\n"
-    modules = "\nmodule load cp2k/3.0\nsource activate qmflows\n\n"
-    time = sbatch('t', slurm.time)
-    nodes = sbatch('N', slurm.nodes)
-    tasks = sbatch('n', slurm.tasks)
-    name = sbatch('J', slurm.name)
+    time = sbatch('t', slurm["wall_time"])
+    nodes = sbatch('N', slurm["nodes"])
+    tasks = sbatch('n', slurm["tasks"])
+    name = sbatch('J',  slurm["job_name"])
+
+    modules = slurm["load_modules"]
 
     return ''.join([header, time, nodes, tasks, name, modules])
 
 
-def number_of_geometries(file_name):
+def compute_number_of_geometries(file_name):
     """
     Count the number of geometries in XYZ formant in a given file.
     """
@@ -317,17 +184,6 @@ def number_of_geometries(file_name):
     lines_per_geometry = numat + 2
 
     return int(wc) // lines_per_geometry
-
-
-def dot_print(s, parent='s'):
-    acc = ''
-    for k, v in s.items():
-        if not k.startswith('_'):
-            if not isinstance(v, Settings):
-                acc += '{}.{} = {}\n'.format(parent, k, v)
-            else:
-                acc += dot_print(v, parent='{}.{}'.format(parent, k))
-    return acc
 
 
 if __name__ == "__main__":

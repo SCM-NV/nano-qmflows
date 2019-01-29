@@ -5,7 +5,7 @@ __all__ = ['Array', 'AtomBasisData', 'AtomBasisKey', 'AtomData', 'AtomXYZ',
            'hardness', 'odd', 'product', 'retrieve_hdf5_data',
            'search_data_in_hdf5', 'store_arrays_in_hdf5', 'triang2mtx']
 
-# ================> Python Standard  and third-party <==========
+
 from collections import namedtuple
 from functools import reduce
 from scipy.constants import physical_constants
@@ -16,7 +16,7 @@ import numpy as np
 import operator as op
 import os
 
-# ======================================================================
+
 # Named Tuples
 AtomData = namedtuple("AtomData", ("label", "coordinates", "cgfs"))
 AtomBasisKey = namedtuple("AtomBasisKey", ("atom", "basis", "basisFormat"))
@@ -111,9 +111,9 @@ def retrieve_hdf5_data(path_hdf5, paths_to_prop):
     try:
         with h5py.File(path_hdf5, 'r') as f5:
             if isinstance(paths_to_prop, list):
-                return [f5[path].value for path in paths_to_prop]
+                return [f5[path][()] for path in paths_to_prop]
             else:
-                return f5[paths_to_prop].value
+                return f5[paths_to_prop][()]
     except KeyError:
         msg = "There is not {} stored in the HDF5\n".format(paths_to_prop)
         raise KeyError(msg)

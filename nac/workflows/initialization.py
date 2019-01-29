@@ -237,6 +237,9 @@ def split_trajectory(path: str, nBlocks: int, pathOut: str) -> List:
     cmd = "wc -l {}".format(path)
     ls = subprocess.check_output(cmd.split()).decode()
     lines = int(ls.split()[0])
+    if (lines % (numat + 2)) != 0:
+        lines += 1
+
     # Number of points in the xyz file
     nPoints = lines // (numat + 2)
     # Number of points for each chunk
