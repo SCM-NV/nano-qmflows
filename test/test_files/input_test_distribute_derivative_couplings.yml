@@ -1,13 +1,14 @@
 workflow:
   distribute_derivative_couplings
 
-block: 5
+blocks: 5
 
 job_scheduler:
   scheduler: SLURM
   nodes: 1
   tasks: 24
   wall_time: "24:00:00"
+  load_modules: "module load cp2k/3.0"
   
 general_settings:
   runner:

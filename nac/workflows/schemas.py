@@ -36,7 +36,7 @@ schema_general_settings = Schema({
     "path_hdf5": str,
 
     # path to xyz trajectory of the Molecular dynamics
-    "path_traj_xyz": str,
+    "path_traj_xyz": os.path.exists,
 
     # Path to the folder containing the basis set specifications
     Optional("path_basis", default=None): str,
@@ -59,8 +59,8 @@ schema_general_settings = Schema({
     And(str, Use(str.lower), lambda s: s in (
         "angstrom", "au")),
 
-    # Restart File Name
-    Optional("wfn_restart_file_name", default=None): str,
+    # # Restart File Name
+    # Optional("wfn_restart_file_name", default=None): str,
 
     # Settings describing the input of the quantum package
     "settings_main": object,
@@ -103,7 +103,8 @@ schema_job_scheduler = Schema({
     Optional("nodes", default=1): int,
     Optional("tasks", default=1): int,
     Optional("wall_time", default="01:00:00"): str,
-    Optional("name", default="namd"): str
+    Optional("job_name", default="namd"): str,
+    Optional("load_modules", default=""): str
 })
 
 

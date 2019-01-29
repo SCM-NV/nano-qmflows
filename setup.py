@@ -35,8 +35,8 @@ setup(
         'topic :: scientific/engineering :: chemistry'
     ],
     install_requires=[
-        'cython', 'numpy', 'h5py', 'noodles==0.3.1', 'qmflows>=0.3.0', 'pymonad', 'scipy',
-        'schema', 'pyyaml'],
+        'cython>=0.29.2', 'numpy', 'h5py', 'noodles==0.3.1', 'qmflows>=0.3.0',
+        'pymonad', 'scipy', 'schema', 'pyyaml'],
     dependency_links=[
             "https://github.com/SCM-NV/qmflows/tarball/master#egg=qmflows"],
     cmdclass={'build_ext': build_ext},
@@ -50,6 +50,7 @@ setup(
         'mpi': ['dill', 'mpi4py']},
     scripts=[
         'scripts/cli/run_workflow.py',
+        'scripts/distribution/distribute_jobs.py',
         'scripts/mpi/call_mpi_multipole.py',
         'scripts/hamiltonians/plot_mos_energies.py',
         'scripts/hamiltonians/plot_spectra.py',

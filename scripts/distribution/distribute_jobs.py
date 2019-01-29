@@ -3,6 +3,7 @@
 from nac.workflows.input_validation import process_input
 from nac.workflows.initialization import split_trajectory
 from os.path import join
+from qmflows.utils import settings2Dict
 
 import argparse
 import os
@@ -64,6 +65,9 @@ def distribute_computations(dict_input: dict) -> None:
     enumerate_from = config["enumerate_from"]
     job_scheduler = dict_input["job_scheduler"]
 
+    # Check if workdir exits otherwise create it
+    os.makedirs(workdir, exist_ok=True)
+
     # Split the trajectory in Chunks and move each chunk to its corresponding
     # directory.
     chunks_trajectory = split_trajectory(
@@ -72,7 +76,10 @@ def distribute_computations(dict_input: dict) -> None:
 
     for index, file_xyz in enumerate(chunks_trajectory):
         folder_path = join(workdir, 'chunk_{}'.format(index))
-        os.mkdir(folder_path)
+
+        # Move xyz to temporal file
+        path_xyz = join(folder_path, file_xyz)
+        os.makedirs(folder_path, exist_ok=True)
         shutil.move(file_xyz, folder_path)
 
         # Scratch directory
@@ -81,10 +88,16 @@ def distribute_computations(dict_input: dict) -> None:
 
         # HDF5 file where both the Molecular orbitals and coupling are stored
         path_hdf5 = join(scratch_path, 'chunk_{}.hdf5'.format(index))
+
+        # Change hdf5 and trajectory path of each batch
+        config["path_traj_xyz"] = path_xyz
+        config["path_hdf5"] = path_hdf5
+
+        # files with PYXAID
         hamiltonians_dir = join(scratch_path, 'hamiltonians')
 
         # number of geometries per batch
-        dim_batch = compute_number_of_geometries(join(folder_path, file_xyz))
+        dim_batch = compute_number_of_geometries(path_xyz)
 
         # Edit the number of geometries to compute
         config["enumerate_from"] = enumerate_from
@@ -92,9 +105,9 @@ def distribute_computations(dict_input: dict) -> None:
         write_input(folder_path, config)
 
         # Slurm executable
-        if job_scheduler.upper() == "SLURM":
+        if job_scheduler["scheduler"].upper() == "SLURM":
             write_slurm_script(
-                workdir, index, job_scheduler, path_hdf5, hamiltonians_dir, dim_batch)
+                folder_path, index, job_scheduler, path_hdf5, hamiltonians_dir, dim_batch)
         else:
             msg = "The request job_scheduler: {} It is not implemented".formant()
             raise RuntimeError(msg)
@@ -103,22 +116,29 @@ def distribute_computations(dict_input: dict) -> None:
         enumerate_from += dim_batch
 
 
-def write_input(path_folder, config):
+def write_input(folder_path: str, config: dict) -> None:
     """ Write the python script to compute the PYXAID hamiltonians"""
-    file_path = join(path_folder, "input.yml")
+    file_path = join(folder_path, "input.yml")
+
+    # transform settings to standard dictionary
+    config["settings_main"] = settings2Dict(config["settings_main"])
+    config["settings_guess"] = settings2Dict(config["settings_guess"])
+
     d = {"workflow": "derivative_couplings", "general_settings": config}
 
     with open(file_path, "w") as f:
-        yaml.dump(d, f)
+        yaml.dump(d, f, default_flow_style=False, allow_unicode=True)
 
 
-def write_slurm_script(workdir, index, slurm_config, path_hdf5, hamiltonians_dir, dim_batch):
+def write_slurm_script(
+        folder_path: str, index: int, slurm_config: dict, path_hdf5: str,
+        hamiltonians_dir: str, dim_batch: int):
     """
     write an Slurm launch script
     """
-    python = "run_workflow.py -i input.yml"
-    results_dir = join(workdir, "results_chunk_{}" + index)
-    mkdir = "mkdir {}\n".format(results_dir)
+    python = "run_workflow.py -i input.yml\n"
+    results_dir = join(folder_path, "results_chunk_" + str(index))
+    mkdir = "\nmkdir {}\n".format(results_dir)
 
     # Copy a subset of Hamiltonians
     range_batch = (dim_batch * index, dim_batch * (index + 1) - 3)
@@ -129,7 +149,7 @@ def write_slurm_script(workdir, index, slurm_config, path_hdf5, hamiltonians_dir
     content = format_slurm_parameters(slurm_config) + python + mkdir + copy
 
     # Write the script
-    with open(join(workdir, "launch.sh"), 'w') as f:
+    with open(join(folder_path, "launch.sh"), 'w') as f:
         f.write(content)
 
 
@@ -140,13 +160,15 @@ def format_slurm_parameters(slurm):
     sbatch = "#SBATCH -{} {}\n".format
 
     header = "#! /bin/bash\n"
-    modules = "\nmodule load cp2k/3.0\nsource activate qmflows\n\n"
-    time = sbatch('t', slurm.time)
-    nodes = sbatch('N', slurm.nodes)
-    tasks = sbatch('n', slurm.tasks)
-    name = sbatch('J', slurm.name)
+    time = sbatch('t', slurm["wall_time"])
+    nodes = sbatch('N', slurm["nodes"])
+    tasks = sbatch('n', slurm["tasks"])
+    name = sbatch('J',  slurm["job_name"])
 
-    return ''.join([header, time, nodes, tasks, name, modules])
+    qmflows = "\n\nsource activate qmflows\n\n"
+    modules = slurm["load_modules"]
+
+    return ''.join([header, time, nodes, tasks, name, modules, qmflows])
 
 
 def compute_number_of_geometries(file_name):

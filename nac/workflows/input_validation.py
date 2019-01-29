@@ -17,7 +17,7 @@ schema_workflows = {
     'derivative_couplings': schema_derivative_couplings,
     'electron_transfer': schema_electron_transfer,
     'general_settings': schema_general_settings,
-    'distribute_computations': schema_distribute_derivative_couplings}
+    'distribute_derivative_couplings': schema_distribute_derivative_couplings}
 
 
 def process_input(input_file: str, workflow_name: str) -> Dict:
@@ -105,7 +105,8 @@ def add_missing_keywords(d: Dict) -> Dict:
     dft_guess = settings_guess.specific.cp2k.force_eval.dft
 
     # Add restart point
-    if settings_guess['wfn_restart_file_name'] is not None:
+    wfn = settings_guess['wfn_restart_file_name']
+    if wfn is not None and wfn:
         dft_guess.wfn_restart_file_name = settings_guess['wfn_restart_file_name']
 
     if all(general[x] is not None for x in ["path_basis", "path_potential"]):
