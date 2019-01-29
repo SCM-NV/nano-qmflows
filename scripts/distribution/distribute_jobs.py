@@ -140,7 +140,7 @@ def write_slurm_script(
     write an Slurm launch script
     """
     python = "\n\nrun_workflow.py -i input.yml\n"
-    results_dir = join(folder_path, "results_chunk_" + str(index))
+    results_dir = "results_chunk_" + str(index)
     mkdir = "\nmkdir {}\n".format(results_dir)
 
     # Copy a subset of Hamiltonians
