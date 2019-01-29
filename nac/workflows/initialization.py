@@ -243,7 +243,7 @@ def split_trajectory(path: str, nBlocks: int, pathOut: str) -> List:
     # Number of points in the xyz file
     nPoints = lines // (numat + 2)
     # Number of points for each chunk
-    nChunks = nPoints // nBlocks
+    nChunks = int(np.ceil(nPoints / nBlocks))
     # Number of lines per block
     lines_per_block = nChunks * (numat + 2)
     # Path where the splitted xyz files are written
