@@ -1,6 +1,8 @@
 workflow:
   distribute_derivative_couplings
 
+workdir: "."
+  
 blocks: 5
 
 job_scheduler:
@@ -8,7 +10,7 @@ job_scheduler:
   nodes: 1
   tasks: 24
   wall_time: "24:00:00"
-  load_modules: "module load cp2k/3.0"
+  load_modules: "source activate qmflows\nmodule load cp2k/3.0"
   
 general_settings:
   runner:

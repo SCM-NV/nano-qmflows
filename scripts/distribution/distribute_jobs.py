@@ -136,7 +136,7 @@ def write_slurm_script(
     """
     write an Slurm launch script
     """
-    python = "run_workflow.py -i input.yml\n"
+    python = "\n\nrun_workflow.py -i input.yml\n"
     results_dir = join(folder_path, "results_chunk_" + str(index))
     mkdir = "\nmkdir {}\n".format(results_dir)
 
@@ -165,10 +165,9 @@ def format_slurm_parameters(slurm):
     tasks = sbatch('n', slurm["tasks"])
     name = sbatch('J',  slurm["job_name"])
 
-    qmflows = "\n\nsource activate qmflows\n\n"
     modules = slurm["load_modules"]
 
-    return ''.join([header, time, nodes, tasks, name, modules, qmflows])
+    return ''.join([header, time, nodes, tasks, name, modules])
 
 
 def compute_number_of_geometries(file_name):
