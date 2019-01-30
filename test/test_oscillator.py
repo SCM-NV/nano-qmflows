@@ -29,10 +29,6 @@ def test_oscillators_multiprocessing():
     compute_oscillators('multiprocessing')
 
 
-def test_oscillators_mpi():
-    compute_oscillators('mpi')
-
-
 def compute_oscillators(runner):
     """
     Compute the oscillator strenght and check the results.

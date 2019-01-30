@@ -12,7 +12,7 @@ schema_general_settings = Schema({
     # "Library to distribute the computation"
     Optional("runner", default="multiprocessing"):
     And(str, Use(str.lower),
-        lambda s: s in ("multiprocessing", "mpi")),
+        lambda s: s in ("multiprocessing")),
 
     # "default quantum package used"
     Optional("package_name", default="cp2k"): str,

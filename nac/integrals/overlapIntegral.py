@@ -59,7 +59,7 @@ def calc_overlap_triang(
     return result
 
 
-def calcMtxOverlapP(molecule: List, dictCGFs: Dict, runner='mutiprocessing') -> Vector:
+def calcMtxOverlapP(molecule: List, dictCGFs: Dict, runner='multiprocessing') -> Vector:
     """
     Overlap matrix entries calculated using Contracted Gaussian
     functions.

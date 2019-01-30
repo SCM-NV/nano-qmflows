@@ -46,12 +46,10 @@ setup(
         extra_link_args=['-fopenmp'])],
     include_dirs=[np.get_include()],
     extras_require={
-        'test': ['coverage', 'pytest', 'pytest-cov', 'codacy-coverage'],
-        'mpi': ['dill', 'mpi4py']},
+        'test': ['coverage', 'pytest', 'pytest-cov', 'codacy-coverage']},
     scripts=[
         'scripts/cli/run_workflow.py',
         'scripts/distribution/distribute_jobs.py',
-        'scripts/mpi/call_mpi_multipole.py',
         'scripts/hamiltonians/plot_mos_energies.py',
         'scripts/hamiltonians/plot_spectra.py',
         'scripts/pyxaid/plot_average_energy.py',

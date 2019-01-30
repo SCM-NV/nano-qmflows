@@ -36,15 +36,16 @@ def general_multipole_matrix(
     function = partial(calculator, molecule, dictCGFs, indices)
     ncores = ncores if ncores is not None else cpu_count()
 
-    if runner.lower() == 'mpi':
-        return runner_mpi(function, nOrbs, ncores)
-    else:
+    if runner.lower() == 'multiprocessing':
         # Create a list of indices of a triangular matrix to distribute
         # the computation of the matrix uniformly among the available cores
         block_triang_indices = compute_block_triang_indices(nOrbs, ncores)
         rss = runner_multiprocessing(function, block_triang_indices)
 
         return np.concatenate(rss)
+    else:
+        print("here")
+        raise RuntimeError("Unkown {} runner".format(runner))
 
 
 def runner_multiprocessing(
@@ -61,41 +62,6 @@ def runner_multiprocessing(
         rss = p.map(function, indices_chunks)
 
     return rss
-
-
-def runner_mpi(
-        function: Callable, nOrbs: int, ncores: int=None) -> Matrix:
-    """
-    Compute a multipole matrix using the python using mpi.
-    It spawn a subprocess that calls MPI and store the resulting matrix in a numpy
-    file.
-
-    :param function: callable to compute the multipole matrix.
-    :param nOrbs: number of CGFs for the whole molecule.
-    :returns: multipole matrix.
-    """
-    # Serialize the partial applied function
-    tmp_fun = tempfile.mktemp(prefix='serialized_multipole', suffix='.dill', dir='.')
-    with open(tmp_fun, 'wb') as f:
-        dill.dump(function, f)
-
-    # Run the MPI command
-    tmp_out = tempfile.mktemp(prefix='mpi_multipole_', dir='.')
-    executable = find_executable('call_mpi_multipole.py')
-    cmd = "mpiexec -n {} python {} -f {} -n {} -o {}".format(
-        ncores, executable, tmp_fun, nOrbs, tmp_out)
-    p = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, shell=True)
-    rs = p.communicate()
-    err = rs[1]
-    if err:
-        raise RuntimeError("Submission Errors: {}".format(err))
-        clean([tmp_fun])
-    else:
-        output_filename = tmp_out + '.npy'
-        arr = np.load(output_filename)
-        os.remove(output_filename)
-        os.remove(tmp_fun)
-        return arr
 
 
 def multipoleContracted(

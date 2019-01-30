@@ -6,7 +6,7 @@ from functools import partial
 from multiprocessing import cpu_count
 from nac.common import (Matrix, Vector, Tensor3D, retrieve_hdf5_data)
 from nac.integrals.multipoleIntegrals import (
-    compute_CGFs_indices, runner_mpi, runner_multiprocessing)
+    compute_CGFs_indices, runner_multiprocessing)
 from nac.integrals.overlapIntegral import sijContracted
 from scipy import sparse
 from typing import Dict, List, Tuple
@@ -224,14 +224,13 @@ def calcOverlapMtx(
     partial_fun = partial(calc_overlap_chunk, dictCGFs, mol0, mol1, indices)
     ncores = ncores if ncores is not None else cpu_count()
 
-    if runner.lower() == 'mpi':
-        result = runner_mpi(partial_fun, nOrbs, ncores)
-        return result.reshape(nOrbs, nOrbs)
-    else:
+    if runner.lower() == 'multiprocessing':
         xss = runner_multiprocessing(
             partial_fun, create_rows_range(nOrbs, ncores))
 
         return np.vstack(xss)
+    else:
+        raise RuntimeError("Unkown {} runner".format(runner))
 
 
 def calc_overlap_chunk(dictCGFs: Dict, mol0: List, mol1: List,
