@@ -3,6 +3,9 @@ from qmflows import (cp2k, run)
 from scm import plams
 import distutils
 import pytest
+import fnmatch
+import shutil
+import os
 
 
 def cp2k_available():
@@ -18,13 +21,13 @@ def test_input_validation():
     """
     test the templates and keywords completion
     """
-    path_input = "test/test_files/input_test_templates.yml"
+    path_input = "test/test_files/input_test_pbe0.yml"
     dict_input = process_input(path_input, "absorption_spectrum")
     sett = dict_input['general_settings']['settings_guess']
 
-    pbe = sett.specific.cp2k.force_eval.dft.xc.xc_functional
+    scale_x = sett.specific.cp2k.force_eval.dft.xc.xc_functional.pbe.scale_x
 
-    assert("pbe" == pbe)
+    assert abs(scale_x - 0.75) < 1e-16
 
 
 @pytest.mark.skipif(
@@ -33,11 +36,20 @@ def test_call_cp2k():
     """
     Check if the input for a cp2k job is valid
     """
-    path_input = "test/test_files/input_test_templates.yml"
-    dict_input = process_input(path_input, "absorption_spectrum")
-    sett = dict_input['general_settings']['settings_guess']
-    job = cp2k(sett, plams.Molecule("test/test_files/Cd.xyz"))
+    try:
+        path_input = "test/test_files/input_test_pbe.yml"
+        dict_input = process_input(path_input, "absorption_spectrum")
+        sett = dict_input['general_settings']['settings_guess']
+        job = cp2k(sett, plams.Molecule("test/test_files/Cd.xyz"))
 
-    results = run(job.energy)
+        results = run(job.energy)
 
-    print(results)
+        print("sett: ", sett)
+
+        assert (results is not None)
+
+    finally:
+        for path in fnmatch.filter(os.listdir('.'), "plams_workdir"):
+            shutil.rmtree(path)
+        if os.path.exists("cache.db"):
+            os.remove("cache.db")
