@@ -95,7 +95,7 @@ def add_missing_keywords(d: Dict) -> Dict:
     dft_main = settings_main.specific.cp2k.force_eval.dft
 
     # Added_mos keyword
-    dft_main.scf.added_mos = mo_index_range[1] - mo_index_range[0] - nHOMO + 1
+    dft_main.scf.added_mos = mo_index_range[1] - nHOMO
 
     # mo_index_range keyword
     pr = dft_main.print
