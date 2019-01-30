@@ -19,9 +19,9 @@ The *distribute_jobs.py* file contains all settings to perform the calculations 
 - **project_name**: Project name for the calculations. 
 - **basisCP2K**, **potCP2K**: Path to the CP2K basis set and potentials files. 
 - **cell_parameters**, **cell_angles**: Cell parameters and cell angles for the CP2K single point calculations. These should be the same values as in your MD simulation. 
-- **range_orbitals**: Absolute range of orbitals for which the overlaps/couplings will be calculated. Example: the HOMO lies at 2725 and our range of interest consists of 100 HOMOs and 100 LUMOs. Our range_orbitals would be set to ‘2626 2825’.
+- **mo_index_range**: Absolute range of orbitals for which the overlaps/couplings will be calculated. Example: the HOMO lies at 2725 and our range of interest consists of 100 HOMOs and 100 LUMOs. Our range_orbitals would be set to ‘2626 2825’.
+It is the same keyword than CP2K mo_index_range_.
 - **nHOMO**: The index of the HOMO within the orbital range has to be provided. In the above example, the index of the HOMO is 100.
-- **coupling_range**: Relative range for which the couplings will be calculated. The first value is the number of HOMOs, the second value is the number of LUMOs. In our example, the coupling_range should be set to (100,100), as we have 100 HOMOs and 100 LUMOs.
 - **path_to_trajectory**: Location of the .xyz file of the trajectory. 
 - **blocks**: Number of blocks (chunks) is related to how the trajectory is split up. As our typical trajectories are quite large (+- 2000 structures), it is convenient to split the trajectory up into multiple chunks so that several calculations can be performed simultaneously. Generally around 4-5 blocks is sufficient, depending on the length of your trajectory and the size of your system. 
 - **dt**: Time steps used in your MD trajectory. 
@@ -93,3 +93,5 @@ Using the script in this manner will only allow the couplings to be removed.
 - Relaunch the calculation.
 
 Once the remaining overlaps and the couplings have been calculated successfully, results will be written to both the working folder as well as the scratch folder. The overlaps will be written to the same folder as your *script_remote_function.py*. The Hamiltonians will be written to the scratch folder belonging to the merged HDF5.
+
+.. _mo_index_range: https://manual.cp2k.org/cp2k-6_1-branch/CP2K_INPUT/FORCE_EVAL/DFT/PRINT/MO.html#list_MO_INDEX_RANGE
