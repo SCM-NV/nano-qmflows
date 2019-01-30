@@ -1,5 +1,15 @@
 # Change Log
 
+# 0.4.1
+
+### Deleted
+
+* Remove all the MPI unused functionality
+
+### Changed
+
+* Refactor the [distribute_jobs.py](https://github.com/SCM-NV/qmflows-namd/blob/master/scripts/distribution/distribute_jobs.py) script to split the derivative coupling calculations.
+
 # 0.4.0
 
 ### Deleted
