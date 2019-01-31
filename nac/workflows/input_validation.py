@@ -96,7 +96,7 @@ def add_missing_keywords(d: Dict) -> Dict:
 
     # Added_mos keyword
 
-    dft_main.scf.added_mos = mo_index_range[1] - mo_index_range[0] - nHOMO
+    dft_main.scf.added_mos = mo_index_range[1] - mo_index_range[0] - nHOMO + 1
 
     # mo_index_range keyword
     pr = dft_main.print
