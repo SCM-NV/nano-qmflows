@@ -1,7 +1,6 @@
 
 from Cython.Distutils import build_ext
 from setuptools import (Extension, find_packages, setup)
-import numpy as np
 import os
 import shutil
 
@@ -15,9 +14,14 @@ def readme():
         return f.read()
 
 
+ext_obara_saika = Extension(
+        'multipoleObaraSaika', ['nac/integrals/multipoleObaraSaika.pyx'],
+        extra_compile_args=['-fopenmp'],
+        extra_link_args=['-fopenmp'])
+
 setup(
     name='qmflows-namd',
-    version='0.4.0',
+    version='0.5.0',
     description='Derivative coupling calculation',
     license='Apache-2.0',
     url='https://github.com/SCM-NV/qmflows-namd',
@@ -35,16 +39,12 @@ setup(
         'topic :: scientific/engineering :: chemistry'
     ],
     install_requires=[
-        'cython>=0.29.2', 'numpy', 'h5py', 'noodles==0.3.1', 'qmflows>=0.3.0',
-        'pymonad', 'scipy', 'schema', 'pyyaml'],
+        'cython>=0.29.2', 'numpy', 'h5py', 'noodles==0.3.1', 'pybind11>=2.2.4',
+        'qmflows>=0.3.0', 'pymonad', 'scipy', 'schema', 'pyyaml'],
     dependency_links=[
             "https://github.com/SCM-NV/qmflows/tarball/master#egg=qmflows"],
     cmdclass={'build_ext': build_ext},
-    ext_modules=[Extension(
-        'multipoleObaraSaika', ['nac/integrals/multipoleObaraSaika.pyx'],
-        extra_compile_args=['-fopenmp'],
-        extra_link_args=['-fopenmp'])],
-    include_dirs=[np.get_include()],
+    ext_modules=[ext_obara_saika],
     extras_require={
         'test': ['coverage', 'pytest', 'pytest-cov', 'codacy-coverage']},
     scripts=[

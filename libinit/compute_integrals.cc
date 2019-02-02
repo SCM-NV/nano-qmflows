@@ -1,8 +1,9 @@
-#include <libint2.hpp>
 #include <fstream>
+#include <iostream>
+#include <libint2.hpp>
+#include <pybind11/pybind11.h>
 #include <string>
 #include <vector>
-#include <iostream>
 
 // Eigen matrix algebra library
 #include <Eigen/Dense>
@@ -30,13 +31,15 @@ Matrix compute_1body_ints(const std::vector<Shell>& shells,
                           Operator t,
                           const std::vector<Atom>& atoms = std::vector<Atom>());
 
-int compute_integrals(const string& path_xyz, const string& basis_name);
 
+int compute_integrals(const string& path_xyz, const string& basis_name);
+libint2::BasisSet create_basis_set(const string& basis_name, const std::vector<Atom>& atoms);
 
 int main() {
 
   string path_xyz = "../test/test_files/ethylene.xyz";
-  string basis_name = "sto-3g";
+  string basis_name = "6-311g**";
+  // string basis_name = "sto-3g";
 
   auto xs = compute_integrals(path_xyz, basis_name);
   
@@ -51,11 +54,8 @@ int compute_integrals(const string& path_xyz, const string& basis_name) {
   std::ifstream input_file(path_xyz);
   std::vector<Atom> atoms = libint2::read_dotxyz(input_file);
 
-  for (const auto& at: atoms)
-    std::cout << "atomic_number: " << at.atomic_number << " coordinates: " << at.x << " "<< at.y << " " << at.z << "\n";
-
-  // Create Basis 
-  libint2::BasisSet shells(basis_name, atoms);
+  // Create Basis
+  auto shells = create_basis_set(basis_name, atoms);
 
   // safe to use libint now
   libint2::initialize();
@@ -71,6 +71,19 @@ int compute_integrals(const string& path_xyz, const string& basis_name) {
   std::cout << "all right!" << "\n";
   
   return 42;
+}
+
+PYBIND11_MODULE(libint, m) {
+    m.doc() = "Compute integrals using libint2 see: https://github.com/evaleev/libint/wiki";
+
+    m.def("compute_integrals", &compute_integrals, "Compute integrals using libint2");
+}
+
+
+libint2::BasisSet create_basis_set(const string& basis_name, const std::vector<Atom>& atoms) {
+  // Create a basis set of non-standard basis set for CP2K
+  
+  return libint2::BasisSet{basis_name, atoms};
 }
 
 
