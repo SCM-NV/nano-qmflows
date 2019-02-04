@@ -1,8 +1,7 @@
 from .schemas import (
     schema_absorption_spectrum, schema_distribute_derivative_couplings,
     schema_derivative_couplings, schema_electron_transfer, schema_cp2k_general_settings)
-from .templates import (
-    cp2k_pbe0_guess, cp2k_pbe0_main, cp2k_pbe_guess, cp2k_pbe_main)
+from .templates import create_settings_from_template
 from qmflows.settings import Settings
 from schema import SchemaError
 from typing import Dict
@@ -58,28 +57,21 @@ def create_settings(d: Dict) -> Dict:
     general['cp2k_settings_guess'] = Settings(
         general['cp2k_settings_guess'])
 
-    d = apply_templates(d)
+    apply_templates(general, d['path_traj_xyz'])
 
     return add_missing_keywords(d)
 
 
-def apply_templates(d: Dict):
+def apply_templates(general: Dict, path_traj_xyz: str) -> None:
     """
     Apply a template for CP2K if the user request so.
     """
-    general = d['cp2k_general_settings']
-
-    # available templates
-    templates_dict = {
-        "pbe_guess": cp2k_pbe_guess, "pbe_main": cp2k_pbe_main,
-        "pbe0_guess": cp2k_pbe0_guess, "pbe0_main": cp2k_pbe0_main}
-
     for s in [general[x] for x in ['cp2k_settings_main', 'cp2k_settings_guess']]:
         val = s['specific']
 
         if "template" in val:
-            s['specific'] = templates_dict[val['template']]
-    return d
+            s['specific'] = create_settings_from_template(
+                general, val['template'], path_traj_xyz)
 
 
 def add_missing_keywords(d: Dict) -> Dict:
@@ -133,6 +125,7 @@ def add_cell_parameters(general: dict) -> None:
 
 def add_restart_point(general: dict) -> None:
     """
+    add a restart file if the user provided it
     """
     guess = general['cp2k_settings_guess']
     wfn = guess['wfn_restart_file_name']
