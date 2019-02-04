@@ -68,6 +68,9 @@ dict_derivative_couplings = {
     # Number of occupied/virtual orbitals to use
     'active_space': [int, int],
 
+    # Index of the HOMO
+    Optional("nHOMO"): int,
+
     # Track the crossing between states
     Optional("tracking", default=True): bool,
 

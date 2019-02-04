@@ -152,7 +152,7 @@ def generate_kinds(elements: list, basis: str, potential: str) -> Settings:
     s = Settings()
     subsys = s.cp2k.force_eval.subsys
     for e in elements:
-        q = valence_electrons[e + basis]
+        q = valence_electrons['-'.join(e, basis)]
         subsys.kind[e]['basis_set'] = "{}-q{}".format(basis, q)
         subsys.kind[e]['potential'] = "{}-q{}".format(potential, q)
 
@@ -169,7 +169,7 @@ def create_settings_from_template(
     Create a job Settings using the name provided by the user
     """
     setts = templates_dict[template_name]
-    elements = read_atoms(path_traj_xyz)
+    elements = read_unique_atomic_labels(path_traj_xyz)
 
     kinds = generate_kinds(elements, general['basis'], general['potential'])
 
@@ -179,7 +179,7 @@ def create_settings_from_template(
         return setts + kinds
 
 
-def read_atoms(path_traj_xyz: str) -> set:
+def read_unique_atomic_labels(path_traj_xyz: str) -> set:
     """
     Return the unique atomic labels
     """

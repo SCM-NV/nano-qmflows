@@ -1,7 +1,8 @@
 from .schemas import (
     schema_absorption_spectrum, schema_distribute_derivative_couplings,
     schema_derivative_couplings, schema_electron_transfer, schema_cp2k_general_settings)
-from .templates import create_settings_from_template
+from .templates import (create_settings_from_template, valence_electrons)
+from scm.plams import Molecule
 from qmflows.settings import Settings
 from schema import SchemaError
 from typing import Dict
@@ -81,8 +82,11 @@ def add_missing_keywords(d: Dict) -> Dict:
     general = d['cp2k_general_settings']
     # Add keywords if missing
 
+    if d.get('nHOMO') is None:
+        d['nHOMO'] = compute_HOMO_index(d['path_traj_xyz'], general['basis'])
+
     # Added_mos keyword
-    add_mo_index_range(general)
+    add_mo_index_range(d)
 
     # Add restart point
     add_restart_point(general)
@@ -134,17 +138,24 @@ def add_restart_point(general: dict) -> None:
         dft.wfn_restart_file_name = wfn
 
 
-def add_mo_index_range(general: dict) -> None:
+def add_mo_index_range(dict_input: dict) -> None:
     """
     Compute the MO range to print
     """
-    mo_index_range = compute_mo_index_range()
+    active_space = dict_input['active_space']
+    nHOMO = dict_input["nHOMO"]
+    mo_index_range = nHOMO - active_space[0], nHOMO + active_space[1]
 
     # mo_index_range keyword
-    dft_main_print = general['cp2k_settings_main'].specific.cp2k.force_eval.dft.print
+    cp2k_main = dict_input['cp2k_general_settings']['cp2k_settings_main']
+    dft_main_print = cp2k_main.specific.cp2k.force_eval.dft.print
     dft_main_print.mo.mo_index_range = "{} {}".format(mo_index_range[0], mo_index_range[1])
 
 
-def compute_mo_index_range():
-    """ """
-    pass
+def compute_HOMO_index(path_traj_xyz: str, basis: str) -> int:
+    """
+    Compute the HOMO index
+    """
+    mol = Molecule(path_traj_xyz, 'xyz')
+
+    return sum(valence_electrons['-'.join(at.symbol, basis)] for at in mol.atoms)
