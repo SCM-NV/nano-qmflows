@@ -158,4 +158,4 @@ def compute_HOMO_index(path_traj_xyz: str, basis: str) -> int:
     """
     mol = Molecule(path_traj_xyz, 'xyz')
 
-    return sum(valence_electrons['-'.join(at.symbol, basis)] for at in mol.atoms)
+    return sum(valence_electrons['-'.join((at.symbol, basis))] for at in mol.atoms)
