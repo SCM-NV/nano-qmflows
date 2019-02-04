@@ -46,6 +46,10 @@ setup(
     ext_modules=[ext_obara_saika],
     extras_require={
         'test': ['coverage', 'pytest', 'pytest-cov', 'codacy-coverage']},
+    include_package_data=True,
+    package_data={
+        'nac': ['basisSet/valence_electrons.json']
+    },
     scripts=[
         'scripts/cli/run_workflow.py',
         'scripts/distribution/distribute_jobs.py',
