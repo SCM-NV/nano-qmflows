@@ -46,7 +46,7 @@ def initialize(config: dict) -> dict:
     if scratch_path is None:
         scratch_path = join(tempfile.gettempdir(), getpass.getuser(), project_name)
         logger.warning("path to scratch was not defined, using: {}".format(scratch_path))
-    config['work_dir'] = scratch_path
+    config['workdir'] = scratch_path
 
     # If the directory does not exist create it
     if not os.path.exists(scratch_path):
@@ -266,7 +266,7 @@ def split_trajectory(path: str, nBlocks: int, pathOut: str) -> List:
         return fnmatch.filter(os.listdir(), "chunk_xyz*")
 
 
-def log_config(work_dir, path_hdf5, algorithm):
+def log_config(workdir, path_hdf5, algorithm):
     """
     Print initial configuration
     """
@@ -278,6 +278,6 @@ def log_config(work_dir, path_hdf5, algorithm):
 
     logger.info("Using qmflows-namd version: {} ".format(version))
     logger.info("qmflows-namd path is: {}".format(path))
-    logger.info("Working directory is: {}".format(work_dir))
+    logger.info("Working directory is: {}".format(workdir))
     logger.info("Data will be stored in HDF5 file: {}".format(path_hdf5))
     logger.info("The chosen algorithm to compute the coupling is: {}\n".format(algorithm))

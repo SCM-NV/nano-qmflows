@@ -35,18 +35,10 @@ def workflow_derivative_couplings(config: dict) -> None:
     schedule_couplings = schedule(lazy_couplings)
 
     # Calculate Non-Adiabatic Coupling
-    promised_crossing_and_couplings = schedule_couplings(
-        promised_overlaps, config['path_hdf5'], config['project_name'],
-        config['enumerate_from'], config['nHOMO'],
-        config['dt'], config['tracking'],
-        config['write_overlaps'],
-        algorithm=config['algorithm'])
+    promised_crossing_and_couplings = schedule_couplings(config, promised_overlaps)
 
     # Write the results in PYXAID format
-    path_hamiltonians = join(config['work_dir'], 'hamiltonians')
-    if not os.path.exists(path_hamiltonians):
-        os.makedirs(path_hamiltonians)
-    config["path_hamiltonians"] = path_hamiltonians
+    config["path_hamiltonians"] = create_path_hamiltonians(config["workdir"])
 
     # Inplace scheduling of write_hamiltonians function.
     # Equivalent to add @schedule on top of the function
@@ -58,14 +50,18 @@ def workflow_derivative_couplings(config: dict) -> None:
     # Write Hamilotians in PYXAID format
     promise_files = schedule_write_ham(config, promised_crossing_and_couplings)
 
-        # config['path_hdf5'], mo_paths_hdf5, promised_crossing_and_couplings,
-        # nPoints, path_dir_results=path_hamiltonians,
-        # enumerate_from=config['enumerate_from'], nHOMO=config['nHOMO'],
-        # mo_index_range=config['mo_index_range'])
-
-    run(promise_files, folder=work_dir)
+    run(promise_files, folder=config["workdir"])
 
     remove_folders(config['folders'])
+
+
+def create_path_hamiltonians(workdir: str) -> str:
+    """ Path to store the resulting hamiltonians """
+    path_hamiltonians = join(workdir, 'hamiltonians')
+    if not os.path.exists(path_hamiltonians):
+        os.makedirs(path_hamiltonians)
+
+    return path_hamiltonians
 
 
 def remove_folders(folders):
