@@ -22,52 +22,83 @@ import numpy as np
 import os
 import pkg_resources
 import subprocess
-
+import tempfile
 
 # Starting logger
 logger = logging.getLogger(__name__)
 
 
-def initialize(
-        project_name: str=None, path_traj_xyz: str=None, basis_name: str=None,
-        enumerate_from: int=0, calculate_guesses: int='first',
-        path_hdf5: str=None, scratch_path: str=None, path_basis: str=None,
-        path_potential: str=None, geometry_units: str='angstrom', **kwargs) -> Dict:
+def initialize(config: dict) -> dict:
     """
     Initialize all the data required to schedule the workflows associated with
     the nonadaibatic coupling
     """
+    cp2k_general_settings = config["cp2k_general_settings"]
+    project_name = config["project_name"]
+
     # Start logging event
     file_log = '{}.log'.format(project_name)
     logging.basicConfig(filename=file_log, level=logging.DEBUG,
                         format='%(levelname)s:%(message)s  %(asctime)s\n',
                         datefmt='%m/%d/%Y %I:%M:%S %p')
-    # User variables
-    username = getpass.getuser()
-
-    # Scratch
+    # Scratch folder
+    scratch_path = config["scratch_path"]
     if scratch_path is None:
-        scratch_path = join('/tmp', username, project_name)
+        scratch_path = join(tempfile.gettempdir(), getpass.getuser(), project_name)
         logger.warning("path to scratch was not defined, using: {}".format(scratch_path))
+    config['work_dir'] = scratch_path
 
     # If the directory does not exist create it
     if not os.path.exists(scratch_path):
         os.makedirs(scratch_path)
 
     # Cp2k configuration files
-    cp2k_config = {"basis": path_basis, "potential": path_potential}
+    cp2k_config = {"basis": cp2k_general_settings["path_basis"],
+                   "potential": cp2k_general_settings["path_potential"]}
+    config['package_config'] = cp2k_config
 
     # HDF5 path
+    path_hdf5 = config["path_hdf5"]
     if path_hdf5 is None:
         path_hdf5 = join(scratch_path, 'quantum.hdf5')
         logger.warning("path to the HDF5 was not defined, using: {}".format(path_hdf5))
 
     # all_geometries type :: [String]
-    geometries = split_file_geometries(path_traj_xyz)
+    geometries = split_file_geometries(config["path_traj_xyz"])
+    config['geometries'] = geometries
 
     # Create a folder for each point the the dynamics
-    traj_folders = create_point_folder(scratch_path, len(geometries),
-                                       enumerate_from)
+    enumerate_from = config["enumerate_from"]
+    len_geometries = len(geometries)
+    config["folders"] = create_point_folder(
+        scratch_path, len_geometries, enumerate_from)
+
+    config['calc_new_wf_guess_on_points'] = guesses_to_compute(
+        config['calculate_guesses'], enumerate_from, len_geometries)
+
+    # Generate a list of tuples containing the atomic label
+    # and the coordinates to generate
+    # the primitive CGFs
+    atoms = parse_string_xyz(geometries[0])
+    if 'angstrom' in config["geometry_units"].lower():
+        atoms = change_mol_units(atoms)
+
+    # CGFs per element
+    basis = cp2k_general_settings['basis']
+    dictCGFs = create_dict_CGFs(
+        path_hdf5, basis, atoms, cp2k_general_settings["path_basis"])
+    config["dictCGFs"] = dictCGFs
+
+    # Calculcate the matrix to transform from cartesian to spherical
+    # representation of the overlap matrix
+    config['hdf5_trans_mtx'] = store_transf_matrix(
+        path_hdf5, atoms, dictCGFs, basis, project_name)
+
+    return config
+
+
+def guesses_to_compute(calculate_guesses: str, enumerate_from: int, len_geometries) -> list:
+    """Guess for the wave function"""
     if calculate_guesses is None:
         points_guess = []
     elif calculate_guesses.lower() in 'first':
@@ -77,35 +108,11 @@ def initialize(
         logger.info(msg)
     else:
         # Calculate new Guess in each geometry
-        points_guess = [enumerate_from + i for i in range(len(geometries))]
+        points_guess = [enumerate_from + i for i in range(len_geometries)]
         msg = "A guess calculation will be done for each geometry"
         logger.info(msg)
 
-    # Generate a list of tuples containing the atomic label
-    # and the coordinates to generate
-    # the primitive CGFs
-    atoms = parse_string_xyz(geometries[0])
-    if 'angstrom' in geometry_units.lower():
-        atoms = change_mol_units(atoms)
-
-    # CGFs per element
-    dictCGFs = create_dict_CGFs(path_hdf5, basis_name, atoms,
-                                package_config=cp2k_config)
-
-    # Calculcate the matrix to transform from cartesian to spherical
-    # representation of the overlap matrix
-    hdf5_trans_mtx = store_transf_matrix(
-        path_hdf5, atoms, dictCGFs, basis_name, project_name)
-
-    d = {'package_config': cp2k_config, 'path_hdf5': path_hdf5,
-         'calc_new_wf_guess_on_points': points_guess,
-         'geometries': geometries, 'enumerate_from': enumerate_from,
-         'dictCGFs': dictCGFs, 'work_dir': scratch_path,
-         'folders': traj_folders, 'basis_name': basis_name,
-         'hdf5_trans_mtx': hdf5_trans_mtx, "nHOMO": kwargs["nHOMO"],
-         "mo_index_range": kwargs["mo_index_range"]}
-
-    return d
+    return points_guess
 
 
 def read_time_dependent_coeffs(
@@ -195,7 +202,7 @@ def read_swaps(path_hdf5: str, project_name: str) -> Matrix:
 
 def store_transf_matrix(
         path_hdf5: str, atoms: List, dictCGFs: Dict, basis_name: str,
-        project_name: str, package_name: str='cp2k') -> str:
+        project_name: str, package_name: str = 'cp2k') -> str:
     """
     calculate the transformation of the overlap matrix from both spherical
     to cartesian and from cartesian to spherical.

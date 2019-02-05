@@ -12,8 +12,7 @@ scratch_path: "/tmp/namd"
 
   
 cp2k_general_settings:
-  nHOMO: 4
-  basis_name:  "DZVP-MOLOPT-SR-GTH"
+  basis:  "DZVP-MOLOPT-SR-GTH"
   path_basis: "test/test_files/BASIS_MOLOPT"
   path_potential: "test/test_files/GTH_POTENTIALS"
   potential: "GTH-PBE"
@@ -25,5 +24,7 @@ cp2k_general_settings:
       template: pbe_main
 
   cp2k_settings_guess:
-    template:
-      pbe_guess
+    wfn_restart_file_name: "../point_0-RESTART.wfn"
+    specific:
+      template:
+        pbe_guess

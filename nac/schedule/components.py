@@ -1,10 +1,8 @@
-__author__ = "Felipe Zapata"
-
 __all__ = ["calculate_mos", "create_point_folder",
            "split_file_geometries"]
 
 # ================> Python Standard  and third-party <==========
-from collections import namedtuple
+from collections import (defaultdict, namedtuple)
 from noodles import (gather, schedule)
 from os.path import join
 
@@ -16,14 +14,10 @@ import shutil
 
 # ==================> Internal modules <==========
 from nac.schedule.scheduleCp2k import prepare_job_cp2k
-from nac.schedule.scheduleOrca import prepare_job_orca
 from nac.common import search_data_in_hdf5
 from qmflows.hdf5 import dump_to_hdf5
 from qmflows.utils import chunksOf
 from qmflows.warnings_qmflows import SCF_Convergence_Warning
-
-# Type Hints
-from typing import (Dict, List, Tuple)
 
 # Tuple contanining file paths
 JobFiles = namedtuple("JobFiles", ("get_xyz", "get_inp", "get_out", "get_MO"))
@@ -33,17 +27,15 @@ logger = logging.getLogger(__name__)
 # ==============================> Tasks <=====================================
 
 
-def calculate_mos(package_name: str=None, geometries: List=None, project_name: str=None,
-                  path_hdf5: str=None, folders: List=None, settings_main: Dict=None,
-                  settings_guess: Dict=None, calc_new_wf_guess_on_points: List=None,
-                  enumerate_from: int=0, package_config: Dict=None,
-                  ignore_warnings=False, **kwargs) -> List:
+def calculate_mos(config: dict) -> list:
     """
     Look for the MO in the HDF5 file if they do not exists calculate them by
     splitting the jobs in batches given by the ``restart_chunk`` variables.
     Only the first job is calculated from scratch while the rest of the
     batch uses as guess the wave function of the first calculation in
     the batch.
+
+    The config dict contains:
 
     :param geometries: list of molecular geometries
     :param project_name: Name of the project used as root path for storing
@@ -57,18 +49,26 @@ def calculate_mos(package_name: str=None, geometries: List=None, project_name: s
     computed.
     :param enumerate_from: Number from where to start enumerating the folders
     create for each point in the MD
+
     :returns: path to nodes in the HDF5 file to MO energies
               and MO coefficients.
     """
+    project_name = config["project_name"]
+    package_name = config["package_name"]
+    path_hdf5 = config["path_hdf5"]
+
     # First calculation has no initial guess
-    guess_job = None
 
     # calculate the rest of the job using the previous point as initial guess
     orbitals = []  # list to the nodes in the HDF5 containing the MOs
-    for j, gs in enumerate(geometries):
+    for j, gs in enumerate(config["geometries"]):
 
         # number of the point with respect to all the trajectory
-        k = j + enumerate_from
+        k = j + config["enumerate_from"]
+
+        # dictionary containing the information of the j-th job
+        dict_input = defaultdict(lambda: None)
+        dict_input = {"geometry": gs, "k": k}
 
         # Path where the MOs will be store in the HDF5
         root = join(project_name, 'point_{}'.format(k), package_name, 'mo')
@@ -83,34 +83,28 @@ def calculate_mos(package_name: str=None, geometries: List=None, project_name: s
             logger.info("point_{} has been scheduled".format(k))
 
             # Path to I/O files
-            point_dir = folders[j]
-            job_files = create_file_names(point_dir, k)
-            job_name = 'point_{}'.format(k)
+            dict_input["point_dir"] = config["folders"][j]
+            dict_input["job_files"] = create_file_names(dict_input["point_dir"], k)
+            dict_input["job_name"] = 'point_{}'.format(k)
 
             # Compute the MOs and return a new guess
-            promise_qm = compute_orbitals(
-                guess_job, package_name, project_name, path_hdf5,
-                settings_main, settings_guess, package_config,
-                calc_new_wf_guess_on_points, point_dir, job_files, k, gs)
+            promise_qm = compute_orbitals(config, dict_input)
 
             # Check if the job finishes succesfully
-            promise_qm = schedule_check(
-                promise_qm, job_name, package_name, project_name, path_hdf5,
-                settings_main, settings_guess, package_config, point_dir, job_files,
-                k, gs, ignore_warnings=ignore_warnings)
+            promise_qm = schedule_check(promise_qm, config, dict_input)
 
             # Store the computation
-            path_MOs = store_in_hdf5(project_name, path_hdf5, promise_qm,
-                                     hdf5_orb_path, job_name)
+            path_MOs = store_in_hdf5(
+                project_name, path_hdf5, promise_qm, hdf5_orb_path, dict_input["job_name"])
 
-            guess_job = promise_qm
+            dict_input["guess_job"] = promise_qm
             orbitals.append(path_MOs)
 
     return gather(*orbitals)
 
 
 @schedule
-def store_in_hdf5(project_name: str, path_hdf5: str, promise_qm,
+def store_in_hdf5(project_name: str, path_hdf5: str, promise_qm: object,
                   node_paths: str, job_name: str) -> None:
     """
     Store the MOs in the HDF5
@@ -132,59 +126,52 @@ def store_in_hdf5(project_name: str, path_hdf5: str, promise_qm,
     return node_paths
 
 
-def compute_orbitals(
-        guess_job, package_name: str, project_name: str, path_hdf5: str,
-        settings_main: Dict, settings_guess: Dict, package_config: Dict,
-        calc_new_wf_guess_on_points: List, point_dir: str, job_files: Tuple,
-        k: int, gs: List):
+def compute_orbitals(config: dict, dict_input: dict) -> list:
     """
     Call a Quantum chemisty package to compute the MOs required to calculate
     the nonadiabatic coupling. When finish store the MOs in the HdF5 and
     returns a new guess.
     """
-    prepare_and_schedule = {'cp2k': prepare_job_cp2k, 'orca': prepare_job_orca}
 
-    call_schedule_qm = prepare_and_schedule[package_name]
+    prepare_and_schedule = {'cp2k': prepare_job_cp2k}
 
-    job_files = create_file_names(point_dir, k)
+    call_schedule_qm = prepare_and_schedule[config["package_name"]]
+
+    dict_input["job_files"] = create_file_names(dict_input["point_dir"], dict_input["k"])
 
     # Calculating initial guess
-    compute_guess = calc_new_wf_guess_on_points is not None
+    compute_guess = config["calc_new_wf_guess_on_points"] is not None
 
     # A job  is a restart if guess_job is None and the list of
     # wf guesses are not empty
-    is_restart = guess_job is None and compute_guess
+    is_restart = dict_input["guess_job"] is None and compute_guess
 
-    pred = (k in calc_new_wf_guess_on_points) or is_restart
+    pred = (dict_input['k'] in config['calc_new_wf_guess_on_points']) or is_restart
+
+    general = config["cp2k_general_settings"]
 
     if pred:
-        guess_job = call_schedule_qm(
-            gs, job_files, settings_guess,
-            k, point_dir, wfn_restart_job=guess_job,
-            package_config=package_config)
+        dict_input["guess_job"] = call_schedule_qm(
+            general["cp2k_settings_guess"], dict_input)
 
-    promise_qm = call_schedule_qm(
-        gs, job_files, settings_main,
-        k, point_dir, wfn_restart_job=guess_job,
-        package_config=package_config)
+    promise_qm = call_schedule_qm(general["cp2k_settings_main"], dict_input)
 
     return promise_qm
 
 
 @schedule
-def schedule_check(promise_qm, job_name: str, package_name: str,
-                   project_name: str, path_hdf5: str, settings_main: Dict,
-                   settings_guess: Dict, package_config: Dict, point_dir: str,
-                   job_files: Tuple, k: int, gs: List,
-                   ignore_warnings=False):
+def schedule_check(promise_qm: object, config: dict, dict_input: dict) -> object:
     """
     Check wether a calculation finishes succesfully otherwise run a new guess.
     """
+    job_name = dict_input["job_name"]
+    point_dir = dict_input["point_dir"]
+
     # Warnings of the computation
     warnings = promise_qm.warnings
 
     # Check for SCF convergence errors
-    if not ignore_warnings and warnings is not None and any(
+    if not config["ignore_warnings"] and warnings is not None and any(
             w == SCF_Convergence_Warning for msg, w in warnings.items()):
         # Report the failure
         msg = "Job: {} Finished with Warnings: {}".format(job_name, warnings)
@@ -201,11 +188,9 @@ def schedule_check(promise_qm, job_name: str, package_name: str,
         os.remove(join(point_dir, path))
 
         # Compute new guess at point k
-        calc_new_wf_guess_on_points = [k]
-        return compute_orbitals(
-            None, package_name, project_name, path_hdf5,
-            settings_main, settings_guess, package_config,
-            calc_new_wf_guess_on_points, point_dir, job_files, k, gs)
+        config["calc_new_wf_guess_on_points"].append(dict_input["k"])
+        dict_input["guess_job"] = None
+        return compute_orbitals(config, dict_input)
     else:
         return promise_qm
 

@@ -56,11 +56,11 @@ def calculate_oscillators(runner, path_test_hdf5, scratch_path):
     using precalculated MOs.
     """
     config = process_input(input_file, 'absorption_spectrum')
-    config['general_settings']['path_hdf5'] = path_test_hdf5
+    config['cp2k_general_settings']['path_hdf5'] = path_test_hdf5
     config['work_dir'] = scratch_path
-    config['general_settings']['path_traj_xyz'] = join(
-        root, config['general_settings']['path_traj_xyz'])
-    config['general_settings']['runner'] = runner
+    config['cp2k_general_settings']['path_traj_xyz'] = join(
+        root, config['cp2k_general_settings']['path_traj_xyz'])
+    config['cp2k_general_settings']['runner'] = runner
     print(config)
 
     workflow_stddft(config)

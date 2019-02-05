@@ -81,10 +81,10 @@ dict_derivative_couplings = {
     Optional("project_name", default="namd"): str,
 
     # Working directory
-    Optional("scratch_path", default="/tmp"): str,
+    Optional("scratch_path", default=None): str,
 
     # path to the HDF5 to store the results
-    "path_hdf5": str,
+    Optional("path_hdf5", default="quantum.hdf5"): str,
 
     # path to xyz trajectory of the Molecular dynamics
     "path_traj_xyz": os.path.exists,

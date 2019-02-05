@@ -70,6 +70,7 @@ def apply_templates(general: Dict, path_traj_xyz: str) -> None:
     for s in [general[x] for x in ['cp2k_settings_main', 'cp2k_settings_guess']]:
         val = s['specific']
 
+        print("val: ", val)
         if "template" in val:
             s['specific'] = create_settings_from_template(
                 general, val['template'], path_traj_xyz)

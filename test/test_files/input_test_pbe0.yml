@@ -24,10 +24,7 @@ cp2k_general_settings:
       template: pbe0_main
 
   cp2k_settings_guess:
-    potential: "GTH-PBE0"
-    basis: "DZVP-MOLOPT-SR-GTH"
-    cell_angles: [90.0, 90.0, 90.0]
-    cell_parameters: 5.0
     wfn_restart_file_name: "../point_0-RESTART.wfn"
-    template:
-      pbe0_guess
+    specific:
+      template:
+        pbe0_guess

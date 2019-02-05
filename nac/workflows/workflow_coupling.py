@@ -13,34 +13,27 @@ from qmflows import run
 import os
 import shutil
 
-# Type Hints
-from typing import Dict
 
-
-def workflow_derivative_couplings(workflow_settings: Dict):
+def workflow_derivative_couplings(config: dict) -> None:
     """
     Compute the derivative couplings from an MD trajectory.
 
     :param workflow_settings: Arguments to compute the oscillators see:
-    `data/schemas/derivative_couplings.json
+    `nac/workflows/schemas.py
     :returns: None
     """
-    # Arguments to compute the orbitals and configure the workflow. see:
-    # `data/schemas/general_settings.json
-    config = workflow_settings['general_settings']
-
     # Dictionary containing the general configuration
-    config.update(initialize(**config))
+    config.update(initialize(config))
 
     # compute the molecular orbitals
-    mo_paths_hdf5 = calculate_mos(**config)
+    mo_paths_hdf5 = calculate_mos(config)
 
     # Overlap matrix at two different times
     promised_overlaps = calculate_overlap(
         config['project_name'], config['path_hdf5'], config['dictCGFs'],
         config['geometries'], mo_paths_hdf5,
         config['hdf5_trans_mtx'], config['enumerate_from'],
-        workflow_settings['overlaps_deph'], nHOMO=config['nHOMO'],
+        config['overlaps_deph'], nHOMO=config['nHOMO'],
         mo_index_range=config['mo_index_range'])
 
     # Create a function that returns a proxime array of couplings
@@ -50,9 +43,9 @@ def workflow_derivative_couplings(workflow_settings: Dict):
     promised_crossing_and_couplings = schedule_couplings(
         promised_overlaps, config['path_hdf5'], config['project_name'],
         config['enumerate_from'], config['nHOMO'],
-        workflow_settings['dt'], workflow_settings['tracking'],
-        workflow_settings['write_overlaps'],
-        algorithm=workflow_settings['algorithm'])
+        config['dt'], config['tracking'],
+        config['write_overlaps'],
+        algorithm=config['algorithm'])
 
     # Write the results in PYXAID format
     work_dir = config['work_dir']
