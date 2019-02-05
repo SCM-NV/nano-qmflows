@@ -55,64 +55,56 @@ def main():
     distribute_computations(dict_input)
 
 
-def distribute_computations(dict_input: dict) -> None:
+def distribute_computations(config: dict) -> None:
     """
-    Prepare the computation
+    Prepare the computation and write the scripts
     """
-    config = dict_input['general_settings']
-    workdir = dict_input["workdir"]
-    scratch_path = config["scratch_path"]
-    enumerate_from = config["enumerate_from"]
-    job_scheduler = dict_input["job_scheduler"]
-
     # Check if workdir exits otherwise create it
-    os.makedirs(workdir, exist_ok=True)
+    os.makedirs(config.workdir, exist_ok=True)
 
     # Split the trajectory in Chunks and move each chunk to its corresponding
     # directory.
     chunks_trajectory = split_trajectory(
-        config["path_traj_xyz"], dict_input["blocks"], workdir)
+        config.path_traj_xyz, config.blocks, config.workdir)
     chunks_trajectory.sort()
 
     for index, file_xyz in enumerate(chunks_trajectory):
-        folder_path = join(workdir, 'chunk_{}'.format(index))
+        folder_path = join(config.workdir, 'chunk_{}'.format(index))
 
         # Move xyz to temporal file
         os.makedirs(folder_path, exist_ok=True)
         shutil.move(file_xyz, folder_path)
 
         # Scratch directory
-        batch_dir = join(scratch_path, 'batch_{}'.format(index))
+        batch_dir = join(config.scratch_path, 'batch_{}'.format(index))
         os.makedirs(batch_dir, exist_ok=True)
 
         # HDF5 file where both the Molecular orbitals and coupling are stored
-        path_hdf5 = join(scratch_path, 'chunk_{}.hdf5'.format(index))
+        path_hdf5 = join(config.scratch_path, 'chunk_{}.hdf5'.format(index))
 
         # Change hdf5 and trajectory path of each batch
         config["path_traj_xyz"] = file_xyz
         config["path_hdf5"] = path_hdf5
 
         # files with PYXAID
-        hamiltonians_dir = join(scratch_path, 'hamiltonians')
+        hamiltonians_dir = join(config.scratch_path, 'hamiltonians')
 
         # number of geometries per batch
         dim_batch = compute_number_of_geometries(join(folder_path, file_xyz))
 
-        # Edit the number of geometries to compute
-        config["enumerate_from"] = enumerate_from
         # Write input file
-        write_input(folder_path, config)
+        write_input(folder_path, config['cp2k_general_settings'])
 
         # Slurm executable
-        if job_scheduler["scheduler"].upper() == "SLURM":
+        if config.job_scheduler["scheduler"].upper() == "SLURM":
             write_slurm_script(
-                folder_path, index, job_scheduler, path_hdf5, hamiltonians_dir, dim_batch)
+                folder_path, index, config.job_scheduler, path_hdf5, hamiltonians_dir, dim_batch)
         else:
             msg = "The request job_scheduler: {} It is not implemented".formant()
             raise RuntimeError(msg)
 
         # change the window of molecules to compute
-        enumerate_from += dim_batch
+        config['enumerate_from'] += dim_batch
 
 
 def write_input(folder_path: str, config: dict) -> None:
@@ -120,8 +112,8 @@ def write_input(folder_path: str, config: dict) -> None:
     file_path = join(folder_path, "input.yml")
 
     # transform settings to standard dictionary
-    config["settings_main"] = settings2Dict(config["settings_main"])
-    config["settings_guess"] = settings2Dict(config["settings_guess"])
+    config["cp2k_settings_main"] = settings2Dict(config["cp2k_settings_main"])
+    config["cp2k_settings_guess"] = settings2Dict(config["cp2k_settings_guess"])
 
     # basis and potential
     config["path_basis"] = os.path.abspath(config["path_basis"])

@@ -22,8 +22,7 @@ job_scheduler:
 
   
 cp2k_general_settings:
-  nHOMO: 594
-  basis_name:  "DZVP-MOLOPT-SR-GTH"
+  basis:  "DZVP-MOLOPT-SR-GTH"
   path_basis: "test/test_files/BASIS_MOLOPT"
   path_potential: "test/test_files/GTH_POTENTIALS"
   potential: "GTH-PBE"
