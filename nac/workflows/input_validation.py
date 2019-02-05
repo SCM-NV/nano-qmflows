@@ -146,6 +146,7 @@ def add_mo_index_range(dict_input: dict) -> None:
     active_space = dict_input['active_space']
     nHOMO = dict_input["nHOMO"]
     mo_index_range = nHOMO - active_space[0], nHOMO + active_space[1]
+    dict_input['mo_index_range'] = mo_index_range
 
     # mo_index_range keyword
     cp2k_main = dict_input['cp2k_general_settings']['cp2k_settings_main']

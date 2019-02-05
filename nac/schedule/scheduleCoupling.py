@@ -20,7 +20,7 @@ from noodles import (gather, schedule)
 from qmflows.parsers import parse_string_xyz
 
 # Types hint
-from typing import (Callable, Dict, List, Tuple)
+from typing import (Callable, List, Tuple)
 
 # Starting logger
 logger = logging.getLogger(__name__)
@@ -270,11 +270,7 @@ def swap_forward(overlaps: Tensor3D, swaps: Vector) -> Tensor3D:
     return overlaps
 
 
-def calculate_overlap(project_name: str, path_hdf5: str, dictCGFs: Dict,
-                      geometries: List, mo_paths_hdf5: List,
-                      hdf5_trans_mtx: str, enumerate_from: int, overlaps_deph: bool,
-                      nHOMO: int=None, mo_index_range: Tuple=None,
-                      units: str='angstrom') -> List:
+def calculate_overlap(config: dict) -> list:
     """
     Calculate the Overlap matrices before computing the non-adiabatic
     coupling using 3 consecutive set of MOs in a molecular dynamic.
@@ -298,6 +294,7 @@ def calculate_overlap(project_name: str, path_hdf5: str, dictCGFs: Dict,
     coupling.
     :returns: paths to the Overlap matrices inside the HDF5.
     """
+    geometries = config["geometries"]
     nPoints = len(geometries) - 1
 
     # Inplace scheduling of calculate_overlap function
@@ -308,8 +305,9 @@ def calculate_overlap(project_name: str, path_hdf5: str, dictCGFs: Dict,
     paths_overlaps = []
     for i in range(nPoints):
 
+        dict_input = {'i': i}
         # Extract molecules to compute couplings
-        if overlaps_deph:
+        if config["overlaps_deph"]:
             molecules = tuple(map(lambda idx: parse_string_xyz(geometries[idx]),
                                   [0, i + 1]))
         else:
@@ -317,14 +315,12 @@ def calculate_overlap(project_name: str, path_hdf5: str, dictCGFs: Dict,
                                   [i, i + 1]))
 
         # If units are Angtrom convert then to a.u.
-        if 'angstrom' in units.lower():
+        if 'angstrom' == config["geometry_units"].lower():
             molecules = tuple(map(change_mol_units, molecules))
 
         # Compute the coupling
-        overlaps = schedule_overlaps(
-            i, project_name, path_hdf5, dictCGFs, molecules, mo_paths_hdf5,
-            hdf5_trans_mtx=hdf5_trans_mtx, enumerate_from=enumerate_from,
-            nHOMO=nHOMO, mo_index_range=mo_index_range)
+        dict_input['molecules'] = molecules
+        overlaps = schedule_overlaps(config, dict_input)
 
         paths_overlaps.append(overlaps)
 
@@ -332,10 +328,7 @@ def calculate_overlap(project_name: str, path_hdf5: str, dictCGFs: Dict,
     return gather(*paths_overlaps)
 
 
-def lazy_overlaps(i: int, project_name: str, path_hdf5: str, dictCGFs: Dict,
-                  geometries: Tuple, mo_paths: List, hdf5_trans_mtx: str=None,
-                  enumerate_from: int=0, nHOMO: int=None,
-                  mo_index_range: Tuple=None) -> str:
+def lazy_overlaps(config: dict, dict_input: dict) -> str:
     """
     Calculate the 4 overlap matrix used to compute the subsequent couplings.
     The overlap matrices are computed using 3 consecutive set of MOs and
@@ -360,36 +353,31 @@ def lazy_overlaps(i: int, project_name: str, path_hdf5: str, dictCGFs: Dict,
 
     :returns: path to the Coupling inside the HDF5
     """
+    i = dict_input["i"]  # calculation index
     # Path inside the HDF5 where the overlaps are stored
-    root = join(project_name, 'overlaps_{}'.format(i + enumerate_from))
+    root = join(config["project_name"], 'overlaps_{}'.format(i + config["enumerate_from"]))
     overlaps_paths_hdf5 = join(root, 'mtx_sji_t0')
 
     # If the Overlaps are not in the HDF5 file compute them
-    if search_data_in_hdf5(path_hdf5, overlaps_paths_hdf5):
+    if search_data_in_hdf5(config["path_hdf5"], overlaps_paths_hdf5):
         logger.info("{} Overlaps are already in the HDF5".format(root))
     else:
         # Read the Molecular orbitals from the HDF5
         logger.info("Computing: {}".format(root))
 
         # Paths to the MOs inside the HDF5
-        hdf5_mos_path = [mo_paths[i + j][1] for j in range(2)]
+        dict_input["mo_paths"] = [config["mo_paths_hdf5"][i + j][1] for j in range(2)]
 
         # Partial application of the function computing the overlap
-        overlaps = compute_overlaps_for_coupling(
-            geometries, path_hdf5, hdf5_mos_path, dictCGFs, nHOMO,
-            mo_index_range, hdf5_trans_mtx)
+        overlaps = compute_overlaps_for_coupling(config, dict_input)
 
         # Store the matrices in the HDF5 file
-        store_arrays_in_hdf5(path_hdf5, overlaps_paths_hdf5, overlaps)
+        store_arrays_in_hdf5(config["path_hdf5"], overlaps_paths_hdf5, overlaps)
 
     return overlaps_paths_hdf5
 
 
-def write_hamiltonians(path_hdf5: str, mo_paths: List,
-                       crossing_and_couplings: Tuple,
-                       nPoints: int, path_dir_results: str=None,
-                       enumerate_from: int=0, nHOMO: int=None,
-                       mo_index_range: Tuple=None) -> None:
+def write_hamiltonians(config: dict, crossing_and_couplings: Tuple) -> list:
     """
     Write the real and imaginary components of the hamiltonian using both
     the orbitals energies and the derivative coupling accoring to:
@@ -397,12 +385,14 @@ def write_hamiltonians(path_hdf5: str, mo_paths: List,
     **Units are: Rydbergs**.
     """
     swaps, path_couplings = crossing_and_couplings
+    nHOMO, path_hdf5, mo_index_range, mo_paths = [
+        config[x] for x in ["nHOMO", "path_hdf5", "mo_index_range", "mo_paths_hdf5"]]
 
     def write_pyxaid_format(arr, fileName):
         np.savetxt(fileName, arr, fmt='%10.5e', delimiter='  ')
 
     def write_data(i):
-        j = i + enumerate_from
+        j = i + config["enumerate_from"]
         path_coupling = path_couplings[i]
         css = retrieve_hdf5_data(path_hdf5, path_coupling)
 
@@ -425,6 +415,7 @@ def write_hamiltonians(path_hdf5: str, mo_paths: List,
         energies = energies[swaps[i + 1]]
 
         # FileNames
+        path_dir_results = config["path_hamiltonians"]
         file_ham_im = join(path_dir_results, 'Ham_{}_im'.format(j))
         file_ham_re = join(path_dir_results, 'Ham_{}_re'.format(j))
 
@@ -439,7 +430,7 @@ def write_hamiltonians(path_hdf5: str, mo_paths: List,
 
     # The couplings are compute at time t + dt therefore
     # we associate the energies at time t + dt with the corresponding coupling
-    return [write_data(i) for i in range(nPoints)]
+    return [write_data(i) for i in range(config["nPoints"])]
 
 
 def swap_columns(arr: Matrix, swaps_t: Vector) -> Matrix:

@@ -26,15 +26,10 @@ def workflow_derivative_couplings(config: dict) -> None:
     config.update(initialize(config))
 
     # compute the molecular orbitals
-    mo_paths_hdf5 = calculate_mos(config)
+    config["mo_paths_hdf5"] = calculate_mos(config)
 
     # Overlap matrix at two different times
-    promised_overlaps = calculate_overlap(
-        config['project_name'], config['path_hdf5'], config['dictCGFs'],
-        config['geometries'], mo_paths_hdf5,
-        config['hdf5_trans_mtx'], config['enumerate_from'],
-        config['overlaps_deph'], nHOMO=config['nHOMO'],
-        mo_index_range=config['mo_index_range'])
+    promised_overlaps = calculate_overlap(config)
 
     # Create a function that returns a proxime array of couplings
     schedule_couplings = schedule(lazy_couplings)
@@ -48,24 +43,25 @@ def workflow_derivative_couplings(config: dict) -> None:
         algorithm=config['algorithm'])
 
     # Write the results in PYXAID format
-    work_dir = config['work_dir']
-    path_hamiltonians = join(work_dir, 'hamiltonians')
+    path_hamiltonians = join(config['work_dir'], 'hamiltonians')
     if not os.path.exists(path_hamiltonians):
         os.makedirs(path_hamiltonians)
+    config["path_hamiltonians"] = path_hamiltonians
 
     # Inplace scheduling of write_hamiltonians function.
     # Equivalent to add @schedule on top of the function
     schedule_write_ham = schedule(write_hamiltonians)
 
     # Number of matrix computed
-    nPoints = len(config['geometries']) - 2
+    config["nPoints"] = len(config['geometries']) - 2
 
     # Write Hamilotians in PYXAID format
-    promise_files = schedule_write_ham(
-        config['path_hdf5'], mo_paths_hdf5, promised_crossing_and_couplings,
-        nPoints, path_dir_results=path_hamiltonians,
-        enumerate_from=config['enumerate_from'], nHOMO=config['nHOMO'],
-        mo_index_range=config['mo_index_range'])
+    promise_files = schedule_write_ham(config, promised_crossing_and_couplings)
+
+        # config['path_hdf5'], mo_paths_hdf5, promised_crossing_and_couplings,
+        # nPoints, path_dir_results=path_hamiltonians,
+        # enumerate_from=config['enumerate_from'], nHOMO=config['nHOMO'],
+        # mo_index_range=config['mo_index_range'])
 
     run(promise_files, folder=work_dir)
 
