@@ -20,7 +20,7 @@ from noodles import (gather, schedule)
 from qmflows.parsers import parse_string_xyz
 
 # Types hint
-from typing import (Callable, List, Tuple)
+from typing import (List, Tuple)
 
 # Starting logger
 logger = logging.getLogger(__name__)
@@ -293,7 +293,7 @@ def calculate_overlap(config: dict) -> list:
     coupling.
     :returns: paths to the Overlap matrices inside the HDF5.
     """
-    geometries = config["geometries"]
+    geometries = config.geometries
     nPoints = len(geometries) - 1
 
     # Inplace scheduling of calculate_overlap function
@@ -306,7 +306,7 @@ def calculate_overlap(config: dict) -> list:
 
         dict_input = {'i': i}
         # Extract molecules to compute couplings
-        if config["overlaps_deph"]:
+        if config.overlaps_deph:
             molecules = tuple(map(lambda idx: parse_string_xyz(geometries[idx]),
                                   [0, i + 1]))
         else:
@@ -314,7 +314,7 @@ def calculate_overlap(config: dict) -> list:
                                   [i, i + 1]))
 
         # If units are Angtrom convert then to a.u.
-        if 'angstrom' == config["geometry_units"].lower():
+        if 'angstrom' == config.geometry_units.lower():
             molecules = tuple(map(change_mol_units, molecules))
 
         # Compute the coupling
@@ -354,24 +354,24 @@ def lazy_overlaps(config: dict, dict_input: dict) -> str:
     """
     i = dict_input["i"]  # calculation index
     # Path inside the HDF5 where the overlaps are stored
-    root = join(config["project_name"], 'overlaps_{}'.format(i + config["enumerate_from"]))
+    root = join(config.project_name, 'overlaps_{}'.format(i + config.enumerate_from))
     overlaps_paths_hdf5 = join(root, 'mtx_sji_t0')
 
     # If the Overlaps are not in the HDF5 file compute them
-    if search_data_in_hdf5(config["path_hdf5"], overlaps_paths_hdf5):
+    if search_data_in_hdf5(config.path_hdf5, overlaps_paths_hdf5):
         logger.info("{} Overlaps are already in the HDF5".format(root))
     else:
         # Read the Molecular orbitals from the HDF5
         logger.info("Computing: {}".format(root))
 
         # Paths to the MOs inside the HDF5
-        dict_input["mo_paths"] = [config["mo_paths_hdf5"][i + j][1] for j in range(2)]
+        dict_input["mo_paths"] = [config.mo_paths_hdf5[i + j][1] for j in range(2)]
 
         # Partial application of the function computing the overlap
         overlaps = compute_overlaps_for_coupling(config, dict_input)
 
         # Store the matrices in the HDF5 file
-        store_arrays_in_hdf5(config["path_hdf5"], overlaps_paths_hdf5, overlaps)
+        store_arrays_in_hdf5(config.path_hdf5, overlaps_paths_hdf5, overlaps)
 
     return overlaps_paths_hdf5
 
@@ -391,7 +391,7 @@ def write_hamiltonians(config: dict, crossing_and_couplings: Tuple) -> list:
         np.savetxt(fileName, arr, fmt='%10.5e', delimiter='  ')
 
     def write_data(i):
-        j = i + config["enumerate_from"]
+        j = i + config.enumerate_from
         path_coupling = path_couplings[i]
         css = retrieve_hdf5_data(path_hdf5, path_coupling)
 
@@ -414,7 +414,7 @@ def write_hamiltonians(config: dict, crossing_and_couplings: Tuple) -> list:
         energies = energies[swaps[i + 1]]
 
         # FileNames
-        path_dir_results = config["path_hamiltonians"]
+        path_dir_results = config.path_hamiltonians
         file_ham_im = join(path_dir_results, 'Ham_{}_im'.format(j))
         file_ham_re = join(path_dir_results, 'Ham_{}_re'.format(j))
 
@@ -429,7 +429,7 @@ def write_hamiltonians(config: dict, crossing_and_couplings: Tuple) -> list:
 
     # The couplings are compute at time t + dt therefore
     # we associate the energies at time t + dt with the corresponding coupling
-    return [write_data(i) for i in range(config["nPoints"])]
+    return [write_data(i) for i in range(config.nPoints)]
 
 
 def swap_columns(arr: Matrix, swaps_t: Vector) -> Matrix:

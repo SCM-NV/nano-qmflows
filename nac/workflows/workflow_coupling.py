@@ -38,21 +38,21 @@ def workflow_derivative_couplings(config: dict) -> None:
     promised_crossing_and_couplings = schedule_couplings(config, promised_overlaps)
 
     # Write the results in PYXAID format
-    config["path_hamiltonians"] = create_path_hamiltonians(config["workdir"])
+    config.path_hamiltonians = create_path_hamiltonians(config.workdir)
 
     # Inplace scheduling of write_hamiltonians function.
     # Equivalent to add @schedule on top of the function
     schedule_write_ham = schedule(write_hamiltonians)
 
     # Number of matrix computed
-    config["nPoints"] = len(config['geometries']) - 2
+    config["nPoints"] = len(config.geometries) - 2
 
     # Write Hamilotians in PYXAID format
     promise_files = schedule_write_ham(config, promised_crossing_and_couplings)
 
-    run(promise_files, folder=config["workdir"])
+    run(promise_files, folder=config.workdir)
 
-    remove_folders(config['folders'])
+    remove_folders(config.folders)
 
 
 def create_path_hamiltonians(workdir: str) -> str:

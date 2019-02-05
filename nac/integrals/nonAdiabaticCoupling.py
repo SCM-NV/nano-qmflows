@@ -125,7 +125,7 @@ def compute_overlaps_for_coupling(config: dict, dict_input: dict) -> Tuple:
     mol0, mol1 = dict_input['molecules']
 
     # Atomic orbitals overlap
-    suv_0 = calcOverlapMtx(config["dictCGFs"], mol0, mol1)
+    suv_0 = calcOverlapMtx(config.dictCGFs, mol0, mol1)
 
     css0, css1, trans_mtx = read_overlap_data(config, dict_input["mo_paths"])
 
@@ -145,17 +145,17 @@ def read_overlap_data(config: dict, mo_paths: list) -> Tuple:
     """
     Read the Molecular orbital coefficients and the transformation matrix
     """
-    mos = retrieve_hdf5_data(config["path_hdf5"], mo_paths)
+    mos = retrieve_hdf5_data(config.path_hdf5, mo_paths)
 
     # Extract a subset of molecular orbitals to compute the coupling
-    lowest, highest = compute_range_orbitals(mos[0], config["nHOMO"], config["mo_index_range"])
+    lowest, highest = compute_range_orbitals(mos[0], config.nHOMO, config.mo_index_range)
     css0, css1 = tuple(map(lambda xs: xs[:, lowest: highest], mos))
 
     # Read the transformation matrix to convert from Cartesian to
     # Spherical coordinates
-    hdf5_trans_mtx = config['hdf5_trans_mtx']
+    hdf5_trans_mtx = config.hdf5_trans_mtx
     if hdf5_trans_mtx is not None:
-        trans_mtx = retrieve_hdf5_data(config["path_hdf5"], hdf5_trans_mtx)
+        trans_mtx = retrieve_hdf5_data(config.path_hdf5, hdf5_trans_mtx)
 
     return css0, css1, trans_mtx
 
