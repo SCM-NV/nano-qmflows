@@ -89,7 +89,8 @@ def add_missing_keywords(d: Dict) -> Dict:
         d['nHOMO'] = compute_HOMO_index(d['path_traj_xyz'], general['basis'])
 
     # Added_mos keyword
-    add_mo_index_range(d)
+    if general.get("active_space") is not None:
+        add_mo_index_range(d)
 
     # Add restart point
     add_restart_point(general)

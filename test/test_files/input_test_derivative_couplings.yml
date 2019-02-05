@@ -11,7 +11,9 @@ algorithm:
   "levine"
 tracking:
   False
-
+active_space:
+  [10, 10]
+  
 path_hdf5:
   "test/test_files/Cd33Se33.hdf5"
 path_traj_xyz:
@@ -20,7 +22,6 @@ scratch_path:
   "/tmp/namd/derivative_couplings"
 
 cp2k_general_settings:  
-  nHOMO: 50
   path_basis: "test/test_files/BASIS_MOLOPT"
   path_potential: "test/test_files/GTH_POTENTIALS"
   potential: "GTH-PBE"
@@ -33,7 +34,6 @@ cp2k_general_settings:
       template: pbe_main
 
   cp2k_settings_guess:
-     mo_index_range: [1933, 2182]
      specific:
       template:
         pbe_guess    

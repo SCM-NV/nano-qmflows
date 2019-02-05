@@ -51,28 +51,18 @@ schema_cp2k_general_settings = Schema({
     # Optional("wfn_restart_file_name", default=None): str,
 })
 
-dict_derivative_couplings = {
-    # Name of the workflow to run
-    "workflow": And(
-        str, Use(str.lower), lambda s: s == "derivative_couplings"),
+dict_general_options = {
+
+    # Number of occupied/virtual orbitals to use
+    'active_space': [int, int],
 
     # "Library to distribute the computation"
     Optional("runner", default="multiprocessing"):
     And(str, Use(str.lower),
         lambda s: s in ("multiprocessing")),
 
-    # Algorithm used to compute the derivative couplings
-    Optional("algorithm", default="levine"):
-    And(str, Use(str.lower), lambda s: ("levine", "3points")),
-
-    # Number of occupied/virtual orbitals to use
-    'active_space': [int, int],
-
     # Index of the HOMO
     Optional("nHOMO"): int,
-
-    # Track the crossing between states
-    Optional("tracking", default=True): bool,
 
     # "default quantum package used"
     Optional("package_name", default="cp2k"): str,
@@ -107,16 +97,33 @@ dict_derivative_couplings = {
     # Integration time step used for the MD (femtoseconds)
     Optional("dt", default=1): Real,
 
+    # General settings
+    "cp2k_general_settings": schema_cp2k_general_settings
+}
+
+dict_derivative_couplings = {
+    # Name of the workflow to run
+    "workflow": And(
+        str, Use(str.lower), lambda s: s == "derivative_couplings"),
+
+    # Algorithm used to compute the derivative couplings
+    Optional("algorithm", default="levine"):
+    And(str, Use(str.lower), lambda s: ("levine", "3points")),
+
+    # Track the crossing between states
+    Optional("tracking", default=True): bool,
+
     # Write the overlaps in ascii
     Optional("write_overlaps", default=False): bool,
 
     # Compute the overlap between molecular geometries using a dephase"
-    Optional("overlaps_deph", default=False): bool,
-
-    # General settings
-    "cp2k_general_settings": schema_cp2k_general_settings
+    Optional("overlaps_deph", default=False): bool
 }
-schema_derivative_couplings = Schema(dict_derivative_couplings)
+
+dict_merged_derivative_couplings = merge(dict_general_options, dict_derivative_couplings)
+
+schema_derivative_couplings = Schema(
+    dict_merged_derivative_couplings)
 
 schema_job_scheduler = Schema({
     Optional("scheduler", default="SLURM"):
@@ -149,10 +156,10 @@ dict_distribute_derivative_couplings = {
 
 
 schema_distribute_derivative_couplings = Schema(
-    merge(dict_derivative_couplings, dict_distribute_derivative_couplings))
+    merge(dict_merged_derivative_couplings, dict_distribute_derivative_couplings))
 
 
-schema_absorption_spectrum = Schema({
+dict_absorption_spectrum = {
 
     # Name of the workflow to run
     "workflow": And(
@@ -183,10 +190,10 @@ schema_absorption_spectrum = Schema({
 
     # thermal broadening in eV
     Optional("broadening", default=0.1): Real,
+}
 
-    # General settings
-    "cp2k_general_settings": schema_cp2k_general_settings
-})
+schema_absorption_spectrum = Schema(
+    merge(dict_general_options, dict_absorption_spectrum))
 
 
 schema_electron_transfer = Schema({
