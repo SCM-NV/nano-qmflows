@@ -58,8 +58,7 @@ def calculate_mos(config: dict) -> list:
     path_hdf5 = config["path_hdf5"]
 
     # First calculation has no initial guess
-
-    # calculate the rest of the job using the previous point as initial guess
+    # calculate the rest of the jobs using the previous point as initial guess
     orbitals = []  # list to the nodes in the HDF5 containing the MOs
     for j, gs in enumerate(config["geometries"]):
 
@@ -72,13 +71,13 @@ def calculate_mos(config: dict) -> list:
 
         # Path where the MOs will be store in the HDF5
         root = join(project_name, 'point_{}'.format(k), package_name, 'mo')
-        hdf5_orb_path = [join(root, 'eigenvalues'), join(root, 'coefficients')]
+        dict_input["node_paths"] = [join(root, 'eigenvalues'), join(root, 'coefficients')]
 
         # If the MOs are already store in the HDF5 format return the path
         # to them and skip the calculation
-        if search_data_in_hdf5(path_hdf5, hdf5_orb_path):
+        if search_data_in_hdf5(path_hdf5, dict_input["node_paths"]):
             logger.info("point_{} has already been calculated".format(k))
-            orbitals.append(hdf5_orb_path)
+            orbitals.append(dict_input["node_paths"])
         else:
             logger.info("point_{} has been scheduled".format(k))
 
@@ -91,11 +90,10 @@ def calculate_mos(config: dict) -> list:
             promise_qm = compute_orbitals(config, dict_input)
 
             # Check if the job finishes succesfully
-            promise_qm = schedule_check(promise_qm, config, dict_input)
+            dict_input["promise_qm"] = schedule_check(promise_qm, config, dict_input)
 
             # Store the computation
-            path_MOs = store_in_hdf5(
-                project_name, path_hdf5, promise_qm, hdf5_orb_path, dict_input["job_name"])
+            path_MOs = store_in_hdf5(config, dict_input)
 
             dict_input["guess_job"] = promise_qm
             orbitals.append(path_MOs)
@@ -104,26 +102,27 @@ def calculate_mos(config: dict) -> list:
 
 
 @schedule
-def store_in_hdf5(project_name: str, path_hdf5: str, promise_qm: object,
-                  node_paths: str, job_name: str) -> None:
+def store_in_hdf5(config: dict, dict_input: dict) -> str:
     """
     Store the MOs in the HDF5
     """
     # Molecular Orbitals
+    promise_qm = dict_input["promise_qm"]
     mos = promise_qm.orbitals
     if mos is not None:
         # Store in the HDF5
         try:
-            with h5py.File(path_hdf5, 'r+') as f5:
+            with h5py.File(config["path_hdf5"], 'r+') as f5:
                 dump_to_hdf5(
-                    mos, 'cp2k', f5, project_name=project_name, job_name=job_name)
+                    mos, 'cp2k', f5,
+                    project_name=config["project_name"], job_name=dict_input["job_name"])
         # Remove the ascii MO file
         finally:
             work_dir = promise_qm.archive['work_dir']
             path_MOs = fnmatch.filter(os.listdir(work_dir), 'mo_*MOLog')[0]
             os.remove(join(work_dir, path_MOs))
 
-    return node_paths
+    return dict_input["node_paths"]
 
 
 def compute_orbitals(config: dict, dict_input: dict) -> list:
