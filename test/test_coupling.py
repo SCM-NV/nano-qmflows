@@ -44,8 +44,7 @@ def compute_derivative_coupling(runner):
         config = calculate_couplings(runner, path_test_hdf5, scratch_path)
         check_properties(config, path_test_hdf5)
     finally:
-        pass
-        # shutil.rmtree(scratch_path)
+        shutil.rmtree(scratch_path)
 
 
 def calculate_couplings(runner, path_test_hdf5, scratch_path):
