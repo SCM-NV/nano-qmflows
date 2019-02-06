@@ -10,8 +10,12 @@ from noodles import schedule
 from os.path import join
 from qmflows import run
 
+import logging
 import os
 import shutil
+
+# Starting logger
+logger = logging.getLogger(__name__)
 
 
 def workflow_derivative_couplings(config: dict) -> None:
@@ -25,11 +29,13 @@ def workflow_derivative_couplings(config: dict) -> None:
     # Dictionary containing the general configuration
     config.update(initialize(config))
 
+    logger.info("starting!")
+
     # compute the molecular orbitals
-    config["mo_paths_hdf5"] = calculate_mos(config)
+    mo_paths_hdf5 = calculate_mos(config)
 
     # Overlap matrix at two different times
-    promised_overlaps = calculate_overlap(config)
+    promised_overlaps = calculate_overlap(config, mo_paths_hdf5)
 
     # Create a function that returns a proxime array of couplings
     schedule_couplings = schedule(lazy_couplings)
@@ -48,7 +54,7 @@ def workflow_derivative_couplings(config: dict) -> None:
     config["nPoints"] = len(config.geometries) - 2
 
     # Write Hamilotians in PYXAID format
-    promise_files = schedule_write_ham(config, promised_crossing_and_couplings)
+    promise_files = schedule_write_ham(config, promised_crossing_and_couplings, mo_paths_hdf5)
 
     run(promise_files, folder=config.workdir)
 

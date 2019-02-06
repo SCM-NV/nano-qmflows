@@ -41,10 +41,11 @@ def compute_derivative_coupling(runner):
         # Run the actual test
         copy_basis_and_orbitals(path_original_hdf5, path_test_hdf5,
                                 project_name)
-        calculate_couplings(runner, path_test_hdf5, scratch_path)
-        check_properties(path_test_hdf5)
+        config = calculate_couplings(runner, path_test_hdf5, scratch_path)
+        check_properties(config, path_test_hdf5)
     finally:
-        shutil.rmtree(scratch_path)
+        pass
+        # shutil.rmtree(scratch_path)
 
 
 def calculate_couplings(runner, path_test_hdf5, scratch_path):
@@ -53,15 +54,17 @@ def calculate_couplings(runner, path_test_hdf5, scratch_path):
     using precalculated MOs.
     """
     config = process_input(input_file, 'derivative_couplings')
-    config['cp2k_general_settings']['path_hdf5'] = path_test_hdf5
-    config['work_dir'] = scratch_path
-    config['cp2k_general_settings']['path_traj_xyz'] = join(
-        root, config['cp2k_general_settings']['path_traj_xyz'])
-    config['cp2k_general_settings']['runner'] = runner
+    config.path_hdf5 = path_test_hdf5
+    config.workdir = scratch_path
+    config.path_traj_xyz = join(
+        root, config.path_traj_xyz)
+    config.runner = runner
     workflow_derivative_couplings(config)
 
+    return config
 
-def check_properties(path_test_hdf5):
+
+def check_properties(config: dict, path_test_hdf5: str) -> None:
     """
     Test if the coupling coupling by the Levine method is correct
     """
@@ -80,8 +83,12 @@ def check_properties(path_test_hdf5):
     fun_test = partial(stack_retrieve, path_test_hdf5)
 
     # Read data from the HDF5
-    swaps_original = retrieve_hdf5_data(path_original_hdf5, path_swaps)
-    swaps_test = retrieve_hdf5_data(path_test_hdf5, path_swaps)
+    if config.tracking:
+        swaps_original = retrieve_hdf5_data(path_original_hdf5, path_swaps)
+        swaps_test = retrieve_hdf5_data(path_test_hdf5, path_swaps)
+        b1 = np.allclose(swaps_original, swaps_test)
+    else:
+        b1 = True
 
     overlaps_original = fun_original(path_overlaps)
     overlaps_test = fun_test(path_overlaps)
@@ -93,7 +100,6 @@ def check_properties(path_test_hdf5):
     css_test = fun_test(path_couplings)
 
     # Test data
-    b1 = np.allclose(swaps_original, swaps_test)
     b2 = np.allclose(overlaps_original, overlaps_test)
     b3 = np.allclose(fixed_overlaps_original, fixed_overlaps_test)
     b4 = np.allclose(css_original, css_test)
