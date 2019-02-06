@@ -1,7 +1,7 @@
 from nac.workflows.input_validation import process_input
 from qmflows import (cp2k, run)
 from scm import plams
-import distutils
+from distutils.spawn import find_executable
 import pytest
 import fnmatch
 import shutil
@@ -12,7 +12,7 @@ def cp2k_available():
     """
     Check if cp2k is installed
     """
-    path = distutils.spawn.find_executable("cp2k.popt")
+    path = find_executable("cp2k.popt")
 
     return path is not None
 

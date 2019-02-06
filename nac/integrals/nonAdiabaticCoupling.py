@@ -201,7 +201,7 @@ def compute_range_orbitals(mtx: Matrix, nHOMO: int,
 
 def calcOverlapMtx(
         dictCGFs: Dict, mol0: List, mol1: List,
-        runner='multiprocessing', ncores: int=None) -> Matrix:
+        runner: str = 'multiprocessing', ncores: int = None) -> Matrix:
     """
     Parallel calculation of the overlap matrix using the atomic
     basis at two different geometries: R0 and R1.

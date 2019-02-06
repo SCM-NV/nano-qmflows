@@ -1,22 +1,18 @@
 
-from distutils.spawn import find_executable
 from functools import partial
 from multiprocessing import (cpu_count, Pool)
 from nac.common import (Matrix, Vector)
 
 from multipoleObaraSaika import sab_multipole  # compiled with cython
-from subprocess import (PIPE, Popen)
 from typing import (Callable, Dict, List, Tuple)
-import dill
 import numpy as np
 import os
-import tempfile
 
 
 def general_multipole_matrix(
         molecule: List, dictCGFs: List,
-        calculator: Callable=None, runner='multiprocessing',
-        ncores: int=None) -> Vector:
+        calculator: Callable = None, runner: str = 'multiprocessing',
+        ncores: int = None) -> Vector:
     """
     Generic function to calculate a matrix using a Gaussian basis set and
     the molecular geometry.
