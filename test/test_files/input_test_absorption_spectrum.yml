@@ -1,18 +1,20 @@
 workflow:
   absorption_spectrum
-initial_states:
-  [0, 1, 2, 3, 4, 5, 6]
-final_states:
-  [[7, 8, 9]]
-energy_range:
-  [0, 5]
-
-runner: "multiprocessing"
-project_name: Cd
-path_hdf5: "test/test_files/Cd.hdf5"
-path_traj_xyz: "test/test_files/Cd.xyz" 
-scratch_path: "/tmp/namd/absorption_spectrum"
-
+project_name:
+  Cd
+xc_dft:
+  pbe
+tddft:
+  stda
+active_space: [10, 10]
+runner:
+  "multiprocessing"
+path_hdf5:
+  "test/test_files/Cd.hdf5"
+path_traj_xyz:
+  "test/test_files/Cd.xyz" 
+scratch_path:
+  "/tmp/namd/absorption_spectrum"
   
 cp2k_general_settings:
   basis:  "DZVP-MOLOPT-SR-GTH"

@@ -2,7 +2,6 @@ from .schemas import (
     schema_absorption_spectrum, schema_distribute_derivative_couplings,
     schema_derivative_couplings, schema_electron_transfer, schema_cp2k_general_settings)
 from .templates import (create_settings_from_template, valence_electrons)
-from nac.common import DictDot
 from scm.plams import Molecule
 from qmflows.settings import Settings
 from schema import SchemaError
@@ -39,7 +38,7 @@ def process_input(input_file: str, workflow_name: str) -> Dict:
     try:
         d = schema.validate(dict_input)
 
-        return DictDot(create_settings(d))
+        return Settings(create_settings(d))
 
     except SchemaError as e:
         msg = "There was an error in the input provided:\n{}".format(e)
@@ -72,7 +71,6 @@ def apply_templates(general: Dict, path_traj_xyz: str) -> None:
     for s in [general[x] for x in ['cp2k_settings_main', 'cp2k_settings_guess']]:
         val = s['specific']
 
-        print("val: ", val)
         if "template" in val:
             s['specific'] = create_settings_from_template(
                 general, val['template'], path_traj_xyz)

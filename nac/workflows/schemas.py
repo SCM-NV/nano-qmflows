@@ -165,12 +165,6 @@ dict_absorption_spectrum = {
     "workflow": And(
         str, Use(str.lower), lambda s: s == "absorption_spectrum"),
 
-    # Initial states of the transitions
-    Optional("initial_states"): list,
-
-    # final states of the transitions (Array or Arrays)
-    Optional("final_states"): list,
-
     # Type of TDDFT calculations. Available: sing_orb, stda, stddft
     Optional("tddft", default="stda"): And(
         str, Use(str.lower), lambda s: s in ("sing_orb", "stda", "stdft")),

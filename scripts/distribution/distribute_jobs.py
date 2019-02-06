@@ -112,8 +112,9 @@ def write_input(folder_path: str, config: dict) -> None:
     file_path = join(folder_path, "input.yml")
 
     # transform settings to standard dictionary
-    config["cp2k_settings_main"] = settings2Dict(config["cp2k_settings_main"])
-    config["cp2k_settings_guess"] = settings2Dict(config["cp2k_settings_guess"])
+    config = settings2Dict(config)
+    # config["cp2k_settings_main"] = settings2Dict(config["cp2k_settings_main"])
+    # config["cp2k_settings_guess"] = settings2Dict(config["cp2k_settings_guess"])
 
     # basis and potential
     config["path_basis"] = os.path.abspath(config["path_basis"])
