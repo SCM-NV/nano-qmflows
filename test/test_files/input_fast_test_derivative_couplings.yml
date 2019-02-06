@@ -1,0 +1,39 @@
+workflow:
+  derivative_couplings
+
+project_name:
+  ethylene
+runner:
+  multiprocessing
+dt:
+  1
+algorithm:
+  "levine"
+tracking:
+  True
+active_space:
+  [5, 5]
+  
+path_hdf5:
+  "test/test_files/CsBrPb.hdf5"
+path_traj_xyz:
+  "test/test_files/CsBrPb_fivePoints.xyz" 
+scratch_path:
+  "/tmp/namd/fast_derivative_couplings"
+
+cp2k_general_settings:  
+  path_basis: "test/test_files/BASIS_MOLOPT"
+  path_potential: "test/test_files/GTH_POTENTIALS"
+  potential: "GTH-PBE"
+  basis: "DZVP-MOLOPT-SR-GTH"
+  cell_parameters: 10.0
+  cell_angles: [90.0, 90.0, 90.0]
+
+  cp2k_settings_main:
+    specific:
+      template: pbe_main
+
+  cp2k_settings_guess:
+     specific:
+      template:
+        pbe_guess    
