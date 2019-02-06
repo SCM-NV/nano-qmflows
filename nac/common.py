@@ -1,6 +1,6 @@
 
 __all__ = ['Array', 'AtomBasisData', 'AtomBasisKey', 'AtomData', 'AtomXYZ',
-           'CGF', 'InfoMO', 'InputKey', 'Matrix', 'MO', 'Tensor3D', 'Vector',
+           'CGF', 'DictConfig', 'InfoMO', 'InputKey', 'Matrix', 'MO', 'Tensor3D', 'Vector',
            'binomial', 'change_mol_units', 'even', 'fac', 'getmass', 'h2ev',
            'hardness', 'odd', 'product', 'retrieve_hdf5_data',
            'search_data_in_hdf5', 'store_arrays_in_hdf5', 'triang2mtx']
@@ -8,6 +8,7 @@ __all__ = ['Array', 'AtomBasisData', 'AtomBasisKey', 'AtomData', 'AtomXYZ',
 
 from collections import namedtuple
 from functools import reduce
+
 from scipy.constants import physical_constants
 from typing import (Dict, List, Tuple)
 
@@ -15,6 +16,19 @@ import h5py
 import numpy as np
 import operator as op
 import os
+
+
+class DictConfig(dict):
+
+    def __getattr__(self, attr):
+        return self.get(attr)
+
+    def __setattr__(self, key, value):
+        self.__setitem__(key, value)
+
+    def __deepcopy__(self, _):
+        return DictConfig(self.copy())
+
 
 # Named Tuples
 AtomData = namedtuple("AtomData", ("label", "coordinates", "cgfs"))

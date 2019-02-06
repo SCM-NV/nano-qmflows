@@ -32,7 +32,7 @@ def workflow_stddft(config: dict) -> None:
     config.update(initialize(config))
 
     # Single Point calculations settings using CP2K
-    config["mo_paths_hdf5"] = calculate_mos(config)
+    mo_paths_hdf5 = calculate_mos(config)
 
     # Read structures
     molecules_au = [change_mol_units(parse_string_xyz(gs))
@@ -42,23 +42,22 @@ def workflow_stddft(config: dict) -> None:
     scheduleTDDFT = schedule(compute_excited_states_tddft)
 
     results = gather(
-       *[scheduleTDDFT(i, mol, config) for i, mol in enumerate(molecules_au)
+       *[scheduleTDDFT(config, mo_paths_hdf5[i], {'i': i, 'mol': mol})
+         for i, mol in enumerate(molecules_au)
          if (i % config.calculate_oscillator_every) == 0])
 
     return run(results, folder=config['workdir'])
 
 
-def compute_excited_states_tddft(i: int, mol: list, config: dict):
+def compute_excited_states_tddft(config: dict, path_MOs: list, dict_input: dict):
     """
     Compute the excited states properties (energy and coefficients) for a given
     `mo_index_range` using the `tddft` method and `xc_dft` exchange functional.
     """
-    # i: int, mol: List, mo_paths_hdf5, xc_dft: str, mo_index_range: list,
-    # nocc: int, tddft: str, config: Dict):
     logger.info("Reading energies and mo coefficients")
     # type of calculation
     tddft = config.tddft.lower()
-    energy, c_ao = retrieve_hdf5_data(config.path_hdf5, config.mo_paths_hdf5[i])
+    energy, c_ao = retrieve_hdf5_data(config.path_hdf5, path_MOs)
 
     # Number of virtual orbitals
     nocc = config.nHOMO
@@ -72,16 +71,16 @@ def compute_excited_states_tddft(i: int, mol: list, config: dict):
         # Call the function that computes overlaps
         logger.info("Reading or computing the overlap matrix")
         multipoles = get_multipole_matrix(
-            i, mol, config, 'overlap')
+            dict_input["i"], dict_input["mol"], config, 'overlap')
 
         # Make a function tha returns in transition density charges
         logger.info("Computing the transition density charges")
-        q = transition_density_charges(mol, config, multipoles, c_ao)
+        q = transition_density_charges(dict_input["mol"], config, multipoles, c_ao)
 
         # Make a function that compute the Mataga-Nishimoto-Ohno_Klopman
         # damped Columb and Excgange law functions
         logger.info("Computing the gamma functions for Exchange and Coulomb integrals")
-        gamma_J, gamma_K = compute_MNOK_integrals(mol, config.xc_dft)
+        gamma_J, gamma_K = compute_MNOK_integrals(dict_input["mol"], config.xc_dft)
 
         # Compute the Couloumb and Exchange integrals
         # If xc_dft is a pure functional, ax=0, thus the pqrs_J ints are not needed
@@ -108,8 +107,10 @@ def compute_excited_states_tddft(i: int, mol: list, config: dict):
             msg = "Only the stda method is available"
             raise RuntimeError(msg)
 
+    dict_input.update()
     return compute_oscillator_strengths(
-        i, mol, tddft, config, energy, c_ao, multipoles, nocc, nvirt, omega, xia)
+        dict_input["i"], dict_input["mol"], tddft, config, energy, c_ao, multipoles, nocc,
+        nvirt, omega, xia)
 
 
 def compute_oscillator_strengths(
@@ -160,7 +161,7 @@ def compute_oscillator_strengths(
 
     # Write to output
     output = write_output_tddft(nocc, nvirt, omega, f, d_x, d_y, d_z, xia, energy)
-    path_output = os.path.join(config['work_dir'], 'output_{}_{}.txt'.format(i, tddft))
+    path_output = os.path.join(config['workdir'], 'output_{}_{}.txt'.format(i, tddft))
     header = '{:^5s}{:^14s}{:^8s}{:^11s}{:^11s}{:^11s}{:^11s}{:<5s}{:^10s}{:<5s}{:^11s}{:^11s}'.format(
         'state', 'energy', 'f', 't_dip_x', 't_dip_y', 't_dip_y', 'weight', 'from', 'energy',
         'to', 'energy', 'delta_E')
@@ -177,7 +178,7 @@ def compute_oscillator_strengths(
 
         descriptors = ex_descriptor(
             omega, f, xia, n_lowest, c_ao, multipoles, tdm, tqm, nocc, nvirt, mol, config)
-        path_ex_output = os.path.join(config['work_dir'], 'descriptors_{}_{}.txt'.format(i, tddft))
+        path_ex_output = os.path.join(config['workdir'], 'descriptors_{}_{}.txt'.format(i, tddft))
         ex_header = '{:^5s}{:^14s}{:^10s}{:^10s}{:^12s}{:^10s}{:^10s}{:^10s}{:^10s}{:^10s}'.format(
             'state', 'd_exc', 'd_exc_app', 'd_he', 'sigma_h', 'sigma_e', 'r_eh', 'bind_en',
             'energy', 'f')
@@ -434,7 +435,7 @@ def transition_density_charges(mol, config, s, c_ao):
     # Size of the transition density tensor : n_atoms x n_mos x n_mos
     q = np.zeros((n_atoms, c_mo.shape[1], c_mo.shape[1]))
     n_sph_atoms = number_spherical_functions_per_atom(
-        mol, config['package_name'], config['basis_name'], config['path_hdf5'])
+        mol, config['package_name'], config.cp2k_general_settings['basis'], config['path_hdf5'])
 
     index = 0
     for i in range(n_atoms):

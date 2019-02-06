@@ -2,6 +2,7 @@ from .schemas import (
     schema_absorption_spectrum, schema_distribute_derivative_couplings,
     schema_derivative_couplings, schema_electron_transfer, schema_cp2k_general_settings)
 from .templates import (create_settings_from_template, valence_electrons)
+from nac.common import DictConfig
 from scm.plams import Molecule
 from qmflows.settings import Settings
 from schema import SchemaError
@@ -38,7 +39,7 @@ def process_input(input_file: str, workflow_name: str) -> Dict:
     try:
         d = schema.validate(dict_input)
 
-        return Settings(create_settings(d))
+        return DictConfig(create_settings(d))
 
     except SchemaError as e:
         msg = "There was an error in the input provided:\n{}".format(e)
