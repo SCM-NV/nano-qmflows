@@ -17,7 +17,6 @@ logger = logging.getLogger(__name__)
 schema_workflows = {
     'absorption_spectrum': schema_absorption_spectrum,
     'derivative_couplings': schema_derivative_couplings,
-    'electron_transfer': schema_electron_transfer,
     'cp2k_general_settings': schema_cp2k_general_settings,
     'distribute_derivative_couplings': schema_distribute_derivative_couplings}
 

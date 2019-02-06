@@ -1,7 +1,7 @@
 __all__ = [
     'schema_cp2k_general_settings', 'schema_derivative_couplings',
     'schema_distribute_derivative_couplings',
-    'schema_absorption_spectrum', 'schema_electron_transfer']
+    'schema_absorption_spectrum']
 
 
 from numbers import Real
@@ -188,34 +188,3 @@ dict_absorption_spectrum = {
 
 schema_absorption_spectrum = Schema(
     merge(dict_general_options, dict_absorption_spectrum))
-
-
-schema_electron_transfer = Schema({
-    # Name of the workflow to run
-    "workflow": And(
-        str, Use(str.lower), lambda s: s == "electron_transfer"),
-
-    # Path to the PYXAID output containing the time-dependent coefficients
-    "path_time_coeffs": str,
-
-    # Integration time step used for the MD (femtoseconds)
-    Optional("dt", default=1): float,
-
-    # Index of the HOMO
-    "pyxaid_HOMO": int,
-
-    # Index of the LUMO
-    "pyxaid_LUMO": int,
-
-    # Index of the LUMO
-    "pyxaid_Nmax": int,
-
-    # List of initial conditions of the Pyxaid dynamics
-    "pyxaid_iconds": list,
-
-    # Indices of the atoms belonging to a fragment
-    "fragment_indices": list,
-
-    # General settings
-    "cp2k_general_settings": schema_cp2k_general_settings
-})
