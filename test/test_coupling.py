@@ -24,6 +24,7 @@ project_name = 'Cd33Se33'
 input_file = join(root, 'test/test_files/input_test_derivative_couplings.yml')
 
 
+@pytest.mark.slow
 def test_fast_couplings(tmp_path):
     """
     Check that the couplings run
