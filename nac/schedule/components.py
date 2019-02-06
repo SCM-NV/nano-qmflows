@@ -56,6 +56,7 @@ def calculate_mos(config: dict) -> list:
     # First calculation has no initial guess
     # calculate the rest of the jobs using the previous point as initial guess
     orbitals = []  # list to the nodes in the HDF5 containing the MOs
+    guess_job = None
     for j, gs in enumerate(config.geometries):
 
         # number of the point with respect to all the trajectory
@@ -84,27 +85,26 @@ def calculate_mos(config: dict) -> list:
             dict_input["job_name"] = 'point_{}'.format(k)
 
             # Compute the MOs and return a new guess
-            promise_qm = compute_orbitals(config, dict_input)
+            promise_qm = compute_orbitals(config, dict_input, guess_job)
 
             # Check if the job finishes succesfully
-            dict_input["promise_qm"] = schedule_check(promise_qm, config, dict_input)
+            promise_qm = schedule_check(promise_qm, config, dict_input)
 
             # Store the computation
-            path_MOs = store_in_hdf5(config, dict_input)
+            path_MOs = store_in_hdf5(config, dict_input, promise_qm)
 
-            dict_input["guess_job"] = promise_qm
+            guess_job = promise_qm
             orbitals.append(path_MOs)
 
     return gather(*orbitals)
 
 
 @schedule
-def store_in_hdf5(config: dict, dict_input: dict) -> str:
+def store_in_hdf5(config: dict, dict_input: dict, promise_qm: object) -> str:
     """
     Store the MOs in the HDF5
     """
     # Molecular Orbitals
-    promise_qm = dict_input["promise_qm"]
     mos = promise_qm.orbitals
     if mos is not None:
         # Store in the HDF5
@@ -122,16 +122,12 @@ def store_in_hdf5(config: dict, dict_input: dict) -> str:
     return dict_input["node_paths"]
 
 
-def compute_orbitals(config: dict, dict_input: dict) -> list:
+def compute_orbitals(config: dict, dict_input: dict, guess_job) -> list:
     """
     Call a Quantum chemisty package to compute the MOs required to calculate
     the nonadiabatic coupling. When finish store the MOs in the HdF5 and
     returns a new guess.
     """
-
-    prepare_and_schedule = {'cp2k': prepare_job_cp2k}
-
-    call_schedule_qm = prepare_and_schedule[config.package_name]
 
     dict_input["job_files"] = create_file_names(dict_input["point_dir"], dict_input["k"])
 
@@ -140,23 +136,24 @@ def compute_orbitals(config: dict, dict_input: dict) -> list:
 
     # A job  is a restart if guess_job is None and the list of
     # wf guesses are not empty
-    is_restart = dict_input["guess_job"] is None and compute_guess
+    is_restart = guess_job is None and compute_guess
 
     pred = (dict_input['k'] in config.calc_new_wf_guess_on_points) or is_restart
 
     general = config.cp2k_general_settings
 
     if pred:
-        dict_input["guess_job"] = call_schedule_qm(
-            general["cp2k_settings_guess"], dict_input)
+        guess_job = prepare_job_cp2k(
+            general["cp2k_settings_guess"], dict_input, guess_job)
 
-    promise_qm = call_schedule_qm(general["cp2k_settings_main"], dict_input)
+    promise_qm = prepare_job_cp2k(general["cp2k_settings_main"], dict_input, guess_job)
 
     return promise_qm
 
 
 @schedule
-def schedule_check(promise_qm: object, config: dict, dict_input: dict) -> object:
+def schedule_check(
+        promise_qm: object, config: dict, dict_input: dict) -> object:
     """
     Check wether a calculation finishes succesfully otherwise run a new guess.
     """
@@ -185,8 +182,7 @@ def schedule_check(promise_qm: object, config: dict, dict_input: dict) -> object
 
         # Compute new guess at point k
         config.calc_new_wf_guess_on_points.append(dict_input["k"])
-        dict_input["guess_job"] = None
-        return compute_orbitals(config, dict_input)
+        return compute_orbitals(config, dict_input, None)
     else:
         return promise_qm
 

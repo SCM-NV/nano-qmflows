@@ -11,7 +11,7 @@ from qmflows.packages import cp2k
 from qmflows.parsers.xyzParser import string_to_plams_Molecule
 
 
-def prepare_cp2k_settings(settings: object, dict_input: dict) -> object:
+def prepare_cp2k_settings(settings: object, dict_input: dict, guess_job: object) -> object:
     """
     Fills in the parameters for running a single job in CP2K.
 
@@ -19,7 +19,7 @@ def prepare_cp2k_settings(settings: object, dict_input: dict) -> object:
     :parameter dict_input: Dictionary contaning the data to
     fill in the template
     :param k: nth Job
-    :param wfn_restart_job: Path to *.wfn cp2k file use as restart file.
+    :param guess_job: Path to *.wfn cp2k file use as restart file.
     :param cp2k_config:  Parameters required by cp2k.
    :returns: ~qmflows.Settings
     """
@@ -30,7 +30,6 @@ def prepare_cp2k_settings(settings: object, dict_input: dict) -> object:
     settings.specific.cp2k['global']['project'] = 'point_{}'.format(dict_input["k"])
     settings.specific.cp2k['global']['run_type'] = 'Energy'
 
-    guess_job = dict_input["guess_job"]
     if guess_job is not None:
         output_dir = guess_job.archive['plams_dir']
         xs = os.listdir(output_dir)
@@ -48,7 +47,7 @@ def prepare_cp2k_settings(settings: object, dict_input: dict) -> object:
 
 
 @schedule
-def prepare_job_cp2k(settings: object, dict_input: dict) -> object:
+def prepare_job_cp2k(settings: object, dict_input: dict, guess_job: object) -> object:
     """
     Fills in the parameters for running a single job in CP2K.
 
@@ -61,10 +60,10 @@ def prepare_job_cp2k(settings: object, dict_input: dict) -> object:
     :param files: Tuple containing the IO files to run the calculations
     :param k: nth Job
     :parameter workdir: Name of the Working folder
-    :param wfn_restart_job: Path to *.wfn cp2k file use as restart file.
+    :param guess_job: Path to *.wfn cp2k file use as restart file.
     :returns: ~qmflows.CP2K
     """
-    job_settings = prepare_cp2k_settings(settings, dict_input)
+    job_settings = prepare_cp2k_settings(settings, dict_input, guess_job)
 
     return cp2k(
         job_settings, string_to_plams_Molecule(dict_input["geometry"]),
