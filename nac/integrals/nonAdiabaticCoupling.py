@@ -108,11 +108,7 @@ def correct_phases(overlaps: Tensor3D, mtx_phases: Matrix) -> List:
     return overlaps
 
 
-def compute_overlaps_for_coupling(
-        geometries: Tuple, path_hdf5: str,
-        mo_paths: List, dictCGFs: Dict,
-        nHOMO: int, mo_index_range: Tuple,
-        hdf5_trans_mtx: str=None) -> Tuple:
+def compute_overlaps_for_coupling(config: dict, dict_input: dict) -> Tuple:
     """
     Compute the Overlap matrices used to compute the couplings
 
@@ -125,14 +121,13 @@ def compute_overlaps_for_coupling(
     :param trans_mtx: path to the transformation matrix to
     translate from Cartesian to Sphericals.
     :returns: [Matrix] containing the overlaps at different times
-    """
-    mol0, mol1 = geometries
+    # """
+    mol0, mol1 = dict_input['molecules']
 
     # Atomic orbitals overlap
-    suv_0 = calcOverlapMtx(dictCGFs, mol0, mol1)
+    suv_0 = calcOverlapMtx(config.dictCGFs, mol0, mol1)
 
-    css0, css1, trans_mtx = read_overlap_data(
-        path_hdf5, mo_paths, hdf5_trans_mtx, nHOMO, mo_index_range)
+    css0, css1, trans_mtx = read_overlap_data(config, dict_input["mo_paths"])
 
     # Convert the transformation matrix to sparse representation
     trans_mtx = sparse.csr_matrix(trans_mtx)
@@ -146,21 +141,21 @@ def compute_overlaps_for_coupling(
     return mtx_sji_t0
 
 
-def read_overlap_data(path_hdf5: str, mo_paths: str, hdf5_trans_mtx: str,
-                      nHOMO: int, mo_index_range: tuple) -> None:
+def read_overlap_data(config: dict, mo_paths: list) -> Tuple:
     """
     Read the Molecular orbital coefficients and the transformation matrix
     """
-    mos = retrieve_hdf5_data(path_hdf5, mo_paths)
+    mos = retrieve_hdf5_data(config.path_hdf5, mo_paths)
 
     # Extract a subset of molecular orbitals to compute the coupling
-    lowest, highest = compute_range_orbitals(mos[0], nHOMO, mo_index_range)
+    lowest, highest = compute_range_orbitals(mos[0], config.nHOMO, config.mo_index_range)
     css0, css1 = tuple(map(lambda xs: xs[:, lowest: highest], mos))
 
     # Read the transformation matrix to convert from Cartesian to
     # Spherical coordinates
+    hdf5_trans_mtx = config.hdf5_trans_mtx
     if hdf5_trans_mtx is not None:
-        trans_mtx = retrieve_hdf5_data(path_hdf5, hdf5_trans_mtx)
+        trans_mtx = retrieve_hdf5_data(config.path_hdf5, hdf5_trans_mtx)
 
     return css0, css1, trans_mtx
 
@@ -206,7 +201,7 @@ def compute_range_orbitals(mtx: Matrix, nHOMO: int,
 
 def calcOverlapMtx(
         dictCGFs: Dict, mol0: List, mol1: List,
-        runner='multiprocessing', ncores: int=None) -> Matrix:
+        runner: str = 'multiprocessing', ncores: int = None) -> Matrix:
     """
     Parallel calculation of the overlap matrix using the atomic
     basis at two different geometries: R0 and R1.

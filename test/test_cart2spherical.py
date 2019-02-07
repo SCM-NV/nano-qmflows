@@ -18,10 +18,11 @@ def test_compare_with_cp2k():
     """
     # Overlap matrix in cartesian coordinates
     basisname = "DZVP-MOLOPT-SR-GTH"
+    path_basis = 'test/test_files/BASIS_MOLOPT'
     # Molecular geometry in a.u.
     atoms = change_mol_units(readXYZ('test/test_files/ethylene.xyz'))
 
-    dictCGFs = create_dict_CGFs(path_hdf5, basisname, atoms)
+    dictCGFs = create_dict_CGFs(path_hdf5, basisname, atoms, path_basis)
 
     # Compute the overlap matrix using the general multipole expression
     rs = calcMtxOverlapP(atoms, dictCGFs)

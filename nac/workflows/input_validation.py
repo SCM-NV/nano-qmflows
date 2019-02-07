@@ -1,8 +1,9 @@
 from .schemas import (
     schema_absorption_spectrum, schema_distribute_derivative_couplings,
-    schema_derivative_couplings, schema_electron_transfer, schema_general_settings)
-from .templates import (
-    cp2k_pbe0_guess, cp2k_pbe0_main, cp2k_pbe_guess, cp2k_pbe_main)
+    schema_derivative_couplings, schema_cp2k_general_settings)
+from .templates import (create_settings_from_template, valence_electrons)
+from nac.common import DictConfig
+from scm.plams import Molecule
 from qmflows.settings import Settings
 from schema import SchemaError
 from typing import Dict
@@ -12,11 +13,11 @@ import yaml
 
 logger = logging.getLogger(__name__)
 
+
 schema_workflows = {
     'absorption_spectrum': schema_absorption_spectrum,
     'derivative_couplings': schema_derivative_couplings,
-    'electron_transfer': schema_electron_transfer,
-    'general_settings': schema_general_settings,
+    'cp2k_general_settings': schema_cp2k_general_settings,
     'distribute_derivative_couplings': schema_distribute_derivative_couplings}
 
 
@@ -37,7 +38,7 @@ def process_input(input_file: str, workflow_name: str) -> Dict:
     try:
         d = schema.validate(dict_input)
 
-        return create_settings(d)
+        return DictConfig(create_settings(d))
 
     except SchemaError as e:
         msg = "There was an error in the input provided:\n{}".format(e)
@@ -52,68 +53,120 @@ def create_settings(d: Dict) -> Dict:
     :return: dictionary with Settings to call Cp2k
     """
     # Convert cp2k definitions to settings
-    general = d['general_settings']
-    general['settings_main'] = Settings(
-        general['settings_main'])
-    general['settings_guess'] = Settings(
-        general['settings_guess'])
+    general = d['cp2k_general_settings']
+    general['cp2k_settings_main'] = Settings(
+        general['cp2k_settings_main'])
+    general['cp2k_settings_guess'] = Settings(
+        general['cp2k_settings_guess'])
 
-    d = apply_templates(d)
+    apply_templates(general, d['path_traj_xyz'])
 
     return add_missing_keywords(d)
 
 
-def apply_templates(d: Dict):
+def apply_templates(general: Dict, path_traj_xyz: str) -> None:
     """
     Apply a template for CP2K if the user request so.
     """
-    general = d['general_settings']
-
-    # available templates
-    templates_dict = {
-        "pbe_guess": cp2k_pbe_guess, "pbe_main": cp2k_pbe_main,
-        "pbe0_guess": cp2k_pbe0_guess, "pbe0_main": cp2k_pbe0_main}
-
-    for s in [general[x] for x in ['settings_main', 'settings_guess']]:
+    for s in [general[x] for x in ['cp2k_settings_main', 'cp2k_settings_guess']]:
         val = s['specific']
 
         if "template" in val:
-            s['specific'] = templates_dict[val['template']]
-    return d
+            s['specific'] = create_settings_from_template(
+                general, val['template'], path_traj_xyz)
 
 
 def add_missing_keywords(d: Dict) -> Dict:
     """
     and add the `added_mos` and `mo_index_range` keywords
     """
-    general = d['general_settings']
+    general = d['cp2k_general_settings']
     # Add keywords if missing
-    settings_main = general['settings_main']
-    settings_guess = general['settings_guess']
-    mo_index_range = general['mo_index_range']
-    nHOMO = general["nHOMO"]
-    dft_main = settings_main.specific.cp2k.force_eval.dft
+
+    if d.get('nHOMO') is None:
+        d['nHOMO'] = compute_HOMO_index(d['path_traj_xyz'], general['basis'])
 
     # Added_mos keyword
-
-    dft_main.scf.added_mos = mo_index_range[1] - mo_index_range[0] - nHOMO + 1
-
-    # mo_index_range keyword
-    pr = dft_main.print
-    pr.mo.mo_index_range = "{} {}".format(mo_index_range[0], mo_index_range[1])
+    add_mo_index_range(d)
+    
+    # Add restart point
+    add_restart_point(general)
 
     # Add basis sets
-    dft_guess = settings_guess.specific.cp2k.force_eval.dft
+    add_basis(general)
 
-    # Add restart point
-    wfn = settings_guess['wfn_restart_file_name']
-    if wfn is not None and wfn:
-        dft_guess.wfn_restart_file_name = settings_guess['wfn_restart_file_name']
-
-    if all(general[x] is not None for x in ["path_basis", "path_potential"]):
-        logger.info("path_basis and path_potential added to cp2k settings")
-        for x in (dft_guess, dft_main):
-            x.basis_set_file_name = os.path.abspath(general['path_basis'])
-            x.potential_file_name = os.path.abspath(general['path_potential'])
+    # add cell parameters
+    add_cell_parameters(general)
 
     return d
+
+
+def add_basis(general: dict) -> None:
+    """
+    Add path to the basis and potential
+    """
+    setts = [general[p] for p in ['cp2k_settings_main', 'cp2k_settings_guess']]
+
+    # add basis and potential path
+    if all(general[x] is not None for x in ["path_basis", "path_potential"]):
+        logger.info("path_basis and path_potential added to cp2k settings")
+        for x in setts:
+            x.basis = general['basis']
+            x.potential = general['potential']
+            x.specific.cp2k.force_eval.dft.basis_set_file_name = os.path.abspath(
+                general['path_basis'])
+            x.specific.cp2k.force_eval.dft.potential_file_name = os.path.abspath(
+                general['path_potential'])
+
+
+def add_cell_parameters(general: dict) -> None:
+    """
+    Add the Unit cell information to both the main and the guess settings
+    """
+    for s in (general[p] for p in ['cp2k_settings_main', 'cp2k_settings_guess']):
+        s.cell_parameters = general['cell_parameters']
+        s.cell_angles = general['cell_angles']
+
+
+def add_restart_point(general: dict) -> None:
+    """
+    add a restart file if the user provided it
+    """
+    guess = general['cp2k_settings_guess']
+    wfn = guess['wfn_restart_file_name']
+    if wfn is not None and wfn:
+        dft = guess.specific.cp2k.force_eval.dft
+        dft.wfn_restart_file_name = wfn
+
+
+def add_mo_index_range(dict_input: dict) -> None:
+    """
+    Compute the MO range to print
+    """
+    print("call add_mo_index_range")
+    active_space = dict_input['active_space']
+    nHOMO = dict_input["nHOMO"]
+    mo_index_range = nHOMO - active_space[0], nHOMO + active_space[1]
+    dict_input['mo_index_range'] = mo_index_range
+
+    # mo_index_range keyword
+    cp2k_main = dict_input['cp2k_general_settings']['cp2k_settings_main']
+    dft_main_print = cp2k_main.specific.cp2k.force_eval.dft.print
+    dft_main_print.mo.mo_index_range = "{} {}".format(mo_index_range[0] + 1, mo_index_range[1])
+    # added_mos
+    cp2k_main.specific.cp2k.force_eval.dft.scf.added_mos = mo_index_range[1] - nHOMO
+
+
+def compute_HOMO_index(path_traj_xyz: str, basis: str) -> int:
+    """
+    Compute the HOMO index
+    """
+    mol = Molecule(path_traj_xyz, 'xyz')
+
+    number_of_electrons = sum(
+        valence_electrons['-'.join((at.symbol, basis))] for at in mol.atoms)
+
+    if (number_of_electrons % 2) != 0:
+        raise RuntimeError("Unpair number of electrons detected when computing the HOMO")
+
+    return number_of_electrons // 2

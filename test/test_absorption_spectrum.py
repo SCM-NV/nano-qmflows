@@ -18,7 +18,7 @@ root = os.path.split(file_path)[0]
 path_traj_xyz = join(root, 'test/test_files/Cd.xyz')
 path_original_hdf5 = join(root, 'test/test_files/Cd.hdf5')
 project_name = 'Cd'
-input_file = join(root, 'test/test_files/input_test_oscillator.yml')
+input_file = join(root, 'test/test_files/input_test_absorption_spectrum.yml')
 
 
 def test_oscillators_multiprocessing():
@@ -56,12 +56,11 @@ def calculate_oscillators(runner, path_test_hdf5, scratch_path):
     using precalculated MOs.
     """
     config = process_input(input_file, 'absorption_spectrum')
-    config['general_settings']['path_hdf5'] = path_test_hdf5
-    config['work_dir'] = scratch_path
-    config['general_settings']['path_traj_xyz'] = join(
-        root, config['general_settings']['path_traj_xyz'])
-    config['general_settings']['runner'] = runner
-    print(config)
+    config['path_hdf5'] = path_test_hdf5
+    config['workdir'] = scratch_path
+    config['path_traj_xyz'] = join(
+        root, config.path_traj_xyz)
+    config['runner'] = runner
 
     workflow_stddft(config)
 
