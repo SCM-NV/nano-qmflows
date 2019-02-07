@@ -2,7 +2,7 @@ workflow:
   derivative_couplings
 
 project_name:
-  Cd33Se33
+  ethylene
 runner:
   multiprocessing
 dt:
@@ -12,21 +12,21 @@ algorithm:
 tracking:
   True
 active_space:
-  [10, 10]
+  [4, 4]
   
 path_hdf5:
-  "test/test_files/Cd33Se33.hdf5"
+  "test/test_files/ethylene.hdf5"
 path_traj_xyz:
-  "test/test_files/Cd33Se33_fivePoints.xyz" 
+  "test/test_files/ethylene_couplings.xyz" 
 scratch_path:
-  "/tmp/namd/derivative_couplings"
+  "/tmp/namd/fast_derivative_couplings"
 
 cp2k_general_settings:  
   path_basis: "test/test_files/BASIS_MOLOPT"
   path_potential: "test/test_files/GTH_POTENTIALS"
   potential: "GTH-PBE"
   basis: "DZVP-MOLOPT-SR-GTH"
-  cell_parameters: 45.0
+  cell_parameters: 10.0
   cell_angles: [90.0, 90.0, 90.0]
 
   cp2k_settings_main:

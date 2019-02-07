@@ -128,8 +128,7 @@ def compute_normalization_per_cgf(cgfs: List, label: str) -> List:
 
 
 def create_dict_CGFs(
-        path_hdf5: dict, basis_name: str, mol: List, package_name='cp2k',
-        package_config: Dict=None):
+        path_hdf5: dict, basis_name: str, mol: List, path_basis: str, package_name='cp2k'):
     """
     Try to read the basis from the HDF5 otherwise read it from a file and store
     it in the HDF5 file. Finally, it reads the basis Set from HDF5 and
@@ -149,8 +148,7 @@ def create_dict_CGFs(
     with h5py.File(path_hdf5) as f5:
         if basis_location not in f5:
             # Search Path to the file containing the basis set
-            pathBasis = package_config["basis"]
-            keyBasis = InputKey("basis", [pathBasis])
+            keyBasis = InputKey("basis", [path_basis])
             # Store the basis sets
             functions[package_name](f5, [keyBasis])
 

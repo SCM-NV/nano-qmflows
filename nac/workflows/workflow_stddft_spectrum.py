@@ -11,13 +11,16 @@ from qmflows import run
 from noodles import (gather, schedule)
 from scipy.linalg import sqrtm
 from scipy.spatial.distance import cdist
-from typing import (Dict, List)
 import h5py
+import logging
 import numpy as np
 import os
 
+# Starting logger
+logger = logging.getLogger(__name__)
 
-def workflow_stddft(workflow_settings: Dict):
+
+def workflow_stddft(config: dict) -> None:
     """
     Compute the excited states using simplified TDDFT
 
@@ -25,45 +28,39 @@ def workflow_stddft(workflow_settings: Dict):
     `data/schemas/absorption_spectrum.json
     :returns: None
     """
-    # Arguments to compute the orbitals and configure the workflow. see:
-    # `data/schemas/general_settings.json
-    config = workflow_settings['general_settings']
-
     # Dictionary containing the general configuration
-    config.update(initialize(**config))
+    config.update(initialize(config))
 
     # Single Point calculations settings using CP2K
-    mo_paths_hdf5 = calculate_mos(**config)
+    mo_paths_hdf5 = calculate_mos(config)
 
     # Read structures
     molecules_au = [change_mol_units(parse_string_xyz(gs))
-                    for gs in config['geometries']]
+                    for gs in config.geometries]
 
     # Noodles promised call
     scheduleTDDFT = schedule(compute_excited_states_tddft)
 
     results = gather(
-       *[scheduleTDDFT(
-           i, mol, mo_paths_hdf5, workflow_settings['xc_dft'],
-           config['mo_index_range'], config['nHOMO'],
-           workflow_settings['tddft'], config)
+       *[scheduleTDDFT(config, mo_paths_hdf5[i], {'i': i, 'mol': mol})
          for i, mol in enumerate(molecules_au)
-         if i % workflow_settings['calculate_oscillator_every'] == 0])
+         if (i % config.calculate_oscillator_every) == 0])
 
-    return run(results, folder=config['work_dir'])
+    return run(results, folder=config['workdir'])
 
 
-def compute_excited_states_tddft(
-           i: int, mol: List, mo_paths_hdf5, xc_dft: str, mo_index_range: list,
-        nocc: int, tddft: str, config: Dict):
+def compute_excited_states_tddft(config: dict, path_MOs: list, dict_input: dict):
     """
     Compute the excited states properties (energy and coefficients) for a given
     `mo_index_range` using the `tddft` method and `xc_dft` exchange functional.
     """
-    print("Reading energies and mo coefficients")
-    energy, c_ao = retrieve_hdf5_data(config['path_hdf5'], mo_paths_hdf5[i])
+    logger.info("Reading energies and mo coefficients")
+    # type of calculation
+    tddft = config.tddft.lower()
+    energy, c_ao = retrieve_hdf5_data(config.path_hdf5, path_MOs)
 
     # Number of virtual orbitals
+    nocc = config.nHOMO
     nvirt = c_ao.shape[1] - nocc
 
     if tddft == 'sing_orb':
@@ -72,24 +69,24 @@ def compute_excited_states_tddft(
         xia = np.eye(nocc*nvirt)
     else:
         # Call the function that computes overlaps
-        print("Reading or computing the overlap matrix")
+        logger.info("Reading or computing the overlap matrix")
         multipoles = get_multipole_matrix(
-            i, mol, config, 'overlap')
+            dict_input["i"], dict_input["mol"], config, 'overlap')
 
         # Make a function tha returns in transition density charges
-        print("Computing the transition density charges")
-        q = transition_density_charges(mol, config, multipoles, c_ao)
+        logger.info("Computing the transition density charges")
+        q = transition_density_charges(dict_input["mol"], config, multipoles, c_ao)
 
         # Make a function that compute the Mataga-Nishimoto-Ohno_Klopman
         # damped Columb and Excgange law functions
-        print("Computing the gamma functions for Exchange and Coulomb integrals")
-        gamma_J, gamma_K = compute_MNOK_integrals(mol, xc_dft)
+        logger.info("Computing the gamma functions for Exchange and Coulomb integrals")
+        gamma_J, gamma_K = compute_MNOK_integrals(dict_input["mol"], config.xc_dft)
 
         # Compute the Couloumb and Exchange integrals
         # If xc_dft is a pure functional, ax=0, thus the pqrs_J ints are not needed
         # and can be set to 0
-        print("Computing the Exchange and Coulomb integrals")
-        if (xc(xc_dft)['type'] == 'pure'):
+        logger.info("Computing the Exchange and Coulomb integrals")
+        if (xc(config.xc_dft)['type'] == 'pure'):
             size = energy.size
             pqrs_J = np.zeros((size, size, size, size))
         else:
@@ -97,25 +94,27 @@ def compute_excited_states_tddft(
         pqrs_K = np.tensordot(q, np.tensordot(q, gamma_K, axes=(0, 1)), axes=(0, 2))
 
         # Construct the Tamm-Dancoff matrix A for each pair of i->a transition
-        print("Constructing the A matrix for TDDFT calculation")
-        a_mat = construct_A_matrix_tddft(pqrs_J, pqrs_K, nocc, nvirt, xc_dft, energy)
+        logger.info("Constructing the A matrix for TDDFT calculation")
+        a_mat = construct_A_matrix_tddft(pqrs_J, pqrs_K, nocc, nvirt, config.xc_dft, energy)
 
         if tddft == 'stddft':
-            print('sTDDFT has not been implemented yet !')
+            logger.info('sTDDFT has not been implemented yet !')
             # Solve the eigenvalue problem = A * cis = omega * cis
         elif tddft == 'stda':
-            print("This is a TDA calculation ! \n Solving the eigenvalue problem")
+            logger.info("This is a TDA calculation ! \n Solving the eigenvalue problem")
             omega, xia = np.linalg.eig(a_mat)
         else:
             msg = "Only the stda method is available"
             raise RuntimeError(msg)
 
+    dict_input.update()
     return compute_oscillator_strengths(
-        i, mol, tddft, config, energy, c_ao, multipoles, nocc, nvirt, omega, xia)
+        dict_input["i"], dict_input["mol"], tddft, config, energy, c_ao, multipoles, nocc,
+        nvirt, omega, xia)
 
 
 def compute_oscillator_strengths(
-        i: int, mol: object, tddft: str, config: Dict, energy: Vector, c_ao: Matrix,
+        i: int, mol: object, tddft: str, config: dict, energy: Vector, c_ao: Matrix,
         multipoles: Matrix, nocc: int, nvirt: int, omega: Vector, xia: Matrix):
     """
     Compute oscillator strengths
@@ -162,7 +161,7 @@ def compute_oscillator_strengths(
 
     # Write to output
     output = write_output_tddft(nocc, nvirt, omega, f, d_x, d_y, d_z, xia, energy)
-    path_output = os.path.join(config['work_dir'], 'output_{}_{}.txt'.format(i, tddft))
+    path_output = os.path.join(config['workdir'], 'output_{}_{}.txt'.format(i, tddft))
     header = '{:^5s}{:^14s}{:^8s}{:^11s}{:^11s}{:^11s}{:^11s}{:<5s}{:^10s}{:<5s}{:^11s}{:^11s}'.format(
         'state', 'energy', 'f', 't_dip_x', 't_dip_y', 't_dip_y', 'weight', 'from', 'energy',
         'to', 'energy', 'delta_E')
@@ -179,7 +178,7 @@ def compute_oscillator_strengths(
 
         descriptors = ex_descriptor(
             omega, f, xia, n_lowest, c_ao, multipoles, tdm, tqm, nocc, nvirt, mol, config)
-        path_ex_output = os.path.join(config['work_dir'], 'descriptors_{}_{}.txt'.format(i, tddft))
+        path_ex_output = os.path.join(config['workdir'], 'descriptors_{}_{}.txt'.format(i, tddft))
         ex_header = '{:^5s}{:^14s}{:^10s}{:^10s}{:^12s}{:^10s}{:^10s}{:^10s}{:^10s}{:^10s}'.format(
             'state', 'd_exc', 'd_exc_app', 'd_he', 'sigma_h', 'sigma_e', 'r_eh', 'bind_en',
             'energy', 'f')
@@ -436,7 +435,7 @@ def transition_density_charges(mol, config, s, c_ao):
     # Size of the transition density tensor : n_atoms x n_mos x n_mos
     q = np.zeros((n_atoms, c_mo.shape[1], c_mo.shape[1]))
     n_sph_atoms = number_spherical_functions_per_atom(
-        mol, config['package_name'], config['basis_name'], config['path_hdf5'])
+        mol, config['package_name'], config.cp2k_general_settings['basis'], config['path_hdf5'])
 
     index = 0
     for i in range(n_atoms):

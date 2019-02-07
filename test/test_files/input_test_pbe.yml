@@ -1,33 +1,29 @@
 workflow:
-  absorption_spectrum
-energy_range:
-  [0, 5]
+  derivative_couplings
+project_name: pbe_C
+runner: multiprocessing
+dt: 1
+active_space: [2, 2]
+algorithm: "levine"
+tracking: False
+path_hdf5: "test/test_files/C.hdf5"
+path_traj_xyz: "test/test_files/C.xyz" 
+scratch_path: "/tmp/namd"
 
-general_settings:
-  runner: "multiprocessing"
-  basis_name:  "DZVP-MOLOPT-SR-GTH"
-  project_name: C
-  nHOMO: 4
-  mo_index_range: [0, 0]  
-  path_hdf5: "test/test_files/C.hdf5"
-  path_traj_xyz: "test/test_files/C.xyz" 
-  scratch_path: "/tmp/namd"
+  
+cp2k_general_settings:
+  basis:  "DZVP-MOLOPT-SR-GTH"
   path_basis: "test/test_files/BASIS_MOLOPT"
   path_potential: "test/test_files/GTH_POTENTIALS"
-    
-  settings_main:
-    potential: "GTH-PBE"
-    basis: "DZVP-MOLOPT-SR-GTH"
-    cell_parameters: 5.0
-    cell_angles: [90.0, 90.0, 90.0]
+  potential: "GTH-PBE"
+  cell_parameters: 5.0
+  cell_angles: [90.0, 90.0, 90.0]
+
+  cp2k_settings_main:
     specific:
       template: pbe_main
 
-  settings_guess:
-    potential: "GTH-PBE"
-    basis: "DZVP-MOLOPT-SR-GTH"
-    cell_angles: [90.0, 90.0, 90.0]
-    cell_parameters: 5.0
+  cp2k_settings_guess:
     wfn_restart_file_name: "../point_0-RESTART.wfn"
     specific:
       template:
