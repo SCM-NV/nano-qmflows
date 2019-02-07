@@ -12,12 +12,12 @@ algorithm:
 tracking:
   True
 active_space:
-  [5, 5]
+  [4, 4]
   
 path_hdf5:
-  "test/test_files/CsBrPb.hdf5"
+  "test/test_files/ethylene.hdf5"
 path_traj_xyz:
-  "test/test_files/CsBrPb_fivePoints.xyz" 
+  "test/test_files/ethylene_threePoints.xyz" 
 scratch_path:
   "/tmp/namd/fast_derivative_couplings"
 
