@@ -103,13 +103,3 @@ def triang2mtx(arr, dim):
             k = fromIndex([i, j], [dim, dim])
             rss[i, j] = arr[k]
     return rss
-
-
-def format_aomix(mtx, dim):
-    xs = "[overlap matrix]\n"
-    for i in range(1, dim + 1):
-        for j in range(1, dim + 1):
-            if j <= i:
-                v = mtx[i - 1, j - 1]
-                xs += '({:13}  ,{:13} ) = {:25.15e}\n'.format(i, j, v)
-    return xs
