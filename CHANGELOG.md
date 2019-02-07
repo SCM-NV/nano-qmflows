@@ -1,10 +1,33 @@
 # Change Log
 
+# 0.5.0
+
+### New
+
+* The user only need to provide an **active_space** and both the `mo_index_range` and `nHOMO`  keywords are computed automatically.
+
+* Added fast test to [compute the couplings](https://github.com/SCM-NV/qmflows-namd/blob/master/test/test_coupling.py)
+
+### Deleted
+
+* Removed all the Fourier transform for orbitals.
+
+* Removed unused electron transfer functionality.
+
+### Changed
+
+* The `nHOMO` and the `kinds` for the *CP2K* input are computed using the [valence_electrons](https://github.com/SCM-NV/qmflows-namd/blob/master/nac/basisSet/valence_electrons.json) from the basis/pseudpotential combination.
+
+* Use a configuration dictionary to around the initial input instead of many arguments functions.
+
+* Import only the most important functions.
+
+
 # 0.4.1
 
 ### Deleted
 
-* Remove all the MPI unused functionality
+* Removed all the MPI unused functionality
 
 ### Changed
 
