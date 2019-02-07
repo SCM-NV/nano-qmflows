@@ -18,9 +18,8 @@ The *distribute_jobs.py* file contains all settings to perform the calculations 
 - **scratch**: A scratch path is required to perform the calculations. For large systems, the .hdf5 files can become quite large (in GBs) and calculations are instead performed in the scratch workspace. The final results will also be stored here. 
 - **project_name**: Project name for the calculations. 
 - **basisCP2K**, **potCP2K**: Path to the CP2K basis set and potentials files. 
-- **cell_parameters**, **cell_angles**: Cell parameters and cell angles for the CP2K single point calculations. These should be the same values as in your MD simulation. 
-- **mo_index_range**: Absolute range of orbitals for which the overlaps/couplings will be calculated. Example: the HOMO lies at 2725 and our range of interest consists of 100 HOMOs and 100 LUMOs. Our range_orbitals would be set to ‘2626 2825’. It is the same keyword than CP2K mo_index_range_.
-- **nHOMO**: The index of the HOMO within the orbital range has to be provided. In the above example, the index of the HOMO is 100.
+- **cell_parameters**, **cell_angles**: Cell parameters and cell angles for the CP2K single point calculations. These should be the same values as in your MD simulation.
+- **activate_space**: Range of `(occupied, virtual)` molecular orbitals to computed the derivate couplings.
 - **path_to_trajectory**: Location of the .xyz file of the trajectory. 
 - **blocks**: Number of blocks (chunks) is related to how the trajectory is split up. As our typical trajectories are quite large (+- 2000 structures), it is convenient to split the trajectory up into multiple chunks so that several calculations can be performed simultaneously. Generally around 4-5 blocks is sufficient, depending on the length of your trajectory and the size of your system. 
 - **dt**: Time steps used in your MD trajectory. 
