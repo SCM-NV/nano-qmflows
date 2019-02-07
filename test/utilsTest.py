@@ -86,21 +86,6 @@ def copy_basis_and_orbitals(source, dest, project_name):
                     f5.copy(path, g5[k])
 
 
-def offdiagonalTolerance(arr, tolerance=1.0e-8):
-    """Check if the off-diagonal entries are lower than a
-    numerical tolerance
-    """
-    dim, _ = np.shape(arr)
-    r = False
-    for i in range(dim):
-        for j in range(dim):
-            if i >= j:
-                r = r and True
-            else:
-                r = abs(arr[i, j]) < tolerance
-    return r
-
-
 def fromIndex(ixs, shape):
     i, j = ixs
     if j >= i:
