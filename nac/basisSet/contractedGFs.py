@@ -7,8 +7,7 @@ from os.path import join
 from pymonad import curry
 
 # ==================> Internal modules <==========
-from nac.common import (CGF, InputKey)
-from qmflows.hdf5.quantumHDF5 import cp2k2hdf5, turbomole2hdf5
+from nac.common import CGF
 from qmflows.utils import (concat, concatMap)
 # ==========================<>=================================
 
@@ -65,8 +64,6 @@ def generateCGF(ess, css, formats, softName):
 
     orbLabels = ['s', 'p', 'd', 'f']
 
-    snd = lambda xs: xs[1]
-
     def fun1(es, css, fs):
         """
         For the Cp2K basis set there is only one set of exponents
@@ -84,13 +81,13 @@ def generateCGF(ess, css, formats, softName):
             is built sharing the exponents between all the contracts
             """
             index, acc = t1
-            n, l = t2
+            n, angular_momentum = t2
             xss = css[index: n + index]
-            rss = concatMap(expandBasis_cp2k(l, es), xss)
+            rss = concatMap(expandBasis_cp2k(angular_momentum, es), xss)
 
             return (index + n, acc + rss)
 
-        return snd(reduce(go, contract, (0, [])))
+        return reduce(go, contract, (0, []))[1]
 
     def fun2(ess, css, fs):
 
@@ -112,8 +109,8 @@ def generateCGF(ess, css, formats, softName):
         # print(fs)
         fss = str2ListofList(fs)
         # snd . foldl' funAcc (0,[0]) (map sum fss)
-        lens = snd(reduce(funAcc, list(map(sum, fss)), (0, [0])))
-        return concat([snd(accum(l, n, xs))
+        lens = reduce(funAcc, list(map(sum, fss)), (0, [0]))[1]
+        return concat([accum(l, n, xs)[1]
                        for (l, n, xs) in zip(orbLabels, lens, fss)])
 
     if softName == "cp2k":
@@ -127,19 +124,19 @@ def generateCGF(ess, css, formats, softName):
 
 
 @curry
-def expandBasis_cp2k(l, es, cs):
+def expandBasis_cp2k(angular_momentum, es, cs):
 
     primitives = (cs, es)
-    if l == 's':
+    if angular_momentum == 's':
         return [CGF(primitives, 'S')]
-    elif l == 'p':
+    elif angular_momentum == 'p':
         return [CGF(primitives, 'Px'), CGF(primitives, 'Py'),
                 CGF(primitives, 'Pz')]
-    elif l == 'd':
+    elif angular_momentum == 'd':
         return [CGF(primitives, 'Dxx'), CGF(primitives, 'Dxy'),
                 CGF(primitives, 'Dxz'), CGF(primitives, 'Dyy'),
                 CGF(primitives, 'Dyz'), CGF(primitives, 'Dzz')]
-    elif l == 'f':
+    elif angular_momentum == 'f':
         return [CGF(primitives, 'Fxxx'), CGF(primitives, 'Fxxy'),
                 CGF(primitives, 'Fxxz'), CGF(primitives, 'Fxyy'),
                 CGF(primitives, 'Fxyz'), CGF(primitives, 'Fxzz'),
@@ -148,19 +145,19 @@ def expandBasis_cp2k(l, es, cs):
 
 
 @curry
-def expandBasis_turbomole(l, es, cs):
+def expandBasis_turbomole(angular_momentum, es, cs):
 
     primitives = (cs, es)
-    if l == 's':
+    if angular_momentum == 's':
         return [CGF(primitives, 'S')]
-    elif l == 'p':
+    elif angular_momentum == 'p':
         return [CGF(primitives, 'Px'), CGF(primitives, 'Py'),
                 CGF(primitives, 'Pz')]
-    elif l == 'd':
+    elif angular_momentum == 'd':
         return [CGF(primitives, 'Dxx'), CGF(primitives, 'Dyy'),
                 CGF(primitives, 'Dzz'), CGF(primitives, 'Dxy'),
                 CGF(primitives, 'Dxz'), CGF(primitives, 'Dyz')]
-    elif l == 'f':
+    elif angular_momentum == 'f':
         return [CGF(primitives, 'Fxxx'), CGF(primitives, 'Fyyy'),
                 CGF(primitives, 'Fzzz'), CGF(primitives, 'Fxyy'),
                 CGF(primitives, 'Fxxy'), CGF(primitives, 'Fxxz'),
@@ -170,30 +167,6 @@ def expandBasis_turbomole(l, es, cs):
         msg = ("The basis set expansion for this angular momentum has not \
         been implemented yet")
         raise NotImplementedError(msg)
-
-
-def expandBasisOneCGF(l, es, cs):
-
-    primitives = (cs, es)
-    if l == 's':
-        return CGF(primitives, 'S')
-    elif l == 'p':
-        return CGF(primitives, 'Px')
-    elif l == 'd':
-        return CGF(primitives, 'Dxx')
-    elif l == 'f':
-        return CGF(primitives, 'Fxxx')
-
-
-def saveBasis(f5, path_basis, softName):
-
-    keyBasis = InputKey("basis", [path_basis])
-
-    if softName == 'cp2k':
-        cp2k2hdf5(f5, [keyBasis])
-
-    elif softName == 'turbomole':
-        turbomole2hdf5(f5, [keyBasis])
 
 
 def str2ListofList(s):

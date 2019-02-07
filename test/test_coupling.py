@@ -3,7 +3,6 @@ from nac.workflows.input_validation import process_input
 from nac.workflows.workflow_coupling import workflow_derivative_couplings
 from os.path import join
 
-import glob
 import numpy as np
 import pkg_resources as pkg
 import os
