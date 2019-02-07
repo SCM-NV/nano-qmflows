@@ -18,7 +18,7 @@ import shutil
 logger = logging.getLogger(__name__)
 
 
-def workflow_derivative_couplings(config: dict) -> None:
+def workflow_derivative_couplings(config: dict) -> list:
     """
     Compute the derivative couplings from an MD trajectory.
 
@@ -56,9 +56,11 @@ def workflow_derivative_couplings(config: dict) -> None:
     # Write Hamilotians in PYXAID format
     promise_files = schedule_write_ham(config, promised_crossing_and_couplings, mo_paths_hdf5)
 
-    run(promise_files, folder=config.workdir)
+    results = run(promise_files, folder=config.workdir)
 
     remove_folders(config.folders)
+
+    return results
 
 
 def create_path_hamiltonians(workdir: str) -> str:

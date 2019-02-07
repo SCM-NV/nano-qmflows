@@ -3,6 +3,7 @@ from nac.workflows.input_validation import process_input
 from nac.workflows.workflow_coupling import workflow_derivative_couplings
 from os.path import join
 
+import glob
 import numpy as np
 import pkg_resources as pkg
 import os
@@ -26,9 +27,10 @@ def test_fast_couplings(tmp_path):
     shutil.copy(config.path_hdf5, tmp_hdf5)
     config['path_hdf5'] = tmp_hdf5
     try:
-        workflow_derivative_couplings(config)
+        hamiltonians = workflow_derivative_couplings(config)
         os.remove('cache.db')
         check_couplings(config, tmp_hdf5)
+        check_hamiltonians(hamiltonians)
     except:
         print("scratch_path: ", tmp_path)
         print("Unexpected error:", sys.exc_info()[0])
@@ -52,3 +54,18 @@ def check_couplings(config: dict, tmp_hdf5: str) -> None:
     # All the elements are different of inifinity or nan
     tensor_couplings = np.stack(retrieve_hdf5_data(tmp_hdf5, couplings))
     assert np.isfinite(tensor_couplings).all()
+
+
+def check_hamiltonians(hamiltonians: str) -> None:
+    """
+    Check that the hamiltonians were written correctly
+    """
+    energies = np.stack([np.diag(np.loadtxt(ts[1])) for ts in hamiltonians])
+    couplings = np.stack(np.loadtxt(ts[0]) for ts in hamiltonians)
+
+    # check that energies and couplings are finite values
+    assert np.isfinite(energies).all()
+    assert np.isfinite(couplings).all()
+
+    # Check that the couplings diagonal is zero
+    assert abs(np.einsum('jii->', couplings)) < 1e-16
