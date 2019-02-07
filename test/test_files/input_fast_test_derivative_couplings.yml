@@ -17,7 +17,7 @@ active_space:
 path_hdf5:
   "test/test_files/ethylene.hdf5"
 path_traj_xyz:
-  "test/test_files/ethylene_threePoints.xyz" 
+  "test/test_files/ethylene_couplings.xyz" 
 scratch_path:
   "/tmp/namd/fast_derivative_couplings"
 

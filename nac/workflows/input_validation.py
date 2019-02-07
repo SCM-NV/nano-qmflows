@@ -88,7 +88,7 @@ def add_missing_keywords(d: Dict) -> Dict:
 
     # Added_mos keyword
     add_mo_index_range(d)
-
+    
     # Add restart point
     add_restart_point(general)
 
@@ -152,7 +152,9 @@ def add_mo_index_range(dict_input: dict) -> None:
     # mo_index_range keyword
     cp2k_main = dict_input['cp2k_general_settings']['cp2k_settings_main']
     dft_main_print = cp2k_main.specific.cp2k.force_eval.dft.print
-    dft_main_print.mo.mo_index_range = "{} {}".format(mo_index_range[0], mo_index_range[1])
+    dft_main_print.mo.mo_index_range = "{} {}".format(mo_index_range[0] + 1, mo_index_range[1])
+    # added_mos
+    cp2k_main.specific.cp2k.force_eval.dft.scf.added_mos = mo_index_range[1] - nHOMO
 
 
 def compute_HOMO_index(path_traj_xyz: str, basis: str) -> int:
@@ -161,4 +163,10 @@ def compute_HOMO_index(path_traj_xyz: str, basis: str) -> int:
     """
     mol = Molecule(path_traj_xyz, 'xyz')
 
-    return sum(valence_electrons['-'.join((at.symbol, basis))] for at in mol.atoms)
+    number_of_electrons = sum(
+        valence_electrons['-'.join((at.symbol, basis))] for at in mol.atoms)
+
+    if (number_of_electrons % 2) != 0:
+        raise RuntimeError("Unpair number of electrons detected when computing the HOMO")
+
+    return number_of_electrons // 2
