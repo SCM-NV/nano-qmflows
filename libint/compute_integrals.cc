@@ -73,7 +73,7 @@ int compute_integrals(const string& path_xyz, const string& basis_name) {
   return 42;
 }
 
-PYBIND11_MODULE(libint, m) {
+PYBIND11_MODULE(call_libint, m) {
     m.doc() = "Compute integrals using libint2 see: https://github.com/evaleev/libint/wiki";
 
     m.def("compute_integrals", &compute_integrals, "Compute integrals using libint2");
