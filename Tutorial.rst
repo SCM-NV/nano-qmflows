@@ -113,7 +113,9 @@ Using the script in this manner will only allow the couplings to be removed.
 
 Note: If required, you can remove all overlaps by by adding -o at the end of the previous command:
 
- ``removeHDF5folders.py -pn PROJECTNAME -hdf5 chunk_01234.hdf5 –o``
+
+  ``removeHDF5folders.py -pn PROJECTNAME -hdf5 chunk_01234.hdf5 –o``
+
 
 - Create a new subfolder in your original working directory and copy the *input.yml* file that was created for chunk 0 (when running the *distribute_jobs.py* script) to this folder. 
 
