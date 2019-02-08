@@ -43,17 +43,6 @@ QMFlows-NAMD has been designed mostly to be integrated with Pyxaid, a python pro
 
 In this framework, QMFlows-NAMD requires as input the coordinates of a pre-computed trajectory (at a lower level or at the same level of theory) in xyz format and the input parameters of the SCF code (HF and DFT). QMFlows-NAMD will then calculate the overlap matrix between different MOs by correcting their phase and will also track the nature of each state at the crossing seam using a min-cost algorithm . The NACVs are computed using the Hammes-Schiffer-Tully (HST) 2-point approximation and the recent Meek-Levine approach. The NACVs are then written in Pyxaid format for subsequent NAMD simulations.     
 
-Tutorial
---------
-.. toctree::
-    :maxdepth: 2
-    :numbered:
-    :titlesonly:
-    :glob:
-    :hidden:
-
-    Tutorial.rst
-
 
 Overview
 --------
