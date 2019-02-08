@@ -111,7 +111,7 @@ Replace PROJECTNAME with your project name.
 
 Using the script in this manner will only allow the couplings to be removed. 
 
-Note: If required, you can remove all overlaps by by adding -o at the end of the previous command:
+.. Note:: If required, you can remove all overlaps by by adding -o at the end of the previous command:
 
 
   ``removeHDF5folders.py -pn PROJECTNAME -hdf5 chunk_01234.hdf5 –o``
