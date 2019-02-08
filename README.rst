@@ -25,7 +25,7 @@ In order to install the *QMFlows-NAMD* library you need to install first the **Q
 Then,  to install the **QMFlows-NAMD** library type the following command inside the conda environment::
 
   pip install git+https://github.com/SCM-NV/qmflows-namd#egg=qmflows-namd --upgrade
- 
+
 
 Advantages and Limitations
 --------------------------
@@ -42,6 +42,10 @@ Interface to Pyxaid
 QMFlows-NAMD has been designed mostly to be integrated with Pyxaid, a python program that performs non-adiabatic molecular dynamic (NAMD) simulations using the classical path approximation (CPA). The CPA is based on the assumption that nuclear dynamics of the system remains unaffected by the dynamics of the electronic degrees of freedom. Hence, the electronic dynamics remains driven by the ground state nuclear dynamics. CPA is usually valid for extended materials or cluster materials of nanometric size. 
 
 In this framework, QMFlows-NAMD requires as input the coordinates of a pre-computed trajectory (at a lower level or at the same level of theory) in xyz format and the input parameters of the SCF code (HF and DFT). QMFlows-NAMD will then calculate the overlap matrix between different MOs by correcting their phase and will also track the nature of each state at the crossing seam using a min-cost algorithm . The NACVs are computed using the Hammes-Schiffer-Tully (HST) 2-point approximation and the recent Meek-Levine approach. The NACVs are then written in Pyxaid format for subsequent NAMD simulations.     
+
+Tutorial
+--------
+Tutorial
 
 
 Overview
