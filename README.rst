@@ -45,7 +45,14 @@ In this framework, QMFlows-NAMD requires as input the coordinates of a pre-compu
 
 Tutorial
 --------
-.. include:: Tutorial.rst
+.. toctree::
+    :maxdepth: 2
+    :numbered:
+    :titlesonly:
+    :glob:
+    :hidden:
+
+    Tutorial.rst
 
 
 Overview
