@@ -6,46 +6,48 @@ This tutorial focus on how to perform QMFlows-NAMD calculations with the newest 
 Preparing the input
 --------------------
 The following is an example of the `distribution input`:
-``
-workflow:
-  distribute_derivative_couplings
 
-project_name: Cd33Se33
-runner: multiprocessing
-dt: 1
-active_space: [10, 10]
-algorithm: "levine"
-tracking: False
-path_hdf5: "test/test_files/Cd33Se33.hdf5"
-path_traj_xyz: "test/test_files/Cd33Se33_fivePoints.xyz" 
-scratch_path: "/tmp/namd"
-workdir: "."
-blocks: 5
+.. code-block:: yaml
 
-job_scheduler:
-  scheduler: SLURM
-  nodes: 1
-  tasks: 24
-  wall_time: "24:00:00"
-  load_modules: "source activate qmflows\nmodule load cp2k/3.0"
+    workflow:
+      distribute_derivative_couplings
 
-  
-cp2k_general_settings:
-  basis:  "DZVP-MOLOPT-SR-GTH"
-  path_basis: "test/test_files/BASIS_MOLOPT"
-  path_potential: "test/test_files/GTH_POTENTIALS"
-  potential: "GTH-PBE"
-  cell_parameters: 28.0
-  cell_angles: [90.0, 90.0, 90.0]
+    project_name: Cd33Se33
+    runner: multiprocessing
+    dt: 1
+    active_space: [10, 10]
+    algorithm: "levine"
+    tracking: False
+    path_hdf5: "test/test_files/Cd33Se33.hdf5"
+    path_traj_xyz: "test/test_files/Cd33Se33_fivePoints.xyz" 
+    scratch_path: "/tmp/namd"
+    workdir: "."
+    blocks: 5
 
-  cp2k_settings_main:
-    specific:
-      template: pbe_main
+    job_scheduler:
+      scheduler: SLURM
+      nodes: 1
+      tasks: 24
+      wall_time: "24:00:00"
+      load_modules: "source activate qmflows\nmodule load cp2k/3.0"
 
-  cp2k_settings_guess:
-    template:
-      pbe_guess
-``
+      
+    cp2k_general_settings:
+      basis:  "DZVP-MOLOPT-SR-GTH"
+      path_basis: "test/test_files/BASIS_MOLOPT"
+      path_potential: "test/test_files/GTH_POTENTIALS"
+      potential: "GTH-PBE"
+      cell_parameters: 28.0
+      cell_angles: [90.0, 90.0, 90.0]
+
+      cp2k_settings_main:
+        specific:
+          template: pbe_main
+
+      cp2k_settings_guess:
+        template:
+          pbe_guess
+
 
 The previous input can be found at input_test_distribute_derivative_couplings.yml_. Copy this file to a folder where you want start the QMFlows calculations. 
 
