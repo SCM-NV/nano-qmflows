@@ -45,7 +45,7 @@ In this framework, QMFlows-NAMD requires as input the coordinates of a pre-compu
 
 Tutorial
 --------
-Tutorial
+.. include:: Tutorial.rst
 
 
 Overview
