@@ -16,8 +16,6 @@ The *input_test_distribute_derivative_couplings.yml* file contains all settings 
 - **basis_name**: (Why specify this when you have to specify it for each atom type?)
 - **project_name**: Project name for the calculations. 
 - **activate_space**: Range of `(occupied, virtual)` molecular orbitals to computed the derivate couplings.
-  - **nHOMO**: The **relative** index of the HOMO has to be provided within the mo_index_range. For example, when a mo_index_range is set to 15 occupied and 15 unoccupied orbitals, the nHOMO should be set to 15. 
-- **mo_index_range**: The mo_index_range is the **absolute** range of orbitals for which the overlaps/couplings will be calculated. 
 - **path_basis, path_potential**: Path to the CP2K basis set and potentials files. 
 - **path_hdf5**: Path where the hdf5 should be created / can be found.
 - **path_traj_xyz**: Path to the full trajectory.
