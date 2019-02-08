@@ -1,7 +1,7 @@
 #include <fstream>
 #include <iostream>
 #include <libint2.hpp>
-#include <pybind11/pybind11.h>
+// #include <pybind11/pybind11.h>
 #include <string>
 #include <vector>
 
@@ -73,18 +73,11 @@ int compute_integrals(const string& path_xyz, const string& basis_name) {
   return 42;
 }
 
-PYBIND11_MODULE(call_libint, m) {
-    m.doc() = "Compute integrals using libint2 see: https://github.com/evaleev/libint/wiki";
+// PYBIND11_MODULE(call_libint, m) {
+//     m.doc() = "Compute integrals using libint2 see: https://github.com/evaleev/libint/wiki";
 
-    m.def("compute_integrals", &compute_integrals, "Compute integrals using libint2");
-}
-
-
-libint2::BasisSet create_basis_set(const string& basis_name, const std::vector<Atom>& atoms) {
-  // Create a basis set of non-standard basis set for CP2K
-  
-  return libint2::BasisSet{basis_name, atoms};
-}
+//     m.def("compute_integrals", &compute_integrals, "Compute integrals using libint2");
+// }
 
 
 size_t nbasis(const std::vector<libint2::Shell>& shells) {
@@ -173,3 +166,30 @@ Matrix compute_1body_ints(const std::vector<Shell>& shells,
 
   return result;
 }
+
+libint2::BasisSet create_basis_set(const string& basis_name, const std::vector<Atom>& atoms) {
+  // Create a basis set of non-standard basis set for CP2K
+  
+  return libint2::BasisSet{basis_name, atoms};
+}
+
+
+// std::vector<Shell> make_cp2k_basis(const std::vector<Atom>& atoms) {
+//   // Make the shell for a CP2K specific basis
+
+//     std::vector<Shell> shells;
+
+//     for(auto at=0; a<atoms.size(); ++at) {
+
+//       shells.push_back({
+// 	  exponents,
+// 	    {
+// 	      {contraction, false, coefficients}
+// 	    },
+// 	      {{atoms[at].x, atoms[at].y, atoms[at].z}}   // origin coordinates
+// 	}
+// 	);	    
+//     }
+      
+//     return shells;
+// }
