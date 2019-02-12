@@ -129,6 +129,7 @@ def write_input(folder_path: str, config: dict) -> None:
               'workdir']:
         del config[k]
 
+    config['workflow'] = "derivative_couplings"
     with open(file_path, "w") as f:
         yaml.dump(config, f, default_flow_style=False, allow_unicode=True)
 
