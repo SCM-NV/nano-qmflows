@@ -51,20 +51,22 @@ The following is an example of the `distribution input`:
 
 The previous input can be found at input_test_distribute_derivative_couplings.yml_. Copy this file to a folder where you want start the QMFlows calculations. 
 
-The *input_test_distribute_derivative_couplings.yml* file contains all settings to perform the calculations and needs to be edited according to your system and preferences. Pay attention to the following parameters: *workdir, blocks, job_scheduler, basis_name, project_name, nHOMO, mo_index_range, path_basis, path_potential, path_hdf5, path_traj_xyz, scratch_path*. 
+The *input_test_distribute_derivative_couplings.yml* file contains all settings to perform the calculations and needs to be edited according to your system and preferences. Pay attention to the following parameters: *project_name, dt, active_space, algorithm, tracking, path_hdf5, path_traj_xyz, scratch_path, workdir, blocks*. 
 
-- **workdir**: This is the location where the log and the results will be written. Default setting is current directory.
-- **blocks**: Number of blocks (chunks) is related to how the trajectory is split up. As our typical trajectories are quite large (+- 2000 structures), it is convenient to split the trajectory up into multiple chunks so that several calculations can be performed simultaneously. Generally around 4-5 blocks is sufficient, depending on the length of your trajectory and the size of your system. 
-- **job_scheduler**: The launch setting for the calculations can be set with the job_scheduler. 
-- **basis_name**: (Why specify this when you have to specify it for each atom type?)
 - **project_name**: Project name for the calculations. 
-- **activate_space**: Range of `(occupied, virtual)` molecular orbitals to computed the derivate couplings.
-- **path_basis, path_potential**: Path to the CP2K basis set and potentials files. 
+- **dt**: The size of the timestep used in your simulations. 
+- **active_space**: Range of `(occupied, virtual)` molecular orbitals to computed the derivate couplings. For example, if 50 occupied and 100 virtual should be considered in your calculations, the active space should be set to [50, 100].
+- **algorithm**: Algorithm to calculate derivative couplings can be set to ‘levine’ or ‘3points’.
+- **tracking**: If required, you can track each of the states over the whole trajectory. 
 - **path_hdf5**: Path where the hdf5 should be created / can be found.
 - **path_traj_xyz**: Path to the full trajectory.
 - **scratch_path**: A scratch path is required to perform the calculations. For large systems, the .hdf5 files can become quite large (in GBs) and calculations are instead performed in the scratch workspace. The final results will also be stored here.
+- **workdir**: This is the location where the log and the results will be written. Default setting is current directory.
+- **blocks**: The number of blocks (chunks) is related to how the trajectory is split up. As typical trajectories are quite large (+- 2000 structures), it is convenient to split the trajectory up into multiple chunks so that several calculations can be performed simultaneously. Generally around 4-5 blocks is sufficient, depending on the length of the trajectory and the size of the system. 
 
-The settings below these initial parameters are the settings used to generate the cp2k input. You can customize these settings as required for your calculations. Use the cp2k manual_ to create your custom input. 
+The **job_scheduler** can be found below these parameters. Customize these settings according to the system and environment you are using to perform the calculations. 
+
+In the **cp2k_general_settings**, you can customize the settings used to generate the cp2k input. You can use the cp2k manual_ to create your custom input requirements. Remember to provide a path to the folder with the cp2k basis set anc potential files.
 
 .. _manual: https://manual.cp2k.org/
 .. _input_test_distribute_derivative_couplings.yml: https://github.com/SCM-NV/qmflows-namd/blob/master/test/test_files/input_test_distribute_derivative_couplings.yml
