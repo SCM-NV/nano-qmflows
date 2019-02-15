@@ -1,16 +1,18 @@
 Tutorial on QMFlows-NAMD calculations (YML input)
 ====================
 
-This tutorial focus on how to perform QMFlows-NAMD calculations with the newest version of QMFlows, where the *input_test_distribute_derivative_couplings.yml* input is used instead of the *distribute_job.py* input used in older versions. When using this tutorial, ensure you have the latest version of QMFlows and QMFlows-NAMD installed.
+This tutorial focus on how to compute non-adiabatic coupling vectors between molecular orbitals belonging at two different time steps, t and t+dt, of a pre-computed molecular dynamics trajectory. What this program does is to compute at each point of the trajectory, the electronic structure using DFT, and then the overlap integrals <psi_i(t)|psi_j(t+dt)>. These integrals are stored and finally used to compute numerically the non-adiabatic couplings. These and the orbital energies are written in a format readable by PYXAID to perform surface hopping dynamics. 
+
+When using this tutorial, ensure you have the latest version of QMFlows and QMFlows-NAMD installed.
 
 Preparing the input
 --------------------
-The following is an example of the `distribution input`:
+The following is an example of the inputfile for the calculation of derivative couplings for the Cd33Se33 system. The calculations are carried out with the CP2k package, which you need to have pre-installed. The level of theory is DFT/PBE. 
 
 .. code-block:: yaml
 
-		workflow:
-      distribute_derivative_couplings
+    workflow:
+    distribute_derivative_couplings
 
     project_name: Cd33Se33
     runner: multiprocessing
@@ -53,16 +55,18 @@ The previous input can be found at input_test_distribute_derivative_couplings.ym
 
 The *input_test_distribute_derivative_couplings.yml* file contains all settings to perform the calculations and needs to be edited according to your system and preferences. Pay attention to the following parameters: *project_name, dt, active_space, algorithm, tracking, path_hdf5, path_traj_xyz, scratch_path, workdir, blocks*. 
 
-- **project_name**: Project name for the calculations. 
-- **dt**: The size of the timestep used in your simulations. 
-- **active_space**: Range of `(occupied, virtual)` molecular orbitals to computed the derivate couplings. For example, if 50 occupied and 100 virtual should be considered in your calculations, the active space should be set to [50, 100].
+- **project_name**: Project name for the calculations. You can choose what you wish. 
+- **dt**: The size of the timestep used in your MD simulations. 
+- **active_space**: Range of `(occupied, virtual)` molecular orbitals to computed the derivate couplings. For example, if 50 occupied and 100 virtual should be considered in your calculations, the active space should be set to [50, 100]. 
 - **algorithm**: Algorithm to calculate derivative couplings can be set to ‘levine’ or ‘3points’.
-- **tracking**: If required, you can track each of the states over the whole trajectory. 
-- **path_hdf5**: Path where the hdf5 should be created / can be found.
-- **path_traj_xyz**: Path to the full trajectory.
-- **scratch_path**: A scratch path is required to perform the calculations. For large systems, the .hdf5 files can become quite large (in GBs) and calculations are instead performed in the scratch workspace. The final results will also be stored here.
-- **workdir**: This is the location where the log and the results will be written. Default setting is current directory.
-- **blocks**: The number of blocks (chunks) is related to how the trajectory is split up. As typical trajectories are quite large (+- 2000 structures), it is convenient to split the trajectory up into multiple chunks so that several calculations can be performed simultaneously. Generally around 4-5 blocks is sufficient, depending on the length of the trajectory and the size of the system. 
+- **tracking**: If required, you can track each state over the whole trajectory. You can also disable this option.  
+- **path_hdf5**: Path where the hdf5 should be created / can be found. The hdf5 is the format used to store the molecular orbitals and other information. 
+- **path_traj_xyz**: Path to the pre-computed MD trajectory. It should be provided in xyz format. 
+- **scratch_path**: A scratch path is required to perform the calculations. For large systems, the .hdf5 files can become quite large (hundredths of GBs) and calculations are instead performed in the scratch workspace. The final results will also be stored here.
+- **workdir**: This is the location where the logfile and the results will be written. Default setting is current directory.
+- **blocks**: The number of blocks (chunks) is related to how the MD trajectory is split up. As typical trajectories are quite large (+- 5000 structures), it is convenient to split the trajectory up into multiple chunks so that several calculations can be performed simultaneously. Generally around 4-5 blocks is sufficient, depending on the length of the trajectory and the size of the system. 
+- **write_overlaps**: The overlap integrals are stored locally. This option is usually activated for debugging.
+- **overlaps_deph**: The overlap integrals are computed between t=0 and all othe times: <psi_i (t=0) | psi_j (t + dt)>. This option is of interest to understand how long it takes to a molecular orbital to dephase from its starting configuration. This option is disabled by default. 
 
 The **job_scheduler** can be found below these parameters. Customize these settings according to the system and environment you are using to perform the calculations. 
 
@@ -125,4 +129,4 @@ Using the script in this manner will only allow the couplings to be removed.
 
 - Relaunch the calculation.
 
-Once the remaining overlaps and the couplings have been calculated successfully, the hdf5 files and hamiltonians will be written to both the working directory as well as the scratch folder. The overlaps can be found in the working directory.
+Once the remaining overlaps and the couplings have been calculated successfully, the hdf5 files and hamiltonians will be written to both the working directory as well as the scratch folder in a format suitable for PYXAID to run the non-adiabatic excited state molecular dynamics. If requested, also the overlap integrals can be found in the working directory.
