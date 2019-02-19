@@ -24,6 +24,7 @@ In order to install the *QMFlows-NAMD* library you need to install first the **Q
 
 Then,  to install the **QMFlows-NAMD** library type the following command inside the conda environment::
 
+  conda install -c conda-forge libint
   pip install git+https://github.com/SCM-NV/qmflows-namd#egg=qmflows-namd --upgrade
  
 
