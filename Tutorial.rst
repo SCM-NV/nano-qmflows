@@ -11,9 +11,7 @@ The following is an example of the inputfile for the calculation of derivative c
 
 .. code-block:: yaml
 
-    workflow:
-    distribute_derivative_couplings
-
+    workflow: distribute_derivative_couplings
     project_name: Cd33Se33
     runner: multiprocessing
     dt: 1
@@ -47,8 +45,8 @@ The following is an example of the inputfile for the calculation of derivative c
           template: pbe_main
 
       cp2k_settings_guess:
-        template:
-          pbe_guess
+        specific:
+          template: pbe_guess
 
 
 The previous input can be found at input_test_distribute_derivative_couplings.yml_. Copy this file to a folder where you want start the QMFlows calculations. 
