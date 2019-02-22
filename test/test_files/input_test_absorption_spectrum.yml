@@ -29,5 +29,5 @@ cp2k_general_settings:
       template: pbe_main
 
   cp2k_settings_guess:
-    template:
-      pbe_guess
+    specific: 
+      template: pbe_guess
