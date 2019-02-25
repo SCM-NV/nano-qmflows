@@ -10,7 +10,8 @@ install:
   # Useful for debugging any issues with conda
   - conda info -a
 
-  # Install virtual enviroment 
+  # Install virtual enviroment
+  - conda create --name namd python=3.6
   - conda install cython h5py
   - conda install -c rdkit rdkit
 
