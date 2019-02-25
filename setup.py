@@ -1,11 +1,27 @@
 from Cython.Distutils import build_ext
 from setuptools import (Extension, find_packages, setup)
+from subprocess import (PIPE, Popen)
 import os
-import shutil
 
-if shutil.which('icc') is not None:
+
+def check_compiler(compiler: str) -> bool:
+    """
+    Check that a compiler is available
+    """
+    cmd = "{} --version".format(compiler)
+    p = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, shell=True)
+    rs = p.communicate()
+    err = rs[1]
+    if err:
+        print(compiler, " compiler not avaialable!")
+    return True if not err else False
+
+
+if check_compiler('icc'):
     os.environ['CC'] = 'icc'
-    os.environ['LDSHARED'] = 'icc -shared'
+    flags = ['-shared']
+elif check_compiler('gcc'):
+    flags = ['-fopenmp']
 
 
 def readme():
@@ -13,10 +29,22 @@ def readme():
         return f.read()
 
 
+def check_compiler(cmd: str) -> bool:
+    """
+    Check that a compiler is available
+    """
+    p = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, shell=True)
+    rs = p.communicate()
+    err = rs[1]
+    if err:
+        print(cmd, " compiler not avaialable!")
+    return True if not err else False
+
+
 ext_obara_saika = Extension(
         'multipoleObaraSaika', ['nac/integrals/multipoleObaraSaika.pyx'],
-        extra_compile_args=['-fopenmp'],
-        extra_link_args=['-fopenmp'])
+        extra_compile_args=flags,
+        extra_link_args=flags)
 
 setup(
     name='qmflows-namd',
@@ -41,7 +69,7 @@ setup(
         'cython>=0.29.2', 'numpy', 'h5py', 'noodles==0.3.1',
         'qmflows>=0.3.0', 'pymonad', 'scipy', 'schema', 'pyyaml'],
     dependency_links=[
-            "https://github.com/SCM-NV/qmflows/tarball/master#egg=qmflows"],
+        "https://github.com/SCM-NV/qmflows/tarball/master#egg=qmflows"],
     cmdclass={'build_ext': build_ext},
     ext_modules=[ext_obara_saika],
     extras_require={
