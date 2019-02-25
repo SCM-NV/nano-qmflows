@@ -45,7 +45,7 @@ setup(
     cmdclass={'build_ext': build_ext},
     ext_modules=[ext_obara_saika],
     extras_require={
-        'test': ['coverage', 'pytest', 'pytest-cov', 'codacy-coverage']},
+        'test': ['coverage', 'pytest>=3.9', 'pytest-cov', 'codacy-coverage']},
     include_package_data=True,
     package_data={
         'nac': ['basisSet/valence_electrons.json']
