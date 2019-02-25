@@ -60,8 +60,8 @@ def compute_excited_states_tddft(config: dict, path_MOs: list, dict_input: dict)
     energy, c_ao = retrieve_hdf5_data(config.path_hdf5, path_MOs)
 
     # Number of virtual orbitals
-    nocc = config.nHOMO
-    nvirt = c_ao.shape[1] - nocc
+    nocc = config.active_space[0]
+    nvirt = config.active_space[1]
 
     if tddft == 'sing_orb':
         omega = -np.subtract(
