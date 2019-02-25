@@ -5,7 +5,7 @@ __all__ = [
 
 
 from numbers import Real
-from schema import (And, Optional, Schema, Use)
+from schema import (And, Optional, Or, Schema, Use)
 import os
 
 
@@ -29,7 +29,10 @@ schema_cp2k_general_settings = Schema({
     "potential": str,
 
     # Specify the Cartesian components for the cell vector
-    "cell_parameters": Real,
+    "cell_parameters": Or(
+        Real,
+        lambda xs: len(xs) == 3 and isinstance(xs, list),
+        lambda xs: len(xs) == 3 and all(len(r) == 3 for r in xs)),
 
     # Type of periodicity
     Optional("periodic", default="none"):  And(
