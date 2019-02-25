@@ -14,7 +14,7 @@ install:
   - conda create --name namd python=3.6
   - source activate namd
   - conda install cython h5py
-  - conda install -c rdkit rdkit
+  - conda install -c conda-forge rdkit
 
   - pip install "git+https://github.com/SCM-NV/PLAMS@master#egg=plams-1.2"
   - pip install "https://github.com/SCM-NV/qmflows/tarball/master#egg=qmflows"
