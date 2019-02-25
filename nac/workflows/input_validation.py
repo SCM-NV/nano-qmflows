@@ -88,7 +88,7 @@ def add_missing_keywords(d: Dict) -> Dict:
 
     # Added_mos keyword
     add_mo_index_range(d)
-    
+
     # Add restart point
     add_restart_point(general)
 
@@ -97,6 +97,9 @@ def add_missing_keywords(d: Dict) -> Dict:
 
     # add cell parameters
     add_cell_parameters(general)
+
+    # Add Periodic properties
+    add_periodic(general)
 
     return d
 
@@ -126,6 +129,14 @@ def add_cell_parameters(general: dict) -> None:
     for s in (general[p] for p in ['cp2k_settings_main', 'cp2k_settings_guess']):
         s.cell_parameters = general['cell_parameters']
         s.cell_angles = general['cell_angles']
+
+
+def add_periodic(general: dict) -> None:
+    """
+    Add the keyword for the periodicity of the system
+    """
+    for s in (general[p] for p in ['cp2k_settings_main', 'cp2k_settings_guess']):
+        s.specific.cp2k.force_eval.subsys.cell.periodic = general['periodic']
 
 
 def add_restart_point(general: dict) -> None:
@@ -169,3 +180,4 @@ def compute_HOMO_index(path_traj_xyz: str, basis: str) -> int:
         raise RuntimeError("Unpair number of electrons detected when computing the HOMO")
 
     return number_of_electrons // 2
+
