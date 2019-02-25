@@ -161,5 +161,3 @@ def call_setup(ext, builder):
 
 
 call_setup(ext_pybind, BuildExt)
-
-# call_setup(ext_obara_saika, build_ext)
