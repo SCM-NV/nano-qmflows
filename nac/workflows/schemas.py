@@ -35,7 +35,7 @@ schema_cp2k_general_settings = Schema({
         lambda xs: len(xs) == 3 and all(len(r) == 3 for r in xs)),
 
     # Type of periodicity
-    Optional("periodic", default="none"):  And(
+    "periodic":  And(
         str, Use(str.lower), lambda s: s in (
             "none", "x", "y", "z", "xy", "xy", "yz", "xyz")),
 

@@ -23,7 +23,7 @@ cp2k_general_settings:
   path_potential: "test/test_files/GTH_POTENTIALS"
   cell_parameters: 5.0
   cell_angles: [90.0, 90.0, 90.0]
-  periodic: "none"
+  periodic: none
   
   cp2k_settings_main:
     specific:
