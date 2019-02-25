@@ -143,7 +143,6 @@ def add_mo_index_range(dict_input: dict) -> None:
     """
     Compute the MO range to print
     """
-    print("call add_mo_index_range")
     active_space = dict_input['active_space']
     nHOMO = dict_input["nHOMO"]
     mo_index_range = nHOMO - active_space[0], nHOMO + active_space[1]

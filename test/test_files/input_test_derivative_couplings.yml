@@ -28,6 +28,7 @@ cp2k_general_settings:
   basis: "DZVP-MOLOPT-SR-GTH"
   cell_parameters: 45.0
   cell_angles: [90.0, 90.0, 90.0]
+  periodic: "NONE"
 
   cp2k_settings_main:
     specific:

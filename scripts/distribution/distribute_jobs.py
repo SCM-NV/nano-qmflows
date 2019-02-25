@@ -93,7 +93,7 @@ def distribute_computations(config: dict) -> None:
         dim_batch = compute_number_of_geometries(join(folder_path, file_xyz))
 
         # Write input file
-        write_input(folder_path, config['cp2k_general_settings'])
+        write_input(folder_path, config)
 
         # Slurm executable
         if config.job_scheduler["scheduler"].upper() == "SLURM":
@@ -113,17 +113,25 @@ def write_input(folder_path: str, config: dict) -> None:
 
     # transform settings to standard dictionary
     config = settings2Dict(config)
-    # config["cp2k_settings_main"] = settings2Dict(config["cp2k_settings_main"])
-    # config["cp2k_settings_guess"] = settings2Dict(config["cp2k_settings_guess"])
+    config["cp2k_general_settings"]["cp2k_settings_main"] = settings2Dict(
+        config["cp2k_general_settings"]["cp2k_settings_main"])
+    config["cp2k_general_settings"]["cp2k_settings_guess"] = settings2Dict(
+        config["cp2k_general_settings"]["cp2k_settings_guess"])
 
     # basis and potential
-    config["path_basis"] = os.path.abspath(config["path_basis"])
-    config["path_potential"] = os.path.abspath(config["path_potential"])
+    config["cp2k_general_settings"]["path_basis"] = os.path.abspath(
+        config["cp2k_general_settings"]["path_basis"])
+    config["cp2k_general_settings"]["path_potential"] = os.path.abspath(
+        config["cp2k_general_settings"]["path_potential"])
 
-    d = {"workflow": "derivative_couplings", "general_settings": config}
+    # remove keys from input
+    for k in ['blocks', 'calculate_guesses', 'job_scheduler', 'mo_index_range',
+              'workdir']:
+        del config[k]
 
+    config['workflow'] = "derivative_couplings"
     with open(file_path, "w") as f:
-        yaml.dump(d, f, default_flow_style=False, allow_unicode=True)
+        yaml.dump(config, f, default_flow_style=False, allow_unicode=True)
 
 
 def write_slurm_script(

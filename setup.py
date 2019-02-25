@@ -47,8 +47,9 @@ ext_pybind = Extension(
         '/usr/include/eigen3'
     ],
     libraries=['int2'],
-    library_dirs=['/home/felipe/modules/libint/lib'],
+    library_dirs=['/home/felipe/miniconda3/envs/namd/lib'],
     language='c++'
+
 )
 
 
@@ -137,7 +138,7 @@ def call_setup(ext, builder):
         cmdclass={'build_ext': builder},
         ext_modules=[ext],
         extras_require={
-            'test': ['coverage', 'pytest', 'pytest-cov', 'codacy-coverage']},
+            'test': ['coverage', 'pytest>=3.9', 'pytest-cov', 'codacy-coverage']},
         include_package_data=True,
         package_data={
             'nac': ['basisSet/valence_electrons.json']

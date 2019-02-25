@@ -4,7 +4,9 @@
    :target: https://www.codacy.com/app/tifonzafel/nonAdiabaticCoupling?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=felipeZ/nonAdiabaticCoupling&amp;utm_campaign=Badge_Grade
 .. image:: https://readthedocs.org/projects/qmflows-namd/badge/?version=latest
    :target: https://qmflows-namd.readthedocs.io/en/latest/?badge=latest
-	     
+.. image:: https://zenodo.org/badge/60843787.svg
+   :target: https://zenodo.org/badge/latestdoi/60843787
+
 ====================
 QMFlows-NAMD
 ====================
@@ -22,11 +24,10 @@ In order to install the *QMFlows-NAMD* library you need to install first the **Q
 
 .. _here: https://github.com/SCM-NV/qmflows
 
-Then,  to install the **QMFlows-NAMD** library type the following command inside the conda environment::
-
+Then,  to install the **QMFlows-NAMD** library type the following commands inside the conda environment::
   conda install -c conda-forge libint
   pip install git+https://github.com/SCM-NV/qmflows-namd#egg=qmflows-namd --upgrade
- 
+
 
 Advantages and Limitations
 --------------------------

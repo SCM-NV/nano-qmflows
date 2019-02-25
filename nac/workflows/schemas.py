@@ -31,6 +31,11 @@ schema_cp2k_general_settings = Schema({
     # Specify the Cartesian components for the cell vector
     "cell_parameters": Real,
 
+    # Type of periodicity
+    Optional("periodic", default="none"):  And(
+        str, Use(str.lower), lambda s: s in (
+            "none", "x", "y", "z", "xy", "xy", "yz", "xyz")),
+
     # Specify the angles between the vectors defining the unit cell
     Optional("cell_angles", default=[90, 90, 90]): list,
 
