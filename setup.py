@@ -17,10 +17,7 @@ def check_compiler(compiler: str) -> bool:
     return True if not err else False
 
 
-if check_compiler('icc'):
-    os.environ['CC'] = 'icc'
-    flags = ['-shared']
-elif check_compiler('gcc'):
+if check_compiler('gcc'):
     flags = ['-fopenmp']
 
 
