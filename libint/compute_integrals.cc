@@ -26,11 +26,9 @@ size_t nbasis(const std::vector<libint2::Shell>& shells);
 
 // Count the number of basis functions for each shell
 std::vector<size_t> map_shell_to_basis_function(const std::vector<libint2::Shell>& shells);
-// One body Operator
-Matrix compute_1body_ints(const std::vector<Shell>& shells,
-                          Operator t,
-                          const std::vector<Atom>& atoms = std::vector<Atom>());
 
+// Overlaps for the derivative coupling
+Matrix compute_overlaps(const std::vector<Shell>& shells_1, const std::vector<Shell>& shells_2);
 
 int compute_integrals(const string& path_xyz, const string& basis_name);
 libint2::BasisSet create_basis_set(const string& basis_name, const std::vector<Atom>& atoms);
@@ -61,14 +59,12 @@ int compute_integrals(const string& path_xyz, const string& basis_name) {
   libint2::initialize();
 
   // compute Overlap integrals
-    auto S = compute_1body_ints(shells, Operator::overlap);
-    std::cout << "rows: " << S.rows() << " cols: " << S.cols() << "\n";
-    // std::cout << "\n\tOverlap Integrals:\n";
-    // std::cout << S << "\n";
+  auto S = compute_overlaps(shells, shells);
+  std::cout << "rows: " << S.rows() << " cols: " << S.cols() << "\n";
+  // std::cout << "\n\tOverlap Integrals:\n";
+  // std::cout << S << "\n";
   
   libint2::finalize();
-  
-  std::cout << "all right!" << "\n";
   
   return 42;
 }
@@ -115,52 +111,37 @@ std::vector<size_t> map_shell_to_basis_function(const std::vector<Shell>& shells
   return result;
 }
 
-Matrix compute_1body_ints(const std::vector<Shell>& shells,
-                          libint2::Operator obtype,
-                          const std::vector<Atom>& atoms)
+Matrix compute_overlaps(const std::vector<Shell>& shells_1, const std::vector<Shell>& shells_2)
 {
 
-  const auto n = nbasis(shells);
-  Matrix result(n,n);
+  const auto n = nbasis(shells_1);
+  Matrix result(n, n);
 
   // construct the overlap integrals engine
-  Engine engine(obtype, max_nprim(shells), max_l(shells), 0);
-  // nuclear attraction ints engine needs to know where the charges sit ...
-  // the nuclei are charges in this case; in QM/MM there will also be classical charges
-  if (obtype == Operator::nuclear) {
-    std::vector<std::pair<real_t,std::array<real_t,3>>> q;
-    for(const auto& atom : atoms) {
-      q.push_back( {static_cast<real_t>(atom.atomic_number), {{atom.x, atom.y, atom.z}}} );
-    }
-    engine.set_params(q);
-  }
-
-  auto shell2bf = map_shell_to_basis_function(shells);
+  Engine engine(Operator::overlap, max_nprim(shells_1), max_l(shells_1), 0);
+  auto shell2bf = map_shell_to_basis_function(shells_1);
 
   // buf[0] points to the target shell set after every call  to engine.compute()
   const auto& buf = engine.results();
 
-  // loop over unique shell pairs, {s1,s2} such that s1 >= s2
-  // this is due to the permutational symmetry of the real integrals over Hermitian operators: (1|2) = (2|1)
-  for(auto s1=0; s1!=shells.size(); ++s1) {
+  // loop over unique shell pairs, {s1,s2}
+  // Notem
+  for(auto s1=0; s1!=shells_1.size(); ++s1) {
 
     auto bf1 = shell2bf[s1]; // first basis function in this shell
-    auto n1 = shells[s1].size();
+    auto n1 = shells_1[s1].size();
 
-    for(auto s2=0; s2<=s1; ++s2) {
+    for(auto s2=0; s2 != shells_2.size(); ++s2) {
 
       auto bf2 = shell2bf[s2];
-      auto n2 = shells[s2].size();
+      auto n2 = shells_2[s2].size();
 
       // compute shell pair
-      engine.compute(shells[s1], shells[s2]);
+      engine.compute(shells_1[s1], shells_2[s2]);
 
       // "map" buffer to a const Eigen Matrix, and copy it to the corresponding blocks of the result
       Eigen::Map<const Matrix> buf_mat(buf[0], n1, n2);
       result.block(bf1, bf2, n1, n2) = buf_mat;
-      if (s1 != s2) // if s1 >= s2, copy {s1,s2} to the corresponding {s2,s1} block, note the transpose!
-      result.block(bf2, bf1, n2, n1) = buf_mat.transpose();
-
     }
   }
 
