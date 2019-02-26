@@ -19,6 +19,9 @@
 #include <highfive/H5DataSet.hpp>
 #include <highfive/H5DataSpace.hpp>
 
+// Constants
+#include "namd.h"
+
 using std::string;
 using HighFive::Attribute;
 using HighFive::File;
@@ -27,6 +30,8 @@ using libint2::Atom;
 using libint2::Engine;
 using libint2::Operator;
 using libint2::Shell;
+using namd::map_elements;
+using namd::CP2K_Basis_Atom;
 
 using real_t = libint2::scalar_type;
 
@@ -49,13 +54,6 @@ libint2::BasisSet create_basis_set(const string& basis_name, const std::vector<A
 
 void test_read(const string& path_hdf5, const string& path_xyz, const string& basis);
 
-struct CP2K_Basis_Atom {
-  // Contains the basis specificationf for a given atom
-  string symbol;
-  std::vector<std::vector<double>> coefficients;
-  std::vector<double> exponents;
-  std::vector<int> basis_format;
-};
 
 int main() {
 
@@ -230,20 +228,6 @@ CP2K_Basis_Atom read_basis_from_hdf5(const string& path_file, const string& symb
 
 std::vector<string> get_unique_symbols(const std::vector<Atom>& atoms) {
   // Return a set of unique symbols
-  std::unordered_map<int, string> z_element = {
-    {1, "h"}, {2, "he"}, {3, "li"}, {4, "be"}, {5, "b"}, {6, "c"}, {7, "n"}, {8, "o"},
-    {9, "f"}, {10, "ne"}, {11, "na"}, {12, "mg"}, {13, "al"}, {14, "si"}, {15, "p"}, {16, "s"},
-    {17, "cl"}, {18, "ar"}, {19, "k"}, {20, "ca"}, {21, "sc"}, {22, "ti"}, {23, "v"}, {24, "cr"},
-    {25, "mn"}, {26, "fe"}, {27, "co"}, {28, "ni"}, {29, "cu"}, {30, "zn"}, {31, "ga"}, {32, "ge"},
-    {33, "as"}, {34, "se"}, {35, "br"}, {36, "kr"}, {37, "rb"}, {38, "sr"}, {39, "y"}, {40, "zr"},
-    {41, "nb"}, {42, "mo"}, {43, "tc"}, {44, "ru"}, {45, "rh"}, {46, "pd"}, {47, "ag"}, {48, "cd"},
-    {49, "in"}, {50, "sn"}, {51, "sb"}, {52, "te"}, {53, "i"}, {54, "xe"}, {55, "cs"}, {56, "ba"},
-    {57, "la"}, {58, "ce"}, {59, "pr"}, {60, "nd"}, {61, "pm"}, {62, "sm"}, {63, "eu"}, {64, "gd"},
-    {65, "tb"}, {66, "dy"}, {67, "ho"}, {68, "er"}, {69, "tm"}, {70, "yb"}, {71, "lu"}, {72, "hf"},
-    {73, "ta"}, {74, "w"}, {75, "re"}, {76, "os"}, {77, "ir"}, {78, "pt"}, {79, "au"}, {80, "hg"},
-    {81, "tl"}, {82, "pb"}, {83, "bi"}, {84, "po"}, {85, "at"}, {86, "rn"}, {87, "fr"}, {88, "ra"},
-    {89, "ac"}, {90, "th"}, {91, "pa"}, {92, "u"}, {93, "np"}, {94, "pu"}, {95, "am"}, {96, "cm"}
-  };
   std::vector<int> elements;
   std::transform(atoms.begin(), atoms.end(), std::back_inserter(elements),
 		 [](const Atom& at) {return at.atomic_number;}
@@ -254,7 +238,7 @@ std::vector<string> get_unique_symbols(const std::vector<Atom>& atoms) {
   // create a unique vector of symbols
   std::vector<string> symbols;
   std::transform(set.cbegin(), set.cend(), std::back_inserter(symbols),
-		 [&z_element](int x) {return z_element[x];});
+		 [](int x) {return map_elements[x];});
   return symbols;
 }
 
@@ -274,15 +258,24 @@ std::unordered_map<string, CP2K_Basis_Atom> create_map_symbols_basis(
 }
 
 
-std::vector<Shell> make_cp2k_basis(const std::vector<Atom>& atoms, const string& Basis) {
+std::vector<Shell> make_cp2k_basis(const string& path_hdf5, const string& path_xyz, const string& basis) {
   // Make the shell for a CP2K specific basis
+  
+  std::vector<Shell> shells;
 
-    std::vector<Shell> shells;
+  // Read atoms
+  std::ifstream input_file(path_xyz);
+  std::vector<Atom> atoms = libint2::read_dotxyz(input_file);
+  std::vector<string> symbols = get_unique_symbols(atoms);
 
+  
+  // Read basis set data from the HDF5
+  std::unordered_map<string, CP2K_Basis_Atom> dict =
+    create_map_symbols_basis(path_hdf5, atoms, basis);
     
-    
-//     for(auto at=0; a<atoms.size(); ++at) {
+  // for(auto at=0; at < atoms.size(); ++at) {
 
+      // CP2K_Basis_Atom data = dict[]
 //       shells.push_back({
 // 	  exponents,
 // 	    {
@@ -291,16 +284,17 @@ std::vector<Shell> make_cp2k_basis(const std::vector<Atom>& atoms, const string&
 // 	      {{atoms[at].x, atoms[at].y, atoms[at].z}}   // origin coordinates
 // 	}
 // 	);	    
-//     }
+    // }
       
     return shells;
 }
 
 void test_read(const string& path_hdf5, const string& path_xyz, const string& basis) {
+
+  // Read atoms
   std::ifstream input_file(path_xyz);
   std::vector<Atom> atoms = libint2::read_dotxyz(input_file);
   std::vector<string> symbols = get_unique_symbols(atoms);
-
  
   std::unordered_map<string, CP2K_Basis_Atom> result =
     create_map_symbols_basis(path_hdf5, atoms, basis);
