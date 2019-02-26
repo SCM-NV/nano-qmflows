@@ -3,7 +3,7 @@
 export MINICONDA=${HOME}/miniconda3/envs/namd
 
 # CPP call
-g++ -O2 -o main -I${MINICONDA}/include -I${MINICONDA}/include/eigen3 compute_integrals.cc ${MINICONDA}/lib/libint2.a -L${MINICONDA}/lib -lhdf5
+g++ -O2 -o main -I${MINICONDA}/include -I${MINICONDA}/include/eigen3 -Iinclude compute_integrals.cc ${MINICONDA}/lib/libint2.a -L${MINICONDA}/lib -lhdf5
 
 # g++ -O2 -I${MINICONDA}/include -I${MINICONDA}/include/eigen3 compute_integrals.cc -L${MINICONDA}/lib  -o main
 

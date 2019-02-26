@@ -30,24 +30,11 @@ using libint2::Atom;
 using libint2::Engine;
 using libint2::Operator;
 using libint2::Shell;
-using namd::map_elements;
 using namd::CP2K_Basis_Atom;
+using namd::map_elements;
+using namd::Matrix;
 
-using real_t = libint2::scalar_type;
 
-// import dense, dynamically sized Matrix type from Eigen;
-// this is a matrix with row-major storage (http://en.wikipedia.org/wiki/Row-major_order)
-// to meet the layout of the integrals returned by the Libint integral library
-using  Matrix = Eigen::Matrix<real_t, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
-
-// compute the number of basis set for the molecule
-size_t nbasis(const std::vector<libint2::Shell>& shells);
-
-// Count the number of basis functions for each shell
-std::vector<size_t> map_shell_to_basis_function(const std::vector<libint2::Shell>& shells);
-
-// Overlaps for the derivative coupling
-Matrix compute_overlaps(const std::vector<Shell>& shells_1, const std::vector<Shell>& shells_2);
 
 int compute_integrals(const string& path_xyz, const string& basis_name);
 libint2::BasisSet create_basis_set(const string& basis_name, const std::vector<Atom>& atoms);
@@ -65,31 +52,6 @@ int main() {
   auto xs = compute_integrals(path_xyz, basis_name);
   test_read(path_hdf5, path_xyz, "DZVP-MOLOPT-SR-GTH");
     }
-
-
-int compute_integrals(const string& path_xyz, const string& basis_name) {
-  // Compute the overlap integrals for the molecule define in `path_xyz` using
-  // the `basis_name`
-  
-  // Read molecular geometry
-  std::ifstream input_file(path_xyz);
-  std::vector<Atom> atoms = libint2::read_dotxyz(input_file);
-
-  auto shells = create_basis_set(basis_name, atoms);
-
-  // safe to use libint now
-  libint2::initialize();
-
-  // compute Overlap integrals
-  auto S = compute_overlaps(shells, shells);
-  std::cout << "rows: " << S.rows() << " cols: " << S.cols() << "\n";
-  // std::cout << "\n\tOverlap Integrals:\n";
-  // std::cout << S << "\n";
-  
-  libint2::finalize();
-  
-  return 42;
-}
 
 // PYBIND11_MODULE(call_libint, m) {
 //     m.doc() = "Compute integrals using libint2 see: https://github.com/evaleev/libint/wiki";
@@ -168,6 +130,30 @@ Matrix compute_overlaps(const std::vector<Shell>& shells_1, const std::vector<Sh
   }
 
   return result;
+}
+
+int compute_integrals(const string& path_xyz, const string& basis_name) {
+  // Compute the overlap integrals for the molecule define in `path_xyz` using
+  // the `basis_name`
+  
+  // Read molecular geometry
+  std::ifstream input_file(path_xyz);
+  std::vector<Atom> atoms = libint2::read_dotxyz(input_file);
+
+  auto shells = create_basis_set(basis_name, atoms);
+
+  // safe to use libint now
+  libint2::initialize();
+
+  // compute Overlap integrals
+  auto S = compute_overlaps(shells, shells);
+  std::cout << "rows: " << S.rows() << " cols: " << S.cols() << "\n";
+  // std::cout << "\n\tOverlap Integrals:\n";
+  // std::cout << S << "\n";
+  
+  libint2::finalize();
+  
+  return 42;
 }
 
 libint2::BasisSet create_basis_set(const string& basis_name, const std::vector<Atom>& atoms) {
