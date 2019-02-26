@@ -243,6 +243,40 @@ std::unordered_map<string, CP2K_Basis_Atom> create_map_symbols_basis(
   return dict;
 }
 
+std::vector<Shell> create_shells_for_atom(const CP2K_Basis_Atom& data, const Atom& atom) {
+  // Create the shell specification for a given atom.
+  // The CP2K basis format is defined by a vector of integers, for each atom. For example
+  // For the C atom and the Basis DZVP-MOLOPT-GTH the basis format is:
+  //  2 0 2 7 2 2 1
+  // where:
+  //   * 2 is the Principal quantum number
+  //   * 0 is the minimum angular momemtum l
+  //   * 2 is the maximum angular momentum l
+  //   * 7 is the number of total exponents
+  //   * 2 Contractions of S Gaussian Orbitals
+  //   * 2 Contractions of P Gaussian Orbitals
+  //   * 1 Contraction of D Gaussian Orbital
+  // Note: From element 4 onwards are define the number of contracted for each quantum number.
+  std::vector<int> basis_format = data.basis_format;
+  std::vector<Shell> shells;
+
+  auto acc= 0;
+  for (auto i=0; i+4 < basis_format.size(); i++){
+    for (auto j=0; j < basis_format[i + 4]; j++){
+      shells.push_back({
+	  data.exponents,
+	    {
+	      {i, false, data.coefficients[acc]}
+	    },
+	    // Atomic Coordinates
+	      {{atom.x, atom.y, atom.z}}
+	}
+	);
+      acc += 1;
+    }
+  }
+  return shells;
+}
 
 std::vector<Shell> make_cp2k_basis(const string& path_hdf5, const string& path_xyz, const string& basis) {
   // Make the shell for a CP2K specific basis
@@ -259,9 +293,9 @@ std::vector<Shell> make_cp2k_basis(const string& path_hdf5, const string& path_x
   std::unordered_map<string, CP2K_Basis_Atom> dict =
     create_map_symbols_basis(path_hdf5, atoms, basis);
     
-  // for(auto at=0; at < atoms.size(); ++at) {
+  for(const auto& atom: atoms) {
 
-      // CP2K_Basis_Atom data = dict[]
+    CP2K_Basis_Atom data = dict[map_elements[atom.atomic_number]];
 //       shells.push_back({
 // 	  exponents,
 // 	    {
@@ -270,7 +304,7 @@ std::vector<Shell> make_cp2k_basis(const string& path_hdf5, const string& path_x
 // 	      {{atoms[at].x, atoms[at].y, atoms[at].z}}   // origin coordinates
 // 	}
 // 	);	    
-    // }
+    }
       
     return shells;
 }
@@ -287,9 +321,9 @@ void test_read(const string& path_hdf5, const string& path_xyz, const string& ba
 
   for (const auto & pair: result){
     std::cout << "element: " << pair.first << "\n";
-    std::cout << "exponents:" << "\n";
-    for (auto x: pair.second.exponents)
-      std::cout << x << " ";
+    std::cout << "format:" << "\n";
+    for (auto it=4; it < pair.second.basis_format.size(); it++)
+      std::cout << pair.second.basis_format[it] << " ";
     std::cout << "\n";
     // }
   }
