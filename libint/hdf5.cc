@@ -1,6 +1,6 @@
 #include <iostream>
 #include <string>
-#include <tuple>
+#include <unordered_map>
 #include <vector>
 
 #include <highfive/H5File.hpp>
@@ -11,6 +11,15 @@ using std::string;
 using HighFive::Attribute;
 using HighFive::File;
 using HighFive::DataSet;
+
+struct CP2K_Basis_Atom {
+  // Contains the basis specificationf for a given atom
+  string symbol;
+  std::vector<std::vector<double>> coefficients;
+  std::vector<double> exponents;
+  std::vector<int> basis_format;
+};
+
 
 std::vector<int> read_basisFormat(const string& basisFormat){
   // Transform the string containing the basis format for CP2K, into a vector of strings
@@ -53,8 +62,9 @@ auto read_basis_from_hdf5(const string& path_file, const string& symbol, const s
     // catch and print any HDF5 error
     std::cerr << err.what() << std::endl;
   }
-  return std::make_tuple(coefficients, exponents, read_basisFormat(format));
+  return CP2K_Basis_Atom{symbol, coefficients, exponents, read_basisFormat(format)};
 }
+
 int main() {
   string path_hdf5 = "../test/test_files/C.hdf5";
   string name_dataset = "DZVP-MOLOPT-SR-GTH";
@@ -62,23 +72,24 @@ int main() {
   std::vector<double> exponents;
   std::vector<int> basisFormat;
 
-  std::tie(coefficients, exponents, basisFormat) = read_basis_from_hdf5(path_hdf5, "c", name_dataset);
+  // std::tie(coefficients, exponents, basisFormat) = read_basis_from_hdf5(path_hdf5, "c", name_dataset);
+  CP2K_Basis_Atom carbon = read_basis_from_hdf5(path_hdf5, "c", name_dataset);
   
-  std::cout << "coefficients" << "\n";
-  for (auto r: coefficients){
+  std::cout << "coefficients:" << "\n";
+  for (auto r: carbon.coefficients){
     std::cout << "vector: ";
     for (auto x: r) {
       std::cout << x << " ";
     }
     std::cout << "\n";
   }
-  std::cout << "exponents" << "\n";
-  for (auto r: exponents){
+  std::cout << "exponents:" << "\n";
+  for (auto r: carbon.exponents){
     std::cout << r << " ";
   }
-
+  std::cout << "\n";
   std::cout << "basisFormat: ";
-  for (const auto& x: basisFormat)
+  for (const auto& x: carbon.basis_format)
     std::cout << x << " ";
   std::cout << "\n";
 
