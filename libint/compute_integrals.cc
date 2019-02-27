@@ -31,26 +31,31 @@ using libint2::Engine;
 using libint2::Operator;
 using libint2::Shell;
 using namd::CP2K_Basis_Atom;
+using namd::Integrals_Input;
 using namd::map_elements;
 using namd::Matrix;
 
 
-
-int compute_integrals(const string& path_xyz, const string& basis_name);
+int compute_integrals(const Integrals_Input& input);
 libint2::BasisSet create_basis_set(const string& basis_name, const std::vector<Atom>& atoms);
 
 void test_read(const string& path_hdf5, const string& path_xyz, const string& basis);
 
+std::vector<Atom> read_xyz_from_file(const string& path_xyz) {
+  // Read molecule in XYZ format from file
+  std::ifstream input_file(path_xyz);
+  return libint2::read_dotxyz(input_file);
+}
 
 int main() {
 
   string path_xyz = "../test/test_files/ethylene.xyz";
   string path_hdf5 = "../test/test_files/C.hdf5";
-  string basis_name = "6-311g**";
-  // string basis_name = "sto-3g";
+  string basis_name = "DZVP-MOLOPT-SR-GTH";
 
-  auto xs = compute_integrals(path_xyz, basis_name);
-  test_read(path_hdf5, path_xyz, "DZVP-MOLOPT-SR-GTH");
+  std::vector<Atom> mol_1 = read_xyz_from_file(path_xyz);
+  auto xs =
+    compute_integrals(Integrals_Input{mol_1, mol_1, path_hdf5, basis_name});
     }
 
 // PYBIND11_MODULE(call_libint, m) {
@@ -131,42 +136,6 @@ Matrix compute_overlaps(const std::vector<Shell>& shells_1, const std::vector<Sh
 
   return result;
 }
-
-int compute_integrals(const string& path_xyz, const string& basis_name) {
-  // Compute the overlap integrals for the molecule define in `path_xyz` using
-  // the `basis_name`
-  
-  // Read molecular geometry
-  std::ifstream input_file(path_xyz);
-  std::vector<Atom> atoms = libint2::read_dotxyz(input_file);
-
-  auto shells = create_basis_set(basis_name, atoms);
-
-  // safe to use libint now
-  libint2::initialize();
-
-  // compute Overlap integrals
-  auto S = compute_overlaps(shells, shells);
-  std::cout << "rows: " << S.rows() << " cols: " << S.cols() << "\n";
-  // std::cout << "\n\tOverlap Integrals:\n";
-  // std::cout << S << "\n";
-  
-  libint2::finalize();
-  
-  return 42;
-}
-
-libint2::BasisSet create_basis_set(const string& basis_name, const std::vector<Atom>& atoms) {
-  // Create a basis set of non-standard basis set for CP2K
-  
-  return libint2::BasisSet{basis_name, atoms};
-}
-
-
-
-// // Function to read the basis set from the HDF5
-// CP2K_Basis_Atom read_basis_from_hdf5(const string& path_hdf5, const string& symbol, const string& basis);
-
 
 std::vector<int> read_basisFormat(const string& basisFormat){
   // Transform the string containing the basis format for CP2K, into a vector of strings
@@ -260,13 +229,13 @@ std::vector<Shell> create_shells_for_atom(const CP2K_Basis_Atom& data, const Ato
   std::vector<int> basis_format = data.basis_format;
   std::vector<Shell> shells;
 
-  auto acc= 0;
+  auto acc = 0;
   for (auto i=0; i+4 < basis_format.size(); i++){
     for (auto j=0; j < basis_format[i + 4]; j++){
       shells.push_back({
 	  data.exponents,
-	    {
-	      {i, false, data.coefficients[acc]}
+	    { // compute integrals in sphericals
+	      {i, true, data.coefficients[acc]}
 	    },
 	    // Atomic Coordinates
 	      {{atom.x, atom.y, atom.z}}
@@ -278,17 +247,14 @@ std::vector<Shell> create_shells_for_atom(const CP2K_Basis_Atom& data, const Ato
   return shells;
 }
 
-std::vector<Shell> make_cp2k_basis(const string& path_hdf5, const string& path_xyz, const string& basis) {
+std::vector<Shell> make_cp2k_basis(const std::vector<Atom>& atoms, const string& path_hdf5, const string& basis) {
   // Make the shell for a CP2K specific basis
   
   std::vector<Shell> shells;
 
-  // Read atoms
-  std::ifstream input_file(path_xyz);
-  std::vector<Atom> atoms = libint2::read_dotxyz(input_file);
+  // set of symbols
   std::vector<string> symbols = get_unique_symbols(atoms);
 
-  
   // Read basis set data from the HDF5
   std::unordered_map<string, CP2K_Basis_Atom> dict =
     create_map_symbols_basis(path_hdf5, atoms, basis);
@@ -296,35 +262,33 @@ std::vector<Shell> make_cp2k_basis(const string& path_hdf5, const string& path_x
   for(const auto& atom: atoms) {
 
     CP2K_Basis_Atom data = dict[map_elements[atom.atomic_number]];
-//       shells.push_back({
-// 	  exponents,
-// 	    {
-// 	      {contraction, false, coefficients}
-// 	    },
-// 	      {{atoms[at].x, atoms[at].y, atoms[at].z}}   // origin coordinates
-// 	}
-// 	);	    
-    }
+    auto xs = create_shells_for_atom(data, atom);
+    shells.insert(shells.end(), xs.begin(), xs.end());
+  }
       
     return shells;
 }
 
-void test_read(const string& path_hdf5, const string& path_xyz, const string& basis) {
+int compute_integrals(const Integrals_Input& input) {
+  // Compute the overlap integrals for the molecule define in `path_xyz` using
+  // the `basis_name`
 
-  // Read atoms
-  std::ifstream input_file(path_xyz);
-  std::vector<Atom> atoms = libint2::read_dotxyz(input_file);
-  std::vector<string> symbols = get_unique_symbols(atoms);
- 
-  std::unordered_map<string, CP2K_Basis_Atom> result =
-    create_map_symbols_basis(path_hdf5, atoms, basis);
+  string path_hdf5 = input.path_hdf5;
+  string basis_name = input.basis_name;
+  
+  auto shells_1 = make_cp2k_basis(input.mol_1, input.path_hdf5, input.basis_name);
+  auto shells_2 = make_cp2k_basis(input.mol_1, input.path_hdf5, input.basis_name);
 
-  for (const auto & pair: result){
-    std::cout << "element: " << pair.first << "\n";
-    std::cout << "format:" << "\n";
-    for (auto it=4; it < pair.second.basis_format.size(); it++)
-      std::cout << pair.second.basis_format[it] << " ";
-    std::cout << "\n";
-    // }
-  }
+  // safe to use libint now
+  libint2::initialize();
+
+  // compute Overlap integrals
+  auto S = compute_overlaps(shells_1, shells_2);
+  std::cout << "rows: " << S.rows() << " cols: " << S.cols() << "\n";
+  // std::cout << "\n\tOverlap Integrals:\n";
+  // std::cout << S << "\n";
+  
+  libint2::finalize();
+  
+  return 42;
 }

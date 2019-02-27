@@ -5,6 +5,9 @@
 #include <vector>
 #include <unordered_map>
 
+// integrals library
+#include <libint2.hpp>
+
 namespace namd {
 
   
@@ -22,6 +25,12 @@ namespace namd {
     std::vector<int> basis_format;
   };
 
+  struct Integrals_Input {
+    std::vector<libint2::Atom> mol_1;
+    std::vector<libint2::Atom> mol_2;
+    std::string path_hdf5;
+    std::string basis_name;
+  };
   
   // Map from atomic_number to symbol
   std::unordered_map<int, std::string> map_elements = {
