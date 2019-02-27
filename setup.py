@@ -1,4 +1,5 @@
 from Cython.Distutils import build_ext
+from os.path import join
 from setuptools import (Extension, find_packages, setup)
 import os
 import setuptools
@@ -35,19 +36,28 @@ class get_pybind_include:
         return pybind11.get_include(self.user)
 
 
+# Set path to the conda libraries
+conda_prefix = os.environ["CONDA_PREFIX"]
+if conda_prefix is None:
+    raise RuntimeError("No conda module found. A Conda environment is required")
+
+conda_include = join(conda_prefix, 'include')
+conda_lib = join(conda_prefix, 'lib')
 ext_pybind = Extension(
     'compute_integrals',
     sources=['libint/compute_integrals.cc'],
     include_dirs=[
         # Path to pybind11 headers
-        '/home/felipe/modules/libint/include',
-        '/home/felipe/modules/libint/include/libint2',
+        'libint/include',
+        conda_include,
+        join(conda_include, 'eigen3'),
+        join(conda_include, 'python3.6m'),
         get_pybind_include(),
         get_pybind_include(user=True),
         '/usr/include/eigen3'
     ],
-    libraries=['int2'],
-    library_dirs=['/home/felipe/miniconda3/envs/namd/lib'],
+    libraries=['hdf5', 'int2'],
+    library_dirs=[conda_lib],
     language='c++'
 
 )

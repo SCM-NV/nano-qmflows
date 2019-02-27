@@ -9,7 +9,7 @@
 // integrals library
 #include <libint2.hpp>
 
-// #include <pybind11/pybind11.h>
+#include <pybind11/pybind11.h>
 
 // Eigen matrix algebra library
 #include <Eigen/Dense>
@@ -58,11 +58,11 @@ int main() {
     compute_integrals(Integrals_Input{mol_1, mol_1, path_hdf5, basis_name});
     }
 
-// PYBIND11_MODULE(call_libint, m) {
-//     m.doc() = "Compute integrals using libint2 see: https://github.com/evaleev/libint/wiki";
+PYBIND11_MODULE(compute_integrals, m) {
+    m.doc() = "Compute integrals using libint2 see: https://github.com/evaleev/libint/wiki";
 
-//     m.def("compute_integrals", &compute_integrals, "Compute integrals using libint2");
-// }
+    m.def("compute_integrals", &compute_integrals, "Compute integrals using libint2");
+}
 
 
 size_t nbasis(const std::vector<libint2::Shell>& shells) {
@@ -72,7 +72,7 @@ size_t nbasis(const std::vector<libint2::Shell>& shells) {
   return n;
 }
 
-auto max_nprim(const std::vector<libint2::Shell>& shells) {
+size_t max_nprim(const std::vector<libint2::Shell>& shells) {
   size_t n = 0;
   for (auto shell: shells)
     n = std::max(shell.nprim(), n);
