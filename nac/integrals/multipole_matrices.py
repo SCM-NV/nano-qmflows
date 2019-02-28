@@ -44,7 +44,7 @@ def compute_matrix_multipole(
     Compute the Multipole matrix in cartesian coordinates and
     expand it to a matrix and finally convert it to spherical coordinates.
 
-    :returns: Matrix with entries <ψi | x y z | ψj>
+    :returns: Matrix with entries <ψi | x^i y^j z^k | ψj>
     """
     path_hdf5 = config['path_hdf5']
 
