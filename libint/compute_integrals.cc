@@ -93,7 +93,8 @@ std::vector<size_t> map_shell_to_basis_function(const std::vector<Shell>& shells
   return result;
 }
 
-Matrix compute_overlaps(const std::vector<Shell>& shells_1, const std::vector<Shell>& shells_2)
+Matrix compute_overlaps_for_couplings(const std::vector<Shell>& shells_1,
+				      const std::vector<Shell>& shells_2)
 {
 
   const auto n = nbasis(shells_1);
@@ -129,6 +130,50 @@ Matrix compute_overlaps(const std::vector<Shell>& shells_1, const std::vector<Sh
 
   return result;
 }
+
+
+
+Matrix compute_multipoles(const std::vector<libint2::Shell>& shells,
+                          libint2::Operator operator_type) {
+  // Compute differ 
+  const auto n = nbasis(shells);
+  Matrix result(n,n);
+
+  // construct the multipole engine integrals engine
+  libint2::Engine engine(operator_type, max_nprim(shells), max_l(shells), 0);
+
+  auto shell2bf = map_shell_to_basis_function(shells);
+
+  // buf[0] points to the target shell set after every call  to engine.compute()
+  const auto& buf = engine.results();
+
+  // loop over unique shell pairs, {s1,s2} such that s1 >= s2
+  // this is due to the permutational symmetry of the real integrals over Hermitian operators: (1|2) = (2|1)
+  for(auto s1=0; s1!=shells.size(); ++s1) {
+
+    auto bf1 = shell2bf[s1]; // first basis function in this shell
+    auto n1 = shells[s1].size();
+
+    for(auto s2=0; s2<=s1; ++s2) {
+
+      auto bf2 = shell2bf[s2];
+      auto n2 = shells[s2].size();
+
+      // compute shell pair
+      engine.compute(shells[s1], shells[s2]);
+
+      // "map" buffer to a const Eigen Matrix, and copy it to the corresponding blocks of the result
+      Eigen::Map<const Matrix> buf_mat(buf[0], n1, n2);
+      result.block(bf1, bf2, n1, n2) = buf_mat;
+      if (s1 != s2) // if s1 >= s2, copy {s1,s2} to the corresponding {s2,s1} block, note the transpose!
+      result.block(bf2, bf1, n2, n1) = buf_mat.transpose();
+
+    }
+  }
+
+  return result;
+}
+
 
 std::vector<int> read_basisFormat(const string& basisFormat){
   // Transform the string containing the basis format for CP2K, into a vector of strings
@@ -262,17 +307,10 @@ std::vector<Shell> make_cp2k_basis(const std::vector<Atom>& atoms, const string&
     return shells;
 }
 
-std::tuple<string, string> get_group_dataset(const string& path) {
-
-  std::size_t found = path.rfind("/");
-
-  return std::make_tuple(path.substr(0, found), path.substr(found + 1, path.length()));
-}
-
-Matrix compute_integrals(const string& path_xyz_1,
-			 const string& path_xyz_2,
-			 const string& path_hdf5,
-			 const string& basis_name) {
+Matrix compute_integrals_couplings(const string& path_xyz_1,
+				   const string& path_xyz_2,
+				   const string& path_hdf5,
+				   const string& basis_name) {
   // Compute the overlap integrals for the molecule define in `path_xyz` using
   // the `basis_name`
 
@@ -286,7 +324,7 @@ Matrix compute_integrals(const string& path_xyz_1,
   libint2::initialize();
 
   // compute Overlap integrals
-  auto S = compute_overlaps(shells_1, shells_2);
+  auto S = compute_overlaps_for_couplings(shells_1, shells_2);
 
   // stop using libint2
   libint2::finalize();
@@ -294,8 +332,39 @@ Matrix compute_integrals(const string& path_xyz_1,
   return S;
 }
 
+Matrix compute_integrals_multipole(const string& path_xyz,
+				   const string& path_hdf5,
+				   const string& basis_name,
+				   const string& multipole) {
+  // Compute the overlap integrals for the molecule define in `path_xyz` using
+  // the `basis_name`
+
+  std::vector<Atom> mol = read_xyz_from_file(path_xyz);
+  
+  auto shells = make_cp2k_basis(mol, path_hdf5, basis_name);
+
+  // safe to use libint now
+  libint2::initialize();
+
+  // compute Overlap integrals
+  auto S = compute_multipoles(shells, libint2::Operator::overlap);
+
+  // stop using libint2
+  libint2::finalize();
+  
+  return S;
+}
+
+
 PYBIND11_MODULE(compute_integrals, m) {
     m.doc() = "Compute integrals using libint2 see: https://github.com/evaleev/libint/wiki";
 
-    m.def("compute_integrals", &compute_integrals, py::return_value_policy::reference_internal);
+    m.def("compute_integrals_couplings",
+	  &compute_integrals_couplings,
+	  py::return_value_policy::reference_internal);
+    
+    m.def("compute_integrals_multipole",
+	  &compute_integrals_multipole,
+	  py::return_value_policy::reference_internal);
+
 }

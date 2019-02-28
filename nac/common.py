@@ -8,8 +8,8 @@ __all__ = ['Array', 'AtomBasisData', 'AtomBasisKey', 'AtomData', 'AtomXYZ',
 
 from collections import namedtuple
 from functools import reduce
-
 from scipy.constants import physical_constants
+from scm.plams import (Atom, Molecule)
 from typing import (Dict, List, Tuple)
 
 import h5py
@@ -192,6 +192,17 @@ def change_mol_units(mol, factor=angs2au):
         coord = list(map(lambda x: x * factor, atom.xyz))
         newMol.append(AtomXYZ(atom.symbol, coord))
     return newMol
+
+
+def tuplesXYZ_to_plams(xs):
+    """ Transform a list of namedTuples to a Plams molecule """
+    plams_mol = Molecule()
+    for at in xs:
+        symb = at.symbol
+        cs = at.xyz
+        plams_mol.add_atom(Atom(symbol=symb, coords=tuple(cs)))
+
+    return plams_mol
 
 
 def compute_center_of_mass(atoms: List) -> Tuple:

@@ -1,14 +1,15 @@
 __all__ = ['calculate_couplings_3points', 'calculate_couplings_levine',
            'compute_overlaps_for_coupling', 'correct_phases']
 
-from compute_integrals import compute_integrals
-from nac.common import (Matrix, Tensor3D, change_mol_units, retrieve_hdf5_data)
+from compute_integrals import compute_integrals_couplings
+from nac.common import (
+    Matrix, Tensor3D, change_mol_units, retrieve_hdf5_data, tuplesXYZ_to_plams)
 from os.path import join
-from scm.plams import (Atom, Molecule)
 from qmflows.parsers import parse_string_xyz
 from typing import Tuple
 import numpy as np
 import os
+import uuid
 
 
 def calculate_couplings_3points(
@@ -173,28 +174,19 @@ def calcOverlapMtx(config: dict, dict_input: dict) -> Matrix:
     mol_i, mol_j = tuple(tuplesXYZ_to_plams(
         change_mol_units(parse_string_xyz(x)) for x in dict_input["molecules"]))
 
+    # unique molecular paths
+    path_i = join(config["scratch_path"], "molecule_{}.xyz".format(uuid.uuid4()))
+    path_j = join(config["scratch_path"], "molecule_{}.xyz".format(uuid.uuid4()))
+
     # Write the molecules in atomic units
-    path_i = join(config["scratch_path"], "molecule_i.xyz")
-    path_j = join(config["scratch_path"], "molecule_j.xyz")
     mol_i.write(path_i)
     mol_j.write(path_j)
 
     basis_name = config["cp2k_general_settings"]["basis"]
     try:
-        integrals = compute_integrals(path_i, path_j, config["path_hdf5"], basis_name)
+        integrals = compute_integrals_couplings(path_i, path_j, config["path_hdf5"], basis_name)
     finally:
         os.remove(path_i)
         os.remove(path_j)
 
     return integrals
-
-
-def tuplesXYZ_to_plams(xs):
-    """ Transform a list of namedTuples to a Plams molecule """
-    plams_mol = Molecule()
-    for at in xs:
-        symb = at.symbol
-        cs = at.xyz
-        plams_mol.add_atom(Atom(symbol=symb, coords=tuple(cs)))
-
-    return plams_mol
