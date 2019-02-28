@@ -4,6 +4,7 @@ from nac.common import (
     store_arrays_in_hdf5, tuplesXYZ_to_plams)
 from os.path import join
 from typing import (Dict, List)
+import os
 import uuid
 
 
@@ -54,7 +55,12 @@ def compute_matrix_multipole(
     # name of the basis set
     basis_name = config["cp2k_general_settings"]["basis"]
 
-    return compute_integrals_multipole(path, path_hdf5, basis_name, multipole)
+    try:
+        matrix_multipole = compute_integrals_multipole(path, path_hdf5, basis_name, multipole)
+    finally:
+        os.remove(path)
+
+    return matrix_multipole
 
     # else:
     #     rc = compute_center_of_mass(mol)
