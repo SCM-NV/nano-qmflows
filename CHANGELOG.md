@@ -1,5 +1,15 @@
 # Change Log
 
+# 0.6.0
+
+### New
+ * Compute the overlap integrals to calculate the derivative coupling using [libint2](https://github.com/evaleev/)
+ 
+### Deleted
+ 
+ * Python/Cython implementation of the overlap integrals
+
+
 # 0.5.0
 
 ### New
