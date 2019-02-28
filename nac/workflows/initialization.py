@@ -1,16 +1,17 @@
 __all__ = ['initialize', 'read_swaps', 'split_trajectory']
 
-from nac.basisSet import create_dict_CGFs
 from nac.common import (
-    Matrix, change_mol_units, retrieve_hdf5_data, search_data_in_hdf5)
+    InputKey, Matrix, change_mol_units, retrieve_hdf5_data, search_data_in_hdf5)
 from nac.schedule.components import (
     create_point_folder, split_file_geometries)
 from os.path import join
+from qmflows.hdf5.quantumHDF5 import cp2k2hdf5
 from qmflows.parsers import parse_string_xyz
 from subprocess import (PIPE, Popen)
 
 import fnmatch
 import getpass
+import h5py
 import logging
 import nac
 import numpy as np
@@ -78,13 +79,23 @@ def initialize(config: dict) -> dict:
     if 'angstrom' in config["geometry_units"].lower():
         atoms = change_mol_units(atoms)
 
-    # CGFs per element
-    basis = cp2k_general_settings['basis']
-    dictCGFs = create_dict_CGFs(
-        path_hdf5, basis, atoms, cp2k_general_settings["path_basis"])
-    config["dictCGFs"] = dictCGFs
+    # Save Basis to HDF5
+    save_basis_to_hdf5(config)
 
     return config
+
+
+def save_basis_to_hdf5(config: dict, package_name: str = "cp2k") -> None:
+    """
+    Store the specification of the basis set in the HDF5 to compute the integrals
+    """
+    basis_location = join(package_name, 'basis')
+    with h5py.File(config["path_hdf5"]) as f5:
+        if basis_location not in f5:
+            # Search Path to the file containing the basis set
+            path_basis = config["cp2k_general_settings"]["path_basis"]
+            keyBasis = InputKey("basis", [path_basis])
+            cp2k2hdf5(f5, [keyBasis])
 
 
 def guesses_to_compute(calculate_guesses: str, enumerate_from: int, len_geometries) -> list:

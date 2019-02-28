@@ -8,7 +8,7 @@ import pkg_resources as pkg
 import yaml
 
 
-path_valence_electrons = pkg.resource_filename("nac", "basisSet/valence_electrons.json")
+path_valence_electrons = pkg.resource_filename("nac", "workflows/valence_electrons.json")
 with open(path_valence_electrons, 'r') as f:
     valence_electrons = json.load(f)
 
