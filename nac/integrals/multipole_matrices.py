@@ -71,21 +71,3 @@ def compute_matrix_multipole(
     os.remove(path)
 
     return matrix_multipole
-
-    # else:
-    #     rc = compute_center_of_mass(mol)
-    #     exponents = {
-    #         'dipole': [
-    #             {'e': 1, 'f': 0, 'g': 0}, {'e': 0, 'f': 1, 'g': 0}, {'e': 0, 'f': 0, 'g': 1}],
-    #         'quadrupole': [
-    #             {'e': 2, 'f': 0, 'g': 0}, {'e': 0, 'f': 2, 'g': 0}, {'e': 0, 'f': 0, 'g': 2}]
-    #     }
-    #     matrix_multipole = None
-    #     # mtx_integrals_triang = tuple(calcMtxMultipoleP(mol, dictCGFs, runner, rc, **kw)
-    #     #                              for kw in exponents[multipole])
-    #     # mtx_integrals_cart = tuple(triang2mtx(xs, n_cart_funcs)
-    #     #                            for xs in mtx_integrals_triang)
-    #     # matrix_multipole = np.stack(
-    #     #     transf_mtx.dot(sparse.csr_matrix.dot(x, transpose)) for x in mtx_integrals_cart)
-
-    # return matrix_multipole
