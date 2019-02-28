@@ -1,5 +1,4 @@
-__all__ = ['initialize', 'read_swaps',
-           'split_trajectory']
+__all__ = ['initialize', 'read_swaps', 'split_trajectory']
 
 from nac.basisSet import create_dict_CGFs
 from nac.common import (

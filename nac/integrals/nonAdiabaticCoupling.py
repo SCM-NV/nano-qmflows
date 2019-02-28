@@ -1,10 +1,14 @@
 __all__ = ['calculate_couplings_3points', 'calculate_couplings_levine',
            'compute_overlaps_for_coupling', 'correct_phases']
 
-from nac.common import (Matrix, Tensor3D, retrieve_hdf5_data)
-from typing import List, Tuple
-
+from compute_integrals import compute_integrals
+from nac.common import (Matrix, Tensor3D, change_mol_units, retrieve_hdf5_data)
+from os.path import join
+from scm.plams import (Atom, Molecule)
+from qmflows.parsers import parse_string_xyz
+from typing import Tuple
 import numpy as np
+import os
 
 
 def calculate_couplings_3points(
@@ -81,7 +85,7 @@ def calculate_couplings_levine(dt: float, w_jk: Matrix,
     return cte * (np.arccos(w_jj) * (A + B) + np.arcsin(w_kj) * (C + D) + E)
 
 
-def correct_phases(overlaps: Tensor3D, mtx_phases: Matrix) -> List:
+def correct_phases(overlaps: Tensor3D, mtx_phases: Matrix) -> list:
     """
     Correct the phases for all the overlaps
     """
@@ -115,10 +119,8 @@ def compute_overlaps_for_coupling(config: dict, dict_input: dict) -> Tuple:
     translate from Cartesian to Sphericals.
     :returns: [Matrix] containing the overlaps at different times
     # """
-    mol0, mol1 = dict_input['molecules']
-
     # Atomic orbitals overlap
-    suv = calcOverlapMtx(config.dictCGFs, mol0, mol1)
+    suv = calcOverlapMtx(config,  dict_input)
 
     # Read Orbitals Coefficients
     css0, css1 = read_overlap_data(config, dict_input["mo_paths"])
@@ -163,12 +165,36 @@ def compute_range_orbitals(mtx: Matrix, nHOMO: int,
     return lowest, highest
 
 
-def calcOverlapMtx(
-        mol0: List, mol1: List, path_hdf5: str, basis_name: str) -> Matrix:
+def calcOverlapMtx(config: dict, dict_input: dict) -> Matrix:
     """
-    Parallel calculation of the overlap matrix using the atomic
-    basis at two different geometries: R0 and R1.
-    :param mol0: Atomic label and cartesian coordinates of the first geometry.
-    :param mol1: Atomic label and cartesian coordinates of the second geometry.
+    Parallel calculation of the overlap matrix using the libint2 library
+    at two different geometries: R0 and R1.
     """
-    pass
+    mol_i, mol_j = tuple(tuplesXYZ_to_plams(
+        change_mol_units(parse_string_xyz(x)) for x in dict_input["molecules"]))
+
+    # Write the molecules in atomic units
+    path_i = join(config["scratch_path"], "molecule_i.xyz")
+    path_j = join(config["scratch_path"], "molecule_j.xyz")
+    mol_i.write(path_i)
+    mol_j.write(path_j)
+
+    basis_name = config["cp2k_general_settings"]["basis"]
+    try:
+        integrals = compute_integrals(path_i, path_j, config["path_hdf5"], basis_name)
+    finally:
+        os.remove(path_i)
+        os.remove(path_j)
+
+    return integrals
+
+
+def tuplesXYZ_to_plams(xs):
+    """ Transform a list of namedTuples to a Plams molecule """
+    plams_mol = Molecule()
+    for at in xs:
+        symb = at.symbol
+        cs = at.xyz
+        plams_mol.add_atom(Atom(symbol=symb, coords=tuple(cs)))
+
+    return plams_mol

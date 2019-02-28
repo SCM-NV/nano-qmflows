@@ -11,6 +11,7 @@
 #include <libint2.hpp>
 
 #include <pybind11/pybind11.h>
+#include <pybind11/eigen.h>
 
 // Eigen matrix algebra library
 #include <Eigen/Dense>
@@ -23,24 +24,22 @@
 // Constants
 #include "namd.h"
 
+namespace py = pybind11;
 using std::string;
 using HighFive::Attribute;
 using HighFive::File;
 using HighFive::DataSet;
 using libint2::Atom;
-using libint2::Engine;
-using libint2::Operator;
 using libint2::Shell;
 using namd::CP2K_Basis_Atom;
 using namd::map_elements;
 using namd::Matrix;
 
 
-string compute_integrals(const string& path_xyz_1,
+Matrix compute_integrals(const string& path_xyz_1,
 			 const string& path_xyz_2,
 			 const string& path_hdf5,
-			 const string& basis_name,
-			 const string& dataset_name);
+			 const string& basis_name);
 
 std::vector<Atom> read_xyz_from_file(const string& path_xyz) {
   // Read molecule in XYZ format from file
@@ -56,7 +55,7 @@ int main() {
   string dataset_name = "ethylene/point_n";
 
   auto xs =
-    compute_integrals(path_xyz, path_xyz, path_hdf5, basis_name, dataset_name);
+    compute_integrals(path_xyz, path_xyz, path_hdf5, basis_name);
     }
 
 size_t nbasis(const std::vector<libint2::Shell>& shells) {
@@ -101,7 +100,7 @@ Matrix compute_overlaps(const std::vector<Shell>& shells_1, const std::vector<Sh
   Matrix result(n, n);
 
   // construct the overlap integrals engine
-  Engine engine(Operator::overlap, max_nprim(shells_1), max_l(shells_1), 0);
+  libint2::Engine engine(libint2::Operator::overlap, max_nprim(shells_1), max_l(shells_1), 0);
   auto shell2bf = map_shell_to_basis_function(shells_1);
 
   // buf[0] points to the target shell set after every call  to engine.compute()
@@ -270,46 +269,10 @@ std::tuple<string, string> get_group_dataset(const string& path) {
   return std::make_tuple(path.substr(0, found), path.substr(found + 1, path.length()));
 }
 
-
-void write_integrals_to_HDF5(const string& path_hdf5, Matrix arr, const string& dataset_name) {
-  //  Write the integrals to the HDF5
-  try {
-    // Open an existing HDF5 File
-    File file(path_hdf5,  File::ReadWrite);
-    
-    // Define the size of our dataset: 2x6
-    std::vector<size_t> dims(2);
-    dims[0] = arr.rows();
-    dims[1] = arr.cols();
-
-    // Convert Matrix to standard vector
-    std::vector<libint2::scalar_type> vec(arr.data(), arr.data() + arr.size());
-
-    // Get group and dataset name
-    string group, name;
-    std::tie(group, name) = get_group_dataset(dataset_name);
-
-    // Create group
-    HighFive::Group g = file.getGroup(group);
-    
-    // Create the dataset
-    DataSet dataset =
-      g.createDataSet<double>(name, HighFive::DataSpace::From(vec));
-    
-    // write it
-    dataset.write(vec);
-
-  } catch (HighFive::Exception& err) {
-    // catch and print any HDF5 error
-    std::cerr << err.what() << std::endl;
-  }
-}
-
-string compute_integrals(const string& path_xyz_1,
+Matrix compute_integrals(const string& path_xyz_1,
 			 const string& path_xyz_2,
 			 const string& path_hdf5,
-			 const string& basis_name,
-			 const string& dataset_name) {
+			 const string& basis_name) {
   // Compute the overlap integrals for the molecule define in `path_xyz` using
   // the `basis_name`
 
@@ -327,15 +290,12 @@ string compute_integrals(const string& path_xyz_1,
 
   // stop using libint2
   libint2::finalize();
-
-  write_integrals_to_HDF5(path_hdf5, S, dataset_name);
-  std::cout << "integrals written to: " << dataset_name << "\n";
   
-  return dataset_name;
+  return S;
 }
 
 PYBIND11_MODULE(compute_integrals, m) {
     m.doc() = "Compute integrals using libint2 see: https://github.com/evaleev/libint/wiki";
 
-    m.def("compute_integrals", &compute_integrals, "Compute integrals using libint2");
+    m.def("compute_integrals", &compute_integrals, py::return_value_policy::reference_internal);
 }
