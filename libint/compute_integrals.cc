@@ -335,7 +335,8 @@ Matrix compute_integrals_couplings(const string& path_xyz_1,
 Matrix compute_integrals_multipole(const string& path_xyz,
 				   const string& path_hdf5,
 				   const string& basis_name,
-				   const string& multipole) {
+				   const string& multipole,
+				   const string& axis="x") {
   // Compute the overlap integrals for the molecule define in `path_xyz` using
   // the `basis_name`
 

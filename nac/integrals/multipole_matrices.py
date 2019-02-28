@@ -4,6 +4,7 @@ from nac.common import (
     store_arrays_in_hdf5, tuplesXYZ_to_plams)
 from os.path import join
 from typing import (Dict, List)
+import numpy as np
 import os
 import uuid
 
@@ -55,10 +56,19 @@ def compute_matrix_multipole(
     # name of the basis set
     basis_name = config["cp2k_general_settings"]["basis"]
 
-    try:
-        matrix_multipole = compute_integrals_multipole(path, path_hdf5, basis_name, multipole)
-    finally:
-        os.remove(path)
+    if multipole == 'overlap':
+        matrix_multipole = compute_integrals_multipole(path, path_hdf5, basis_name, 'overlap')
+    elif multipole == 'dipole':
+        np.stack(
+            tuple(compute_integrals_multipole(path, path_hdf5, basis_name, 'overlap', axis)
+                  for axis in ['x', 'y', 'z']))
+    elif multipole == 'multipole':
+        np.stack(
+            tuple(compute_integrals_multipole(path, path_hdf5, basis_name, 'overlap', axis)
+                  for axis in ['xx', 'yy', 'zz']))
+
+    # Delete the tmp molecule file
+    os.remove(path)
 
     return matrix_multipole
 
