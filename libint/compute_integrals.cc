@@ -4,6 +4,7 @@
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
+#include <tuple>
 #include <vector>
 
 // integrals library
@@ -31,15 +32,15 @@ using libint2::Engine;
 using libint2::Operator;
 using libint2::Shell;
 using namd::CP2K_Basis_Atom;
-using namd::Integrals_Input;
 using namd::map_elements;
 using namd::Matrix;
 
 
-int compute_integrals(const Integrals_Input& input);
-libint2::BasisSet create_basis_set(const string& basis_name, const std::vector<Atom>& atoms);
-
-void test_read(const string& path_hdf5, const string& path_xyz, const string& basis);
+string compute_integrals(const string& path_xyz_1,
+			 const string& path_xyz_2,
+			 const string& path_hdf5,
+			 const string& basis_name,
+			 const string& dataset_name);
 
 std::vector<Atom> read_xyz_from_file(const string& path_xyz) {
   // Read molecule in XYZ format from file
@@ -50,20 +51,13 @@ std::vector<Atom> read_xyz_from_file(const string& path_xyz) {
 int main() {
 
   string path_xyz = "../test/test_files/ethylene.xyz";
-  string path_hdf5 = "../test/test_files/C.hdf5";
+  string path_hdf5 = "../test/test_files/ethylene.hdf5";
   string basis_name = "DZVP-MOLOPT-SR-GTH";
+  string dataset_name = "ethylene/point_n";
 
-  std::vector<Atom> mol_1 = read_xyz_from_file(path_xyz);
   auto xs =
-    compute_integrals(Integrals_Input{mol_1, mol_1, path_hdf5, basis_name});
+    compute_integrals(path_xyz, path_xyz, path_hdf5, basis_name, dataset_name);
     }
-
-PYBIND11_MODULE(compute_integrals, m) {
-    m.doc() = "Compute integrals using libint2 see: https://github.com/evaleev/libint/wiki";
-
-    m.def("compute_integrals", &compute_integrals, "Compute integrals using libint2");
-}
-
 
 size_t nbasis(const std::vector<libint2::Shell>& shells) {
   size_t n = 0;
@@ -269,26 +263,79 @@ std::vector<Shell> make_cp2k_basis(const std::vector<Atom>& atoms, const string&
     return shells;
 }
 
-int compute_integrals(const Integrals_Input& input) {
+std::tuple<string, string> get_group_dataset(const string& path) {
+
+  std::size_t found = path.rfind("/");
+
+  return std::make_tuple(path.substr(0, found), path.substr(found + 1, path.length()));
+}
+
+
+void write_integrals_to_HDF5(const string& path_hdf5, Matrix arr, const string& dataset_name) {
+  //  Write the integrals to the HDF5
+  try {
+    // Open an existing HDF5 File
+    File file(path_hdf5,  File::ReadWrite);
+    
+    // Define the size of our dataset: 2x6
+    std::vector<size_t> dims(2);
+    dims[0] = arr.rows();
+    dims[1] = arr.cols();
+
+    // Convert Matrix to standard vector
+    std::vector<libint2::scalar_type> vec(arr.data(), arr.data() + arr.size());
+
+    // Get group and dataset name
+    string group, name;
+    std::tie(group, name) = get_group_dataset(dataset_name);
+
+    // Create group
+    HighFive::Group g = file.getGroup(group);
+    
+    // Create the dataset
+    DataSet dataset =
+      g.createDataSet<double>(name, HighFive::DataSpace::From(vec));
+    
+    // write it
+    dataset.write(vec);
+
+  } catch (HighFive::Exception& err) {
+    // catch and print any HDF5 error
+    std::cerr << err.what() << std::endl;
+  }
+}
+
+string compute_integrals(const string& path_xyz_1,
+			 const string& path_xyz_2,
+			 const string& path_hdf5,
+			 const string& basis_name,
+			 const string& dataset_name) {
   // Compute the overlap integrals for the molecule define in `path_xyz` using
   // the `basis_name`
 
-  string path_hdf5 = input.path_hdf5;
-  string basis_name = input.basis_name;
+  std::vector<Atom> mol_1 = read_xyz_from_file(path_xyz_1);
+  std::vector<Atom> mol_2 = read_xyz_from_file(path_xyz_2);
   
-  auto shells_1 = make_cp2k_basis(input.mol_1, input.path_hdf5, input.basis_name);
-  auto shells_2 = make_cp2k_basis(input.mol_1, input.path_hdf5, input.basis_name);
+  auto shells_1 = make_cp2k_basis(mol_1, path_hdf5, basis_name);
+  auto shells_2 = make_cp2k_basis(mol_2, path_hdf5, basis_name);
 
   // safe to use libint now
   libint2::initialize();
 
   // compute Overlap integrals
   auto S = compute_overlaps(shells_1, shells_2);
-  std::cout << "rows: " << S.rows() << " cols: " << S.cols() << "\n";
-  // std::cout << "\n\tOverlap Integrals:\n";
-  // std::cout << S << "\n";
-  
+
+  // stop using libint2
   libint2::finalize();
+
+  write_integrals_to_HDF5(path_hdf5, S, dataset_name);
+  std::cout << "integrals written to: " << dataset_name << "\n";
   
-  return 42;
+  return dataset_name;
+}
+
+PYBIND11_MODULE(compute_integrals, m) {
+    m.doc() = "Compute integrals using libint2 see: https://github.com/evaleev/libint/wiki";
+
+    m.def("compute_integrals", &compute_integrals, "Compute integrals using libint2");
 }
