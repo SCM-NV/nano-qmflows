@@ -1,6 +1,5 @@
 from .integrals import (
-    calcMtxMultipoleP, calcMtxOverlapP, calc_transf_matrix,
-    calculate_couplings_levine, general_multipole_matrix)
+    calculate_couplings_levine, compute_overlaps_for_coupling)
 
 from .schedule import (calculate_mos, lazy_couplings)
 
@@ -9,7 +8,6 @@ from .workflows import (
 
 
 __all__ = [
-    'calcMtxMultipoleP', 'calcMtxOverlapP',
-    'calc_transf_matrix', 'calculate_couplings_levine', 'calculate_mos',
-    'general_multipole_matrix', 'lazy_couplings',
+    'calculate_couplings_levine', 'calculate_mos',
+    'compute_overlaps_for_coupling', 'lazy_couplings',
     'workflow_derivative_couplings', 'workflow_stddft']

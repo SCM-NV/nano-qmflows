@@ -1,21 +1,17 @@
 __all__ = ['initialize', 'read_swaps',
-           'split_trajectory', 'store_transf_matrix']
+           'split_trajectory']
 
-from nac.basisSet import (compute_normalization_sphericals, create_dict_CGFs)
+from nac.basisSet import create_dict_CGFs
 from nac.common import (
     Matrix, change_mol_units, retrieve_hdf5_data, search_data_in_hdf5)
-from nac.integrals import calc_transf_matrix
 from nac.schedule.components import (
     create_point_folder, split_file_geometries)
 from os.path import join
-from qmflows.hdf5.quantumHDF5 import StoreasHDF5
 from qmflows.parsers import parse_string_xyz
 from subprocess import (PIPE, Popen)
-from typing import (Dict, List)
 
 import fnmatch
 import getpass
-import h5py
 import logging
 import nac
 import numpy as np
@@ -89,11 +85,6 @@ def initialize(config: dict) -> dict:
         path_hdf5, basis, atoms, cp2k_general_settings["path_basis"])
     config["dictCGFs"] = dictCGFs
 
-    # Calculcate the matrix to transform from cartesian to spherical
-    # representation of the overlap matrix
-    config['hdf5_trans_mtx'] = store_transf_matrix(
-        path_hdf5, atoms, dictCGFs, basis, project_name)
-
     return config
 
 
@@ -129,40 +120,14 @@ def read_swaps(path_hdf5: str, project_name: str) -> Matrix:
         raise RuntimeError(msg)
 
 
-def store_transf_matrix(
-        path_hdf5: str, atoms: List, dictCGFs: Dict, basis_name: str,
-        project_name: str, package_name: str = 'cp2k') -> str:
-    """
-    calculate the transformation of the overlap matrix from both spherical
-    to cartesian and from cartesian to spherical.
-
-    :param path_hdf5: Path to the HDF5 file.
-    :param atoms: Atoms that made up the molecule.
-    :param project_name: Name of the project.
-    :param package_name: Name of the ab initio simulation package.
-    :returns: Numpy matrix containing the transformation matrix.
-    """
-    # Norms of the spherical CGFs for each element
-    dict_global_norms = compute_normalization_sphericals(dictCGFs)
-    # Compute the transformation matrix between cartesian and spherical
-    path = os.path.join(project_name, 'trans_mtx')
-    with h5py.File(path_hdf5) as f5:
-        if path not in f5:
-            mtx = calc_transf_matrix(
-                f5, atoms, basis_name, dict_global_norms, package_name)
-            store = StoreasHDF5(f5, package_name)
-            store.funHDF5(path, mtx)
-    return path
-
-
-def split_trajectory(path: str, nBlocks: int, pathOut: str) -> List:
+def split_trajectory(path: str, nBlocks: int, pathOut: str) -> list:
     """
     Split an XYZ trajectory in n Block and write
     them in a given path.
     :Param path: Path to the XYZ file.
     :param nBlocks: number of Block into which the xyz file is split.
     :param pathOut: Path were the block are written.
-    :returns: path to block List
+    :returns: path to block list
     """
     with open(path, 'r') as f:
         # Read First line

@@ -1,15 +1,8 @@
 __all__ = ['calculate_couplings_3points', 'calculate_couplings_levine',
            'compute_overlaps_for_coupling', 'correct_phases']
 
-# ================> Python Standard  and third-party <==========
-from functools import partial
-from multiprocessing import cpu_count
-from nac.common import (Matrix, Vector, Tensor3D, retrieve_hdf5_data)
-from nac.integrals.multipoleIntegrals import (
-    compute_CGFs_indices, runner_multiprocessing)
-from nac.integrals.overlapIntegral import sijContracted
-from scipy import sparse
-from typing import Dict, List, Tuple
+from nac.common import (Matrix, Tensor3D, retrieve_hdf5_data)
+from typing import List, Tuple
 
 import numpy as np
 
@@ -125,20 +118,12 @@ def compute_overlaps_for_coupling(config: dict, dict_input: dict) -> Tuple:
     mol0, mol1 = dict_input['molecules']
 
     # Atomic orbitals overlap
-    suv_0 = calcOverlapMtx(config.dictCGFs, mol0, mol1)
+    suv = calcOverlapMtx(config.dictCGFs, mol0, mol1)
 
-    css0, css1, trans_mtx = read_overlap_data(config, dict_input["mo_paths"])
+    # Read Orbitals Coefficients
+    css0, css1 = read_overlap_data(config, dict_input["mo_paths"])
 
-    # Convert the transformation matrix to sparse representation
-    trans_mtx = sparse.csr_matrix(trans_mtx)
-
-    # Partial application of the first argument
-    spherical_fun = partial(calculate_spherical_overlap, trans_mtx)
-
-    # Overlap matrix for different times in Spherical coordinates
-    mtx_sji_t0 = spherical_fun(suv_0, css0, css1)
-
-    return mtx_sji_t0
+    return np.dot(css0.T, np.dot(suv, css1))
 
 
 def read_overlap_data(config: dict, mo_paths: list) -> Tuple:
@@ -151,28 +136,7 @@ def read_overlap_data(config: dict, mo_paths: list) -> Tuple:
     lowest, highest = compute_range_orbitals(mos[0], config.nHOMO, config.mo_index_range)
     css0, css1 = tuple(map(lambda xs: xs[:, lowest: highest], mos))
 
-    # Read the transformation matrix to convert from Cartesian to
-    # Spherical coordinates
-    hdf5_trans_mtx = config.hdf5_trans_mtx
-    if hdf5_trans_mtx is not None:
-        trans_mtx = retrieve_hdf5_data(config.path_hdf5, hdf5_trans_mtx)
-
-    return css0, css1, trans_mtx
-
-
-def calculate_spherical_overlap(trans_mtx: Matrix, suv: Matrix, css0: Matrix,
-                                css1: Matrix) -> Matrix:
-    """
-    Calculate the Overlap Matrix between molecular orbitals at different times.
-    """
-    if trans_mtx is not None:
-        # Overlap in Sphericals using a sparse representation
-        transpose = trans_mtx.transpose()
-        suv = trans_mtx.dot(sparse.csr_matrix.dot(suv, transpose))
-
-    css0T = np.transpose(css0)
-
-    return np.dot(css0T, np.dot(suv, css1))
+    return css0, css1
 
 
 def compute_range_orbitals(mtx: Matrix, nHOMO: int,
@@ -200,97 +164,11 @@ def compute_range_orbitals(mtx: Matrix, nHOMO: int,
 
 
 def calcOverlapMtx(
-        dictCGFs: Dict, mol0: List, mol1: List,
-        runner: str = 'multiprocessing', ncores: int = None) -> Matrix:
+        mol0: List, mol1: List, path_hdf5: str, basis_name: str) -> Matrix:
     """
     Parallel calculation of the overlap matrix using the atomic
     basis at two different geometries: R0 and R1.
     :param mol0: Atomic label and cartesian coordinates of the first geometry.
     :param mol1: Atomic label and cartesian coordinates of the second geometry.
-    :param dictCGFs: Contracted gauss functions normalized, represented as
-    a dict of list containing the Contracted Gauss primitives
-    :param calculator: Function to compute the matrix elements.
-    :param runner: function to compute the elements of the matrix
-    :param ncores: number of available cores
     """
-    # Compute the indices of the nuclear coordinates and CGFs
-    # pairs
-    indices, nOrbs = compute_CGFs_indices(mol0, dictCGFs)
-    partial_fun = partial(calc_overlap_chunk, dictCGFs, mol0, mol1, indices)
-    ncores = ncores if ncores is not None else cpu_count()
-
-    if runner.lower() == 'multiprocessing':
-        xss = runner_multiprocessing(
-            partial_fun, create_rows_range(nOrbs, ncores))
-
-        return np.vstack(xss)
-    else:
-        raise RuntimeError("Unkown {} runner".format(runner))
-
-
-def calc_overlap_chunk(dictCGFs: Dict, mol0: List, mol1: List,
-                       indices_cgfs: Matrix, row_slice: Tuple) -> Matrix:
-    """
-    Compute the row of the overlap matrix indicated by the indexes
-    given at row_slice.
-    """
-    # Indices to compute a subset of the overlap matrix
-    lower, upper = row_slice
-    nOrbs = indices_cgfs.shape[0]
-    chunk_size = upper - lower
-    # Matrix containing the partial overlap matrix
-    rows = np.empty((chunk_size, nOrbs))
-
-    # Compute the sunset of the overlap matrix
-    for k, i in enumerate(range(lower, upper)):
-        # Atom and CGFs index
-        at_i, cgfs_i_idx = indices_cgfs[i]
-        # Extract atom and  CGFs
-        atom_i = mol0[at_i]
-        cgf_i = dictCGFs[atom_i.symbol.lower()][cgfs_i_idx]
-        # Compute the ith row of the overlap matrix
-        rows[k] = calc_overlap_row(
-            dictCGFs, atom_i.xyz, cgf_i, mol1, indices_cgfs)
-
-    return rows
-
-
-def calc_overlap_row(dictCGFs: Dict, xyz_0: List, cgf_i: List,
-                     mol1: List, indices_cgfs: Matrix) -> Vector:
-    """
-    Calculate the k-th row of the overlap integral using
-    2 CGFs  and 2 different atomic coordinates.
-    """
-    nOrbs = indices_cgfs.shape[0]
-    row = np.empty(nOrbs)
-
-    for k, (at_j, cgfs_j_idx) in enumerate(np.rollaxis(indices_cgfs, axis=0)):
-        # Extract atom and  CGFs
-        atom_j = mol1[at_j]
-        cgf_j = dictCGFs[atom_j.symbol.lower()][cgfs_j_idx]
-        xyz_1 = atom_j.xyz
-        row[k] = sijContracted((xyz_0, cgf_i), (xyz_1, cgf_j))
-
-    return row
-
-
-def create_rows_range(nOrbs: int, ncores: int) -> List:
-    """
-    Create a list of indexes for the row of the overlap matrix
-    that will be calculated by a pool of workers.
-    """
-    # Number of rows to compute for each CPU
-    chunk = nOrbs // ncores
-
-    # Remaining entries
-    rest = nOrbs % ncores
-
-    xs = []
-    acc = 0
-    for i in range(ncores):
-        b = 1 if i < rest else 0
-        upper = acc + chunk + b
-        xs.append((acc, upper))
-        acc = upper
-
-    return xs
+    pass
