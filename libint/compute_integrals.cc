@@ -41,10 +41,10 @@ using namd::map_elements;
 using namd::Matrix;
 
 
-Matrix compute_integrals(const string& path_xyz_1,
-			 const string& path_xyz_2,
-			 const string& path_hdf5,
-			 const string& basis_name);
+Matrix compute_integrals_couplings(const string& path_xyz_1,
+				   const string& path_xyz_2,
+				   const string& path_hdf5,
+				   const string& basis_name);
 
 std::vector<Atom> read_xyz_from_file(const string& path_xyz) {
   // Read molecule in XYZ format from file
@@ -60,7 +60,7 @@ int main() {
   string dataset_name = "ethylene/point_n";
 
   auto xs =
-    compute_integrals(path_xyz, path_xyz, path_hdf5, basis_name);
+    compute_integrals_couplings(path_xyz, path_xyz, path_hdf5, basis_name);
 }
 
 namespace libint2 {
@@ -130,27 +130,29 @@ Matrix compute_overlaps_for_couplings(const std::vector<Shell>& shells_1,
   // atomic positions
 
   // Distribute the computations among the available threads
-  using libint2::nthreads;
+  // using libint2::nthreads;
 
   
   const auto n = nbasis(shells_1);
   Matrix result(n, n);
 
   // construct the overlap integrals engine
-  std::vector<libint2::Engine> engines(nthreads);
-  engines[0] = libint2::Engine(libint2::Operator::overlap, max_nprim(shells_1), max_l(shells_1), 0);
+  // std::vector<libint2::Engine> engines(nthreads);
+  // engines[0] = libint2::Engine(libint2::Operator::overlap, max_nprim(shells_1), max_l(shells_1), 0);
+  libint2::Engine engine(libint2::Operator::overlap, max_nprim(shells_1), max_l(shells_1), 0);
 
-  for (size_t i = 1; i != nthreads; ++i) {
-    engines[i] = engines[0];
-  }
+  // for (size_t i = 1; i != nthreads; ++i) {
+  //   engines[i] = engines[0];
+  // }
   
   auto shell2bf = map_shell_to_basis_function(shells_1);
 
   // Function to compute the integrals in parallel
-  auto compute = [&](int thread_id) {
+  // auto compute = [&](int thread_id) {
 
   // buf[0] points to the target shell set after every call  to engine.compute()
-  const auto& buf = engines[thread_id].results();
+  // const auto& buf = engines[thread_id].results();
+  const auto& buf = engine.results();
 
 
   // loop over unique shell pairs, {s1,s2}
@@ -164,16 +166,17 @@ Matrix compute_overlaps_for_couplings(const std::vector<Shell>& shells_1,
       auto n2 = shells_2[s2].size();
 
       // compute shell pair and return pointer to the buffer
-      engines[thread_id].compute(shells_1[s1], shells_2[s2]);
+      // engines[thread_id].compute(shells_1[s1], shells_2[s2]);
+      engine.compute(shells_1[s1], shells_2[s2]);      
 
       // "map" buffer to a const Eigen Matrix, and copy it to the corresponding blocks of the result
       Eigen::Map<const Matrix> buf_mat(buf[0], n1, n2);
       result.block(bf1, bf2, n1, n2) = buf_mat;
     }
   }
-  }; // compute lambda
+  // }; // compute lambda
 
-  libint2::parallel_do(compute);
+  // libint2::parallel_do(compute);
 
   return result;
 }
@@ -327,7 +330,7 @@ std::vector<Shell> create_shells_for_atom(const CP2K_Basis_Atom& data, const Ato
 	);
       acc += 1;
     }
-  }
+   }
   return shells;
 }
 
@@ -381,8 +384,7 @@ Matrix compute_integrals_couplings(const string& path_xyz_1,
 Matrix compute_integrals_multipole(const string& path_xyz,
 				   const string& path_hdf5,
 				   const string& basis_name,
-				   const string& multipole,
-				   const string& axis="x") {
+				   const string& multipole) {
   // Compute the overlap integrals for the molecule define in `path_xyz` using
   // the `basis_name`
 
@@ -413,5 +415,4 @@ PYBIND11_MODULE(compute_integrals, m) {
     m.def("compute_integrals_multipole",
 	  &compute_integrals_multipole,
 	  py::return_value_policy::reference_internal);
-
 }
