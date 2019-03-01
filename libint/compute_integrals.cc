@@ -214,7 +214,8 @@ template <Operator operator_type,
 std::vector<Matrix> compute_multipoles(const std::vector<libint2::Shell>& shells,
 				       OperatorParams oparams = OperatorParams())
 { // Compute different type of multipole integrals in different threads
-
+  using libint2::nthreads;
+  
   const unsigned int nopers = libint2::operator_traits<operator_type>::nopers;
 
   // number of shells
@@ -225,41 +226,52 @@ std::vector<Matrix> compute_multipoles(const std::vector<libint2::Shell>& shells
     r = Matrix::Zero(n, n);
 
   // construct the multipole engine integrals engine
-  libint2::Engine engine(operator_type, max_nprim(shells), max_l(shells), 0);
-  // pass operator params to the engine
-  engine.set_params(oparams);
+  std::vector<libint2::Engine> engines(nthreads);
+  engines[0] = libint2::Engine(Operator::overlap, max_nprim(shells), max_l(shells), 0);
 
+  // pass operator params to the engines
+  engines[0].set_params(oparams);
+  for (size_t i = 1; i != nthreads; ++i) {
+    engines[i] = engines[0];
+  }
   
   auto shell2bf = map_shell_to_basis_function(shells);
 
-  // buf[0] points to the target shell set after every call  to engine.compute()
-  const auto& buf = engine.results();
+  // Function to compute the integrals in parallel
+  auto compute = [&](int thread_id) {
 
-  // loop over unique shell pairs, {s1,s2} such that s1 >= s2
-  // this is due to the permutational symmetry of the real integrals over Hermitian operators: (1|2) = (2|1)
-  for(auto s1=0; s1!=shells.size(); ++s1) {
+    // buf[0] points to the target shell set after every call  to engines.compute()
+    const auto& buf = engines[thread_id].results();
+    
+    // loop over unique shell pairs, {s1,s2} such that s1 >= s2
+    // this is due to the permutational symmetry of the real integrals over Hermitian operators: (1|2) = (2|1)
+    for(auto s1=0; s1!=shells.size(); ++s1) {
+      
+      auto bf1 = shell2bf[s1]; // first basis function in this shell
+      auto n1 = shells[s1].size();
 
-    auto bf1 = shell2bf[s1]; // first basis function in this shell
-    auto n1 = shells[s1].size();
+      for(auto s2=0; s2<=s1; ++s2) {
+	// Select integrals for current thread
+	auto acc = s2 + s1 * shells.size();
+	if (acc % nthreads != thread_id) continue;
 
-    for(auto s2=0; s2<=s1; ++s2) {
-
-      auto bf2 = shell2bf[s2];
-      auto n2 = shells[s2].size();
-
-      // compute shell pair
-      engine.compute(shells[s1], shells[s2]);
-
-      for (unsigned int op = 0; op != nopers; ++op) {
-	// "map" buffer to a const Eigen Matrix, and copy it to the corresponding blocks of the result
+	auto bf2 = shell2bf[s2];
+	auto n2 = shells[s2].size();
+	
+	// compute shell pair
+	engines[thread_id].compute(shells[s1], shells[s2]);
+	
+	for (unsigned int op = 0; op != nopers; ++op) {
+	  // "map" buffer to a const Eigen Matrix, and copy it to the corresponding blocks of the result
           Eigen::Map<const Matrix> buf_mat(buf[op], n1, n2);
           result[op].block(bf1, bf2, n1, n2) = buf_mat;
 	  if (s1 != s2) // if s1 >= s2, copy {s1,s2} to the corresponding {s2,s1} block, note the transpose!
 	    result[op].block(bf2, bf1, n2, n1) = buf_mat.transpose();
+	}
       }
     }
-  }
-
+  }; // compute lambda
+  libint2::parallel_do(compute);   
   return result;
 }
 
@@ -402,7 +414,7 @@ Matrix compute_integrals_couplings(const string& path_xyz_1,
   // Compute the overlap integrals for the molecule define in `path_xyz` using
   // the `basis_name`
 
-  set_nthread;
+  set_nthread();
   std::vector<Atom> mol_1 = read_xyz_from_file(path_xyz_1);
   std::vector<Atom> mol_2 = read_xyz_from_file(path_xyz_2);
   
