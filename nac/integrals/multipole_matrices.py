@@ -41,8 +41,7 @@ def compute_matrix_multipole(
         mol: list, config: Dict, multipole: str) -> Matrix:
     """
     Compute the some `multipole` matrix: overlap, dipole, etc. for a given geometry `mol`.
-    Compute the Multipole matrix in cartesian coordinates and
-    expand it to a matrix and finally convert it to spherical coordinates.
+    Compute the Multipole matrix in spherical coordinates.
 
     :returns: Matrix with entries <ψi | x^i y^j z^k | ψj>
     """

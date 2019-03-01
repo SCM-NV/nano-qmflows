@@ -4,6 +4,7 @@
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
+#include <thread>
 #include <tuple>
 #include <vector>
 
@@ -23,6 +24,10 @@
 
 // Constants
 #include "namd.h"
+
+#if defined(_OPENMP)
+#include <omp.h>
+#endif
 
 namespace py = pybind11;
 using std::string;
@@ -56,7 +61,33 @@ int main() {
 
   auto xs =
     compute_integrals(path_xyz, path_xyz, path_hdf5, basis_name);
+}
+
+namespace libint2 {
+  int nthreads;
+  
+  /// fires off \c nthreads instances of lambda in parallel
+  template <typename Lambda>
+    void parallel_do(Lambda& lambda) {
+#ifdef _OPENMP
+#pragma omp parallel
+    {
+      auto thread_id = omp_get_thread_num();
+      lambda(thread_id);
     }
+#else  // use C++11 threads
+    std::vector<std::thread> threads;
+    for (int thread_id = 0; thread_id != libint2::nthreads; ++thread_id) {
+      if (thread_id != nthreads - 1)
+	threads.push_back(std::thread(lambda, thread_id));
+      else
+	lambda(thread_id);
+    }  // threads_id
+    for (int thread_id = 0; thread_id < nthreads - 1; ++thread_id)
+      threads[thread_id].join();
+#endif
+  }
+}
 
 size_t nbasis(const std::vector<libint2::Shell>& shells) {
   size_t n = 0;
@@ -94,43 +125,58 @@ std::vector<size_t> map_shell_to_basis_function(const std::vector<Shell>& shells
 }
 
 Matrix compute_overlaps_for_couplings(const std::vector<Shell>& shells_1,
-				      const std::vector<Shell>& shells_2)
-{
+				      const std::vector<Shell>& shells_2) {
+  // Compute the overlap integrals between two set of shells at different
+  // atomic positions
 
+  // Distribute the computations among the available threads
+  using libint2::nthreads;
+
+  
   const auto n = nbasis(shells_1);
   Matrix result(n, n);
 
   // construct the overlap integrals engine
-  libint2::Engine engine(libint2::Operator::overlap, max_nprim(shells_1), max_l(shells_1), 0);
+  std::vector<libint2::Engine> engines(nthreads);
+  engines[0] = libint2::Engine(libint2::Operator::overlap, max_nprim(shells_1), max_l(shells_1), 0);
+
+  for (size_t i = 1; i != nthreads; ++i) {
+    engines[i] = engines[0];
+  }
+  
   auto shell2bf = map_shell_to_basis_function(shells_1);
 
+  // Function to compute the integrals in parallel
+  auto compute = [&](int thread_id) {
+
   // buf[0] points to the target shell set after every call  to engine.compute()
-  const auto& buf = engine.results();
+  const auto& buf = engines[thread_id].results();
+
 
   // loop over unique shell pairs, {s1,s2}
-  // Notem
   for(auto s1=0; s1!=shells_1.size(); ++s1) {
 
     auto bf1 = shell2bf[s1]; // first basis function in this shell
     auto n1 = shells_1[s1].size();
 
     for(auto s2=0; s2 != shells_2.size(); ++s2) {
-
       auto bf2 = shell2bf[s2];
       auto n2 = shells_2[s2].size();
 
-      // compute shell pair
-      engine.compute(shells_1[s1], shells_2[s2]);
+      // compute shell pair and return pointer to the buffer
+      engines[thread_id].compute(shells_1[s1], shells_2[s2]);
 
       // "map" buffer to a const Eigen Matrix, and copy it to the corresponding blocks of the result
       Eigen::Map<const Matrix> buf_mat(buf[0], n1, n2);
       result.block(bf1, bf2, n1, n2) = buf_mat;
     }
   }
+  }; // compute lambda
+
+  libint2::parallel_do(compute);
 
   return result;
 }
-
 
 
 Matrix compute_multipoles(const std::vector<libint2::Shell>& shells,
