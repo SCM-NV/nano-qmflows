@@ -56,15 +56,11 @@ def compute_matrix_multipole(
     basis_name = config["cp2k_general_settings"]["basis"]
 
     if multipole == 'overlap':
-        matrix_multipole = compute_integrals_multipole(path, path_hdf5, basis_name, 'overlap')
+        matrix_multipole = compute_integrals_multipole(path, path_hdf5, basis_name, multipole)
     elif multipole == 'dipole':
-        np.stack(
-            tuple(compute_integrals_multipole(path, path_hdf5, basis_name, 'overlap', axis)
-                  for axis in ['x', 'y', 'z']))
-    elif multipole == 'multipole':
-        np.stack(
-            tuple(compute_integrals_multipole(path, path_hdf5, basis_name, 'overlap', axis)
-                  for axis in ['xx', 'yy', 'zz']))
+        np.stack(compute_integrals_multipole(path, path_hdf5, basis_name, multipole))
+    elif multipole == 'quadrupole':
+        np.stack(compute_integrals_multipole(path, path_hdf5, basis_name, multipole))
 
     # Delete the tmp molecule file
     os.remove(path)

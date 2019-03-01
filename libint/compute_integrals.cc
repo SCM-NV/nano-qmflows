@@ -36,6 +36,7 @@ using HighFive::File;
 using HighFive::DataSet;
 using libint2::Atom;
 using libint2::BasisSet;
+using libint2::Operator;
 using libint2::Shell;
 using namd::CP2K_Basis_Atom;
 using namd::map_elements;
@@ -164,7 +165,7 @@ Matrix compute_overlaps_for_couplings(const std::vector<Shell>& shells_1,
 
   // construct the overlap integrals engine
   std::vector<libint2::Engine> engines(nthreads);
-  engines[0] = libint2::Engine(libint2::Operator::overlap, max_nprim(shells_1), max_l(shells_1), 0);
+  engines[0] = libint2::Engine(Operator::overlap, max_nprim(shells_1), max_l(shells_1), 0);
 
   for (size_t i = 1; i != nthreads; ++i) {
     engines[i] = engines[0];
@@ -207,16 +208,28 @@ Matrix compute_overlaps_for_couplings(const std::vector<Shell>& shells_1,
   return result;
 }
 
+template <Operator operator_type,
+	  typename OperatorParams =
+	  typename libint2::operator_traits<operator_type>::oper_params_type>
+std::vector<Matrix> compute_multipoles(const std::vector<libint2::Shell>& shells,
+				       OperatorParams oparams = OperatorParams())
+{ // Compute different type of multipole integrals in different threads
 
-Matrix compute_multipoles(const std::vector<libint2::Shell>& shells,
-                          libint2::Operator operator_type) {
-  // Compute differ 
+  const unsigned int nopers = libint2::operator_traits<operator_type>::nopers;
+
+  // number of shells
   const auto n = nbasis(shells);
-  Matrix result(n,n);
+
+  std::vector<Matrix> result(nopers);
+  for (auto& r : result)
+    r = Matrix::Zero(n, n);
 
   // construct the multipole engine integrals engine
   libint2::Engine engine(operator_type, max_nprim(shells), max_l(shells), 0);
+  // pass operator params to the engine
+  engine.set_params(oparams);
 
+  
   auto shell2bf = map_shell_to_basis_function(shells);
 
   // buf[0] points to the target shell set after every call  to engine.compute()
@@ -237,18 +250,18 @@ Matrix compute_multipoles(const std::vector<libint2::Shell>& shells,
       // compute shell pair
       engine.compute(shells[s1], shells[s2]);
 
-      // "map" buffer to a const Eigen Matrix, and copy it to the corresponding blocks of the result
-      Eigen::Map<const Matrix> buf_mat(buf[0], n1, n2);
-      result.block(bf1, bf2, n1, n2) = buf_mat;
-      if (s1 != s2) // if s1 >= s2, copy {s1,s2} to the corresponding {s2,s1} block, note the transpose!
-      result.block(bf2, bf1, n2, n1) = buf_mat.transpose();
-
+      for (unsigned int op = 0; op != nopers; ++op) {
+	// "map" buffer to a const Eigen Matrix, and copy it to the corresponding blocks of the result
+          Eigen::Map<const Matrix> buf_mat(buf[op], n1, n2);
+          result[op].block(bf1, bf2, n1, n2) = buf_mat;
+	  if (s1 != s2) // if s1 >= s2, copy {s1,s2} to the corresponding {s2,s1} block, note the transpose!
+	    result[op].block(bf2, bf1, n2, n1) = buf_mat.transpose();
+      }
     }
   }
 
   return result;
 }
-
 
 std::vector<int> read_basisFormat(const string& basisFormat){
   // Transform the string containing the basis format for CP2K, into a vector of strings
@@ -424,12 +437,17 @@ Matrix compute_integrals_multipole(const string& path_xyz,
   libint2::initialize();
 
   // compute Overlap integrals
-  auto S = compute_multipoles(shells, libint2::Operator::overlap);
+  // auto S = compute_multipoles(shells, Operator::overlap);
+  auto matrices = compute_multipoles<Operator::overlap>(shells);
 
   // stop using libint2
   libint2::finalize();
+
+  Matrix super_matrix(matrices[0].rows(), matrices.size() * matrices[0].cols());
+  for (const auto& x: matrices)
+    super_matrix << x;
   
-  return S;
+  return super_matrix;
 }
 
 
