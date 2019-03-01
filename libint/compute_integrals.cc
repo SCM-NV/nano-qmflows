@@ -35,11 +35,18 @@ using HighFive::Attribute;
 using HighFive::File;
 using HighFive::DataSet;
 using libint2::Atom;
+using libint2::BasisSet;
 using libint2::Shell;
 using namd::CP2K_Basis_Atom;
 using namd::map_elements;
 using namd::Matrix;
 
+
+using shellpair_list_t = std::unordered_map<size_t, std::vector<size_t>>;
+// in same order as shellpair_list_t
+using shellpair_data_t = std::vector<std::vector<std::shared_ptr<libint2::ShellPair>>>;
+shellpair_list_t shellpair_list;
+shellpair_data_t shellpair_data;
 
 Matrix compute_integrals_couplings(const string& path_xyz_1,
 				   const string& path_xyz_2,
@@ -63,6 +70,8 @@ int main() {
     compute_integrals_couplings(path_xyz, path_xyz, path_hdf5, basis_name);
 }
 
+
+// OpenMP or multithread computations
 namespace libint2 {
   int nthreads;
   
@@ -87,6 +96,23 @@ namespace libint2 {
       threads[thread_id].join();
 #endif
   }
+}
+
+void set_nthread() {
+  
+  using libint2::nthreads;
+  nthreads = std::thread::hardware_concurrency();
+
+#if defined(_OPENMP)
+  omp_set_num_threads(nthreads);
+#endif
+  std::cout << "Will scale over " << nthreads
+#if defined(_OPENMP)
+	    << " OpenMP"
+#else
+	    << " C++11"
+#endif
+	    << " threads" << std::endl;
 }
 
 size_t nbasis(const std::vector<libint2::Shell>& shells) {
@@ -124,36 +150,33 @@ std::vector<size_t> map_shell_to_basis_function(const std::vector<Shell>& shells
   return result;
 }
 
+
 Matrix compute_overlaps_for_couplings(const std::vector<Shell>& shells_1,
 				      const std::vector<Shell>& shells_2) {
   // Compute the overlap integrals between two set of shells at different
   // atomic positions
 
   // Distribute the computations among the available threads
-  // using libint2::nthreads;
-
+  using libint2::nthreads;
   
   const auto n = nbasis(shells_1);
   Matrix result(n, n);
 
   // construct the overlap integrals engine
-  // std::vector<libint2::Engine> engines(nthreads);
-  // engines[0] = libint2::Engine(libint2::Operator::overlap, max_nprim(shells_1), max_l(shells_1), 0);
-  libint2::Engine engine(libint2::Operator::overlap, max_nprim(shells_1), max_l(shells_1), 0);
+  std::vector<libint2::Engine> engines(nthreads);
+  engines[0] = libint2::Engine(libint2::Operator::overlap, max_nprim(shells_1), max_l(shells_1), 0);
 
-  // for (size_t i = 1; i != nthreads; ++i) {
-  //   engines[i] = engines[0];
-  // }
+  for (size_t i = 1; i != nthreads; ++i) {
+    engines[i] = engines[0];
+  }
   
   auto shell2bf = map_shell_to_basis_function(shells_1);
 
   // Function to compute the integrals in parallel
-  // auto compute = [&](int thread_id) {
+  auto compute = [&](int thread_id) {
 
   // buf[0] points to the target shell set after every call  to engine.compute()
-  // const auto& buf = engines[thread_id].results();
-  const auto& buf = engine.results();
-
+  const auto& buf = engines[thread_id].results();
 
   // loop over unique shell pairs, {s1,s2}
   for(auto s1=0; s1!=shells_1.size(); ++s1) {
@@ -162,21 +185,24 @@ Matrix compute_overlaps_for_couplings(const std::vector<Shell>& shells_1,
     auto n1 = shells_1[s1].size();
 
     for(auto s2=0; s2 != shells_2.size(); ++s2) {
+      auto acc = s2 + s1 * shells_1.size();
+      if (acc % nthreads != thread_id) continue;
+
+      // extract basis
       auto bf2 = shell2bf[s2];
       auto n2 = shells_2[s2].size();
 
       // compute shell pair and return pointer to the buffer
-      // engines[thread_id].compute(shells_1[s1], shells_2[s2]);
-      engine.compute(shells_1[s1], shells_2[s2]);      
+      engines[thread_id].compute(shells_1[s1], shells_2[s2]);
 
       // "map" buffer to a const Eigen Matrix, and copy it to the corresponding blocks of the result
       Eigen::Map<const Matrix> buf_mat(buf[0], n1, n2);
       result.block(bf1, bf2, n1, n2) = buf_mat;
     }
   }
-  // }; // compute lambda
+  }; // compute lambda
 
-  // libint2::parallel_do(compute);
+  libint2::parallel_do(compute);
 
   return result;
 }
@@ -363,6 +389,7 @@ Matrix compute_integrals_couplings(const string& path_xyz_1,
   // Compute the overlap integrals for the molecule define in `path_xyz` using
   // the `basis_name`
 
+  set_nthread;
   std::vector<Atom> mol_1 = read_xyz_from_file(path_xyz_1);
   std::vector<Atom> mol_2 = read_xyz_from_file(path_xyz_2);
   
@@ -388,6 +415,7 @@ Matrix compute_integrals_multipole(const string& path_xyz,
   // Compute the overlap integrals for the molecule define in `path_xyz` using
   // the `basis_name`
 
+  set_nthread();
   std::vector<Atom> mol = read_xyz_from_file(path_xyz);
   
   auto shells = make_cp2k_basis(mol, path_hdf5, basis_name);
