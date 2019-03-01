@@ -433,6 +433,18 @@ Matrix compute_integrals_couplings(const string& path_xyz_1,
   return S;
 }
 
+std::vector<Matrix> select_multipole(const std::vector<Atom>& atoms,
+				     const std::vector<Shell>& shells,
+				     const string& multipole) {
+  if (multipole == "overlap")
+    return compute_multipoles<Operator::overlap>(shells);
+  else if (multipole == "dipole")
+    return compute_multipoles<Operator::emultipole1>(shells, libint2::make_point_charges(atoms));
+  else if (multipole == "quadrupole")
+    return compute_multipoles<Operator::emultipole2>(shells, libint2::make_point_charges(atoms));
+}
+
+
 Matrix compute_integrals_multipole(const string& path_xyz,
 				   const string& path_hdf5,
 				   const string& basis_name,
@@ -450,8 +462,8 @@ Matrix compute_integrals_multipole(const string& path_xyz,
 
   // compute Overlap integrals
   // auto S = compute_multipoles(shells, Operator::overlap);
-  auto matrices = compute_multipoles<Operator::overlap>(shells);
-
+  auto matrices = select_multipole(mol, shells, multipole);
+ 
   // stop using libint2
   libint2::finalize();
 
