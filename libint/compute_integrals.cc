@@ -271,7 +271,8 @@ std::vector<Matrix> compute_multipoles(const std::vector<libint2::Shell>& shells
       }
     }
   }; // compute lambda
-  libint2::parallel_do(compute);   
+  libint2::parallel_do(compute);
+
   return result;
 }
 
@@ -439,9 +440,9 @@ std::vector<Matrix> select_multipole(const std::vector<Atom>& atoms,
   if (multipole == "overlap")
     return compute_multipoles<Operator::overlap>(shells);
   else if (multipole == "dipole")
-    return compute_multipoles<Operator::emultipole1>(shells, libint2::make_point_charges(atoms));
+    return compute_multipoles<Operator::emultipole1>(shells);
   else if (multipole == "quadrupole")
-    return compute_multipoles<Operator::emultipole2>(shells, libint2::make_point_charges(atoms));
+    return compute_multipoles<Operator::emultipole2>(shells);
 }
 
 
@@ -461,16 +462,17 @@ Matrix compute_integrals_multipole(const string& path_xyz,
   libint2::initialize();
 
   // compute Overlap integrals
-  // auto S = compute_multipoles(shells, Operator::overlap);
   auto matrices = select_multipole(mol, shells, multipole);
  
   // stop using libint2
   libint2::finalize();
 
-  std::cout << multipole << " has been computed, calling transf" << "\n";
   Matrix super_matrix(matrices[0].rows(), matrices.size() * matrices[0].cols());
-  for (const auto& x: matrices)
-    super_matrix << x;
+  for (auto  op = 0; op != matrices.size(); ++op) {
+    auto i = op * matrices[0].rows(); // matrices square symmetricals
+    super_matrix.block(i, i, matrices[op].rows(), matrices[op].cols()) = matrices[op];
+  }
+
   
   return super_matrix;
 }
