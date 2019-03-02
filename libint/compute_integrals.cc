@@ -227,7 +227,7 @@ std::vector<Matrix> compute_multipoles(const std::vector<libint2::Shell>& shells
 
   // construct the multipole engine integrals engine
   std::vector<libint2::Engine> engines(nthreads);
-  engines[0] = libint2::Engine(Operator::overlap, max_nprim(shells), max_l(shells), 0);
+  engines[0] = libint2::Engine(operator_type, max_nprim(shells), max_l(shells), 0);
 
   // pass operator params to the engines
   engines[0].set_params(oparams);
@@ -467,6 +467,7 @@ Matrix compute_integrals_multipole(const string& path_xyz,
   // stop using libint2
   libint2::finalize();
 
+  std::cout << multipole << " has been computed, calling transf" << "\n";
   Matrix super_matrix(matrices[0].rows(), matrices.size() * matrices[0].cols());
   for (const auto& x: matrices)
     super_matrix << x;
