@@ -467,10 +467,10 @@ Matrix compute_integrals_multipole(const string& path_xyz,
   // stop using libint2
   libint2::finalize();
 
-  Matrix super_matrix(matrices[0].rows(), matrices.size() * matrices[0].cols());
+  Matrix super_matrix(matrices[0].rows() * matrices.size(), matrices[0].cols());
   for (auto  op = 0; op != matrices.size(); ++op) {
-    auto i = op * matrices[0].rows(); // matrices square symmetricals
-    super_matrix.block(i, i, matrices[op].rows(), matrices[op].cols()) = matrices[op];
+    auto i = op * matrices[0].rows();
+    super_matrix.block(i, 0, matrices[op].rows(), matrices[op].cols()) = matrices[op];
   }
 
   

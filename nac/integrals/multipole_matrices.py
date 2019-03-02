@@ -4,7 +4,6 @@ from nac.common import (
     store_arrays_in_hdf5, tuplesXYZ_to_plams)
 from os.path import join
 from typing import (Dict, List)
-import numpy as np
 import os
 import uuid
 
@@ -43,6 +42,9 @@ def compute_matrix_multipole(
     Compute the some `multipole` matrix: overlap, dipole, etc. for a given geometry `mol`.
     Compute the Multipole matrix in spherical coordinates.
 
+    Note: for the dipole onwards the super_matrix contains all the matrices stack all the
+    0-axis.
+
     :returns: Matrix with entries <ψi | x^i y^j z^k | ψj>
     """
     path_hdf5 = config['path_hdf5']
@@ -58,9 +60,16 @@ def compute_matrix_multipole(
     if multipole == 'overlap':
         matrix_multipole = compute_integrals_multipole(path, path_hdf5, basis_name, multipole)
     elif multipole == 'dipole':
-        np.stack(compute_integrals_multipole(path, path_hdf5, basis_name, multipole))
+        # The tensor contains the overlap + {x, y, z} dipole matrices
+        super_matrix = compute_integrals_multipole(path, path_hdf5, basis_name, multipole)
+        dim = super_matrix.shape[1]
+        matrix_multipole = super_matrix.reshape(4, dim, dim)
+
     elif multipole == 'quadrupole':
-        np.stack(compute_integrals_multipole(path, path_hdf5, basis_name, multipole))
+        # The tensor contains the overlap + {xx, xy, xz, yy, yz, zz} quadrupole matrices
+        super_matrix = compute_integrals_multipole(path, path_hdf5, basis_name, multipole)
+        dim = super_matrix.shape[1]
+        matrix_multipole = super_matrix.reshape(7, dim, dim)
 
     # Delete the tmp molecule file
     os.remove(path)
