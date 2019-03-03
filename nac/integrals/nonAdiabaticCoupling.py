@@ -119,7 +119,7 @@ def compute_overlaps_for_coupling(config: dict, dict_input: dict) -> Tuple:
     :param trans_mtx: path to the transformation matrix to
     translate from Cartesian to Sphericals.
     :returns: [Matrix] containing the overlaps at different times
-    # """
+    """
     # Atomic orbitals overlap
     suv = calcOverlapMtx(config,  dict_input)
 
@@ -171,8 +171,7 @@ def calcOverlapMtx(config: dict, dict_input: dict) -> Matrix:
     Parallel calculation of the overlap matrix using the libint2 library
     at two different geometries: R0 and R1.
     """
-    mol_i, mol_j = tuple(tuplesXYZ_to_plams(
-        change_mol_units(parse_string_xyz(x)) for x in dict_input["molecules"]))
+    mol_i, mol_j = tuple(tuplesXYZ_to_plams(x) for x in dict_input["molecules"])
 
     # unique molecular paths
     path_i = join(config["scratch_path"], "molecule_{}.xyz".format(uuid.uuid4()))
