@@ -1,7 +1,8 @@
 sudo: required
-language: cpp
-compiler: g++
-install: export CXX="g++-7"
+language: none
+install:
+  - export CXX="g++-7"
+  - export CC="gcc-7"
 
 
 addons:
@@ -33,7 +34,6 @@ before_script:
   - conda list
 
 script:
-  - sudo ln -s /usr/bin/gcc-7 /usr/bin/gcc
   - py.test -m "not (slow or long)" --cov=nac test
   - coverage xml && coverage report -m
 
