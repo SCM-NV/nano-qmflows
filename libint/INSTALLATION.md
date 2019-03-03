@@ -1,8 +1,0 @@
-
-# Installation
-
-
-## Requirements:
-
- * [Eigen]()
- *

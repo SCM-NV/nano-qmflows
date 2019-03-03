@@ -1,5 +1,5 @@
 sudo: required
-language: none
+language: generic
 install:
   - export CXX="g++-7"
   - export CC="gcc-7"
@@ -12,6 +12,7 @@ addons:
       - ubuntu-toolchain-r-test
 
 install:
+  - gcc --version
   - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
   - bash miniconda.sh -b -p $HOME/miniconda
   - export PATH="$HOME/miniconda/bin:$PATH"
