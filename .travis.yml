@@ -1,5 +1,8 @@
-sudo: require
-language: generic
+sudo: required
+language: cpp
+compiler: g++
+install: export CXX="g++-7"
+
 
 addons:
   apt:
