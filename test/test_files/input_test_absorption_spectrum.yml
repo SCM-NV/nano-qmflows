@@ -6,7 +6,7 @@ xc_dft:
   pbe
 tddft:
   stda
-active_space: [10, 10]
+active_space: [10, 15]
 runner:
   "multiprocessing"
 path_hdf5:

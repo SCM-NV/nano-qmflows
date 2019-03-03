@@ -15,7 +15,7 @@ from nac.common import (
     Matrix, Vector, Tensor3D,
     change_mol_units, femtosec2au, retrieve_hdf5_data,
     search_data_in_hdf5, store_arrays_in_hdf5)
-
+from qmflows.parsers import parse_string_xyz
 from noodles import (gather, schedule)
 
 # Types hint
@@ -302,9 +302,11 @@ def calculate_overlap(config: dict, mo_paths_hdf5: list) -> list:
         dict_input = {'i': i}
         # Extract molecules to compute couplings
         if config.overlaps_deph:
-            molecules = geometries[0, i + 1]
+            molecules = tuple(map(lambda idx: parse_string_xyz(geometries[idx]),
+                                  [0, i + 1]))
         else:
-            molecules = geometries[i, i + 1]
+            molecules = tuple(map(lambda idx: parse_string_xyz(geometries[idx]),
+                                  [i, i + 1]))
 
         # If units are Angtrom convert then to a.u.
         if 'angstrom' == config.geometry_units.lower():

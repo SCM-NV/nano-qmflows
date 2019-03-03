@@ -1,6 +1,5 @@
 
 from functools import wraps
-from nac.basisSet.basisNormalization import create_normalized_CGFs
 from nac.common import InputKey
 from os.path import join
 
@@ -41,16 +40,6 @@ def try_to_remove(path_files=None):
                 remove_file_directory(path_files)
         return wrapper
     return remove_test_files
-
-
-def create_dict_CGFs(f5, packageHDF5, pathBasis, basisname, packageName, xyz):
-    """
-    If the Cp2k Basis are already stored in the hdf5 file continue,
-    otherwise read and store them in the hdf5 file
-    """
-    keyBasis = InputKey("basis", [pathBasis])
-    packageHDF5(f5, [keyBasis])   # Store the basis sets
-    return create_normalized_CGFs(f5, basisname, packageName, xyz)
 
 
 def dump_MOs_coeff(handle_hdf5, packageHDF5, path_MO, pathEs, pathCs,
