@@ -156,7 +156,7 @@ setup(
         'test': ['coverage', 'pytest>=3.9', 'pytest-cov', 'codacy-coverage']},
     include_package_data=True,
     package_data={
-        'nac': ['basisSet/valence_electrons.json']
+        'nac': ['workflows/valence_electrons.json']
     },
     scripts=[
         'scripts/cli/run_workflow.py',
