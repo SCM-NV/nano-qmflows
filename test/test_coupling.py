@@ -60,7 +60,7 @@ def check_hamiltonians(hamiltonians: str) -> None:
     Check that the hamiltonians were written correctly
     """
     energies = np.stack([np.diag(np.loadtxt(ts[1])) for ts in hamiltonians])
-    couplings = np.stack(np.loadtxt(ts[0]) for ts in hamiltonians)
+    couplings = np.stack([np.loadtxt(ts[0]) for ts in hamiltonians])
 
     # check that energies and couplings are finite values
     assert np.isfinite(energies).all()

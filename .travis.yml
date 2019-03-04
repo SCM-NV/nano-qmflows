@@ -29,7 +29,7 @@ install:
 
   - pip install "git+https://github.com/SCM-NV/PLAMS@master#egg=plams-1.2"
   - pip install "https://github.com/SCM-NV/qmflows/tarball/master#egg=qmflows"
-  - pip install .[test]
+  - pip install .[test] -v
   
 
 before_script:

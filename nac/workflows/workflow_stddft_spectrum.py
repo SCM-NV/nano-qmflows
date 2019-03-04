@@ -137,9 +137,9 @@ def compute_oscillator_strengths(
 
     def compute_transition_matrix(matrix):
         return np.stack(
-            np.sum(
+            [np.sum(
                 np.sqrt(2 * delta_ia / omega[i]) * xia[:, i] * matrix)
-            for i in range(nocc*nvirt))
+             for i in range(nocc*nvirt)])
 
     # 2) Compute the transition dipole matrix TDM(i->a)
     # Call the function that computes transition dipole moments integrals
