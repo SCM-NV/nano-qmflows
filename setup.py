@@ -1,29 +1,9 @@
 from Cython.Distutils import build_ext
 from os.path import join
 from setuptools import (Extension, find_packages, setup)
-from subprocess import (PIPE, Popen)
 import os
 import setuptools
 import sys
-
-
-# Compiler flags
-def check_compiler(compiler: str) -> bool:
-    """
-    Check that a compiler is available
-    """
-    cmd = "{} --version".format(compiler)
-    p = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, shell=True)
-    rs = p.communicate()
-    err = rs[1]
-    if err:
-        print(compiler, " compiler not avaialable!")
-    return True if not err else False
-
-
-flags = []
-if check_compiler('gcc'):
-    flags = ['-fopenmp']
 
 
 def readme():
@@ -67,9 +47,7 @@ ext_pybind = Extension(
     ],
     libraries=['hdf5', 'int2'],
     library_dirs=[conda_lib],
-    language='c++',
-    extra_compile_args=flags,
-    extra_link_args=flags)
+    language='c++')
 
 
 # As of Python 3.6, CCompiler has a `has_flag` method.
@@ -117,6 +95,8 @@ class BuildExt(build_ext):
         if ct == 'unix':
             opts.append('-DVERSION_INFO="%s"' % self.distribution.get_version())
             opts.append(cpp_flag(self.compiler))
+            if has_flag(self.compiler, '-fopenmp'):
+                opts.append('-fopenmp')
             if has_flag(self.compiler, '-fvisibility=hidden'):
                 opts.append('-fvisibility=hidden')
         elif ct == 'msvc':
