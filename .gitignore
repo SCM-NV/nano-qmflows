@@ -82,3 +82,4 @@ molar_extinction_coefficients.txt
 mtx_phases
 oscillators.txt
 overlaps
+libint/main

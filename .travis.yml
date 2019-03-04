@@ -1,7 +1,19 @@
-sudo: false
+sudo: required
 language: generic
+install:
+  - export CXX="g++-7"
+  - export CC="gcc-7"
+
+
+addons:
+  apt:
+    packages: g++-7
+    sources:
+      - ubuntu-toolchain-r-test
 
 install:
+  - export CC=gcc-7
+  - export CXX=g++-7
   - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
   - bash miniconda.sh -b -p $HOME/miniconda
   - export PATH="$HOME/miniconda/bin:$PATH"
@@ -13,8 +25,7 @@ install:
   # Install virtual enviroment
   - conda create --name namd python=3.6
   - source activate namd
-  - conda install cython h5py
-  - conda install -c conda-forge rdkit
+  - conda install -c conda-forge cython eigen h5py highfive libint pybind11 rdkit
 
   - pip install "git+https://github.com/SCM-NV/PLAMS@master#egg=plams-1.2"
   - pip install "https://github.com/SCM-NV/qmflows/tarball/master#egg=qmflows"

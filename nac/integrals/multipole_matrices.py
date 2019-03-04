@@ -1,12 +1,11 @@
+from compute_integrals import compute_integrals_multipole
 from nac.common import (
-    Matrix, compute_center_of_mass, retrieve_hdf5_data, search_data_in_hdf5,
-    store_arrays_in_hdf5, triang2mtx)
-from nac.integrals.overlapIntegral import calcMtxOverlapP
-from nac.integrals.multipoleIntegrals import calcMtxMultipoleP
+    Matrix, retrieve_hdf5_data, search_data_in_hdf5,
+    store_arrays_in_hdf5, tuplesXYZ_to_plams)
 from os.path import join
-from scipy import sparse
 from typing import (Dict, List)
-import numpy as np
+import os
+import uuid
 
 
 def get_multipole_matrix(i: int, mol: List, config: Dict, multipole: str) -> Matrix:
@@ -20,8 +19,7 @@ def get_multipole_matrix(i: int, mol: List, config: Dict, multipole: str) -> Mat
 
     if matrix_multipole is None:
         matrix_multipole = compute_matrix_multipole(mol, config, multipole)
-
-    store_arrays_in_hdf5(path_hdf5, path_multipole_hdf5, matrix_multipole)
+        store_arrays_in_hdf5(path_hdf5, path_multipole_hdf5, matrix_multipole)
 
     return matrix_multipole
 
@@ -39,44 +37,45 @@ def search_multipole_in_hdf5(path_hdf5: str, path_multipole_hdf5: str, multipole
 
 
 def compute_matrix_multipole(
-        mol: List, config: Dict, multipole: str) -> Matrix:
+        mol: list, config: Dict, multipole: str) -> Matrix:
     """
     Compute the some `multipole` matrix: overlap, dipole, etc. for a given geometry `mol`.
-    Compute the Multipole matrix in cartesian coordinates and
-    expand it to a matrix and finally convert it to spherical coordinates.
+    Compute the Multipole matrix in spherical coordinates.
 
-    :returns: Matrix with entries <ψi | x y z | ψj>
+    Note: for the dipole onwards the super_matrix contains all the matrices stack all the
+    0-axis.
+
+    :returns: Matrix with entries <ψi | x^i y^j z^k | ψj>
     """
     path_hdf5 = config['path_hdf5']
-    runner = config['runner']
 
-    # Compute the number of cartesian basis functions
-    dictCGFs = config['dictCGFs']
-    n_cart_funcs = np.sum(np.stack(len(dictCGFs[at.symbol]) for at in mol))
+    # Write molecule in temporal file
+    path = join(config["scratch_path"], "molecule_{}.xyz".format(uuid.uuid4()))
+    mol_plams = tuplesXYZ_to_plams(mol)
+    mol_plams.write(path)
 
-    # Compute the transformation matrix from cartesian to spherical
-    transf_mtx = retrieve_hdf5_data(path_hdf5, config['hdf5_trans_mtx'])
-    transf_mtx = sparse.csr_matrix(transf_mtx)
-    transpose = transf_mtx.transpose()
+    # name of the basis set
+    basis_name = config["cp2k_general_settings"]["basis"]
 
     if multipole == 'overlap':
-        rs = calcMtxOverlapP(mol, dictCGFs, runner)
-        mtx_overlap = triang2mtx(rs, n_cart_funcs)  # there are 1452 Cartesian basis CGFs
-        matrix_multipole = transf_mtx.dot(sparse.csr_matrix.dot(mtx_overlap, transpose))
+        matrix_multipole = compute_integrals_multipole(path, path_hdf5, basis_name, multipole)
+    elif multipole == 'dipole':
+        # The tensor contains the overlap + {x, y, z} dipole matrices
+        super_matrix = compute_integrals_multipole(path, path_hdf5, basis_name, multipole)
+        dim = super_matrix.shape[1]
 
-    else:
-        rc = compute_center_of_mass(mol)
-        exponents = {
-            'dipole': [
-                {'e': 1, 'f': 0, 'g': 0}, {'e': 0, 'f': 1, 'g': 0}, {'e': 0, 'f': 0, 'g': 1}],
-            'quadrupole': [
-                {'e': 2, 'f': 0, 'g': 0}, {'e': 0, 'f': 2, 'g': 0}, {'e': 0, 'f': 0, 'g': 2}]
-        }
-        mtx_integrals_triang = tuple(calcMtxMultipoleP(mol, dictCGFs, runner, rc, **kw)
-                                     for kw in exponents[multipole])
-        mtx_integrals_cart = tuple(triang2mtx(xs, n_cart_funcs)
-                                   for xs in mtx_integrals_triang)
-        matrix_multipole = np.stack(
-            transf_mtx.dot(sparse.csr_matrix.dot(x, transpose)) for x in mtx_integrals_cart)
+        # Return only the {x, y, z} components
+        matrix_multipole = super_matrix.reshape(4, dim, dim)[1:]
+
+    elif multipole == 'quadrupole':
+        # The tensor contains the overlap + {xx, xy, xz, yy, yz, zz} quadrupole matrices
+        super_matrix = compute_integrals_multipole(path, path_hdf5, basis_name, multipole)
+        dim = super_matrix.shape[1]
+
+        # Return only the {xx, yy, zz} components
+        matrix_multipole = super_matrix.reshape(7, dim, dim)[[1, 4, 6]]
+
+    # Delete the tmp molecule file
+    os.remove(path)
 
     return matrix_multipole

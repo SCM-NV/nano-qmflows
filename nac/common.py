@@ -1,20 +1,16 @@
 
 __all__ = ['Array', 'AtomBasisData', 'AtomBasisKey', 'AtomData', 'AtomXYZ',
            'CGF', 'DictConfig', 'InfoMO', 'InputKey', 'Matrix', 'MO', 'Tensor3D', 'Vector',
-           'binomial', 'change_mol_units', 'even', 'fac', 'getmass', 'h2ev',
-           'hardness', 'odd', 'product', 'retrieve_hdf5_data',
-           'search_data_in_hdf5', 'store_arrays_in_hdf5', 'triang2mtx']
+           'change_mol_units', 'getmass', 'h2ev', 'hardness', 'retrieve_hdf5_data',
+           'search_data_in_hdf5', 'store_arrays_in_hdf5']
 
 
 from collections import namedtuple
-from functools import reduce
-
 from scipy.constants import physical_constants
-from typing import (Dict, List, Tuple)
+from scm.plams import (Atom, Molecule)
 
 import h5py
 import numpy as np
-import operator as op
 import os
 
 
@@ -99,7 +95,7 @@ def hardness(s: str):
     return d[s] / 27.211
 
 
-def xc(s: str) -> Dict:
+def xc(s: str) -> dict:
     d = {'pbe':  {'type':'pure', 'alpha1': 1.42, 'alpha2': 0.48, 'ax': 0.0, 'beta1': 0.2, 'beta2': 1.83},
          'blyp': {'type':'pure','alpha1': 1.42, 'alpha2': 0.48, 'ax': 0.0, 'beta1': 0.2, 'beta2': 1.83},
          'bp':   {'type':'pure','alpha1': 1.42, 'alpha2': 0.48, 'ax': 0.0, 'beta1': 0.2, 'beta2': 1.83},
@@ -165,23 +161,6 @@ def store_arrays_in_hdf5(path_hdf5: str, paths, tensor: Array,
                                data=tensor, dtype=dtype)
 
 
-def triang2mtx(xs: Vector, dim: int) -> Matrix:
-    """
-    Transform a symmetric matrix represented as a flatten upper triangular
-    matrix to the correspoding 2-dimensional array.
-    """
-    # New array
-    mtx = np.zeros((dim, dim))
-    # indexes of the upper triangular
-    inds = np.triu_indices_from(mtx)
-    # Fill the upper triangular of the new array
-    mtx[inds] = xs
-    # Fill the lower triangular
-    mtx[(inds[1], inds[0])] = xs
-
-    return mtx
-
-
 def change_mol_units(mol, factor=angs2au):
     """
     change the units of the molecular coordinates
@@ -194,48 +173,12 @@ def change_mol_units(mol, factor=angs2au):
     return newMol
 
 
-def compute_center_of_mass(atoms: List) -> Tuple:
-    """
-    Compute the center of mass of a molecule
-    """
-    # Get the masses of the atoms
-    symbols = map(lambda at: at.symbol, atoms)
-    masses = np.array([getmass(s) for s in symbols])
-    total_mass = np.sum(masses)
+def tuplesXYZ_to_plams(xs):
+    """ Transform a list of namedTuples to a Plams molecule """
+    plams_mol = Molecule()
+    for at in xs:
+        symb = at.symbol
+        cs = at.xyz
+        plams_mol.add_atom(Atom(symbol=symb, coords=tuple(cs)))
 
-    # Multiple the mass by the coordinates
-    mrs = [getmass(at.symbol) * np.array(at.xyz) for at in atoms]
-    xs = np.sum(mrs, axis=0)
-
-    # Center of mass
-    cm = xs / total_mass
-
-    return tuple(cm)
-
-
-def product(xs):
-    return reduce(op.mul, xs)
-
-
-def odd(x):
-    return x % 2 != 0
-
-
-def even(x):
-    return not(odd(x))
-
-
-def fac(x):
-    if x == 0:
-        return 1
-    else:
-        return float(product(range(1, x + 1)))
-
-
-def binomial(n, k):
-    if k == n:
-        return 1.0
-    elif k >= 0 and k < n:
-        return fac(n) / (fac(k) * fac(n - k))
-    else:
-        return 0.0
+    return plams_mol

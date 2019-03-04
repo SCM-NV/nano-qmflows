@@ -1,5 +1,15 @@
 # Change Log
 
+# 0.6.0
+
+### New
+ * Compute the overlap integrals to calculate the derivative coupling and the multipole integrals using [libint2](https://github.com/evaleev/)
+ 
+### Deleted
+ 
+ * Python/Cython implementation of the overlap integrals
+ * Unused functionality replaced by [libint2](https://github.com/evaleev/)
+
 # 0.5.0
 
 ### New

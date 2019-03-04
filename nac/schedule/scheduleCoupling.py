@@ -15,9 +15,8 @@ from nac.common import (
     Matrix, Vector, Tensor3D,
     change_mol_units, femtosec2au, retrieve_hdf5_data,
     search_data_in_hdf5, store_arrays_in_hdf5)
-
-from noodles import (gather, schedule)
 from qmflows.parsers import parse_string_xyz
+from noodles import (gather, schedule)
 
 # Types hint
 from typing import (List, Tuple)
