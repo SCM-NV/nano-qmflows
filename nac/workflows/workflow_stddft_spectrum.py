@@ -384,20 +384,20 @@ def write_output_tddft(nocc, nvirt, omega, f, d_x, d_y, d_z, xia, e):
     output[:, 4] = d_y  # Transition dipole moment in the y direction
     output[:, 5] = d_z  # Transition dipole moment in the z direction
     # Weight of the most important excitation
-    output[:, 6] = np.hstack(np.max(xia[:, i] ** 2) for i in range(nocc*nvirt))
+    output[:, 6] = np.hstack([np.max(xia[:, i] ** 2) for i in range(nocc*nvirt)])
 
     # Find the index of this transition
-    index_weight = np.hstack(
+    index_weight = np.hstack([
         np.where(
             xia[:, i] ** 2 == np.max(
-                xia[:, i] ** 2)) for i in range(nocc*nvirt)).reshape(nocc*nvirt)
+                xia[:, i] ** 2)) for i in range(nocc*nvirt)]).reshape(nocc*nvirt)
 
     # Index of the hole for the most important excitation
-    output[:, 7] = np.stack(excs[index_weight[i]][0] for i in range(nocc*nvirt)) + 1
+    output[:, 7] = np.stack([excs[index_weight[i]][0] for i in range(nocc*nvirt)]) + 1
     # These are the energies of the hole for the transition with the larger weight
     output[:, 8] = e[output[:, 7].astype(int) - 1] * h2ev
     # Index of the electron for the most important excitation
-    output[:, 9] = np.stack(excs[index_weight[i]][1] for i in range(nocc*nvirt)) + 1
+    output[:, 9] = np.stack([excs[index_weight[i]][1] for i in range(nocc*nvirt)]) + 1
     # These are the energies of the electron for the transition with the larger weight
     output[:, 10] = e[output[:, 9].astype(int) - 1] * h2ev
     # This is the energy for the transition with the larger weight
@@ -422,7 +422,7 @@ def number_spherical_functions_per_atom(mol, package_name, basis_name, path_hdf5
             package_name, read_basis_format(
                 package_name, path.attrs['basisFormat'])) for path in xs]
 
-        return np.stack(sum(len(x) for x in ys[i]) for i in range(len(mol)))
+        return np.stack([sum(len(x) for x in ys[i]) for i in range(len(mol))])
 
 
 def transition_density_charges(mol, config, s, c_ao):
@@ -452,7 +452,7 @@ def compute_MNOK_integrals(mol, xc_dft):
     """
     n_atoms = len(mol)
     r_ab = get_r_ab(mol)
-    hardness_vec = np.stack(hardness(mol[i][0]) for i in range(n_atoms)).reshape(n_atoms, 1)
+    hardness_vec = np.stack([hardness(mol[i][0]) for i in range(n_atoms)]).reshape(n_atoms, 1)
     hard = np.add(hardness_vec, hardness_vec.T)
     beta = xc(xc_dft)['beta1'] + xc(xc_dft)['ax'] * xc(xc_dft)['beta2']
     alpha = xc(xc_dft)['alpha1'] + xc(xc_dft)['ax'] * xc(xc_dft)['alpha2']
