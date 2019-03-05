@@ -1,31 +1,36 @@
 workflow:
-  derivative_couplings
+  distribute_absorption_spectrum
 
-project_name:
-  Cd33Se33
-
-dt:
-  1
-algorithm:
-  "levine"
-tracking:
-  True
+project_name: Cd33Se33
+xc_dft:  pbe
+tddft: stda
 active_space:
   [10, 10]
-  
+calculate_oscillator_every:
+  50
 path_hdf5:
   "test/test_files/Cd33Se33.hdf5"
 path_traj_xyz:
   "test/test_files/Cd33Se33_fivePoints.xyz" 
 scratch_path:
-  "/tmp/namd/derivative_couplings"
+  "/tmp/namd"
+workdir: "."
+blocks: 5
 
-cp2k_general_settings:  
+job_scheduler:
+  scheduler: SLURM
+  nodes: 1
+  tasks: 24
+  wall_time: "24:00:00"
+  load_modules: "source activate qmflows\nmodule load cp2k/3.0"
+
+  
+cp2k_general_settings:
+  basis:  "DZVP-MOLOPT-SR-GTH"
   path_basis: "test/test_files/BASIS_MOLOPT"
   path_potential: "test/test_files/GTH_POTENTIALS"
   potential: "GTH-PBE"
-  basis: "DZVP-MOLOPT-SR-GTH"
-  cell_parameters: 45.0
+  cell_parameters: 28.0
   cell_angles: [90.0, 90.0, 90.0]
   periodic: xyz
 
@@ -34,6 +39,6 @@ cp2k_general_settings:
       template: pbe_main
 
   cp2k_settings_guess:
-     specific:
+    specific:
       template:
-        pbe_guess    
+        pbe_guess

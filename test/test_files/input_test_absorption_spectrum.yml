@@ -7,8 +7,7 @@ xc_dft:
 tddft:
   stda
 active_space: [10, 15]
-runner:
-  "multiprocessing"
+
 path_hdf5:
   "test/test_files/Cd.hdf5"
 path_traj_xyz:
