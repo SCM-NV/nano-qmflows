@@ -55,7 +55,7 @@ def main():
     # Read and process input
     workflow_type = args['workflow'].lower()
     print("calling process_input: ", workflow_type)
-    dict_input = process_input(input_file, "distribute_derivative_couplings")
+    dict_input = process_input(input_file, workflow_type)
 
     # Write scripts to run calculations
     if workflow_type == "distribute_derivative_couplings":
