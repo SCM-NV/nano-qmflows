@@ -3,8 +3,6 @@ workflow:
 
 project_name:
   ethylene
-runner:
-  multiprocessing
 dt:
   1
 algorithm:

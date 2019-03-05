@@ -1,8 +1,9 @@
 workflow:
-  distribute_derivative_couplings
+  distribute_absorption_spectrum
 
 project_name: Cd33Se33
-dt: 1
+xc_dft:  pbe
+tddft: stda
 active_space: [10, 10]
 algorithm: "levine"
 tracking: False
@@ -11,6 +12,7 @@ path_traj_xyz: "test/test_files/Cd33Se33_fivePoints.xyz"
 scratch_path: "/tmp/namd"
 workdir: "."
 blocks: 5
+calculate_oscillator_every: 50
 
 job_scheduler:
   scheduler: SLURM

@@ -1,7 +1,6 @@
 workflow:
   derivative_couplings
 project_name: pbe0_C
-runner: multiprocessing
 dt: 1
 active_space: [2, 2]
 algorithm: "levine"

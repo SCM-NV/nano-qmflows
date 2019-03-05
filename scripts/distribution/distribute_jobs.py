@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from nac.common import DictConfig
 from nac.workflows.input_validation import process_input
 from nac.workflows.initialization import split_trajectory
 from os.path import join
@@ -48,14 +49,22 @@ def main():
     # command line argument
     input_file = read_cmd_line()
 
+    with open(input_file, 'r') as f:
+        args = yaml.load(f)
+
     # Read and process input
+    workflow_type = args['workflow'].lower()
+    print("calling process_input: ", workflow_type)
     dict_input = process_input(input_file, "distribute_derivative_couplings")
 
     # Write scripts to run calculations
-    distribute_computations(dict_input)
+    if workflow_type == "distribute_derivative_couplings":
+        distribute_computations_couplings(dict_input)
+    elif workflow_type == "distribute_absorption_spectrum":
+        distribute_computations_absorption_spectrum(dict_input)
 
 
-def distribute_computations(config: dict) -> None:
+def distribute_computations_couplings(config: dict) -> None:
     """
     Prepare the computation and write the scripts
     """
@@ -71,40 +80,38 @@ def distribute_computations(config: dict) -> None:
     for index, file_xyz in enumerate(chunks_trajectory):
         folder_path = join(config.workdir, 'chunk_{}'.format(index))
 
-        # Move xyz to temporal file
-        os.makedirs(folder_path, exist_ok=True)
-        shutil.move(file_xyz, folder_path)
+        dict_input = DictConfig({
+            'folder_path': folder_path, "file_xyz": file_xyz, 'index': index})
 
-        # Scratch directory
-        batch_dir = join(config.scratch_path, 'batch_{}'.format(index))
-        os.makedirs(batch_dir, exist_ok=True)
-
+        create_folders(config, dict_input)
         # HDF5 file where both the Molecular orbitals and coupling are stored
-        path_hdf5 = join(config.scratch_path, 'chunk_{}.hdf5'.format(index))
+        config.path_hdf5 = join(config.scratch_path, 'chunk_{}.hdf5'.format(index))
 
         # Change hdf5 and trajectory path of each batch
         config["path_traj_xyz"] = file_xyz
-        config["path_hdf5"] = path_hdf5
 
         # files with PYXAID
-        hamiltonians_dir = join(config.scratch_path, 'hamiltonians')
+        dict_input.hamiltonians_dir = join(config.scratch_path, 'hamiltonians')
 
         # number of geometries per batch
-        dim_batch = compute_number_of_geometries(join(folder_path, file_xyz))
+        dict_input.dim_batch = compute_number_of_geometries(join(folder_path, file_xyz))
 
         # Write input file
         write_input(folder_path, config)
 
         # Slurm executable
         if config.job_scheduler["scheduler"].upper() == "SLURM":
-            write_slurm_script(
-                folder_path, index, config.job_scheduler, path_hdf5, hamiltonians_dir, dim_batch)
+            write_slurm_script(config, dict_input)
         else:
             msg = "The request job_scheduler: {} It is not implemented".formant()
             raise RuntimeError(msg)
 
         # change the window of molecules to compute
-        config['enumerate_from'] += dim_batch
+        config['enumerate_from'] += dict_input.dim_batch
+
+
+def distribute_computations_absorption_spectrum(config: dict) -> None:
+    pass
 
 
 def write_input(folder_path: str, config: dict) -> None:
@@ -134,26 +141,44 @@ def write_input(folder_path: str, config: dict) -> None:
         yaml.dump(config, f, default_flow_style=False, allow_unicode=True)
 
 
-def write_slurm_script(
-        folder_path: str, index: int, slurm_config: dict, path_hdf5: str,
-        hamiltonians_dir: str, dim_batch: int):
+def create_folders(config: dict, dict_input: dict):
+    """
+    Create folder for each batch and copy the xyz
+    """
+    # Move xyz to temporal file
+    os.makedirs(dict_input.folder_path, exist_ok=True)
+    shutil.move(dict_input.file_xyz, dict_input.folder_path)
+
+    # Scratch directory
+    batch_dir = join(config.scratch_path, 'batch_{}'.format(dict_input.index))
+    os.makedirs(batch_dir, exist_ok=True)
+
+
+def write_slurm_script(config: dict, dict_input: dict):
     """
     write an Slurm launch script
     """
+    index = dict_input.index
     python = "\n\nrun_workflow.py -i input.yml\n"
     results_dir = "results_chunk_" + str(index)
     mkdir = "\nmkdir {}\n".format(results_dir)
+    slurm_config = config.job_scheduler
 
     # Copy a subset of Hamiltonians
-    range_batch = (dim_batch * index, dim_batch * (index + 1) - 3)
-    files_hams = '{}/Ham_{{{}..{}}}_*'.format(hamiltonians_dir, *range_batch)
+    if dict_input.get("hamiltonians_dir") is None:
+        copy = ""
+    else:
+        dim_batch = dict_input.dim_batch
+        range_batch = (dim_batch * index, dim_batch * (index + 1) - 3)
+        files_hams = '{}/Ham_{{{}..{}}}_*'.format(
+            dict_input.hamiltonians_dir, *range_batch)
+        copy = 'cp -r {} {} {}\n'.format(config.path_hdf5, files_hams, results_dir)
 
-    copy = 'cp -r {} {} {}\n'.format(path_hdf5, files_hams, results_dir)
     # Script content
     content = format_slurm_parameters(slurm_config) + python + mkdir + copy
 
     # Write the script
-    with open(join(folder_path, "launch.sh"), 'w') as f:
+    with open(join(dict_input.folder_path, "launch.sh"), 'w') as f:
         f.write(content)
 
 

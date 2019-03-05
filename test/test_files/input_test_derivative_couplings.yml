@@ -3,8 +3,7 @@ workflow:
 
 project_name:
   Cd33Se33
-runner:
-  multiprocessing
+
 dt:
   1
 algorithm:
