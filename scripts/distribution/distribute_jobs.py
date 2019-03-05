@@ -111,10 +111,6 @@ def distribute_computations(config: dict, hamiltonians=False) -> None:
         config['enumerate_from'] += dict_input.dim_batch
 
 
-def distribute_computations_absorption_spectrum(config: dict) -> None:
-    pass
-
-
 def write_input(folder_path: str, config: dict) -> None:
     """ Write the python script to compute the PYXAID hamiltonians"""
     file_path = join(folder_path, "input.yml")
@@ -137,7 +133,12 @@ def write_input(folder_path: str, config: dict) -> None:
               'workdir']:
         del config[k]
 
-    config['workflow'] = "derivative_couplings"
+    # rename the workflow to execute
+    workflow_type = config["workflow"].lower()
+    if workflow_type == "distribute_derivative_couplings":
+        config['workflow'] = "derivative_couplings"
+    elif workflow_type == "distribute_absorption_spectrum":
+        config['workflow'] = "absorption_spectrum"
     with open(file_path, "w") as f:
         yaml.dump(config, f, default_flow_style=False, allow_unicode=True)
 

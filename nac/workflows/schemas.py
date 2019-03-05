@@ -1,5 +1,6 @@
 __all__ = [
     'schema_cp2k_general_settings', 'schema_derivative_couplings',
+    'schema_distribute_absorption_spectrum',
     'schema_distribute_derivative_couplings',
     'schema_absorption_spectrum']
 
@@ -176,7 +177,7 @@ dict_absorption_spectrum = {
     Optional("energy_range", default=[0, 5]): Schema([Real, Real]),
 
     # Interval between MD points where the oscillators are computed"
-    Optional("calculate_oscillator_every",  default=50): int,
+    Optional("stride",  default=50): int,
 
     # description: Exchange-correlation functional used in the DFT calculations,
     Optional("xc_dft", default="pbe"): str,
@@ -192,7 +193,6 @@ dict_absorption_spectrum = {
 
 dict_merged_absorption_spectrum = merge(dict_general_options, dict_absorption_spectrum)
 
-# define schema
 schema_absorption_spectrum = Schema(dict_merged_absorption_spectrum)
 
 
@@ -211,10 +211,8 @@ dict_distribute_absorption_spectrum = {
     "job_scheduler": schema_job_scheduler,
 
     # General settings
-    "cp2k_general_settings": schema_cp2k_general_settings,
-
+    "cp2k_general_settings": schema_cp2k_general_settings
 }
 
-# define distribute schema
 schema_distribute_absorption_spectrum = Schema(
     merge(dict_merged_absorption_spectrum, dict_distribute_absorption_spectrum))
