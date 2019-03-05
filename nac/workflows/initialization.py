@@ -166,7 +166,7 @@ def split_trajectory(path: str, nBlocks: int, pathOut: str) -> list:
     if err:
         raise RuntimeError("Submission Errors: {}".format(err))
     else:
-        return fnmatch.filter(os.listdir(), "chunk_xyz*")
+        return fnmatch.filter(os.listdir(), "chunk_xyz_?")
 
 
 def log_config(workdir, path_hdf5, algorithm):
