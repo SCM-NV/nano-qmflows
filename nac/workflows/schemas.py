@@ -64,11 +64,6 @@ dict_general_options = {
     # Number of occupied/virtual orbitals to use
     'active_space': [int, int],
 
-    # "Library to distribute the computation"
-    Optional("runner", default="multiprocessing"):
-    And(str, Use(str.lower),
-        lambda s: s in ("multiprocessing")),
-
     # Index of the HOMO
     Optional("nHOMO"): int,
 
@@ -194,5 +189,32 @@ dict_absorption_spectrum = {
     Optional("broadening", default=0.1): Real,
 }
 
-schema_absorption_spectrum = Schema(
-    merge(dict_general_options, dict_absorption_spectrum))
+
+dict_merged_absorption_spectrum = merge(dict_general_options, dict_absorption_spectrum)
+
+# define schema
+schema_absorption_spectrum = Schema(dict_merged_absorption_spectrum)
+
+
+dict_distribute_absorption_spectrum = {
+
+    # Name of the workflow to run
+    "workflow": And(
+        str, Use(str.lower), lambda s: s == "distribute_absorption_spectrum"),
+
+    Optional("workdir", default=os.getcwd()): str,
+
+    # Number of chunks to split the trajectory
+    "blocks": int,
+
+    # Resource manager configuration
+    "job_scheduler": schema_job_scheduler,
+
+    # General settings
+    "cp2k_general_settings": schema_cp2k_general_settings,
+
+}
+
+# define distribute schema
+schema_distribute_absorption_spectrum = Schema(
+    merge(dict_merged_absorption_spectrum, dict_distribute_absorption_spectrum))

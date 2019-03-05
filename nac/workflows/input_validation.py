@@ -1,6 +1,7 @@
 from .schemas import (
-    schema_absorption_spectrum, schema_distribute_derivative_couplings,
-    schema_derivative_couplings, schema_cp2k_general_settings)
+    schema_absorption_spectrum, schema_derivative_couplings,
+    schema_distribute_derivative_couplings, schema_distribute_absorption_spectrum,
+    schema_cp2k_general_settings)
 from .templates import (create_settings_from_template, valence_electrons)
 from nac.common import DictConfig
 from scm.plams import Molecule
@@ -18,7 +19,8 @@ schema_workflows = {
     'absorption_spectrum': schema_absorption_spectrum,
     'derivative_couplings': schema_derivative_couplings,
     'cp2k_general_settings': schema_cp2k_general_settings,
-    'distribute_derivative_couplings': schema_distribute_derivative_couplings}
+    'distribute_derivative_couplings': schema_distribute_derivative_couplings,
+    'distribute_absorption_spectrum': schema_distribute_absorption_spectrum}
 
 
 def process_input(input_file: str, workflow_name: str) -> Dict:
