@@ -22,8 +22,9 @@ install:
   # Useful for debugging any issues with conda
   - conda info -a
 
-  # Install python 3.6 globally
-  - conda install python=3.6
+  # Install python 3.6 env
+  - conda create --name namd python=3.6
+  - source activate namd
   - conda install -c conda-forge cython eigen h5py highfive libint pybind11 rdkit
 
   - pip install "git+https://github.com/SCM-NV/PLAMS@master#egg=plams-1.2"
