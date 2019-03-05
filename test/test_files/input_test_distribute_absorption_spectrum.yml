@@ -6,7 +6,7 @@ xc_dft:  pbe
 tddft: stda
 active_space:
   [10, 10]
-calculate_oscillator_every:
+stride:
   50
 path_hdf5:
   "test/test_files/Cd33Se33.hdf5"

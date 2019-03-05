@@ -44,7 +44,7 @@ def workflow_stddft(config: dict) -> None:
     results = gather(
        *[scheduleTDDFT(config, mo_paths_hdf5[i], {'i': i, 'mol': mol})
          for i, mol in enumerate(molecules_au)
-         if (i % config.calculate_oscillator_every) == 0])
+         if (i % config.stride) == 0])
 
     return run(results, folder=config['workdir'])
 
