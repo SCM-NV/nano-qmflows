@@ -21,28 +21,20 @@ project_name = 'Cd'
 input_file = join(root, 'test/test_files/input_test_absorption_spectrum.yml')
 
 
-def test_oscillators_multiprocessing():
-    """
-    test the oscillator strenght computation using the
-    multiprocessing module
-    """
-    compute_oscillators('multiprocessing')
-
-
-def compute_oscillators(runner):
+def test_compute_oscillators():
     """
     Compute the oscillator strenght and check the results.
     """
     scratch_path = join(tempfile.gettempdir(), 'namd')
     path_test_hdf5 = tempfile.mktemp(
-        prefix='{}_'.format(runner), suffix='.hdf5', dir=scratch_path)
+        prefix='absorption_spectrum_', suffix='.hdf5', dir=scratch_path)
     if not os.path.exists(scratch_path):
         os.makedirs(scratch_path, exist_ok=True)
     try:
         # Run the actual test
         copy_basis_and_orbitals(path_original_hdf5, path_test_hdf5,
                                 project_name)
-        calculate_oscillators(runner, path_test_hdf5, scratch_path)
+        calculate_oscillators(path_test_hdf5, scratch_path)
         check_properties(path_test_hdf5)
 
     finally:
@@ -50,7 +42,7 @@ def compute_oscillators(runner):
         shutil.rmtree(scratch_path)
 
 
-def calculate_oscillators(runner, path_test_hdf5, scratch_path):
+def calculate_oscillators(path_test_hdf5, scratch_path):
     """
     Compute a couple of couplings with the Levine algorithm
     using precalculated MOs.
@@ -60,7 +52,6 @@ def calculate_oscillators(runner, path_test_hdf5, scratch_path):
     config['workdir'] = scratch_path
     config['path_traj_xyz'] = join(
         root, config.path_traj_xyz)
-    config['runner'] = runner
 
     workflow_stddft(config)
 

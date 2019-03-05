@@ -13,7 +13,6 @@ The following is an example of the inputfile for the calculation of derivative c
 
     workflow: distribute_derivative_couplings
     project_name: Cd33Se33
-    runner: multiprocessing
     dt: 1
     active_space: [10, 10]
     algorithm: "levine"
