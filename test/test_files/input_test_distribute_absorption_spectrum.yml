@@ -4,15 +4,18 @@ workflow:
 project_name: Cd33Se33
 xc_dft:  pbe
 tddft: stda
-active_space: [10, 10]
-algorithm: "levine"
-tracking: False
-path_hdf5: "test/test_files/Cd33Se33.hdf5"
-path_traj_xyz: "test/test_files/Cd33Se33_fivePoints.xyz" 
-scratch_path: "/tmp/namd"
+active_space:
+  [10, 10]
+calculate_oscillator_every:
+  50
+path_hdf5:
+  "test/test_files/Cd33Se33.hdf5"
+path_traj_xyz:
+  "test/test_files/Cd33Se33_fivePoints.xyz" 
+scratch_path:
+  "/tmp/namd"
 workdir: "."
 blocks: 5
-calculate_oscillator_every: 50
 
 job_scheduler:
   scheduler: SLURM

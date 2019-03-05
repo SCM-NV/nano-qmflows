@@ -59,12 +59,12 @@ def main():
 
     # Write scripts to run calculations
     if workflow_type == "distribute_derivative_couplings":
-        distribute_computations_couplings(dict_input)
+        distribute_computations(dict_input, hamiltonians=True)
     elif workflow_type == "distribute_absorption_spectrum":
-        distribute_computations_absorption_spectrum(dict_input)
+        distribute_computations(dict_input)
 
 
-def distribute_computations_couplings(config: dict) -> None:
+def distribute_computations(config: dict, hamiltonians=False) -> None:
     """
     Prepare the computation and write the scripts
     """
@@ -91,7 +91,8 @@ def distribute_computations_couplings(config: dict) -> None:
         config["path_traj_xyz"] = file_xyz
 
         # files with PYXAID
-        dict_input.hamiltonians_dir = join(config.scratch_path, 'hamiltonians')
+        if hamiltonians:
+            dict_input.hamiltonians_dir = join(config.scratch_path, 'hamiltonians')
 
         # number of geometries per batch
         dict_input.dim_batch = compute_number_of_geometries(join(folder_path, file_xyz))
