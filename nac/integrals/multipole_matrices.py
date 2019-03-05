@@ -64,16 +64,16 @@ def compute_matrix_multipole(
         super_matrix = compute_integrals_multipole(path, path_hdf5, basis_name, multipole)
         dim = super_matrix.shape[1]
 
-        # Return only the {x, y, z} components
-        matrix_multipole = super_matrix.reshape(4, dim, dim)[1:]
+        # Reshape the super_matrix as a tensor containing overlap + {x, y, z} dipole matrices
+        matrix_multipole = super_matrix.reshape(4, dim, dim)
 
     elif multipole == 'quadrupole':
         # The tensor contains the overlap + {xx, xy, xz, yy, yz, zz} quadrupole matrices
         super_matrix = compute_integrals_multipole(path, path_hdf5, basis_name, multipole)
         dim = super_matrix.shape[1]
 
-        # Return only the {xx, yy, zz} components
-        matrix_multipole = super_matrix.reshape(7, dim, dim)[[1, 4, 6]]
+        # Reshape to 3d tensor containing overlap + {xx, xy, xz, yy, yz, zz} quadrupole matrices
+        matrix_multipole = super_matrix.reshape(7, dim, dim)
 
     # Delete the tmp molecule file
     os.remove(path)

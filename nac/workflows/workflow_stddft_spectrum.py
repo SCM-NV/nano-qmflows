@@ -71,11 +71,12 @@ def compute_excited_states_tddft(config: dict, path_MOs: list, dict_input: dict)
         # Call the function that computes overlaps
         logger.info("Reading or computing the overlap matrix")
         multipoles = get_multipole_matrix(
-            dict_input["i"], dict_input["mol"], config, 'overlap')
+            dict_input["i"], dict_input["mol"], config, 'dipole')
 
         # Make a function tha returns in transition density charges
         logger.info("Computing the transition density charges")
-        q = transition_density_charges(dict_input["mol"], config, multipoles, c_ao)
+        # multipoles[0] is the overlap matrix
+        q = transition_density_charges(dict_input["mol"], config, multipoles[0], c_ao)
 
         # Make a function that compute the Mataga-Nishimoto-Ohno_Klopman
         # damped Columb and Excgange law functions
@@ -109,8 +110,8 @@ def compute_excited_states_tddft(config: dict, path_MOs: list, dict_input: dict)
 
     dict_input.update()
     return compute_oscillator_strengths(
-        dict_input["i"], dict_input["mol"], tddft, config, energy, c_ao, multipoles, nocc,
-        nvirt, omega, xia)
+        dict_input["i"], dict_input["mol"], tddft, config, energy, c_ao, multipoles[1:],
+        nocc, nvirt, omega, xia)
 
 
 def compute_oscillator_strengths(
@@ -130,6 +131,7 @@ def compute_oscillator_strengths(
     :param nocc: number of occupied orbitals
     :param nvirt: number of virtual orbitals
     :param omega: Omega parameter
+    :param multipoles: 3D Tensor with the x,y,z components
     """
     # 1) Get the energy matrix i->a. Size: Nocc * Nvirt
     delta_ia = -np.subtract(
@@ -144,11 +146,10 @@ def compute_oscillator_strengths(
     # 2) Compute the transition dipole matrix TDM(i->a)
     # Call the function that computes transition dipole moments integrals
     print("Reading or computing the transition dipole matrix")
-    tdm = get_multipole_matrix(i, mol, config, 'dipole')
 
     def compute_tdmatrix(k):
         return np.linalg.multi_dot(
-            [c_ao[:, :nocc].T, tdm[k, :, :], c_ao[:, nocc:]]).reshape(nocc*nvirt)
+            [c_ao[:, :nocc].T, multipoles[k, :, :], c_ao[:, nocc:]]).reshape(nocc*nvirt)
 
     td_matrices = (compute_tdmatrix(k) for k in range(3))
 
@@ -328,7 +329,8 @@ def get_omega_ab(d0I_ao, s, n_lowest, mol, config):
             index_b = 0
             for b in range(n_atoms):
                 omega_ab[i, a, b] = np.sum(
-                    d0I_mo[i, index_a:(index_a + n_sph_atoms[a]), index_b:(index_b + n_sph_atoms[b])] ** 2)
+                    d0I_mo[i, index_a:(index_a + n_sph_atoms[a]),
+                           index_b:(index_b + n_sph_atoms[b])] ** 2)
                 index_b += n_sph_atoms[b]
             index_a += n_sph_atoms[a]
 
