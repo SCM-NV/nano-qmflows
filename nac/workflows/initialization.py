@@ -160,7 +160,6 @@ def split_trajectory(path: str, nBlocks: int, pathOut: str) -> list:
     # Path where the splitted xyz files are written
     prefix = join(pathOut, 'chunk_xyz_')
     cmd = 'split -a 1 -l {} {} {}'.format(lines_per_block, path, prefix)
-    subprocess.run(cmd, shell=True)
     p = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, shell=True)
     rs = p.communicate()
     err = rs[1]
