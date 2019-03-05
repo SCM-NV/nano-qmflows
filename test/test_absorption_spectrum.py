@@ -74,7 +74,7 @@ def check_properties(path_test_hdf5):
 
     # The diagonals of each component of the matrix must be zero
     # for a single atom
-    diagonals = np.sum([np.diag(dipole_matrices[n]) for n in range(3)])
+    diagonals = np.sum([np.diag(dipole_matrices[n + 1]) for n in range(3)])
     assert abs(diagonals) < 1e-16
 
 
