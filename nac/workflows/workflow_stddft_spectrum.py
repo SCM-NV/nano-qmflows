@@ -1,11 +1,13 @@
 __all__ = ['workflow_stddft']
 
 from nac.common import (
-    DictConfig, change_mol_units, h2ev, hardness, retrieve_hdf5_data, xc)
+    DictConfig, change_mol_units, h2ev, hardness, retrieve_hdf5_data,
+    search_data_in_hdf5, store_arrays_in_hdf5, xc)
 from nac.integrals.multipole_matrices import get_multipole_matrix
 from nac.integrals.spherical_Cartesian_cgf import (calc_orbital_Slabels, read_basis_format)
 from nac.schedule.components import calculate_mos
 from nac.workflows.initialization import initialize
+from os.path import join
 from qmflows.parsers import parse_string_xyz
 from qmflows import run
 from noodles import (gather, schedule)
@@ -14,7 +16,6 @@ from scipy.spatial.distance import cdist
 import h5py
 import logging
 import numpy as np
-import os
 
 # Starting logger
 logger = logging.getLogger(__name__)
@@ -82,10 +83,24 @@ def get_omega_xia(config: dict, dict_input: dict):
     Search for the multipole_matrices, Omega and xia values in the HDF5,
     if they are not available compute and store them.
     """
-    if config.tddft.lower() == 'sing_orb':
-        return compute_sing_orb(dict_input)
+    def compute_omega_xia():
+        if config.tddft.lower() == 'sing_orb':
+            return compute_sing_orb(dict_input)
+        else:
+            return compute_std_aproximation(config, dict_input)
+
+    # search data in HDF5
+    root = join(config.project_name, 'omega_xia', 'point_{}'.format(dict_input.i))
+    paths_omega_xia = [join(root, x) for x in ("omega", "xia")]
+
+    if search_data_in_hdf5(config.path_hdf5, paths_omega_xia):
+        return tuple(retrieve_hdf5_data(config.path_hdf5, paths_omega_xia))
     else:
-        return compute_std_aproximation(config, dict_input)
+        omega, xia = compute_omega_xia()
+        store_arrays_in_hdf5(config.path_hdf5, paths_omega_xia[0], omega)
+        store_arrays_in_hdf5(config.path_hdf5, paths_omega_xia[1], xia)
+
+        return omega, xia
 
 
 def compute_sing_orb(inp: dict):
@@ -206,7 +221,7 @@ def compute_oscillator_strengths(config: dict, inp: dict):
     #     descriptors = ex_descriptor(
     #         inp.omega, f, inp.xia, n_lowest, inp.c_ao, inp.multipoles, tdm, tqm, inp.nocc,
     #         inp.nvirt, mol, config)
-    #     path_ex_output = os.path.join(
+    #     path_ex_output = join(
     #         config.workdir, 'descriptors_{}_{}.txt'.format(inp.i, config.tddft))
     #     ex_header = '{:^5s}{:^14s}{:^10s}{:^10s}{:^12s}{:^10s}{:^10s}{:^10s}{:^10s}{:^10s}'.format(
     #         'state', 'd_exc', 'd_exc_app', 'd_he', 'sigma_h', 'sigma_e', 'r_eh', 'bind_en',
@@ -224,7 +239,7 @@ def write_output(config: dict, inp: dict):
     output = write_output_tddft(inp)
     # inp.nocc, inp.nvirt, inp.omega, f, d_x, d_y, d_z, inp.xia, inp.energy)
 
-    path_output = os.path.join(config.workdir, 'output_{}_{}.txt'.format(inp.i, config.tddft))
+    path_output = join(config.workdir, 'output_{}_{}.txt'.format(inp.i, config.tddft))
     fmt = '{:^5s}{:^14s}{:^8s}{:^11s}{:^11s}{:^11s}{:^11s}{:<5s}{:^10s}{:<5s}{:^11s}{:^11s}'
     header = fmt.format(
         'state', 'inp.energy', 'f', 't_dip_x', 't_dip_y', 't_dip_y', 'weight',
