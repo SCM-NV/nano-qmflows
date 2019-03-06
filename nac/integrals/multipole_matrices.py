@@ -3,22 +3,21 @@ from nac.common import (
     Matrix, retrieve_hdf5_data, search_data_in_hdf5,
     store_arrays_in_hdf5, tuplesXYZ_to_plams)
 from os.path import join
-from typing import (Dict, List)
 import os
 import uuid
 
 
-def get_multipole_matrix(i: int, mol: List, config: Dict, multipole: str) -> Matrix:
+def get_multipole_matrix(config: dict, inp: dict, multipole: str) -> Matrix:
     """
     Retrieve the `multipole` number `i` from the trajectory. Otherwise compute it.
     """
-    root = join(config['project_name'], 'multipole', 'point_{}'.format(i))
+    root = join(config['project_name'], 'multipole', 'point_{}'.format(inp.i))
     path_hdf5 = config['path_hdf5']
     path_multipole_hdf5 = join(root, multipole)
     matrix_multipole = search_multipole_in_hdf5(path_hdf5, path_multipole_hdf5, multipole)
 
     if matrix_multipole is None:
-        matrix_multipole = compute_matrix_multipole(mol, config, multipole)
+        matrix_multipole = compute_matrix_multipole(inp.mol, config, multipole)
         store_arrays_in_hdf5(path_hdf5, path_multipole_hdf5, matrix_multipole)
 
     return matrix_multipole
@@ -37,7 +36,7 @@ def search_multipole_in_hdf5(path_hdf5: str, path_multipole_hdf5: str, multipole
 
 
 def compute_matrix_multipole(
-        mol: list, config: Dict, multipole: str) -> Matrix:
+        mol: list, config: dict, multipole: str) -> Matrix:
     """
     Compute the some `multipole` matrix: overlap, dipole, etc. for a given geometry `mol`.
     Compute the Multipole matrix in spherical coordinates.

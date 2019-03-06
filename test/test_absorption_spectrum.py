@@ -38,8 +38,9 @@ def test_compute_oscillators():
         check_properties(path_test_hdf5)
 
     finally:
-        # remove tmp data and clean global config
-        shutil.rmtree(scratch_path)
+        pass
+    #     # remove tmp data and clean global config
+    #     shutil.rmtree(scratch_path)
 
 
 def calculate_oscillators(path_test_hdf5, scratch_path):
@@ -67,7 +68,3 @@ def check_properties(path_test_hdf5):
     # for a single atom
     diagonals = np.sum([np.diag(dipole_matrices[n + 1]) for n in range(3)])
     assert abs(diagonals) < 1e-16
-
-
-if __name__ == "__main__":
-    test_oscillators_multiprocessing()
