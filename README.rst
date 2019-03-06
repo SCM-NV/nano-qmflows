@@ -48,10 +48,10 @@ In this framework, QMFlows-NAMD requires as input the coordinates of a pre-compu
 
 Overview
 --------
- The Library contains the numerical routines written in cython_ and numpy_ that are the core of the library. While the scripts are set of workflows to compute different properties using different approximations that can be tuned by the user.
+ The Library contains a **C++** interface to the libint2_ library to compute the integrals and several numerical functions in Numpy_. While the scripts are set of workflows to compute different properties using different approximations that can be tuned by the user.
 
-.. _cython: http://cython.org
-.. _numpy: http://www.numpy.org
+.. _libint2: https://github.com/evaleev/libint/wiki
+.. _Numpy: http://www.numpy.org
 
 Worflow to calculate Hamiltonians for nonadiabatic molecular simulations
 ************************************************************************
