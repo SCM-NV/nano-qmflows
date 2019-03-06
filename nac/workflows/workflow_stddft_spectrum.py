@@ -62,59 +62,78 @@ def compute_excited_states_tddft(config: dict, path_MOs: list, dict_input: dict)
     # Number of virtual orbitals
     nocc = config.active_space[0]
     nvirt = config.active_space[1]
+    dict_input.update({"energy": energy, "c_ao": c_ao, "nocc": nocc, "nvirt": nvirt})
 
     if tddft == 'sing_orb':
-        omega = -np.subtract(
-            energy[:nocc].reshape(nocc, 1), energy[nocc:].reshape(nvirt, 1).T).reshape(nocc*nvirt)
-        xia = np.eye(nocc*nvirt)
+        multipoles, omega, xia = compute_sing_orb(dict_input)
     else:
-        # Call the function that computes overlaps
-        logger.info("Reading or computing the overlap matrix")
-        multipoles = get_multipole_matrix(
-            dict_input["i"], dict_input["mol"], config, 'dipole')
+        multipoles, omega, xia = compute_std_aproximation(config, dict_input)
 
-        # Make a function tha returns in transition density charges
-        logger.info("Computing the transition density charges")
-        # multipoles[0] is the overlap matrix
-        q = transition_density_charges(dict_input["mol"], config, multipoles[0], c_ao)
-
-        # Make a function that compute the Mataga-Nishimoto-Ohno_Klopman
-        # damped Columb and Excgange law functions
-        logger.info("Computing the gamma functions for Exchange and Coulomb integrals")
-        gamma_J, gamma_K = compute_MNOK_integrals(dict_input["mol"], config.xc_dft)
-
-        # Compute the Couloumb and Exchange integrals
-        # If xc_dft is a pure functional, ax=0, thus the pqrs_J ints are not needed
-        # and can be set to 0
-        logger.info("Computing the Exchange and Coulomb integrals")
-        if (xc(config.xc_dft)['type'] == 'pure'):
-            size = energy.size
-            pqrs_J = np.zeros((size, size, size, size))
-        else:
-            pqrs_J = np.tensordot(q, np.tensordot(q, gamma_J, axes=(0, 1)), axes=(0, 2))
-        pqrs_K = np.tensordot(q, np.tensordot(q, gamma_K, axes=(0, 1)), axes=(0, 2))
-
-        # Construct the Tamm-Dancoff matrix A for each pair of i->a transition
-        logger.info("Constructing the A matrix for TDDFT calculation")
-        a_mat = construct_A_matrix_tddft(pqrs_J, pqrs_K, nocc, nvirt, config.xc_dft, energy)
-
-        if tddft == 'stddft':
-            logger.info('sTDDFT has not been implemented yet !')
-            # Solve the eigenvalue problem = A * cis = omega * cis
-        elif tddft == 'stda':
-            logger.info("This is a TDA calculation ! \n Solving the eigenvalue problem")
-            omega, xia = np.linalg.eig(a_mat)
-        else:
-            msg = "Only the stda method is available"
-            raise RuntimeError(msg)
-
-    dict_input.update({
-        "energy": energy, "c_ao": c_ao, "multipoles": multipoles[1:], "nocc": nocc, "nvirt": nvirt,
-        "omega": omega, "xia": xia
-    })
+    # add arrays to the dictionary
+    dict_input.update({"multipoles": multipoles[1:], "omega": omega, "xia": xia})
 
     return compute_oscillator_strengths(
         config, dict_input)
+
+
+def compute_sing_orb(inp: dict):
+    """
+    Single Orbital approximation.
+    """
+    energy, nocc, nvirt = [getattr(inp, x) for x in ("energy", "nocc", "nvirt")]
+    omega = -np.subtract(
+        energy[:nocc].reshape(nocc, 1), energy[nocc:].reshape(nvirt, 1).T).reshape(nocc*nvirt)
+    xia = np.eye(nocc*nvirt)
+    multipoles = np.empty(0)
+
+    return multipoles, omega, xia
+
+
+def compute_std_aproximation(config: dict, dict_input: dict):
+    """
+    Compute the oscillator strenght using either the stda or stddft approximations.
+    """
+    logger.info("Reading or computing the dipole matrices")
+    multipoles = get_multipole_matrix(
+        dict_input["i"], dict_input["mol"], config, 'dipole')
+
+    # Make a function tha returns in transition density charges
+    logger.info("Computing the transition density charges")
+    # multipoles[0] is the overlap matrix
+    q = transition_density_charges(dict_input["mol"], config, multipoles[0], dict_input.c_ao)
+
+    # Make a function that compute the Mataga-Nishimoto-Ohno_Klopman
+    # damped Columb and Excgange law functions
+    logger.info("Computing the gamma functions for Exchange and Coulomb integrals")
+    gamma_J, gamma_K = compute_MNOK_integrals(dict_input["mol"], config.xc_dft)
+
+    # Compute the Couloumb and Exchange integrals
+    # If xc_dft is a pure functional, ax=0, thus the pqrs_J ints are not needed
+    # and can be set to 0
+    logger.info("Computing the Exchange and Coulomb integrals")
+    if (xc(config.xc_dft)['type'] == 'pure'):
+        size = dict_input.energy.size
+        pqrs_J = np.zeros((size, size, size, size))
+    else:
+        pqrs_J = np.tensordot(q, np.tensordot(q, gamma_J, axes=(0, 1)), axes=(0, 2))
+    pqrs_K = np.tensordot(q, np.tensordot(q, gamma_K, axes=(0, 1)), axes=(0, 2))
+
+    # Construct the Tamm-Dancoff matrix A for each pair of i->a transition
+    logger.info("Constructing the A matrix for TDDFT calculation")
+    a_mat = construct_A_matrix_tddft(
+        pqrs_J, pqrs_K, dict_input.nocc, dict_input.nvirt, config.xc_dft, dict_input.energy)
+
+    if config.tddft == 'stddft':
+        logger.info('sTDDFT has not been implemented yet !')
+        # Solve the eigenvalue problem = A * cis = omega * cis
+    elif config.tddft == 'stda':
+        logger.info("This is a TDA calculation ! \n Solving the eigenvalue problem")
+        omega, xia = np.linalg.eig(a_mat)
+    else:
+        msg = "Only the stda method is available"
+        raise RuntimeError(msg)
+
+    return multipoles, omega, xia
 
 
 def compute_oscillator_strengths(config: dict, inp: dict):
