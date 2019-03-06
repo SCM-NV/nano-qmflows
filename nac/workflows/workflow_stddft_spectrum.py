@@ -56,7 +56,6 @@ def compute_excited_states_tddft(config: dict, path_MOs: list, dict_input: dict)
     """
     logger.info("Reading energies and mo coefficients")
     # type of calculation
-    tddft = config.tddft.lower()
     energy, c_ao = retrieve_hdf5_data(config.path_hdf5, path_MOs)
 
     # Number of virtual orbitals
@@ -64,16 +63,29 @@ def compute_excited_states_tddft(config: dict, path_MOs: list, dict_input: dict)
     nvirt = config.active_space[1]
     dict_input.update({"energy": energy, "c_ao": c_ao, "nocc": nocc, "nvirt": nvirt})
 
-    if tddft == 'sing_orb':
-        multipoles, omega, xia = compute_sing_orb(dict_input)
-    else:
-        multipoles, omega, xia = compute_std_aproximation(config, dict_input)
+    # read data from the HDF5 or calculate it on the fly
+    multipoles = get_multipole_matrix(config, dict_input, 'dipole')
+    dict_input["overlap"] = multipoles[0]
+
+    # retrieve or compute the omega xia values
+    omega, xia = get_omega_xia(config, dict_input)
 
     # add arrays to the dictionary
     dict_input.update({"multipoles": multipoles[1:], "omega": omega, "xia": xia})
 
     return compute_oscillator_strengths(
         config, dict_input)
+
+
+def get_omega_xia(config: dict, dict_input: dict):
+    """
+    Search for the multipole_matrices, Omega and xia values in the HDF5,
+    if they are not available compute and store them.
+    """
+    if config.tddft.lower() == 'sing_orb':
+        return compute_sing_orb(dict_input)
+    else:
+        return compute_std_aproximation(config, dict_input)
 
 
 def compute_sing_orb(inp: dict):
@@ -84,9 +96,8 @@ def compute_sing_orb(inp: dict):
     omega = -np.subtract(
         energy[:nocc].reshape(nocc, 1), energy[nocc:].reshape(nvirt, 1).T).reshape(nocc*nvirt)
     xia = np.eye(nocc*nvirt)
-    multipoles = np.empty(0)
 
-    return multipoles, omega, xia
+    return omega, xia
 
 
 def compute_std_aproximation(config: dict, dict_input: dict):
@@ -94,13 +105,12 @@ def compute_std_aproximation(config: dict, dict_input: dict):
     Compute the oscillator strenght using either the stda or stddft approximations.
     """
     logger.info("Reading or computing the dipole matrices")
-    multipoles = get_multipole_matrix(
-        dict_input["i"], dict_input["mol"], config, 'dipole')
 
     # Make a function tha returns in transition density charges
     logger.info("Computing the transition density charges")
     # multipoles[0] is the overlap matrix
-    q = transition_density_charges(dict_input["mol"], config, multipoles[0], dict_input.c_ao)
+    q = transition_density_charges(
+        dict_input.mol, config, dict_input.overlap, dict_input.c_ao)
 
     # Make a function that compute the Mataga-Nishimoto-Ohno_Klopman
     # damped Columb and Excgange law functions
@@ -133,7 +143,7 @@ def compute_std_aproximation(config: dict, dict_input: dict):
         msg = "Only the stda method is available"
         raise RuntimeError(msg)
 
-    return multipoles, omega, xia
+    return omega, xia
 
 
 def compute_oscillator_strengths(config: dict, inp: dict):
@@ -166,7 +176,7 @@ def compute_oscillator_strengths(config: dict, inp: dict):
 
     # 2) Compute the transition dipole matrix TDM(i->a)
     # Call the function that computes transition dipole moments integrals
-    print("Reading or computing the transition dipole matrix")
+    logger.info("Reading or computing the transition dipole matrix")
 
     def compute_tdmatrix(k):
         return np.linalg.multi_dot(
@@ -454,7 +464,7 @@ def write_output_tddft(inp: dict):
 
 def number_spherical_functions_per_atom(mol, package_name, basis_name, path_hdf5):
     """
-    ADD Documentation
+    Compute the number of spherical shells per atom
     """
     with h5py.File(path_hdf5, 'r') as f5:
         xs = [f5['{}/basis/{}/{}/coefficients'.format(
