@@ -127,7 +127,7 @@ setup(
     ],
     install_requires=[
         'numpy', 'h5py', 'noodles==0.3.1', 'pybind11>=2.2.4',
-        'qmflows>=0.3.0', 'pymonad', 'scipy', 'schema', 'pyyaml'],
+        'qmflows>=0.3.0', 'pymonad', 'scipy', 'schema', 'pyyaml==5.1'],
     dependency_links=[
         "https://github.com/SCM-NV/qmflows/tarball/master#egg=qmflows"],
     cmdclass={'build_ext': BuildExt},

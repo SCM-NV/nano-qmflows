@@ -19,7 +19,7 @@ dict_workflows = {'absorption_spectrum': workflow_stddft,
 def main():
     input_file = read_cmd_line()
     with open(input_file, 'r') as f:
-        dict_input = yaml.load(f.read())
+        dict_input = yaml.load(f, Loader=yaml.FullLoader)
 
     if 'workflow' not in dict_input:
         raise RuntimeError("The name of the workflow is required in the input file")

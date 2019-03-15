@@ -41,7 +41,7 @@ cp2k:
           minimizer: "DIIS"
           n_diis: 7
           preconditioner: "FULL_SINGLE_INVERSE"
-"""))
+""", Loader=yaml.FullLoader))
 
 cp2k_pbe_main = Settings(yaml.load("""
 cp2k:
@@ -55,7 +55,7 @@ cp2k:
       scf:
         eps_scf: 5e-4
         max_scf: 200
-"""))
+""", Loader=yaml.FullLoader))
 
 
 cp2k_pbe0_guess = Settings(yaml.load("""
@@ -96,7 +96,7 @@ cp2k:
             n_diis: 7
             preconditioner: "FULL_SINGLE_INVERSE"
 
-"""))
+""", Loader=yaml.FullLoader))
 
 
 cp2k_pbe0_main = Settings(yaml.load("""
@@ -131,7 +131,7 @@ cp2k:
        scf:
           eps_scf: 5e-4
           max_scf: 200
-"""))
+""", Loader=yaml.FullLoader))
 
 
 kinds_template = Settings(yaml.load("""
@@ -142,7 +142,7 @@ cp2k:
         C:
           basis_set: DZVP-MOLOPT-SR-GTH-q4
           potential: GTH-PBE-q4
-"""))
+""", Loader=yaml.FullLoader))
 
 
 def generate_kinds(elements: list, basis: str, potential: str) -> Settings:

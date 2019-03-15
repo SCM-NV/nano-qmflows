@@ -35,7 +35,7 @@ def process_input(input_file: str, workflow_name: str) -> Dict:
     schema = schema_workflows[workflow_name]
 
     with open(input_file, 'r') as f:
-        dict_input = yaml.load(f.read())
+        dict_input = yaml.load(f.read(), Loader=yaml.FullLoader)
 
     try:
         d = schema.validate(dict_input)
