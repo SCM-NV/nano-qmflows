@@ -50,7 +50,7 @@ def main():
     input_file = read_cmd_line()
 
     with open(input_file, 'r') as f:
-        args = yaml.load(f)
+        args = yaml.load(f, Loader=yaml.Loader)
 
     # Read and process input
     workflow_type = args['workflow'].lower()
