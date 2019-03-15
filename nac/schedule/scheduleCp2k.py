@@ -11,6 +11,20 @@ from qmflows.packages import cp2k
 from qmflows.parsers.xyzParser import string_to_plams_Molecule
 
 
+def try_to_read_wf(path_dir: str) -> str:
+    """
+    Try to get a wave function file from `path_dir`. Raise an error if
+    there is not a wave function file.
+    """
+    xs = os.listdir(path_dir)
+    files = list(filter(lambda x: fnmatch.fnmatch(x, '*wfn'), xs))
+    if files:
+        return join(path_dir, files[0])
+    else:
+        msg = "There are no wave function file in path: " + path_dir
+        raise RuntimeError(msg)
+
+
 def prepare_cp2k_settings(settings: object, dict_input: dict, guess_job: object) -> object:
     """
     Fills in the parameters for running a single job in CP2K.
@@ -31,11 +45,7 @@ def prepare_cp2k_settings(settings: object, dict_input: dict, guess_job: object)
     settings.specific.cp2k['global']['run_type'] = 'Energy'
 
     if guess_job is not None:
-        output_dir = guess_job.archive['plams_dir']
-        xs = os.listdir(output_dir)
-        wfn_file = list(filter(lambda x: fnmatch.fnmatch(x, '*wfn'), xs))[0]
-        file_path = join(output_dir, wfn_file)
-        dft.wfn_restart_file_name = file_path
+        dft.wfn_restart_file_name = try_to_read_wf(guess_job.archive['plams_dir'])
 
     input_args = templates.singlepoint.overlay(settings)
 
