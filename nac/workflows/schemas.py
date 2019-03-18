@@ -29,6 +29,12 @@ schema_cp2k_general_settings = Schema({
     # "Pseudo-potential to carry out the quantum chemistry simulation"
     "potential": str,
 
+    # Charge of the system
+    Optional("charge", default=0): int,
+
+    # Multiplicity
+    Optional("multiplicity", default=1): int,
+
     # Specify the Cartesian components for the cell vector
     "cell_parameters": Or(
         Real,
