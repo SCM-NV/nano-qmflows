@@ -148,7 +148,7 @@ def add_cell_parameters(general: dict) -> None:
         mtx = np.loadtxt(file_cell_parameters, skiprows=1)[:, 2: 11]
         for k, s in enumerate(
                 general[p] for p in ['cp2k_settings_main', 'cp2k_settings_guess']):
-            s.cell_parameters = mtx[k].reshape(3, 3)
+            s.cell_parameters = mtx[k].reshape(3, 3).tolist()
             s.cell_angles = None
 
 
