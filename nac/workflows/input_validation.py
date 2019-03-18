@@ -103,6 +103,12 @@ def add_missing_keywords(d: Dict) -> Dict:
     # Add Periodic properties
     add_periodic(general)
 
+    # Add charge 
+    add_charge(general) 
+  
+    # Add multiplicity
+    add_multiplicity(general) 
+
     return d
 
 
@@ -140,6 +146,21 @@ def add_periodic(general: dict) -> None:
     for s in (general[p] for p in ['cp2k_settings_main', 'cp2k_settings_guess']):
         s.specific.cp2k.force_eval.subsys.cell.periodic = general['periodic']
 
+def add_charge(general: dict) -> None:
+    """
+    Add the keyword for the charge of the system
+    """
+    for s in (general[p] for p in ['cp2k_settings_main', 'cp2k_settings_guess']):
+        s.specific.cp2k.force_eval.dft.charge = general['charge']
+
+def add_multiplicity(general: dict) -> None:
+    """
+    Add the keyword for the multiplicity of the system only if greater than 1 
+    """
+    if general['multiplicity'] > 1:
+       for s in (general[p] for p in ['cp2k_settings_main', 'cp2k_settings_guess']):
+           s.specific.cp2k.force_eval.dft.multiplicity = general['multiplicity']
+           s.specific.cp2k.force_eval.dft.uks = "" 
 
 def add_restart_point(general: dict) -> None:
     """
