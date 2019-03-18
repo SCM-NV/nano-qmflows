@@ -202,11 +202,10 @@ def compute_HOMO_index(path_traj_xyz: str, basis: str, charge: int) -> int:
     number_of_electrons = sum(
         valence_electrons['-'.join((at.symbol, basis))] for at in mol.atoms)
 
-    """ Correct for total charge of the system """ 
-    number_of_electrons = number_of_electrons - charge 
+    """ Correct for total charge of the system """
+    number_of_electrons = number_of_electrons - charge
 
     if (number_of_electrons % 2) != 0:
         raise RuntimeError("Unpair number of electrons detected when computing the HOMO")
 
     return number_of_electrons // 2
-
