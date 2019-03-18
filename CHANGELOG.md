@@ -1,5 +1,12 @@
 # Change Log
 
+# 0.7.0
+
+### New
+
+ * Allow to compute charge molecules in the *C2Pk* input.
+ * Compute the multipole integrals in the center of mass.
+
 # 0.6.0
 
 ### New
