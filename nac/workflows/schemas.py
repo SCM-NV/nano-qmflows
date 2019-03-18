@@ -63,7 +63,8 @@ schema_cp2k_general_settings = Schema({
     "cp2k_settings_guess": object
 
     # # Restart File Name
-    # Optional("wfn_restart_file_name", default=None): str,
+    #Optional("wfn_restart_file_name", default=None): str,
+
 })
 
 dict_general_options = {
