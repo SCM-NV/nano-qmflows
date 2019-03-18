@@ -86,7 +86,7 @@ def add_missing_keywords(d: Dict) -> Dict:
     # Add keywords if missing
 
     if d.get('nHOMO') is None:
-        d['nHOMO'] = compute_HOMO_index(d['path_traj_xyz'], general['basis'])
+        d['nHOMO'] = compute_HOMO_index(d['path_traj_xyz'], general['basis'], general['charge'])
 
     # Added_mos keyword
     add_mo_index_range(d)
@@ -193,7 +193,7 @@ def add_mo_index_range(dict_input: dict) -> None:
     cp2k_main.specific.cp2k.force_eval.dft.scf.added_mos = mo_index_range[1] - nHOMO
 
 
-def compute_HOMO_index(path_traj_xyz: str, basis: str) -> int:
+def compute_HOMO_index(path_traj_xyz: str, basis: str, charge: int) -> int:
     """
     Compute the HOMO index
     """
@@ -201,6 +201,9 @@ def compute_HOMO_index(path_traj_xyz: str, basis: str) -> int:
 
     number_of_electrons = sum(
         valence_electrons['-'.join((at.symbol, basis))] for at in mol.atoms)
+
+    """ Correct for total charge of the system """ 
+    number_of_electrons = number_of_electrons - charge 
 
     if (number_of_electrons % 2) != 0:
         raise RuntimeError("Unpair number of electrons detected when computing the HOMO")
