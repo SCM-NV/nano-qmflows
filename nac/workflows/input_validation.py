@@ -9,6 +9,7 @@ from qmflows.settings import Settings
 from schema import SchemaError
 from typing import Dict
 import logging
+import numpy as np
 import os
 import yaml
 
@@ -137,6 +138,14 @@ def add_cell_parameters(general: dict) -> None:
     for s in (general[p] for p in ['cp2k_settings_main', 'cp2k_settings_guess']):
         s.cell_parameters = general['cell_parameters']
         s.cell_angles = general['cell_angles']
+
+    # Search for a file containing the cell parameters
+    file_cell_parameters = general["file_cell_parameters"]
+    if file_cell_parameters is not None:
+        # The file_cell_parameters containing 12 columns of which number 2 to 11
+        # are the cell parameters Ax,Ay,Az,Bx,By,Bz,Cx,Cy,Cz
+        mtx = np.loadtxt(file_cell_parameters, skiprows=1)
+        general["array_cell_parameters"] = mtx[:, 2: 11].reshape(3, 3)
 
 
 def add_periodic(general: dict) -> None:
