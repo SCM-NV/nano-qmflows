@@ -24,7 +24,6 @@ cp2k_general_settings:
       template: pbe_main
 
   cp2k_settings_guess:
-    wfn_restart_file_name: "../point_0-RESTART.wfn"
     specific:
       template:
         pbe_guess
