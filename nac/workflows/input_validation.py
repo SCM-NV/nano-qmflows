@@ -202,8 +202,6 @@ def compute_HOMO_index(path_traj_xyz: str, basis: str, charge: int) -> int:
     """ Correct for total charge of the system """ 
     number_of_electrons = number_of_electrons - charge 
 
-    print(number_of_electrons // 2)
- 
     if (number_of_electrons % 2) != 0:
         raise RuntimeError("Unpair number of electrons detected when computing the HOMO")
 
