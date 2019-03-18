@@ -37,7 +37,7 @@ def test_call_cp2k():
     Check if the input for a cp2k job is valid
     """
     try:
-        path_input = "test/test_files/input_test_charged_pbe.yml"
+        path_input = "test/test_files/input_test_pbe.yml"
         dict_input = process_input(path_input, "derivative_couplings")
         sett = dict_input['cp2k_general_settings']['cp2k_settings_guess']
         job = cp2k(sett, plams.Molecule("test/test_files/C.xyz"))

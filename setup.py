@@ -116,6 +116,7 @@ setup(
     author_email='f.zapata@esciencecenter.nl',
     keywords='chemistry Photochemistry Simulation',
     long_description=readme(),
+    long_description_content_type='text/markdown',
     packages=find_packages(),
     classifiers=[
         'License :: OSI Approved :: MIT License',
