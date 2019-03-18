@@ -43,12 +43,6 @@ using namd::map_elements;
 using namd::Matrix;
 
 
-using shellpair_list_t = std::unordered_map<size_t, std::vector<size_t>>;
-// in same order as shellpair_list_t
-using shellpair_data_t = std::vector<std::vector<std::shared_ptr<libint2::ShellPair>>>;
-shellpair_list_t shellpair_list;
-shellpair_data_t shellpair_data;
-
 Matrix compute_integrals_couplings(const string& path_xyz_1,
 				   const string& path_xyz_2,
 				   const string& path_hdf5,
@@ -434,15 +428,37 @@ Matrix compute_integrals_couplings(const string& path_xyz_1,
   return S;
 }
 
+std::array<double, 3> calculate_center_of_mass(const std::vector<Atom>& atoms) {
+  // Compute the center of mass for atoms
+  auto n = atoms.size();
+
+  std::array<double, 3> rs{0, 0, 0};
+  for (auto i=0; i < n; i++){
+    auto at = atoms[i];
+    auto z = double(at.atomic_number);
+    rs[0] += at.x * z;
+    rs[1] += at.y * z,
+    rs[2] += at.z * z;
+  }
+
+  auto m = std::accumulate(atoms.begin(), atoms.end(), 0, [](double acc, Atom at) {
+      return acc + double(at.atomic_number)
+      ;});
+  return {rs[0] / m, rs[1] / m, rs[2] / m};
+}
+
 std::vector<Matrix> select_multipole(const std::vector<Atom>& atoms,
 				     const std::vector<Shell>& shells,
 				     const string& multipole) {
+  // Compute multipole at the center of mass
+  std::array<double, 3> center = calculate_center_of_mass(atoms);
+
   if (multipole == "overlap")
     return compute_multipoles<Operator::overlap>(shells);
   else if (multipole == "dipole")
-    return compute_multipoles<Operator::emultipole1>(shells);
+    return compute_multipoles<Operator::emultipole1>(shells, center);
   else if (multipole == "quadrupole")
-    return compute_multipoles<Operator::emultipole2>(shells);
+    return compute_multipoles<Operator::emultipole2>(shells, center);
 }
 
 
