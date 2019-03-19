@@ -1,3 +1,12 @@
+// This module contains the implementation of several
+// kind of integrals used for non-adiabatic molecular dynamics,
+// including the overlaps integrals between different geometries
+// And the dipoles and quadrupoles to compute absorption spectra.
+
+// This module is based on libint, Eigen and pybind11.
+
+// Copyright (C) 2019 the Netherlands eScience Center.
+
 #include <algorithm>
 #include <fstream>
 #include <iostream>
