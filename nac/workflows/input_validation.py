@@ -4,6 +4,7 @@ from .schemas import (
     schema_cp2k_general_settings)
 from .templates import (create_settings_from_template, valence_electrons)
 from nac.common import DictConfig
+from os.path import join
 from scm.plams import Molecule
 from qmflows.settings import Settings
 from schema import SchemaError
@@ -120,15 +121,36 @@ def add_basis(general: dict) -> None:
     setts = [general[p] for p in ['cp2k_settings_main', 'cp2k_settings_guess']]
 
     # add basis and potential path
-    if all(general[x] is not None for x in ["path_basis", "path_potential"]):
-        logger.info("path_basis and path_potential added to cp2k settings")
+    if general["path_basis"] is not None:
+        logger.info("path to basis added to cp2k settings")
         for x in setts:
             x.basis = general['basis']
             x.potential = general['potential']
-            x.specific.cp2k.force_eval.dft.basis_set_file_name = os.path.abspath(
-                general['path_basis'])
             x.specific.cp2k.force_eval.dft.potential_file_name = os.path.abspath(
-                general['path_potential'])
+                join(general['path_basis'], "GTH_POTENTIALS"))
+
+            # Choose the file basis to use
+            select_basis_file(x, general)
+
+
+def select_basis_file(sett: Settings, general: dict) -> str:
+    """
+    Choose the right basis set based on the potential and basis name
+    """
+    dft = sett.specific.cp2k.force_eval.dft
+
+    if dft.get("xc") is None or dft.xc.get("xc_functional pbe") is not None:
+        # Use PBE MOLOPT
+        dft.basis_set_file_name = os.path.abspath(
+            join(general['path_basis'], "BASIS_MOLOPT"))
+    else:
+        # USE ADMM
+        # We need to write one lowercase and the other uppercase otherwise Settings will
+        # Overwrite the value
+        dft.basis_set_file_name = os.path.abspath(
+            join(general['path_basis'], "BASIS_ADMM_MOLOPT"))
+        dft["BASIS_SET_FILE_NAME"] = os.path.abspath(
+            join(general['path_basis'], "BASIS_ADMM"))
 
 
 def add_cell_parameters(general: dict) -> None:

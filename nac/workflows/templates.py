@@ -8,18 +8,25 @@ import pkg_resources as pkg
 import yaml
 
 
-path_valence_electrons = pkg.resource_filename("nac", "workflows/valence_electrons.json")
-with open(path_valence_electrons, 'r') as f:
-    valence_electrons = json.load(f)
+path_valence_electrons = pkg.resource_filename("nac", "basis/valence_electrons.json")
+path_aux_fit = pkg.resource_filename("nac", "basis/aux_fit.json")
+
+with open(path_valence_electrons, 'r') as f1, open(path_aux_fit, 'r') as f2:
+    valence_electrons = json.load(f1)
+    aux_fit = json.load(f2)
 
 
-def generate_auxiliar_basis(sett: Settings, auxiliar_basis: str) -> Settings:
+def generate_auxiliar_basis(sett: Settings, auxiliar_basis: str, quality: str) -> Settings:
     """
-    Generate the `auxiliar_basis` for all the atoms in the `sett`
+    Generate the `auxiliar_basis` for all the atoms in the `sett` using the
+    `quality` of the auxiliar basis provided by the user.
     """
+    quality_to_number = {"low": 0, "medium": 1, "good": 2, "verygood": 3, "excellent": 4}
     kind = sett.cp2k.force_eval.subsys.kind
     for atom in kind.keys():
-        kind[atom]["BASIS_SET"] = ("AUX_FIT " + auxiliar_basis)
+        index = quality_to_number[quality.lower()]
+        cfit = aux_fit[atom][index]
+        kind[atom]["BASIS_SET"] = "AUX_FIT " + "CFIT{}".format(cfit)
 
     return sett
 
@@ -68,9 +75,6 @@ cp2k:
        auxiliary_density_matrix_method:
          method: "basis_projection"
          admm_purification_method: "none"
-       poisson:
-         periodic: "None"
-         psolver: "MT"
        qs:
          method: "gpw"
          eps_pgf_orb: 1E-8
@@ -176,7 +180,7 @@ def create_settings_from_template(
     kinds = generate_kinds(elements, general['basis'], general['potential'])
 
     if 'pbe0' in template_name:
-        return generate_auxiliar_basis(setts + kinds, general['basis'])
+        return generate_auxiliar_basis(setts + kinds, general['basis'], general['aux_fit'])
     else:
         return setts + kinds
 

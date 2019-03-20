@@ -21,8 +21,7 @@ scratch_path:
   "/tmp/namd/derivative_couplings"
 
 cp2k_general_settings:  
-  path_basis: "test/test_files/BASIS_MOLOPT"
-  path_potential: "test/test_files/GTH_POTENTIALS"
+  path_basis: "test/test_files"
   potential: "GTH-PBE"
   basis: "DZVP-MOLOPT-SR-GTH"
   cell_parameters: 45.0

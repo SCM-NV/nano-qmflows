@@ -125,8 +125,6 @@ def write_input(folder_path: str, config: dict) -> None:
     # basis and potential
     config["cp2k_general_settings"]["path_basis"] = os.path.abspath(
         config["cp2k_general_settings"]["path_basis"])
-    config["cp2k_general_settings"]["path_potential"] = os.path.abspath(
-        config["cp2k_general_settings"]["path_potential"])
 
     # remove keys from input
     for k in ['blocks', 'calculate_guesses', 'job_scheduler', 'mo_index_range',

@@ -49,8 +49,7 @@ def initialize(config: dict) -> dict:
         os.makedirs(scratch_path)
 
     # Cp2k configuration files
-    cp2k_config = {"basis": cp2k_general_settings["path_basis"],
-                   "potential": cp2k_general_settings["path_potential"]}
+    cp2k_config = {"basis": cp2k_general_settings["path_basis"]}
     config['package_config'] = cp2k_config
 
     # HDF5 path
