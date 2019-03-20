@@ -139,15 +139,14 @@ def select_basis_file(sett: Settings, general: dict) -> str:
     """
     dft = sett.specific.cp2k.force_eval.dft
 
-    if dft.get("xc") is None or dft.xc.get("xc_functional pbe") is not None:
-        # Use PBE MOLOPT
-        dft.basis_set_file_name = os.path.abspath(
-            join(general['path_basis'], "BASIS_MOLOPT"))
-    else:
+    dft["basis_set_file_name"] = os.path.abspath(
+        join(general['path_basis'], "BASIS_MOLOPT"))
+
+    if dft.xc.get("xc_functional pbe") is None:
         # USE ADMM
         # We need to write one lowercase and the other uppercase otherwise Settings will
         # Overwrite the value
-        dft.basis_set_file_name = os.path.abspath(
+        dft["Basis_Set_File_Name"] = os.path.abspath(
             join(general['path_basis'], "BASIS_ADMM_MOLOPT"))
         dft["BASIS_SET_FILE_NAME"] = os.path.abspath(
             join(general['path_basis'], "BASIS_ADMM"))
