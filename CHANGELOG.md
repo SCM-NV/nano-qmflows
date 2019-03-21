@@ -6,6 +6,19 @@
 
  * Allow to compute charge molecules in the *C2Pk* input.
  * Compute the multipole integrals in the center of mass.
+ * A new variable called ``aux_fix`` has been introduced to change the quality of the auxiliar basis set
+   for hybrid calculation. The possible values are: "low", "medium", "good", "verygood" and "excellent".
+   The default value is: verygood.
+
+## Change
+
+ * The ``path_basis`` variable in the yaml input, points to the folder where all the CP2K basis are located.
+   By Default this variable points to <Installation>/nac/basis where there are some default basis.
+
+### Deleted
+
+* The ``path_potential`` variable has been removed since it is superseded by the ``path_basis``.
+
 
 # 0.6.0
 
