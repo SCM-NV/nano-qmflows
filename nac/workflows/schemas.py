@@ -8,6 +8,7 @@ __all__ = [
 from numbers import Real
 from schema import (And, Optional, Or, Schema, Use)
 import os
+import pkg_resources as pkg
 
 
 def merge(d1, d2):
@@ -50,10 +51,7 @@ schema_cp2k_general_settings = Schema({
     Optional("cell_angles", default=[90, 90, 90]): list,
 
     # Path to the folder containing the basis set specifications
-    Optional("path_basis", default=None): str,
-
-    # Path to the folder containing the pseudo potential specifications
-    Optional("path_potential", default=None): str,
+    Optional("path_basis", default=pkg.resource_filename("nac", "basis")): str,
 
     # Settings describing the input of the quantum package
     "cp2k_settings_main": object,
@@ -67,7 +65,12 @@ schema_cp2k_general_settings = Schema({
 
     # File containing the Parameters of the cell if those
     # parameters change during the MD simulation.
-    Optional("file_cell_parameters", default=None): str
+    Optional("file_cell_parameters", default=None): str,
+
+    # Quality of the auxiliar basis cFIT
+    Optional("aux_fit", default="verygood"): And(
+        str, Use(str.lower), lambda s: s in
+        ("low", "medium", "good", "verygood", "excellent"))
 })
 
 dict_general_options = {

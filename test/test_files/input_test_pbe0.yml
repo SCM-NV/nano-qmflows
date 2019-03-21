@@ -6,19 +6,19 @@ active_space: [2, 2]
 algorithm: "levine"
 tracking: False
 path_hdf5: "test/test_files/C.hdf5"
-path_traj_xyz: "test/test_files/C.xyz" 
+path_traj_xyz: "test/test_files/ethylene.xyz" 
 scratch_path: "/tmp/namd"
 
   
 cp2k_general_settings:
   basis:  "DZVP-MOLOPT-SR-GTH"
-  path_basis: "test/test_files/BASIS_MOLOPT"
-  path_potential: "test/test_files/GTH_POTENTIALS"
-  potential: "GTH-PBE0"
-  cell_parameters: 5.0
+  path_basis: "test/test_files"
+  potential: "GTH-PBE"
+  cell_parameters: 4.0
   cell_angles: [90.0, 90.0, 90.0]
   periodic: none
-
+  aux_fit: good
+  
   cp2k_settings_main:
     specific:
       template: pbe0_main

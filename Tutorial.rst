@@ -33,8 +33,7 @@ The following is an example of the inputfile for the calculation of derivative c
       
     cp2k_general_settings:
       basis:  "DZVP-MOLOPT-SR-GTH"
-      path_basis: "test/test_files/BASIS_MOLOPT"
-      path_potential: "test/test_files/GTH_POTENTIALS"
+      path_basis: "test/test_files"
       potential: "GTH-PBE"
       cell_parameters: 28.0
       cell_angles: [90.0, 90.0, 90.0]

@@ -32,24 +32,46 @@ def test_input_validation():
 
 @pytest.mark.skipif(
     not cp2k_available(), reason="CP2K is not install or not loaded")
-def test_call_cp2k():
+def test_call_cp2k_pbe():
     """
-    Check if the input for a cp2k job is valid
+    Check if the input for a PBE cp2k job is valid
     """
     try:
-        path_input = "test/test_files/input_test_pbe.yml"
-        dict_input = process_input(path_input, "derivative_couplings")
-        sett = dict_input['cp2k_general_settings']['cp2k_settings_guess']
-        job = cp2k(sett, plams.Molecule("test/test_files/C.xyz"))
+        results = run_plams("test/test_files/input_test_pbe.yml")
+        assert (results is not None)
+    finally:
+        remove_files()
 
-        results = run(job.energy)
 
-        print("sett: ", sett)
-
+@pytest.mark.skipif(
+    not cp2k_available(), reason="CP2K is not install or not loaded")
+def test_call_cp2k_pbe0():
+    """
+    Check if the input for a PBE0 cp2k job is valid
+    """
+    try:
+        results = run_plams("test/test_files/input_test_pbe0.yml")
         assert (results is not None)
 
     finally:
-        for path in fnmatch.filter(os.listdir('.'), "plams_workdir"):
-            shutil.rmtree(path)
-        if os.path.exists("cache.db"):
-            os.remove("cache.db")
+        pass
+        # remove_files()
+
+
+def run_plams(path_input):
+    """ """
+    dict_input = process_input(path_input, "derivative_couplings")
+    sett = dict_input['cp2k_general_settings']['cp2k_settings_guess']
+    job = cp2k(sett, plams.Molecule("test/test_files/C.xyz"))
+
+    print("sett: ", sett)
+
+    return run(job.energy)
+
+
+def remove_files():
+    """ Remove tmp files in cwd """
+    for path in fnmatch.filter(os.listdir('.'), "plams_workdir"):
+        shutil.rmtree(path)
+    if os.path.exists("cache.db"):
+        os.remove("cache.db")
