@@ -1,9 +1,16 @@
 sudo: required
 language: generic
+
+env:
+  global:
+    - COMMIT_AUTHOR_EMAIL: "f.zapata@esciencecenter.nl"
+  matrix:
+    - PYTHON_VERSION=3.6
+    - PYTHON_VERSION=3.7
+
 install:
   - export CXX="g++-7"
   - export CC="gcc-7"
-
 
 addons:
   apt:
@@ -23,7 +30,7 @@ install:
   - conda info -a
 
   # Install python 3.6 env
-  - conda create --name namd python=3.6
+  - conda create --name namd python=${PYTHON_VERSION}
   - source activate namd
   - conda install -c conda-forge cython eigen h5py highfive libint pybind11 rdkit
 
