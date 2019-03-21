@@ -12,7 +12,6 @@ Contents:
    tutorial
 
 
-
 Indices and tables
 ==================
 

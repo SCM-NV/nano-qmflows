@@ -61,14 +61,19 @@ binary file and subsequently calculations retrieve sets of three molecular orbit
 use to calculate the nonadiabatic coupling matrix using equations **4** to **7**.
 These coupling matrices are them feed to the PYXAID_ package to carry out nonadiabatic molecular dynamics.
 
-The Overlap between primitives are calculated using the Obara-Saika recursive scheme and has been implemented as a Cython_ module for efficiency reasons. The nonadiabatic coupling module uses the aforementioned
-module together with the multiprocessing_ Python library to distribute the overlap matrix computations among the CPUs available. Also, all the heavy numerical processing is carried out by the highly optimized functions in NumPy_.
+The Overlap between primitives are calculated using the Obara-Saika recursive scheme and has been implemented using the C++ libint2_ library for efficiency reasons.
+The libint2_ library uses either OpenMP_ or C++ threads to distribute the integrals among the available CPUs.
+Also, all the heavy numerical processing is carried out by the highly optimized functions in NumPy_.
 
- The **nonadiabaticCoupling** package relies on *QMWorks* to run the Quantum mechanical simulations using the [CP2K](https://www.cp2k.org/) package.  Also, the [noodles](library) is used  to schedule expensive numerical computations that are required to calculate the nonadiabatic coupling matrix.
+ The **nonadiabaticCoupling** package relies on *QMWorks* to run the Quantum mechanical simulations using the [CP2K](https://www.cp2k.org/) package.  Also, the noodles_ is used
+ to schedule expensive numerical computations that are required to calculate the nonadiabatic coupling matrix.
 
 
+.. _OpenMP: https://www.openmp.org/
+.. _libint2: https://github.com/evaleev/libint/wiki
 .. _HDF5: http://www.h5py.org/
 .. _PYXAID: https://www.acsu.buffalo.edu/~alexeyak/pyxaid/overview.html
 .. _Cython: http://cython.org
 .. _multiprocessing: https://docs.python.org/3.6/library/multiprocessing.html
 .. _NumPy: http://www.numpy.org
+.. _noodles: http://nlesc.github.io/noodles/

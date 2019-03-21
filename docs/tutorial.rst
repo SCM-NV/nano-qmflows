@@ -15,7 +15,7 @@ This workflow computes the derivative coupling matrix for a given molecular syst
 a set of files in PYXAID_ format. The input is described in YAML_ format as showed in the
 following example:
 
-.. literalinclude:: ../test/test_files/input_test_derivative_couplings.yml
+.. literalinclude:: ../test/test_files/input_fast_test_derivative_couplings.yml
     :linenos:
 
 The `workflow` keyword in lines 1-2 described the name of the workflow to run, while in lines 3-4 the index
@@ -36,6 +36,14 @@ CP2K requires the explicit declaration of the basis set together with the name o
    variable either a number, a list or a list or list. A single number represent a cubic box, while a list
    represent a parallelepiped and finally a list of list contains the ABC vectors describing the unit cell.
    Alternatively, you can pass the angles of the cell using the cell_angles variable.
+
+Derivative coupling calculation
+-------------------------------
+This other workflow compute the oscillator strenghts for different snapshots in a MD trajectory.
+
+.. literalinclude:: ../test/test_files/input_test_absorption_spectrum.yml
+    :linenos:
+
 
 Restarting a Job
 ----------------

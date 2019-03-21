@@ -3,22 +3,35 @@ workflow:
 
 project_name:
   ethylene
-dt:
-  1
+
+# Step of the MD (Femtoseconds)  
+dt: 1
+
+# Algorithm to compute the derivative couplings
 algorithm:
   "levine"
+
+# Track crossing between orbitals
 tracking:
   True
+
+# Occupied and Virtual orbitals to compute the couplings  
 active_space:
   [4, 4]
-  
+
+# Path to the file to store all the intermediate tensors  
 path_hdf5:
   "test/test_files/ethylene.hdf5"
+
+# MD trajectory
 path_traj_xyz:
   "test/test_files/ethylene_couplings.xyz" 
+
+# Path where all the temporal files are store
 scratch_path:
   "/tmp/namd/fast_derivative_couplings"
 
+# CP2K Configuration
 cp2k_general_settings:  
   path_basis: "test/test_files"
   potential: "GTH-PBE"
@@ -26,11 +39,13 @@ cp2k_general_settings:
   cell_parameters: 10.0
   cell_angles: [90.0, 90.0, 90.0]
   periodic: none
-  
+
+  # Configuration to compute the molecular orbitals
   cp2k_settings_main:
     specific:
       template: pbe_main
 
+  # Configuration to compute an initial guess of the wave function
   cp2k_settings_guess:
      specific:
       template:
