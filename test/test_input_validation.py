@@ -43,22 +43,10 @@ def test_call_cp2k_pbe():
         remove_files()
 
 
-@pytest.mark.skipif(
-    not cp2k_available(), reason="CP2K is not install or not loaded")
-def test_call_cp2k_pbe0():
-    """
-    Check if the input for a PBE0 cp2k job is valid
-    """
-    try:
-        results = run_plams("test/test_files/input_test_pbe0.yml")
-        assert (results is not None)
-
-    finally:
-        remove_files()
-
-
 def run_plams(path_input):
-    """ """
+    """
+    Call Plams to run a CP2K job
+    """
     dict_input = process_input(path_input, "derivative_couplings")
     sett = dict_input['cp2k_general_settings']['cp2k_settings_guess']
     job = cp2k(sett, plams.Molecule("test/test_files/C.xyz"))
