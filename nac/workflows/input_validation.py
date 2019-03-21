@@ -208,7 +208,7 @@ def add_restart_point(general: dict) -> None:
     add a restart file if the user provided it
     """
     guess = general['cp2k_settings_guess']
-    wfn = guess['wfn_restart_file_name']
+    wfn = general['wfn_restart_file_name']
     if wfn is not None and wfn:
         dft = guess.specific.cp2k.force_eval.dft
         dft.wfn_restart_file_name = wfn
