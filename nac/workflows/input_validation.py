@@ -42,12 +42,11 @@ def process_input(input_file: str, workflow_name: str) -> Dict:
 
     try:
         d = schema.validate(dict_input)
-
         return DictConfig(create_settings(d))
 
     except SchemaError as e:
-        msg = "There was an error in the input provided:\n{}".format(e)
-        raise RuntimeError(msg)
+        msg = "There was an error in the input yaml provided:\n{}".format(e)
+        print(msg)
 
 
 def create_settings(d: Dict) -> Dict:

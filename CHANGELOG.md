@@ -9,6 +9,7 @@
  * A new variable called ``aux_fix`` has been introduced to change the quality of the auxiliar basis set
    for hybrid calculation. The possible values are: "low", "medium", "good", "verygood" and "excellent".
    The default value is: verygood.
+ * Return a ``input_parameters.yml`` file containing the input after all the preprocessing steps.
 
 ## Change
 
