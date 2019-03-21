@@ -54,8 +54,7 @@ def test_call_cp2k_pbe0():
         assert (results is not None)
 
     finally:
-        pass
-        # remove_files()
+        remove_files()
 
 
 def run_plams(path_input):

@@ -7,6 +7,7 @@ from nac.common import DictConfig
 from os.path import join
 from scm.plams import Molecule
 from qmflows.settings import Settings
+from qmflows.utils import settings2Dict
 from schema import SchemaError
 from typing import Dict
 import logging
@@ -65,7 +66,11 @@ def create_settings(d: Dict) -> Dict:
 
     apply_templates(general, d['path_traj_xyz'])
 
-    return add_missing_keywords(d)
+    input_parameters = add_missing_keywords(d)
+
+    print_final_input(input_parameters)
+
+    return input_parameters
 
 
 def apply_templates(general: Dict, path_traj_xyz: str) -> None:
@@ -243,3 +248,29 @@ def compute_HOMO_index(path_traj_xyz: str, basis: str, charge: int) -> int:
         raise RuntimeError("Unpair number of electrons detected when computing the HOMO")
 
     return number_of_electrons // 2
+
+
+def recursive_traverse(val):
+    """
+    Check if the value of a key is a Settings instance a transform it to plain dict.
+    """
+    if isinstance(val, dict):
+        if isinstance(val, Settings):
+            return settings2Dict(val)
+        else:
+            return {k: recursive_traverse(v) for k, v in val.items()}
+    else:
+        return val
+
+
+def print_final_input(d: dict) -> None:
+    """
+    Print the input after post-processing
+    """
+    xs = d.copy()
+
+    for k, v in d.items():
+        xs[k] = recursive_traverse(v)
+
+    with open("input_parameters.yml", "w") as f:
+        yaml.dump(xs, f, indent=4)
