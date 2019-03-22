@@ -47,10 +47,6 @@ def initialize(config: dict) -> dict:
     if not os.path.exists(scratch_path):
         os.makedirs(scratch_path)
 
-    # Cp2k configuration files
-    config['package_config'] = {
-        "basis": pkg_resources.resource_filename("nac", "basis/BASIS_MOLOPT")}
-
     # HDF5 path
     path_hdf5 = config["path_hdf5"]
     if path_hdf5 is None:
@@ -91,7 +87,7 @@ def save_basis_to_hdf5(config: dict, package_name: str = "cp2k") -> None:
     with h5py.File(config["path_hdf5"]) as f5:
         if basis_location not in f5:
             # Search Path to the file containing the basis set
-            path_basis = config["cp2k_general_settings"]["path_basis"]
+            path_basis = pkg_resources.resource_filename("nac", "basis/BASIS_MOLOPT")
             keyBasis = InputKey("basis", [path_basis])
             cp2k2hdf5(f5, [keyBasis])
 
