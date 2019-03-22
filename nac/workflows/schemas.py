@@ -51,7 +51,7 @@ schema_cp2k_general_settings = Schema({
     Optional("cell_angles", default=[90, 90, 90]): list,
 
     # Path to the folder containing the basis set specifications
-    Optional("path_basis", default=pkg.resource_filename("nac", "basis")): str,
+    Optional("path_basis", default=pkg.resource_filename("nac", "basis")): os.path.isdir,
 
     # Settings describing the input of the quantum package
     "cp2k_settings_main": object,
