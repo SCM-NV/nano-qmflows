@@ -149,6 +149,7 @@ schema_job_scheduler = Schema({
     Optional("tasks", default=1): int,
     Optional("wall_time", default="01:00:00"): str,
     Optional("job_name", default="namd"): str,
+    Optional("queue_name", default="short"): str,
     Optional("load_modules", default=""): str
 })
 

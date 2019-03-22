@@ -193,10 +193,11 @@ def format_slurm_parameters(slurm):
     nodes = sbatch('N', slurm["nodes"])
     tasks = sbatch('n', slurm["tasks"])
     name = sbatch('J',  slurm["job_name"])
+    queue = sbatch ('p', slurm["queue_name"])
 
     modules = slurm["load_modules"]
 
-    return ''.join([header, time, nodes, tasks, name, modules])
+    return ''.join([header, time, nodes, tasks, name, queue, modules])
 
 
 def compute_number_of_geometries(file_name):
