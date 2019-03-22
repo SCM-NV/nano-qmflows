@@ -88,6 +88,9 @@ cp2k:
           screening:
             eps_schwarz: 1.0E-6
             screen_on_initial_p: "True"
+          interaction_potential:
+            potential_type: "truncated" 
+            cutoff_radius: 2.5 
           memory:
             max_memory: 5000
             eps_storage_scaling: "0.1"
@@ -113,9 +116,6 @@ cp2k:
        auxiliary_density_matrix_method:
          method: "basis_projection"
          admm_purification_method: "none"
-       poisson:
-         periodic: "None"
-         psolver: "MT"
        qs:
          method: "gpw"
          eps_pgf_orb: "1.0E-8"
@@ -129,6 +129,9 @@ cp2k:
            screening:
              eps_schwarz: 1.0E-6
              screen_on_initial_p: "True"
+           interaction_potential:
+             potential_type: "truncated" 
+             cutoff_radius: 2.5 
            memory:
              max_memory: "5000"
              eps_storage_scaling: "0.1"
