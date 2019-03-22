@@ -29,7 +29,6 @@ def initialize(config: dict) -> dict:
     Initialize all the data required to schedule the workflows associated with
     the nonadaibatic coupling
     """
-    cp2k_general_settings = config["cp2k_general_settings"]
     project_name = config["project_name"]
 
     # Start logging event
@@ -49,8 +48,8 @@ def initialize(config: dict) -> dict:
         os.makedirs(scratch_path)
 
     # Cp2k configuration files
-    cp2k_config = {"basis": cp2k_general_settings["path_basis"]}
-    config['package_config'] = cp2k_config
+    config['package_config'] = {
+        "basis": pkg_resources.resource_filename("nac", "basis/BASIS_MOLOPT")}
 
     # HDF5 path
     path_hdf5 = config["path_hdf5"]
