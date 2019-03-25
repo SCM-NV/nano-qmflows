@@ -29,7 +29,6 @@ def initialize(config: dict) -> dict:
     Initialize all the data required to schedule the workflows associated with
     the nonadaibatic coupling
     """
-    cp2k_general_settings = config["cp2k_general_settings"]
     project_name = config["project_name"]
 
     # Start logging event
@@ -47,10 +46,6 @@ def initialize(config: dict) -> dict:
     # If the directory does not exist create it
     if not os.path.exists(scratch_path):
         os.makedirs(scratch_path)
-
-    # Cp2k configuration files
-    cp2k_config = {"basis": cp2k_general_settings["path_basis"]}
-    config['package_config'] = cp2k_config
 
     # HDF5 path
     path_hdf5 = config["path_hdf5"]
@@ -92,7 +87,7 @@ def save_basis_to_hdf5(config: dict, package_name: str = "cp2k") -> None:
     with h5py.File(config["path_hdf5"]) as f5:
         if basis_location not in f5:
             # Search Path to the file containing the basis set
-            path_basis = config["cp2k_general_settings"]["path_basis"]
+            path_basis = pkg_resources.resource_filename("nac", "basis/BASIS_MOLOPT")
             keyBasis = InputKey("basis", [path_basis])
             cp2k2hdf5(f5, [keyBasis])
 

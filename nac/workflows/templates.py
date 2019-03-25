@@ -3,6 +3,8 @@ __all__ = ["create_settings_from_template"]
 
 from scm.plams import Molecule
 from qmflows.settings import Settings
+from os.path import join
+import os 
 import json
 import pkg_resources as pkg
 import yaml
@@ -183,7 +185,10 @@ def create_settings_from_template(
     kinds = generate_kinds(elements, general['basis'], general['potential'])
 
     if 'pbe0' in template_name:
-        return generate_auxiliar_basis(setts + kinds, general['basis'], general['aux_fit'])
+        s = Settings()
+        s.cp2k.force_eval.dft.xc.hf.interaction_potential.t_c_g_data = os.path.abspath(
+              join(general['path_basis'], "t_c_g.dat"))
+        return generate_auxiliar_basis(setts + s + kinds , general['basis'], general['aux_fit'])
     else:
         return setts + kinds
 
