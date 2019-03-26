@@ -61,11 +61,11 @@ schema_cp2k_general_settings = Schema({
     "cp2k_settings_guess": object,
 
     # Restart File Name
-    Optional("wfn_restart_file_name", default=None): str,
+    Optional("wfn_restart_file_name", default=None): Or(str, None),
 
     # File containing the Parameters of the cell if those
     # parameters change during the MD simulation.
-    Optional("file_cell_parameters", default=None): str,
+    Optional("file_cell_parameters", default=None): Or(str, None),
 
     # Quality of the auxiliar basis cFIT
     Optional("aux_fit", default="verygood"): And(
@@ -80,6 +80,9 @@ dict_general_options = {
 
     # Index of the HOMO
     Optional("nHOMO"): int,
+
+    # Index of the orbitals to compute the couplings
+    Optional("mo_index_range"): tuple,
 
     # "default quantum package used"
     Optional("package_name", default="cp2k"): str,
