@@ -34,7 +34,7 @@ install:
   - source activate namd
   - conda install -c conda-forge cython eigen h5py highfive libint pybind11 rdkit
 
-  - pip install "git+https://github.com/SCM-NV/PLAMS@96e8f34e16595d68fe9594e51131c1c548d84eee#egg=plams-1.2"
+  - pip install "git+https://github.com/SCM-NV/PLAMS@9caac2ef34b908cbd4ba6ceeb7eeeb5b4a22547d#egg=plams-1.2"
   - pip install "git+https://github.com/SCM-NV/qmflows@master#egg=qmflows"
   - pip install .[test] -v
   
