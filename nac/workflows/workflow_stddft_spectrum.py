@@ -1,7 +1,7 @@
 __all__ = ['workflow_stddft']
 
 from nac.common import (
-    DictConfig, change_mol_units, h2ev, hardness, retrieve_hdf5_data,
+    DictConfig, angs2au, change_mol_units, h2ev, hardness, retrieve_hdf5_data,
     search_data_in_hdf5, store_arrays_in_hdf5, xc)
 from nac.integrals.multipole_matrices import get_multipole_matrix
 from nac.integrals.spherical_Cartesian_cgf import (calc_orbital_Slabels, read_basis_format)
@@ -64,8 +64,14 @@ def compute_excited_states_tddft(config: dict, path_MOs: list, dict_input: dict)
     nvirt = config.active_space[1]
     dict_input.update({"energy": energy, "c_ao": c_ao, "nocc": nocc, "nvirt": nvirt})
 
+    # Pass the molecule in Angstrom to the libint calculator
+    copy_dict = DictConfig(dict_input.copy())
+    copy_dict["mol"] = change_mol_units(dict_input["mol"], factor=1/angs2au)
+
+    # compute the multipoles if they are not stored
+    multipoles = get_multipole_matrix(config, copy_dict, 'dipole')
+
     # read data from the HDF5 or calculate it on the fly
-    multipoles = get_multipole_matrix(config, dict_input, 'dipole')
     dict_input["overlap"] = multipoles[0]
 
     # retrieve or compute the omega xia values
