@@ -4,7 +4,7 @@ __all__ = ["create_settings_from_template"]
 from scm.plams import Molecule
 from qmflows.settings import Settings
 from os.path import join
-import os 
+import os
 import json
 import pkg_resources as pkg
 import yaml
@@ -91,8 +91,8 @@ cp2k:
             eps_schwarz: 1.0E-6
             screen_on_initial_p: "True"
           interaction_potential:
-            potential_type: "truncated" 
-            cutoff_radius: 2.5 
+            potential_type: "truncated"
+            cutoff_radius: 2.5
           memory:
             max_memory: 5000
             eps_storage_scaling: "0.1"
@@ -188,7 +188,7 @@ def create_settings_from_template(
         s = Settings()
         s.cp2k.force_eval.dft.xc.hf.interaction_potential.t_c_g_data = os.path.abspath(
               join(general['path_basis'], "t_c_g.dat"))
-        return generate_auxiliar_basis(setts + s + kinds , general['basis'], general['aux_fit'])
+        return generate_auxiliar_basis(setts + s + kinds, general['basis'], general['aux_fit'])
     else:
         return setts + kinds
 
