@@ -308,10 +308,6 @@ def calculate_overlap(config: dict, mo_paths_hdf5: list) -> list:
             molecules = tuple(map(lambda idx: parse_string_xyz(geometries[idx]),
                                   [i, i + 1]))
 
-        # If units are Angtrom convert then to a.u.
-        if 'angstrom' == config.geometry_units.lower():
-            molecules = tuple(map(change_mol_units, molecules))
-
         # Compute the coupling
         dict_input['molecules'] = molecules
         overlaps = schedule_overlaps(config, dict_input, mo_paths_hdf5)

@@ -108,7 +108,7 @@ class BuildExt(build_ext):
 
 setup(
     name='qmflows-namd',
-    version='0.7.1',
+    version='0.8.0',
     description='Derivative coupling calculation',
     license='Apache-2.0',
     url='https://github.com/SCM-NV/qmflows-namd',

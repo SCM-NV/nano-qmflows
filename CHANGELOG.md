@@ -1,5 +1,12 @@
 # Change Log
 
+# 0.8.0
+
+### Fixed
+
+* Passed to libint2 the Cartesian coordinates in Angstrom instead *atomic units*.
+
+
 # 0.7.0
 
 ### New
