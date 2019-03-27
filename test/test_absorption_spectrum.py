@@ -2,12 +2,11 @@ from nac.common import retrieve_hdf5_data
 from nac.workflows.input_validation import process_input
 from nac.workflows import workflow_stddft
 from os.path import join
-from .utilsTest import copy_basis_and_orbitals
+from .utilsTest import remove_files, copy_basis_and_orbitals
 
 import numpy as np
 import pkg_resources as pkg
 import os
-import shutil
 import tempfile
 
 
@@ -21,7 +20,7 @@ project_name = 'Cd'
 input_file = join(root, 'test/test_files/input_test_absorption_spectrum.yml')
 
 
-def test_compute_oscillators():
+def test_compute_oscillators(tmp_path):
     """
     Compute the oscillator strenght and check the results.
     """
@@ -38,9 +37,7 @@ def test_compute_oscillators():
         check_properties(path_test_hdf5)
 
     finally:
-        pass
-    #     # remove tmp data and clean global config
-    #     shutil.rmtree(scratch_path)
+        remove_files()
 
 
 def calculate_oscillators(path_test_hdf5, scratch_path):
