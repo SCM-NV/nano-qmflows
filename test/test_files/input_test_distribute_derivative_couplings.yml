@@ -25,8 +25,8 @@ cp2k_general_settings:
   path_basis: "test/test_files"
   potential: "GTH-PBE"
   cell_parameters: 28.0
-  cell_angles: [90.0, 90.0, 90.0]
-  periodic: xyz
+  file_cell_parameters: "test/test_files/file_distribute_cell_parameters.txt"
+  periodic: none
 
   cp2k_settings_main:
     specific:

@@ -132,8 +132,8 @@ cp2k:
              eps_schwarz: 1.0E-6
              screen_on_initial_p: "True"
            interaction_potential:
-             potential_type: "truncated" 
-             cutoff_radius: 2.5 
+             potential_type: "truncated"
+             cutoff_radius: 2.5
            memory:
              max_memory: "5000"
              eps_storage_scaling: "0.1"

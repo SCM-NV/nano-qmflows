@@ -7,6 +7,7 @@ from os.path import join
 from qmflows.utils import settings2Dict
 
 import argparse
+import numpy as np
 import os
 import shutil
 import subprocess
@@ -77,8 +78,12 @@ def distribute_computations(config: dict, hamiltonians=False) -> None:
         config.path_traj_xyz, config.blocks, config.workdir)
     chunks_trajectory.sort()
 
+    file_cell_parameters = config.cp2k_general_settings.get("file_cell_parameters")
+    if file_cell_parameters is not None:
+        header_array_cell_parameters = read_cell_parameters_as_array(file_cell_parameters)
+
     for index, file_xyz in enumerate(chunks_trajectory):
-        folder_path = join(config.workdir, 'chunk_{}'.format(index))
+        folder_path = os.path.abspath(join(config.workdir, 'chunk_{}'.format(index)))
 
         dict_input = DictConfig({
             'folder_path': folder_path, "file_xyz": file_xyz, 'index': index})
@@ -89,6 +94,9 @@ def distribute_computations(config: dict, hamiltonians=False) -> None:
 
         # Change hdf5 and trajectory path of each batch
         config["path_traj_xyz"] = file_xyz
+
+        if file_cell_parameters is not None:
+            add_chunk_cell_parameters(header_array_cell_parameters, config, dict_input)
 
         # files with PYXAID
         if hamiltonians:
@@ -193,7 +201,7 @@ def format_slurm_parameters(slurm):
     nodes = sbatch('N', slurm["nodes"])
     tasks = sbatch('n', slurm["tasks"])
     name = sbatch('J',  slurm["job_name"])
-    queue = sbatch ('p', slurm["queue_name"])
+    queue = sbatch('p', slurm["queue_name"])
 
     modules = slurm["load_modules"]
 
@@ -214,6 +222,46 @@ def compute_number_of_geometries(file_name):
     lines_per_geometry = numat + 2
 
     return int(wc) // lines_per_geometry
+
+
+def read_cell_parameters_as_array(file_cell_parameters: str) -> tuple:
+    """
+    Read the cell parameters as a numpy array
+    """
+    arr = np.loadtxt(file_cell_parameters, skiprows=1)
+
+    with open(file_cell_parameters, 'r') as f:
+        header = f.readline()
+
+    return header, arr
+
+
+def add_chunk_cell_parameters(
+        header_array_cell_parameters: tuple, config: dict, dict_input: dict) -> None:
+    """
+    Add the corresponding set of cell parameters for a given chunk
+    """
+    path_file_cell_parameters = join(dict_input.folder_path, "cell_parameters.txt")
+
+    # Adjust settings
+    config.cp2k_general_settings["file_cell_parameters"] = path_file_cell_parameters
+
+    # extract cell parameters for a chunk
+    header, arr = header_array_cell_parameters
+    size = arr.shape[0] // config.blocks
+    low = dict_input.index * size
+    high = low + size
+    if high < arr.shape[0]:
+        matrix_cell_parameters = arr[low:high, :]
+    else:
+        matrix_cell_parameters = arr[low:, :]
+
+    # adjust indices of the cell parameters
+    size = matrix_cell_parameters.shape[0]
+    matrix_cell_parameters[:, 0] = np.arange(size)
+    # Save file
+    fmt = '%d %.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f'
+    np.savetxt(path_file_cell_parameters, matrix_cell_parameters, header=header, fmt=fmt)
 
 
 if __name__ == "__main__":
