@@ -1,0 +1,26 @@
+workflow:
+  single_points
+project_name: pbe_C
+
+active_space: [2, 2]
+path_hdf5: "test/test_files/ethylene.hdf5"
+path_traj_xyz: "test/test_files/ethylene.xyz"
+scratch_path: "/tmp/namd"
+
+
+cp2k_general_settings:
+  basis:  "DZVP-MOLOPT-SR-GTH"
+  path_basis: "test/test_files"
+  potential: "GTH-PBE"
+  cell_parameters: 5.0
+  periodic: none
+  file_cell_parameters: "test/test_files/file_cell_parameters.txt"
+
+  cp2k_settings_main:
+    specific:
+      template: pbe_main
+
+  cp2k_settings_guess:
+    specific:
+      template:
+        pbe_guess
