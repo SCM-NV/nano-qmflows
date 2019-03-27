@@ -1,7 +1,7 @@
 from .schemas import (
     schema_absorption_spectrum, schema_derivative_couplings,
-    schema_distribute_derivative_couplings, schema_distribute_absorption_spectrum,
-    schema_cp2k_general_settings)
+    schema_distribute_absorption_spectrum, schema_distribute_derivative_couplings,
+    schema_distribute_single_points, schema_cp2k_general_settings, schema_single_points)
 from .templates import (create_settings_from_template, valence_electrons)
 from nac.common import DictConfig
 from os.path import join
@@ -11,7 +11,6 @@ from qmflows.utils import settings2Dict
 from schema import SchemaError
 from typing import Dict
 import logging
-import numpy as np
 import os
 import yaml
 
@@ -21,9 +20,12 @@ logger = logging.getLogger(__name__)
 schema_workflows = {
     'absorption_spectrum': schema_absorption_spectrum,
     'derivative_couplings': schema_derivative_couplings,
+    'single_points': schema_single_points,
     'cp2k_general_settings': schema_cp2k_general_settings,
     'distribute_derivative_couplings': schema_distribute_derivative_couplings,
-    'distribute_absorption_spectrum': schema_distribute_absorption_spectrum}
+    'distribute_absorption_spectrum': schema_distribute_absorption_spectrum,
+    'distribute_single_points': schema_distribute_single_points
+}
 
 
 def process_input(input_file: str, workflow_name: str) -> Dict:

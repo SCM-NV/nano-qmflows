@@ -1,20 +1,8 @@
+from .utilsTest import (cp2k_available, remove_files)
 from nac.workflows.input_validation import process_input
 from qmflows import (cp2k, run)
 from scm import plams
-from distutils.spawn import find_executable
 import pytest
-import fnmatch
-import shutil
-import os
-
-
-def cp2k_available():
-    """
-    Check if cp2k is installed
-    """
-    path = find_executable("cp2k.popt")
-
-    return path is not None
 
 
 def test_input_validation():
@@ -54,11 +42,3 @@ def run_plams(path_input):
     print("sett: ", sett)
 
     return run(job.energy)
-
-
-def remove_files():
-    """ Remove tmp files in cwd """
-    for path in fnmatch.filter(os.listdir('.'), "plams_workdir"):
-        shutil.rmtree(path)
-    if os.path.exists("cache.db"):
-        os.remove("cache.db")

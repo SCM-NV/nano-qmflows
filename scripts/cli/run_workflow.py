@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 
 from nac.workflows.input_validation import process_input
-from nac.workflows import (workflow_stddft, workflow_derivative_couplings)
+from nac.workflows import (
+    workflow_derivative_couplings, workflow_single_points, workflow_stddft)
 import argparse
 import yaml
 
@@ -13,7 +14,8 @@ parser.add_argument('-i', required=True,
 
 
 dict_workflows = {'absorption_spectrum': workflow_stddft,
-                  'derivative_couplings': workflow_derivative_couplings}
+                  'derivative_couplings': workflow_derivative_couplings,
+                  'single_points': workflow_single_points}
 
 
 def main():
