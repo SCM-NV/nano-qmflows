@@ -1,5 +1,5 @@
 from .utilsTest import (cp2k_available, remove_files)
-from nac.common import search_data_in_hdf5
+from nac.common import is_data_in_hdf5
 from nac.workflows.input_validation import process_input
 from nac.workflows.workflow_single_points import workflow_single_points
 from os.path import join
@@ -43,4 +43,4 @@ def check_orbitals(orbitals: list, path_hdf5: str) -> None:
     """
     Check that the orbitals are stored in the HDF5
     """
-    assert search_data_in_hdf5(path_hdf5, orbitals)
+    assert is_data_in_hdf5(path_hdf5, orbitals)

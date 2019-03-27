@@ -14,7 +14,7 @@ import shutil
 
 # ==================> Internal modules <==========
 from nac.schedule.scheduleCp2k import prepare_job_cp2k
-from nac.common import search_data_in_hdf5
+from nac.common import is_data_in_hdf5
 from qmflows.hdf5 import dump_to_hdf5
 from qmflows.utils import chunksOf
 from qmflows.warnings_qmflows import SCF_Convergence_Warning
@@ -73,7 +73,7 @@ def calculate_mos(config: dict) -> list:
 
         # If the MOs are already store in the HDF5 format return the path
         # to them and skip the calculation
-        if search_data_in_hdf5(config.path_hdf5, dict_input["node_paths"]):
+        if is_data_in_hdf5(config.path_hdf5, dict_input["node_paths"]):
             logger.info("point_{} has already been calculated".format(k))
             orbitals.append(dict_input["node_paths"])
         else:

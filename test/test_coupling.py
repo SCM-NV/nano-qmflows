@@ -1,4 +1,4 @@
-from nac.common import (search_data_in_hdf5, retrieve_hdf5_data)
+from nac.common import (is_data_in_hdf5, retrieve_hdf5_data)
 from nac.workflows.input_validation import process_input
 from nac.workflows.workflow_coupling import workflow_derivative_couplings
 from os.path import join
@@ -47,8 +47,8 @@ def check_couplings(config: dict, tmp_hdf5: str) -> None:
     couplings = create_paths('coupling')
 
     # Check that couplings and overlaps exists
-    assert search_data_in_hdf5(tmp_hdf5, overlaps)
-    assert search_data_in_hdf5(tmp_hdf5, couplings)
+    assert is_data_in_hdf5(tmp_hdf5, overlaps)
+    assert is_data_in_hdf5(tmp_hdf5, couplings)
 
     # All the elements are different of inifinity or nan
     tensor_couplings = np.stack(retrieve_hdf5_data(tmp_hdf5, couplings))

@@ -2,7 +2,7 @@ __all__ = ['workflow_stddft']
 
 from nac.common import (
     DictConfig, angs2au, change_mol_units, h2ev, hardness, retrieve_hdf5_data,
-    search_data_in_hdf5, store_arrays_in_hdf5, xc)
+    is_data_in_hdf5, store_arrays_in_hdf5, xc)
 from nac.integrals.multipole_matrices import get_multipole_matrix
 from nac.integrals.spherical_Cartesian_cgf import (calc_orbital_Slabels, read_basis_format)
 from nac.schedule.components import calculate_mos
@@ -101,7 +101,7 @@ def get_omega_xia(config: dict, dict_input: dict):
     root = join(config.project_name, 'omega_xia', tddft, 'point_{}'.format(dict_input.i))
     paths_omega_xia = [join(root, x) for x in ("omega", "xia")]
 
-    if search_data_in_hdf5(config.path_hdf5, paths_omega_xia):
+    if is_data_in_hdf5(config.path_hdf5, paths_omega_xia):
         return tuple(retrieve_hdf5_data(config.path_hdf5, paths_omega_xia))
     else:
         omega, xia = compute_omega_xia()

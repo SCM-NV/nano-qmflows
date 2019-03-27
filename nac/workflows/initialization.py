@@ -1,7 +1,7 @@
 __all__ = ['initialize', 'read_swaps', 'split_trajectory']
 
 from nac.common import (
-    InputKey, Matrix, change_mol_units, retrieve_hdf5_data, search_data_in_hdf5)
+    InputKey, Matrix, change_mol_units, retrieve_hdf5_data, is_data_in_hdf5)
 from nac.schedule.components import (
     create_point_folder, split_file_geometries)
 from os.path import join
@@ -115,7 +115,7 @@ def read_swaps(path_hdf5: str, project_name: str) -> Matrix:
     Read the crossing tracking for the Molecular orbital
     """
     path_swaps = join(project_name, 'swaps')
-    if search_data_in_hdf5(path_hdf5, path_swaps):
+    if is_data_in_hdf5(path_hdf5, path_swaps):
         return retrieve_hdf5_data(path_hdf5, path_swaps)
     else:
         msg = """There is not a tracking file called: {}

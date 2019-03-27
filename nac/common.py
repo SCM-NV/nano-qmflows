@@ -2,7 +2,7 @@
 __all__ = ['Array', 'AtomBasisData', 'AtomBasisKey', 'AtomData', 'AtomXYZ',
            'CGF', 'DictConfig', 'InfoMO', 'InputKey', 'Matrix', 'MO', 'Tensor3D', 'Vector',
            'change_mol_units', 'getmass', 'h2ev', 'hardness', 'retrieve_hdf5_data',
-           'search_data_in_hdf5', 'store_arrays_in_hdf5']
+           'is_data_in_hdf5', 'store_arrays_in_hdf5']
 
 
 from collections import namedtuple
@@ -131,7 +131,7 @@ def retrieve_hdf5_data(path_hdf5, paths_to_prop):
         raise RuntimeError(msg)
 
 
-def search_data_in_hdf5(path_hdf5, xs):
+def is_data_in_hdf5(path_hdf5, xs):
     """
     Search if the node exists in the HDF5 file.
     """

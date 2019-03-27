@@ -1,6 +1,6 @@
 from compute_integrals import compute_integrals_multipole
 from nac.common import (
-    Matrix, retrieve_hdf5_data, search_data_in_hdf5,
+    Matrix, retrieve_hdf5_data, is_data_in_hdf5,
     store_arrays_in_hdf5, tuplesXYZ_to_plams)
 from os.path import join
 import os
@@ -27,7 +27,7 @@ def search_multipole_in_hdf5(path_hdf5: str, path_multipole_hdf5: str, multipole
     """
     Search if the multipole is already store in the HDFt
     """
-    if search_data_in_hdf5(path_hdf5, path_multipole_hdf5):
+    if is_data_in_hdf5(path_hdf5, path_multipole_hdf5):
         print("retrieving multipole: {} from the hdf5".format(multipole))
         return retrieve_hdf5_data(path_hdf5, path_multipole_hdf5)
     else:

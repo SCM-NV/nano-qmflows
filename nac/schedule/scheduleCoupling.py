@@ -13,8 +13,8 @@ from nac.integrals import (
     compute_overlaps_for_coupling, correct_phases)
 from nac.common import (
     Matrix, Vector, Tensor3D,
-    change_mol_units, femtosec2au, retrieve_hdf5_data,
-    search_data_in_hdf5, store_arrays_in_hdf5)
+    femtosec2au, retrieve_hdf5_data,
+    is_data_in_hdf5, store_arrays_in_hdf5)
 from qmflows.parsers import parse_string_xyz
 from noodles import (gather, schedule)
 
@@ -92,7 +92,7 @@ def compute_the_fixed_phase_overlaps(
     path_swaps = join(project_name, 'swaps')
 
     # Compute the corrected overlaps if not avaialable in the HDF5
-    if not search_data_in_hdf5(path_hdf5, paths_corrected_overlaps[0]):
+    if not is_data_in_hdf5(path_hdf5, paths_corrected_overlaps[0]):
 
         # Compute the dimension of the coupling matrix
         mtx_0 = retrieve_hdf5_data(path_hdf5, paths_overlaps[0])
@@ -146,7 +146,7 @@ def calculate_couplings(config: dict, i: int, fixed_phase_overlaps: Tensor3D) ->
     path = join(config.project_name, 'coupling_{}'.format(k))
 
     # Skip the computation if the coupling is already done
-    if search_data_in_hdf5(config.path_hdf5, path):
+    if is_data_in_hdf5(config.path_hdf5, path):
         logger.info("Coupling: {} has already been calculated".format(path))
         return path
     else:
@@ -349,7 +349,7 @@ def lazy_overlaps(config: dict, dict_input: dict, mo_paths_hdf5) -> str:
     overlaps_paths_hdf5 = join(root, 'mtx_sji_t0')
 
     # If the Overlaps are not in the HDF5 file compute them
-    if search_data_in_hdf5(config.path_hdf5, overlaps_paths_hdf5):
+    if is_data_in_hdf5(config.path_hdf5, overlaps_paths_hdf5):
         logger.info("{} Overlaps are already in the HDF5".format(root))
     else:
         # Read the Molecular orbitals from the HDF5
