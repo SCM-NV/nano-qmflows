@@ -1,3 +1,4 @@
+from pathlib import Path
 from subprocess import (PIPE, Popen)
 import fnmatch
 import shutil
@@ -34,11 +35,18 @@ def check_scripts():
     Check that the distribution scripts were created correctly
     """
     paths = fnmatch.filter(os.listdir('.'), "chunk*")
-    assert len(paths) == 5
 
+    # Check that the files are created correctly
+    files = ["launch.sh", "chunk_xyz*", "input.yml"]
     for p in paths:
-        xs = fnmatch.filter(os.listdir(p), "*")
-        assert len(xs) == 3
+        p = Path(p)
+        for f in files:
+            try:
+                next(p.glob(f))
+            except StopIteration:
+                msg = "There is not file: {}".format(f)
+                print(msg)
+                raise RuntimeError(msg)
 
 
 def remove_chunk_folder():
