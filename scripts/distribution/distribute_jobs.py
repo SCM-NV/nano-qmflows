@@ -61,7 +61,7 @@ def main():
     # Write scripts to run calculations
     if workflow_type == "distribute_derivative_couplings":
         distribute_computations(dict_input, hamiltonians=True)
-    elif workflow_type == "distribute_absorption_spectrum":
+    else:
         distribute_computations(dict_input)
 
 

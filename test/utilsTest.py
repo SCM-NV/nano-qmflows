@@ -1,5 +1,27 @@
+from distutils.spawn import find_executable
 from os.path import join
 import h5py
+
+import fnmatch
+import shutil
+import os
+
+
+def remove_files():
+    """ Remove tmp files in cwd """
+    for path in fnmatch.filter(os.listdir('.'), "plams_workdir*"):
+        shutil.rmtree(path)
+    if os.path.exists("cache.db"):
+        os.remove("cache.db")
+
+
+def cp2k_available():
+    """
+    Check if cp2k is installed
+    """
+    path = find_executable("cp2k.popt")
+
+    return path is not None
 
 
 def copy_basis_and_orbitals(source, dest, project_name):

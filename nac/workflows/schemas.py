@@ -1,7 +1,8 @@
 __all__ = [
-    'schema_cp2k_general_settings', 'schema_derivative_couplings',
+    'schema_cp2k_general_settings', 'schema_derivative_couplings', 'schema_single_points',
     'schema_distribute_absorption_spectrum',
     'schema_distribute_derivative_couplings',
+    'schema_distribute_single_points',
     'schema_absorption_spectrum']
 
 
@@ -156,11 +157,7 @@ schema_job_scheduler = Schema({
     Optional("load_modules", default=""): str
 })
 
-dict_distribute_derivative_couplings = {
-
-    # Name of the workflow to run
-    "workflow": And(
-        str, Use(str.lower), lambda s: s == "distribute_derivative_couplings"),
+dict_distribute = {
 
     Optional("workdir", default=os.getcwd()): str,
 
@@ -173,12 +170,20 @@ dict_distribute_derivative_couplings = {
     # General settings
     "cp2k_general_settings": schema_cp2k_general_settings,
 
+
+}
+
+dict_distribute_derivative_couplings = {
+
+    # Name of the workflow to run
+    "workflow": And(
+        str, Use(str.lower), lambda s: s == "distribute_derivative_couplings")
 }
 
 
 schema_distribute_derivative_couplings = Schema(
-    merge(dict_merged_derivative_couplings, dict_distribute_derivative_couplings))
-
+    merge(dict_distribute, merge(
+        dict_merged_derivative_couplings, dict_distribute_derivative_couplings)))
 
 dict_absorption_spectrum = {
 
@@ -217,19 +222,34 @@ dict_distribute_absorption_spectrum = {
 
     # Name of the workflow to run
     "workflow": And(
-        str, Use(str.lower), lambda s: s == "distribute_absorption_spectrum"),
+        str, Use(str.lower), lambda s: s == "distribute_absorption_spectrum")
+}
 
-    Optional("workdir", default=os.getcwd()): str,
+schema_distribute_absorption_spectrum = Schema(
+    merge(dict_distribute, merge(
+        dict_merged_absorption_spectrum, dict_distribute_absorption_spectrum)))
 
-    # Number of chunks to split the trajectory
-    "blocks": int,
 
-    # Resource manager configuration
-    "job_scheduler": schema_job_scheduler,
+dict_single_points = {
+    # Name of the workflow to run
+    "workflow": And(
+        str, Use(str.lower), lambda s: s == "single_points"),
 
     # General settings
     "cp2k_general_settings": schema_cp2k_general_settings
 }
 
-schema_distribute_absorption_spectrum = Schema(
-    merge(dict_merged_absorption_spectrum, dict_distribute_absorption_spectrum))
+dict_distribute_single_points = {
+
+    # Name of the workflow to run
+    "workflow": And(
+        str, Use(str.lower), lambda s: s == "distribute_single_points")
+}
+
+dict_merged_single_points = merge(dict_general_options, dict_single_points)
+
+schema_single_points = Schema(dict_merged_single_points)
+
+schema_distribute_single_points = Schema(
+    merge(dict_distribute, merge(
+        dict_merged_single_points, dict_distribute_single_points)))
