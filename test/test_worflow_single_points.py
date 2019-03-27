@@ -36,7 +36,7 @@ def test_single_point(tmp_path):
         print("Unexpected error:", sys.exc_info()[0])
         raise
     finally:
-        remove_files
+        remove_files()
 
 
 def check_orbitals(orbitals: list, path_hdf5: str) -> None:

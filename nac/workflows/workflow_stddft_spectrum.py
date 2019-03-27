@@ -89,14 +89,16 @@ def get_omega_xia(config: dict, dict_input: dict):
     Search for the multipole_matrices, Omega and xia values in the HDF5,
     if they are not available compute and store them.
     """
+    tddft = config.tddft.lower()
+
     def compute_omega_xia():
-        if config.tddft.lower() == 'sing_orb':
+        if tddft == 'sing_orb':
             return compute_sing_orb(dict_input)
         else:
             return compute_std_aproximation(config, dict_input)
 
     # search data in HDF5
-    root = join(config.project_name, 'omega_xia', 'point_{}'.format(dict_input.i))
+    root = join(config.project_name, 'omega_xia', tddft, 'point_{}'.format(dict_input.i))
     paths_omega_xia = [join(root, x) for x in ("omega", "xia")]
 
     if search_data_in_hdf5(config.path_hdf5, paths_omega_xia):
