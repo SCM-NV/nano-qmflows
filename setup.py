@@ -121,16 +121,17 @@ setup(
     classifiers=[
         'License :: OSI Approved :: MIT License',
         'Intended Audience :: Science/Research',
-        'programming language :: python :: 3.6',
+        'programming language :: python :: 3.7',
         'development status :: 4 - Beta',
         'intended audience :: science/research',
         'topic :: scientific/engineering :: chemistry'
     ],
     install_requires=[
-        'numpy', 'h5py', 'noodles==0.3.3', 'pybind11>=2.2.4',
+        'numpy', 'h5py', 'noodles==0.3.3', 'pybind11>=2.2.4', 'plams==1.4'
         'qmflows>=0.3.0', 'pymonad', 'scipy', 'schema', 'pyyaml==5.1'],
     dependency_links=[
-        "https://github.com/SCM-NV/qmflows/tarball/master#egg=qmflows"],
+        "https://github.com/SCM-NV/qmflows/tarball/master#egg=qmflows",
+        "git+https://github.com/SCM-NV/PLAMS@v1.4#egg=plams-1.4"],
     cmdclass={'build_ext': BuildExt},
     ext_modules=[ext_pybind],
     extras_require={
