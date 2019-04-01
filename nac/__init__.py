@@ -1,7 +1,7 @@
 from .analysis import (
     autocorrelate, dephasing, convolute, func_conv, gauss_function,
     parse_list_of_lists, read_couplings, read_energies,
-    read_energies_pyxaid, read_pops_pyxaid, rdf, spectral_density
+    read_energies_pyxaid, read_pops_pyxaid, spectral_density
 )
 
 from .integrals import (
@@ -17,5 +17,5 @@ __all__ = [
     'compute_overlaps_for_coupling', 'convolute', 'dephasing',
     'func_conv', 'gauss_function', 'lazy_couplings',
     'parse_list_of_lists', 'read_couplings', 'read_energies',
-    'read_energies_pyxaid', 'read_pops_pyxaid', 'rdf', 'spectral_density',
+    'read_energies_pyxaid', 'read_pops_pyxaid', 'spectral_density',
     'workflow_derivative_couplings', 'workflow_stddft']

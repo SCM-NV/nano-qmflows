@@ -195,21 +195,11 @@ dict_absorption_spectrum = {
     Optional("tddft", default="stda"): And(
         str, Use(str.lower), lambda s: s in ("sing_orb", "stda", "stdft")),
 
-    # Range of energy in eV to simulate the spectrum"
-    Optional("energy_range", default=[0, 5]): Schema([Real, Real]),
-
     # Interval between MD points where the oscillators are computed"
     Optional("stride",  default=50): int,
 
     # description: Exchange-correlation functional used in the DFT calculations,
-    Optional("xc_dft", default="pbe"): str,
-
-    # mathematical function representing the spectrum,
-    Optional("convolution", default="gaussian"): And(
-        str, Use(str.lower), lambda s: s in ("gaussian", "lorentzian")),
-
-    # thermal broadening in eV
-    Optional("broadening", default=0.1): Real,
+    Optional("xc_dft", default="pbe"): str
 }
 
 
