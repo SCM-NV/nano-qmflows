@@ -32,7 +32,7 @@ install:
   # Install python 3.6 env
   - conda create --name namd python=${PYTHON_VERSION}
   - source activate namd
-  - conda install -c conda-forge/label/gcc7 cython eigen h5py highfive libint pybind11 rdkit
+  - conda install -c conda-forge cython eigen h5py highfive libint pybind11 rdkit
 
   # - pip install "git+https://github.com/SCM-NV/PLAMS@v1.4#egg=plams-1.4"
   - pip install "git+https://github.com/SCM-NV/qmflows@master#egg=qmflows"
