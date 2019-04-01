@@ -4,6 +4,7 @@ from nac.workflows.input_validation import process_input
 from nac.workflows import (
     workflow_derivative_couplings, workflow_single_points, workflow_stddft)
 import argparse
+import os
 import yaml
 
 msg = "namd.py -i input"
@@ -33,6 +34,7 @@ def main():
 
     # run workflow
     function = dict_workflows[workflow_name]
+    print("Running worflow: ", os.path.abspath(input_file))
     function(inp)
 
 
