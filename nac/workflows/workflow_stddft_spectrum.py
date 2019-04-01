@@ -186,6 +186,7 @@ def compute_oscillator_strengths(config: dict, inp: dict):
     :param omega: Omega parameter
     :param multipoles: 3D Tensor with the x,y,z components
     """
+    tddft = config.tddft.lower()
     # 1) Get the inp.energy matrix i->a. Size: Inp.Nocc * Inp.Nvirt
     delta_ia = -np.subtract(
         inp.energy[:inp.nocc].reshape(inp.nocc, 1),
@@ -213,31 +214,15 @@ def compute_oscillator_strengths(config: dict, inp: dict):
         compute_transition_matrix(m) for m in td_matrices)
 
     # 4) Compute the oscillator strength
-    f = 2 / 3 * inp.omega * (d_x ** 2 + d_y ** 2 + d_z ** 2)
+
+    if tddft == 'sing_orb':
+        f = 2 / 3 * inp.omega * (td_matrices[0] ** 2 + td_matrices[1] ** 2 + td_matrices[2] ** 2)
+    else:
+        f = 2 / 3 * inp.omega * (d_x ** 2 + d_y ** 2 + d_z ** 2)
 
     # Write to output
     inp.update({"dipole": (d_x, d_y, d_z), "oscillator": f})
     write_output(config, inp)
-
-
-    # n_lowest = 3
-    # if descriptors:
-    #     print("Reading or computing the quadrupole matrix")
-    #     tqm = get_multipole_matrix(
-    #         inp.i, inp.mol, config, 'quadrupole')
-
-    #     descriptors = ex_descriptor(
-    #         inp.omega, f, inp.xia, n_lowest, inp.c_ao, inp.multipoles, tdm, tqm, inp.nocc,
-    #         inp.nvirt, mol, config)
-    #     path_ex_output = join(
-    #         config.workdir, 'descriptors_{}_{}.txt'.format(inp.i, config.tddft))
-    #     ex_header = '{:^5s}{:^14s}{:^10s}{:^10s}{:^12s}{:^10s}{:^10s}{:^10s}{:^10s}{:^10s}'.format(
-    #         'state', 'd_exc', 'd_exc_app', 'd_he', 'sigma_h', 'sigma_e', 'r_eh', 'bind_en',
-    #         'inp.energy', 'f')
-    #     np.savetxt(
-    #         path_ex_output, descriptors,
-    #         fmt='%5d %10.3f %10.3f %10.3f %10.3f %10.3f %10.3f %10.3f %10.3f %10.3f',
-    #         header=ex_header)
 
 
 def write_output(config: dict, inp: dict):
@@ -245,7 +230,6 @@ def write_output(config: dict, inp: dict):
     Write the results using numpy functionality
     """
     output = write_output_tddft(inp)
-    # inp.nocc, inp.nvirt, inp.omega, f, d_x, d_y, d_z, inp.xia, inp.energy)
 
     path_output = join(config.workdir, 'output_{}_{}.txt'.format(inp.i, config.tddft))
     fmt = '{:^5s}{:^14s}{:^8s}{:^11s}{:^11s}{:^11s}{:^11s}{:<5s}{:^10s}{:<5s}{:^11s}{:^11s}'
@@ -317,21 +301,6 @@ def ex_descriptor(omega, f, xia, n_lowest, c_ao, s, tdm, tqm, nocc, nvirt, mol, 
         d_exc, d_exc_apprx, d_he, sigma_h, sigma_e, r_eh, binding_en_apprx, n_lowest, omega, f)
 
     return descriptors
-
-    # Find the index of the n_lowest excitations
-#    idx = np.argsort(omega[:n_lowest])
-    # Generate NTOs for each excited state
-    # Solve the SVD for each state and store it into a list
-#    xs = []
-#    for i in range(n_lowest):
-#        xs.append(np.linalg.svd(xia_I[:, :, idx[i] ]))
-    # Do some renaming it for clearness
-#    v_ip_I = np.array([xs[i][0] for i in range(n_lowest)])
-#    lamb_p_I = np.array([xs[i][1] for i in range(n_lowest)])
-#    w_ip_I = np.array([xs[i][2] for i in range(n_lowest)])
-    # Compute the NTO participation ratio
-#    pr_nto = np.stack(
-#    ( np.sum(lamb_p_I[i, :] ** 2) ) ** 2 / np.sum(lamb_p_I[i, :] ** 4) for i in range(n_lowest) )
 
 
 def write_output_descriptors(
