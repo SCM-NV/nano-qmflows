@@ -4,6 +4,7 @@ from nac.workflows.input_validation import process_input
 from nac.workflows import (
     workflow_derivative_couplings, workflow_single_points, workflow_stddft)
 import argparse
+
 import os
 import yaml
 
@@ -34,8 +35,22 @@ def main():
 
     # run workflow
     function = dict_workflows[workflow_name]
-    print("Running worflow: ", os.path.abspath(input_file))
-    function(inp)
+
+    # Create MPI communicator
+    if (not inp.mpi):
+        comm = None
+
+    else:
+        try:
+            from mpi4py import MPI
+            comm = MPI.COMM_WORLD
+        except ModuleNotFoundError:
+            print("MPI4PY module required if MPI option is True")
+            raise
+
+    if comm is None or comm.Get_rank() == 0:
+        print("Running worflow: ", os.path.abspath(input_file))
+        function(inp)
 
 
 def read_cmd_line():

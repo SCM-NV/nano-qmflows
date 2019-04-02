@@ -32,16 +32,15 @@ def workflow_derivative_couplings(config: dict) -> list:
     logger.info("starting!")
 
     # compute the molecular orbitals
-    mo_paths_hdf5 = calculate_mos(config)
+    # mo_paths_hdf5 = calculate_mos(config)
+
+    mo_paths_hdf5 = run(calculate_mos(config), folder=config.workdir)
 
     # Overlap matrix at two different times
     promised_overlaps = calculate_overlap(config, mo_paths_hdf5)
 
-    # Create a function that returns a proxime array of couplings
-    schedule_couplings = schedule(lazy_couplings)
-
     # Calculate Non-Adiabatic Coupling
-    promised_crossing_and_couplings = schedule_couplings(config, promised_overlaps)
+    promised_crossing_and_couplings = lazy_couplings(config, promised_overlaps)
 
     # Write the results in PYXAID format
     config.path_hamiltonians = create_path_hamiltonians(config.workdir)
@@ -54,7 +53,8 @@ def workflow_derivative_couplings(config: dict) -> list:
     config["nPoints"] = len(config.geometries) - 2
 
     # Write Hamilotians in PYXAID format
-    promise_files = schedule_write_ham(config, promised_crossing_and_couplings, mo_paths_hdf5)
+    promise_files = schedule_write_ham(
+        config, promised_crossing_and_couplings, mo_paths_hdf5)
 
     results = run(promise_files, folder=config.workdir)
 
