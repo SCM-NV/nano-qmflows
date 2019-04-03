@@ -1,13 +1,14 @@
 __author__ = "Felipe Zapata"
 
 # ================> Python Standard  and third-party <==========
+
 from os.path import join
 from scipy.optimize import linear_sum_assignment
 
 import logging
 import numpy as np
 import os
-# ==================> Internal modules <==========
+
 from nac.integrals import (
     calculate_couplings_levine, calculate_couplings_3points,
     compute_overlaps_for_coupling, correct_phases)
@@ -15,8 +16,8 @@ from nac.common import (
     Matrix, Vector, Tensor3D,
     femtosec2au, retrieve_hdf5_data,
     is_data_in_hdf5, store_arrays_in_hdf5)
+from noodles import schedule
 from qmflows.parsers import parse_string_xyz
-from noodles import (gather, schedule)
 
 # Types hint
 from typing import (List, Tuple)
@@ -27,6 +28,7 @@ logger = logging.getLogger(__name__)
 # ==============================> Schedule Tasks <=============================
 
 
+@schedule
 def lazy_couplings(config: dict, paths_overlaps: list) -> list:
     """
     Compute the Nonadibatic coupling using a 3 point approximation. See:
@@ -264,87 +266,51 @@ def swap_forward(overlaps: Tensor3D, swaps: Vector) -> Tensor3D:
     return overlaps
 
 
+@schedule
 def calculate_overlap(config: dict, mo_paths_hdf5: list) -> list:
     """
     Calculate the Overlap matrices before computing the non-adiabatic
     coupling using 3 consecutive set of MOs in a molecular dynamic.
 
-    :param path_hdf5: Path to the HDF5 file that contains the
-    numerical results.
-    :type path_hdf5: String
-    :paramter dictCGFS: Dictionary from Atomic Label to basis set
-    :type     dictCGFS: Dict String [CGF],
-              CGF = ([Primitives], AngularMomentum),
-              Primitive = (Coefficient, Exponent)
-    :param geometries: list of molecular geometries
-    :param mo_paths_hdf5: Path to the MO coefficients and energies in the
-    HDF5 file.
-    :param hdf5_trans_mtx: path to the transformation matrix in the HDF5 file.
-    :param enumerate_from: Number from where to start enumerating the folders
-    create for each point in the MD
-    :type enumerate_from: Int
-    :param nHOMO: index of the HOMO orbital in the HDF5
-    :param mo_index_range: range of Molecular orbitals used to compute the
-    coupling.
     :returns: paths to the Overlap matrices inside the HDF5.
     """
     geometries = config.geometries
     nPoints = len(geometries) - 1
 
-    # Inplace scheduling of calculate_overlap function
-    # Equivalent to add @schedule on top of the function
-    schedule_overlaps = schedule(lazy_overlaps)
+    # Compute Overlaps between two different geometries
+    paths_overlaps = [
+        lazy_overlaps(
+            config,
+            {'i': i,
+             'molecules': select_molecules(config, geometries, i),
+             'mo_paths': [mo_paths_hdf5[i + j][1] for j in range(2)]})
+        for i in range(nPoints)]
 
-    # Compute the Overlaps
-    paths_overlaps = []
-    for i in range(nPoints):
-
-        dict_input = {'i': i}
-        # Extract molecules to compute couplings
-        if config.overlaps_deph:
-            molecules = tuple(map(lambda idx: parse_string_xyz(geometries[idx]),
-                                  [0, i + 1]))
-        else:
-            molecules = tuple(map(lambda idx: parse_string_xyz(geometries[idx]),
-                                  [i, i + 1]))
-
-        # Compute the coupling
-        dict_input['molecules'] = molecules
-        overlaps = schedule_overlaps(config, dict_input, mo_paths_hdf5)
-
-        paths_overlaps.append(overlaps)
-
-    # Gather all the promised paths
-    return gather(*paths_overlaps)
+    return paths_overlaps
 
 
-def lazy_overlaps(config: dict, dict_input: dict, mo_paths_hdf5) -> str:
+def select_molecules(config: dict, geometries: list, i: int):
+    """
+    Select the pairs of molecules to compute the couplings
+    """
+    if config.overlaps_deph:
+        return tuple(map(lambda idx: parse_string_xyz(geometries[idx]),
+                         [0, i + 1]))
+    else:
+        return tuple(map(lambda idx: parse_string_xyz(geometries[idx]),
+                         [i, i + 1]))
+
+
+def lazy_overlaps(config: dict, dict_input: dict) -> str:
     """
     Calculate the 4 overlap matrix used to compute the subsequent couplings.
     The overlap matrices are computed using 3 consecutive set of MOs and
     3 consecutive geometries( in atomic units), from a molecular dynamics.
 
-    :param i: nth coupling calculation
-    :param project_name: Name of the project to be executed.
-    :paramter dictCGFS: Dictionary from Atomic Label to basis set
-    :type     dictCGFS: Dict String [CGF],
-              CGF = ([Primitives], AngularMomentum),
-              Primitive = (Coefficient, Exponent)
-    :parameter geometries: molecular geometries stored as list of
-                           namedtuples.
-    :type      geometries: ([AtomXYZ], [AtomXYZ], [AtomXYZ])
-    :parameter mo_paths_hdf5: List of paths to the MO in the HDF5
-    :param hdf5_trans_mtx: Path to the transformation matrix in the HDF5
-    :param enumerate_from: Number from where to start enumerating the folders
-    create for each point in the MD
-    :param nHOMO: index of the HOMO orbital in the HDF5
-    :param mo_index_range: range of Molecular orbitals used to compute the
-    coupling.
-
-    :returns: path to the Coupling inside the HDF5
+    :returns: path to the overlaps inside the HDF5
     """
-    i = dict_input["i"]  # calculation index
     # Path inside the HDF5 where the overlaps are stored
+    i = dict_input["i"]
     root = join(config.project_name, 'overlaps_{}'.format(i + config.enumerate_from))
     overlaps_paths_hdf5 = join(root, 'mtx_sji_t0')
 
@@ -355,12 +321,8 @@ def lazy_overlaps(config: dict, dict_input: dict, mo_paths_hdf5) -> str:
         # Read the Molecular orbitals from the HDF5
         logger.info("Computing: {}".format(root))
 
-        # Paths to the MOs inside the HDF5
-        dict_input["mo_paths"] = [mo_paths_hdf5[i + j][1] for j in range(2)]
-        # Partial application of the function computing the overlap
+        # Paths the MOs inside the HDF5
         overlaps = compute_overlaps_for_coupling(config, dict_input)
-
-        # Store the matrices in the HDF5 file
         store_arrays_in_hdf5(config.path_hdf5, overlaps_paths_hdf5, overlaps)
 
     return overlaps_paths_hdf5

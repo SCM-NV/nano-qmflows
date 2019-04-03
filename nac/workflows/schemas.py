@@ -131,6 +131,9 @@ dict_derivative_couplings = {
     Optional("algorithm", default="levine"):
     And(str, Use(str.lower), lambda s: ("levine", "3points")),
 
+    # Use MPI to compute the couplings
+    Optional("mpi", default=False): bool,
+
     # Track the crossing between states
     Optional("tracking", default=True): bool,
 
