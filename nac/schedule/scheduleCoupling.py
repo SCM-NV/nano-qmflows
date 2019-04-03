@@ -277,8 +277,14 @@ def calculate_overlap(config: dict, mo_paths_hdf5: list) -> list:
     geometries = config.geometries
     nPoints = len(geometries) - 1
 
-    paths_overlaps = [lazy_overlaps(
-        config, mo_paths_hdf5, geometries, i) for i in range(nPoints)]
+    # Compute Overlaps between two different geometries
+    paths_overlaps = [
+        lazy_overlaps(
+            config,
+            {'i': i,
+             'molecules': select_molecules(config, geometries, i),
+             'mo_paths': [mo_paths_hdf5[i + j][1] for j in range(2)]})
+        for i in range(nPoints)]
 
     return paths_overlaps
 
@@ -295,7 +301,7 @@ def select_molecules(config: dict, geometries: list, i: int):
                          [i, i + 1]))
 
 
-def lazy_overlaps(config: dict, mo_paths_hdf5: list, geometries, i) -> str:
+def lazy_overlaps(config: dict, dict_input: dict) -> str:
     """
     Calculate the 4 overlap matrix used to compute the subsequent couplings.
     The overlap matrices are computed using 3 consecutive set of MOs and
@@ -303,8 +309,8 @@ def lazy_overlaps(config: dict, mo_paths_hdf5: list, geometries, i) -> str:
 
     :returns: path to the overlaps inside the HDF5
     """
-    print("calling lazy_overlaps")
     # Path inside the HDF5 where the overlaps are stored
+    i = dict_input["i"]
     root = join(config.project_name, 'overlaps_{}'.format(i + config.enumerate_from))
     overlaps_paths_hdf5 = join(root, 'mtx_sji_t0')
 
@@ -316,12 +322,7 @@ def lazy_overlaps(config: dict, mo_paths_hdf5: list, geometries, i) -> str:
         logger.info("Computing: {}".format(root))
 
         # Paths the MOs inside the HDF5
-        dict_input = {"i": i, 'molecules': select_molecules(config, geometries, i)}
-        dict_input["mo_paths"] = [mo_paths_hdf5[i + j][1] for j in range(2)]
-        # Partial application of the function computing the overlap
         overlaps = compute_overlaps_for_coupling(config, dict_input)
-
-        # Store the overlaps in the HDF5
         store_arrays_in_hdf5(config.path_hdf5, overlaps_paths_hdf5, overlaps)
 
     return overlaps_paths_hdf5
