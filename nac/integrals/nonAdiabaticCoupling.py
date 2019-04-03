@@ -175,21 +175,11 @@ def calcOverlapMtx(config: dict, dict_input: dict) -> Matrix:
 
     basis_name = config["cp2k_general_settings"]["basis"]
     try:
-        inp = DictConfig({
-            "path_i": path_i, "path_j": path_j,
-            "path_hdf5": config["path_hdf5"], "basis_name": basis_name})
-        integrals = compute_integrals_with_executor(config, inp)
+        integrals = compute_integrals_couplings(
+            path_i, path_j, config["path_hdf5"], basis_name)
+
     finally:
         os.remove(path_i)
         os.remove(path_j)
 
     return integrals
-
-
-def compute_integrals_with_executor(config, inp: dict) -> Matrix:
-    """
-    Use an optional executor to compute the integrals
-    """
-
-    return compute_integrals_couplings(
-            inp.path_i, inp.path_j, inp.path_hdf5, inp.basis_name)
