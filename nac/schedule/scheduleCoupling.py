@@ -283,20 +283,7 @@ def calculate_overlap(config: dict, mo_paths_hdf5: list) -> list:
             'molecules': select_molecules(config, geometries, i),
             'mo_paths': [mo_paths_hdf5[i + j][1] for j in range(2)]}
 
-    if not config.mpi:
-        paths_overlaps = [
-            lazy_overlaps(config, create_input_dict(i)) for i in range(nPoints)]
-
-    else:
-        from mpi4py.futures import MPIPoolExecutor
-
-        # Create partial applied function
-        with MPIPoolExecutor(main=True) as executor:
-            paths_overlaps = [
-                lazy_overlaps(config, create_input_dict(i), executor)
-                for i in range(nPoints)]
-
-    return paths_overlaps
+    return [lazy_overlaps(config, create_input_dict(i)) for i in range(nPoints)]
 
 
 def select_molecules(config: dict, geometries: list, i: int):
@@ -311,7 +298,7 @@ def select_molecules(config: dict, geometries: list, i: int):
                          [i, i + 1]))
 
 
-def lazy_overlaps(config: dict, dict_input: dict, executor: object = None) -> str:
+def lazy_overlaps(config: dict, dict_input: dict) -> str:
     """
     Calculate the 4 overlap matrix used to compute the subsequent couplings.
     The overlap matrices are computed using 3 consecutive set of MOs and
@@ -332,7 +319,7 @@ def lazy_overlaps(config: dict, dict_input: dict, executor: object = None) -> st
         logger.info("Computing: {}".format(root))
 
         # Paths the MOs inside the HDF5
-        overlaps = compute_overlaps_for_coupling(config, dict_input, executor)
+        overlaps = compute_overlaps_for_coupling(config, dict_input)
         store_arrays_in_hdf5(config.path_hdf5, overlaps_paths_hdf5, overlaps)
 
     return overlaps_paths_hdf5

@@ -106,14 +106,14 @@ def correct_phases(overlaps: Tensor3D, mtx_phases: Matrix) -> list:
 
 
 def compute_overlaps_for_coupling(
-        config: dict, dict_input: dict, executor: object = None) -> Tuple:
+        config: dict, dict_input: dict) -> Tuple:
     """
     Compute the Overlap matrices used to compute the couplings
 
     :returns: [Matrix] containing the overlaps at different times
     """
     # Atomic orbitals overlap
-    suv = calcOverlapMtx(config,  dict_input, executor)
+    suv = calcOverlapMtx(config,  dict_input)
 
     # Read Orbitals Coefficients
     css0, css1 = read_overlap_data(config, dict_input["mo_paths"])
@@ -158,7 +158,7 @@ def compute_range_orbitals(mtx: Matrix, nHOMO: int,
     return lowest, highest
 
 
-def calcOverlapMtx(config: dict, dict_input: dict, executor: object = None) -> Matrix:
+def calcOverlapMtx(config: dict, dict_input: dict) -> Matrix:
     """
     Parallel calculation of the overlap matrix using the libint2 library
     at two different geometries: R0 and R1.
@@ -178,7 +178,7 @@ def calcOverlapMtx(config: dict, dict_input: dict, executor: object = None) -> M
         inp = DictConfig({
             "path_i": path_i, "path_j": path_j,
             "path_hdf5": config["path_hdf5"], "basis_name": basis_name})
-        integrals = compute_integrals_with_executor(inp, executor)
+        integrals = compute_integrals_with_executor(config, inp)
     finally:
         os.remove(path_i)
         os.remove(path_j)
@@ -186,16 +186,10 @@ def calcOverlapMtx(config: dict, dict_input: dict, executor: object = None) -> M
     return integrals
 
 
-def compute_integrals_with_executor(inp: dict, executor: object = None) -> Matrix:
+def compute_integrals_with_executor(config, inp: dict) -> Matrix:
     """
     Use an optional executor to compute the integrals
     """
-    if executor is None:
-        return compute_integrals_couplings(
+
+    return compute_integrals_couplings(
             inp.path_i, inp.path_j, inp.path_hdf5, inp.basis_name)
-
-    else:
-        promise = executor.submit(
-            compute_integrals_couplings, inp.path_i, inp.path_j, inp.path_hdf5, inp.basis_name)
-
-        return promise.result()
