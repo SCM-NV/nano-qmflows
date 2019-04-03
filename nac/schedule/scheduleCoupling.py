@@ -2,7 +2,6 @@ __author__ = "Felipe Zapata"
 
 # ================> Python Standard  and third-party <==========
 
-from functools import partial
 from os.path import join
 from scipy.optimize import linear_sum_assignment
 
@@ -17,6 +16,7 @@ from nac.common import (
     Matrix, Vector, Tensor3D,
     femtosec2au, retrieve_hdf5_data,
     is_data_in_hdf5, store_arrays_in_hdf5)
+from noodles import schedule
 from qmflows.parsers import parse_string_xyz
 
 # Types hint
@@ -28,6 +28,7 @@ logger = logging.getLogger(__name__)
 # ==============================> Schedule Tasks <=============================
 
 
+@schedule
 def lazy_couplings(config: dict, paths_overlaps: list) -> list:
     """
     Compute the Nonadibatic coupling using a 3 point approximation. See:
@@ -265,6 +266,7 @@ def swap_forward(overlaps: Tensor3D, swaps: Vector) -> Tensor3D:
     return overlaps
 
 
+@schedule
 def calculate_overlap(config: dict, mo_paths_hdf5: list) -> list:
     """
     Calculate the Overlap matrices before computing the non-adiabatic
@@ -275,22 +277,25 @@ def calculate_overlap(config: dict, mo_paths_hdf5: list) -> list:
     geometries = config.geometries
     nPoints = len(geometries) - 1
 
-    if not config.mpi:
-        paths_overlaps = [
-            lazy_overlaps(
-                config, mo_paths_hdf5, geometries, i)
-            for i in range(nPoints)]
+    # if not config.mpi:
+    paths_overlaps = [
+        lazy_overlaps(
+            config,
+            {'i': i,
+             'molecules': select_molecules(config, geometries, i),
+             'mo_paths': [mo_paths_hdf5[i + j][1] for j in range(2)]})
+        for i in range(nPoints)]
 
-    else:
-        from mpi4py.futures import MPIPoolExecutor
+    return paths_overlaps
+    # else:
+    #     from mpi4py.futures import MPIPoolExecutor
 
-        # Create partial applied function
-        fun = partial(lazy_overlaps, config, mo_paths_hdf5, geometries)
+    #     # Create partial applied function
+    #     with MPIPoolExecutor(main=True) as executor:
+    #         paths_overlaps = executor.map(fun, range(nPoints))
+    #         print("paths_overlaps: ", list(paths_overlaps))
 
-        with MPIPoolExecutor() as executor:
-            paths_overlaps = executor.map(fun, range(nPoints))
-
-    return [read_and_store_results(config, path) for path in paths_overlaps]
+    # return [read_and_store_results(config, path) for path in paths_overlaps]
 
 
 def select_molecules(config: dict, geometries: list, i: int):
@@ -305,7 +310,7 @@ def select_molecules(config: dict, geometries: list, i: int):
                          [i, i + 1]))
 
 
-def lazy_overlaps(config: dict, mo_paths_hdf5: list, geometries, i) -> str:
+def lazy_overlaps(config: dict, dict_input: dict) -> str:
     """
     Calculate the 4 overlap matrix used to compute the subsequent couplings.
     The overlap matrices are computed using 3 consecutive set of MOs and
@@ -313,8 +318,8 @@ def lazy_overlaps(config: dict, mo_paths_hdf5: list, geometries, i) -> str:
 
     :returns: path to the overlaps inside the HDF5
     """
-    print("calling lazy_overlaps")
     # Path inside the HDF5 where the overlaps are stored
+    i = dict_input["i"]
     root = join(config.project_name, 'overlaps_{}'.format(i + config.enumerate_from))
     overlaps_paths_hdf5 = join(root, 'mtx_sji_t0')
 
@@ -326,40 +331,10 @@ def lazy_overlaps(config: dict, mo_paths_hdf5: list, geometries, i) -> str:
         logger.info("Computing: {}".format(root))
 
         # Paths the MOs inside the HDF5
-        dict_input = {"i": i, 'molecules': select_molecules(config, geometries, i)}
-        dict_input["mo_paths"] = [mo_paths_hdf5[i + j][1] for j in range(2)]
-        # Partial application of the function computing the overlap
         overlaps = compute_overlaps_for_coupling(config, dict_input)
-
-        path_numpy_array = create_numpy_array_path(config, overlaps_paths_hdf5)
-
-        # Store the matrix in a temporal numpy file
-        np.save(path_numpy_array, overlaps)
-
-    return overlaps_paths_hdf5
-
-
-def read_and_store_results(config: dict, overlaps_paths_hdf5):
-    """
-    Read the temporal numpy arrays containing the overlaps into the HDF5 file
-    """
-    if not is_data_in_hdf5(config.path_hdf5, overlaps_paths_hdf5):
-        path_numpy_array = create_numpy_array_path(config, overlaps_paths_hdf5) + ".npy"
-        overlaps = np.load(path_numpy_array)
         store_arrays_in_hdf5(config.path_hdf5, overlaps_paths_hdf5, overlaps)
 
-        # Remove the temporal *.npy file
-        os.remove(path_numpy_array)
-
     return overlaps_paths_hdf5
-
-
-def create_numpy_array_path(config: dict, overlaps_paths_hdf5: str):
-    """
-    Path to the tmp file containing the overlap
-    """
-    name_file = '_'.join(overlaps_paths_hdf5.split('/'))
-    return os.path.join(config.scratch_path, name_file)
 
 
 def write_hamiltonians(config: dict, crossing_and_couplings: Tuple, mo_paths_hdf5: list) -> list:
