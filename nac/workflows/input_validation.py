@@ -164,7 +164,6 @@ def add_cell_parameters(general: dict) -> None:
     """
     # Search for a file containing the cell parameters
     file_cell_parameters = general["file_cell_parameters"]
-    print("file_cell_parameters: ", file_cell_parameters)
     if file_cell_parameters is None:
         for s in (general[p] for p in ['cp2k_settings_main', 'cp2k_settings_guess']):
             s.cell_parameters = general['cell_parameters']

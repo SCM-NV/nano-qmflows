@@ -36,21 +36,9 @@ def main():
     # run workflow
     function = dict_workflows[workflow_name]
 
-    # Create MPI communicator
-    if (not inp.mpi):
-        comm = None
-
-    else:
-        try:
-            from mpi4py import MPI
-            comm = MPI.COMM_WORLD
-        except ModuleNotFoundError:
-            print("MPI4PY module required if MPI option is True")
-            raise
-
-    if comm is None or comm.Get_rank() == 0:
-        print("Running worflow: ", os.path.abspath(input_file))
-        function(inp)
+    # if comm is None or comm.Get_rank() == 0:
+    print("Running worflow: ", os.path.abspath(input_file))
+    function(inp)
 
 
 def read_cmd_line():
