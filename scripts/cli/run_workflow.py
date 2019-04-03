@@ -4,6 +4,7 @@ from nac.workflows.input_validation import process_input
 from nac.workflows import (
     workflow_derivative_couplings, workflow_single_points, workflow_stddft)
 import argparse
+
 import os
 import yaml
 
@@ -34,6 +35,8 @@ def main():
 
     # run workflow
     function = dict_workflows[workflow_name]
+
+    # if comm is None or comm.Get_rank() == 0:
     print("Running worflow: ", os.path.abspath(input_file))
     function(inp)
 
