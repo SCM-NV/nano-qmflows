@@ -199,7 +199,7 @@ dict_absorption_spectrum = {
         str, Use(str.lower), lambda s: s in ("sing_orb", "stda", "stdft")),
 
     # Interval between MD points where the oscillators are computed"
-    Optional("stride",  default=50): int,
+    Optional("stride",  default=1): int,
 
     # description: Exchange-correlation functional used in the DFT calculations,
     Optional("xc_dft", default="pbe"): str

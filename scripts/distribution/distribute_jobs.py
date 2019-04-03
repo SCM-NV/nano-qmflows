@@ -251,10 +251,11 @@ def add_chunk_cell_parameters(
     size = arr.shape[0] // config.blocks
     low = dict_input.index * size
     high = low + size
+    step = config.stride
     if high < arr.shape[0]:
-        matrix_cell_parameters = arr[low:high, :]
+        matrix_cell_parameters = arr[low:high:step, :]
     else:
-        matrix_cell_parameters = arr[low:, :]
+        matrix_cell_parameters = arr[low::step, :]
 
     # adjust indices of the cell parameters
     size = matrix_cell_parameters.shape[0]
