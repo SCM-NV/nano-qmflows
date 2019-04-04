@@ -259,7 +259,7 @@ def recursive_traverse(val):
         return val
 
 
-def print_final_input(d: dict) -> None:
+def print_final_input(d: dict, path: str = '.') -> str:
     """
     Print the input after post-processing
     """
@@ -268,5 +268,8 @@ def print_final_input(d: dict) -> None:
     for k, v in d.items():
         xs[k] = recursive_traverse(v)
 
-    with open("input_parameters.yml", "w") as f:
+    output = join(path, "input_parameters.yml")
+    with open(output, "w") as f:
         yaml.dump(xs, f, indent=4)
+
+    return output

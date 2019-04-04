@@ -31,6 +31,7 @@ def main():
         workflow_name = dict_input['workflow']
 
     # Read and process input
+    print("input_file: ", input_file)
     inp = process_input(input_file, workflow_name)
 
     # run workflow

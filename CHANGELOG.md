@@ -1,5 +1,12 @@
 # Change Log
 
+# 0.9.0
+
+### New
+
+* Run the overlaps for the derivative coupling using [mpi4py](https://mpi4py.readthedocs.io/en/stable/).
+
+
 # 0.8.0
 
 ### Fixed

@@ -339,8 +339,8 @@ def distribute_overlaps(config: dict, mo_paths_hdf5: list, i: int) -> str:
     # compute Overlaps
     overlaps_paths_hdf5 = create_overlap_path(config, i)
     residue = i % size
-    if residue == rank and not is_data_in_hdf5(config.path_hdf5, overlaps_paths_hdf5):
-        print("computing coupling: ", i, " by worker: ", rank)
+    if residue == rank:
+        logger.info("computing coupling: {} by worker: {}".format(i, rank))
         overlaps = compute_overlaps_for_coupling(config, inp)
         # Do not send the array to the same process!
         if rank != 0:
