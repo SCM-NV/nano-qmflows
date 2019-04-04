@@ -132,9 +132,6 @@ setup(
         'plams@git+https://github.com/SCM-NV/PLAMS@v1.4',
         'qmflows@git+https://github.com/SCM-NV/qmflows@master'
     ],
-    dependency_links=[
-        "https://github.com/SCM-NV/qmflows/tarball/master#egg=qmflows",
-        "git+https://github.com/SCM-NV/PLAMS@v1.4#egg=plams-1.4"],
     cmdclass={'build_ext': BuildExt},
     ext_modules=[ext_pybind],
     extras_require={
