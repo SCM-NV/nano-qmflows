@@ -3,7 +3,7 @@ __all__ = ['calculate_couplings_3points', 'calculate_couplings_levine',
 
 from compute_integrals import compute_integrals_couplings
 from nac.common import (
-    DictConfig, Matrix, Tensor3D, retrieve_hdf5_data, tuplesXYZ_to_plams)
+    Matrix, Tensor3D, retrieve_hdf5_data, tuplesXYZ_to_plams)
 from os.path import join
 from typing import Tuple
 import numpy as np

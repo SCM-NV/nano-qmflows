@@ -16,7 +16,6 @@ from nac.common import (
     Matrix, Vector, Tensor3D,
     femtosec2au, retrieve_hdf5_data,
     is_data_in_hdf5, store_arrays_in_hdf5)
-from noodles import schedule
 from qmflows.parsers import parse_string_xyz
 
 # Types hint
@@ -28,7 +27,6 @@ logger = logging.getLogger(__name__)
 # ==============================> Schedule Tasks <=============================
 
 
-@schedule
 def lazy_couplings(config: dict, paths_overlaps: list) -> list:
     """
     Compute the Nonadibatic coupling using a 3 point approximation. See:
@@ -266,7 +264,6 @@ def swap_forward(overlaps: Tensor3D, swaps: Vector) -> Tensor3D:
     return overlaps
 
 
-@schedule
 def calculate_overlap(config: dict, mo_paths_hdf5: list) -> list:
     """
     Calculate the Overlap matrices before computing the non-adiabatic
@@ -285,7 +282,33 @@ def calculate_overlap(config: dict, mo_paths_hdf5: list) -> list:
 
     comm = config.mpi_comm
     if comm is None or comm.Get_rank() == 0:
-        return [lazy_overlaps(config, create_input_dict(i)) for i in range(nPoints)]
+        paths = []
+        for i in range(nPoints):
+            overlaps_paths_hdf5 = create_overlap_path(config, i)
+            overlaps, overlaps_paths_hdf5 = lazy_overlaps(
+                config, overlaps_paths_hdf5, create_input_dict(i))
+            store_arrays_in_hdf5(config.path_hdf5, overlaps_paths_hdf5, overlaps)
+            paths.append(overlaps_paths_hdf5)
+
+    # if comm is None or comm.Get_rank() == 0:
+    #     paths = []
+    #     rank = comm.Get_rank()
+    #     size = comm.Get_size()
+    #     for i in range(nPoints):
+    #         # compute Overlaps
+    #         overlaps_paths_hdf5 = create_overlap_path(config, i)
+    #         residue = i % size
+    #         if residue == rank:
+    #             overlaps = lazy_overlaps(config, overlaps_paths_hdf5, create_input_dict(i))
+    #             comm.Send((overlaps, overlaps_paths_hdf5), dest=0, tag=i)
+    #         # Store array in HDF5
+    #         if rank == 0:
+    #             shape_array = 
+    #             overlaps = np.empty(shape_array, dtype=np.float64)
+    #             comm.Recv(overlaps, source=residue, tag=i)
+    #             store_arrays_in_hdf5(config.path_hdf5, overlaps_paths_hdf5, overlaps)
+    #         paths.append(overlaps_paths_hdf5)
+        return paths
     else:
         return None
 
@@ -302,7 +325,7 @@ def select_molecules(config: dict, geometries: list, i: int):
                          [i, i + 1]))
 
 
-def lazy_overlaps(config: dict, dict_input: dict) -> str:
+def lazy_overlaps(config: dict, overlaps_paths_hdf5: str,  dict_input: dict) -> str:
     """
     Calculate the 4 overlap matrix used to compute the subsequent couplings.
     The overlap matrices are computed using 3 consecutive set of MOs and
@@ -310,23 +333,26 @@ def lazy_overlaps(config: dict, dict_input: dict) -> str:
 
     :returns: path to the overlaps inside the HDF5
     """
-    # Path inside the HDF5 where the overlaps are stored
-    i = dict_input["i"]
-    root = join(config.project_name, 'overlaps_{}'.format(i + config.enumerate_from))
-    overlaps_paths_hdf5 = join(root, 'mtx_sji_t0')
 
     # If the Overlaps are not in the HDF5 file compute them
     if is_data_in_hdf5(config.path_hdf5, overlaps_paths_hdf5):
-        logger.info("{} Overlaps are already in the HDF5".format(root))
+        logger.info("{} Overlaps are already in the HDF5".format(overlaps_paths_hdf5))
     else:
         # Read the Molecular orbitals from the HDF5
-        logger.info("Computing: {}".format(root))
+        logger.info("Computing: {}".format(overlaps_paths_hdf5))
 
         # Paths the MOs inside the HDF5
         overlaps = compute_overlaps_for_coupling(config, dict_input)
-        store_arrays_in_hdf5(config.path_hdf5, overlaps_paths_hdf5, overlaps)
 
-    return overlaps_paths_hdf5
+    return overlaps, overlaps_paths_hdf5
+
+
+def create_overlap_path(config: dict, i: int) -> str:
+    """
+    Create the path inside the HDF5 where the overlap is going to be store.
+    """
+    root = join(config.project_name, 'overlaps_{}'.format(i + config.enumerate_from))
+    return join(root, 'mtx_sji_t0')
 
 
 def write_hamiltonians(config: dict, crossing_and_couplings: Tuple, mo_paths_hdf5: list) -> list:
