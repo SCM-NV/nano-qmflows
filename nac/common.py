@@ -28,7 +28,7 @@ class DictConfig(dict):
         return DictConfig(self.copy())
 
 
-def concat(xss):
+def concat(xss: iter):
     """The concatenation of all the elements of a list"""
     return list(chain(*xss))
 
@@ -203,6 +203,7 @@ def number_spherical_functions_per_atom(mol, package_name, basis_name, path_hdf5
                 package_name, path.attrs['basisFormat'])) for path in xs]
 
         return np.stack([sum(len(x) for x in ys[i]) for i in range(len(mol))])
+
 
 def calc_orbital_Slabels(name, fss):
     """

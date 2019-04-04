@@ -20,12 +20,12 @@ For further information on the theory behind QMFlows-NAMD and how to use the pro
 Installation
 ------------
 
-In order to install the *QMFlows-NAMD* library you need to install first the **QMFlows** package and its environment using *Miniconda* as detailed here_.
+| In order to install the *QMFlows-NAMD* library you need to install miniconda_.
 
-.. _here: https://github.com/SCM-NV/qmflows
+.. _miniconda: http://conda.pydata.org/miniconda.html
 
-Then,  to install the **QMFlows-NAMD** library type the following commands inside the conda environment:
-  - ``conda install -c conda-forge cython eigen hdf5 libint highfive pybind11 mpi4py``
+| Then,  to install the **QMFlows-NAMD** library type the following commands inside the conda environment:
+| - ``conda install -c conda-forge h5py cython eigen rdkit libint highfive pybind11 mpi4py``
   - ``pip install git+https://github.com/SCM-NV/qmflows-namd#egg=qmflows-namd --upgrade``
 
 

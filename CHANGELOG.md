@@ -6,6 +6,8 @@
 
 * Run the overlaps for the derivative coupling using [mpi4py](https://mpi4py.readthedocs.io/en/stable/).
 
+### Fixed
+* Install both [qmflows](https://github.com/SCM-NV/qmflows) and [PLAMS](https://github.com/SCM-NV/PLAMS) from the *setup.py*, instead of manually installing them.
 
 # 0.8.0
 
