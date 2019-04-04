@@ -35,15 +35,16 @@ def workflow_stddft(config: dict) -> None:
 
     # Read structures
     molecules_au = [change_mol_units(parse_string_xyz(gs))
-                    for gs in config.geometries]
+                    for i, gs in enumerate(config.geometries)
+                    if (i % config.stride) == 0]
 
     # Noodles promised call
     scheduleTDDFT = schedule(compute_excited_states_tddft)
 
     results = gather(
-       *[scheduleTDDFT(config, mo_paths_hdf5[i], DictConfig({'i': i, 'mol': mol}))
-         for i, mol in enumerate(molecules_au)
-         if (i % config.stride) == 0])
+       *[scheduleTDDFT(config, mo_paths_hdf5[i], DictConfig(
+           {'i': i * config.stride, 'mol': mol}))
+         for i, mol in enumerate(molecules_au)])
 
     return run(results, folder=config['workdir'])
 
