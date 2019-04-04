@@ -39,6 +39,9 @@ def workflow_derivative_couplings(config: dict) -> list:
     else:
         mo_paths_hdf5 = None
 
+    if comm is not None:
+        mo_paths_hdf5 = comm.bcast(mo_paths_hdf5, root=0)
+
     # Overlap matrix at two different times
     # IF COMM IS NOT NONE this part of the code will run with MPI
     promised_overlaps = calculate_overlap(config, mo_paths_hdf5)
