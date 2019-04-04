@@ -26,39 +26,46 @@ def workflow_derivative_couplings(config: dict) -> list:
     `nac/workflows/schemas.py
     :returns: None
     """
+    comm = config.mpi_comm
+
     # Dictionary containing the general configuration
     config.update(initialize(config))
 
-    logger.info("starting!")
-
     # compute the molecular orbitals
-    mo_paths_hdf5 = calculate_mos(config)
+    # mo_paths_hdf5 = calculate_mos(config)
+    if comm is None or comm.Get_rank() == 0:
+        logger.info("starting!")
+        mo_paths_hdf5 = run(calculate_mos(config), folder=config.workdir)
+    else:
+        mo_paths_hdf5 = None
 
     # Overlap matrix at two different times
+    # IF COMM IS NOT NONE this part of the code will run with MPI
     promised_overlaps = calculate_overlap(config, mo_paths_hdf5)
 
-    # Calculate Non-Adiabatic Coupling
-    promised_crossing_and_couplings = lazy_couplings(config, promised_overlaps)
+    if comm is None or comm.Get_rank() == 0:
+        # Calculate Non-Adiabatic Coupling
+        promised_crossing_and_couplings = lazy_couplings(config, promised_overlaps)
 
-    # Write the results in PYXAID format
-    config.path_hamiltonians = create_path_hamiltonians(config.workdir)
+        # Write the results in PYXAID format
+        config.path_hamiltonians = create_path_hamiltonians(config.workdir)
 
-    # Inplace scheduling of write_hamiltonians function.
-    # Equivalent to add @schedule on top of the function
-    schedule_write_ham = schedule(write_hamiltonians)
+        # Inplace scheduling of write_hamiltonians function.
+        # Equivalent to add @schedule on top of the function
+        schedule_write_ham = schedule(write_hamiltonians)
 
-    # Number of matrix computed
-    config["nPoints"] = len(config.geometries) - 2
+        # Number of matrix computed
+        config["nPoints"] = len(config.geometries) - 2
 
-    # Write Hamilotians in PYXAID format
-    promise_files = schedule_write_ham(
-        config, promised_crossing_and_couplings, mo_paths_hdf5)
+        # Write Hamilotians in PYXAID format
+        promise_files = schedule_write_ham(
+            config, promised_crossing_and_couplings, mo_paths_hdf5)
 
-    results = run(promise_files, folder=config.workdir)
+        results = run(promise_files, folder=config.workdir)
 
-    remove_folders(config.folders)
+        remove_folders(config.folders)
 
-    return results
+        return results
 
 
 def create_path_hamiltonians(workdir: str) -> str:

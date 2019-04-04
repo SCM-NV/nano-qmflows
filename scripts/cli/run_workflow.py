@@ -50,7 +50,9 @@ def main():
 
     if comm is None or comm.Get_rank() == 0:
         print("Running worflow: ", os.path.abspath(input_file))
-        function(inp)
+
+    inp["mpi_comm"] = comm
+    function(inp)
 
 
 def read_cmd_line():

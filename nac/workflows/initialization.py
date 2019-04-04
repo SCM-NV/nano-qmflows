@@ -29,6 +29,9 @@ def initialize(config: dict) -> dict:
     Initialize all the data required to schedule the workflows associated with
     the nonadaibatic coupling
     """
+    # MPI communicator
+    comm = config.mpi_comm
+
     project_name = config["project_name"]
 
     # Start logging event
@@ -44,14 +47,16 @@ def initialize(config: dict) -> dict:
     config['workdir'] = scratch_path
 
     # If the directory does not exist create it
-    if not os.path.exists(scratch_path):
-        os.makedirs(scratch_path)
+    if comm is None or comm.Get_rank() == 0:
+        if not os.path.exists(scratch_path):
+            os.makedirs(scratch_path)
 
     # HDF5 path
-    path_hdf5 = config["path_hdf5"]
-    if path_hdf5 is None:
-        path_hdf5 = join(scratch_path, 'quantum.hdf5')
-        logger.warning("path to the HDF5 was not defined, using: {}".format(path_hdf5))
+    if comm is None or comm.Get_rank() == 0:
+        path_hdf5 = config["path_hdf5"]
+        if path_hdf5 is None:
+            path_hdf5 = join(scratch_path, 'quantum.hdf5')
+            logger.warning("path to the HDF5 was not defined, using: {}".format(path_hdf5))
 
     # all_geometries type :: [String]
     geometries = split_file_geometries(config["path_traj_xyz"])
@@ -60,8 +65,10 @@ def initialize(config: dict) -> dict:
     # Create a folder for each point the the dynamics
     enumerate_from = config["enumerate_from"]
     len_geometries = len(geometries)
-    config["folders"] = create_point_folder(
-        scratch_path, len_geometries, enumerate_from)
+
+    if comm is None or comm.Get_rank() == 0:
+        config["folders"] = create_point_folder(
+            scratch_path, len_geometries, enumerate_from)
 
     config['calc_new_wf_guess_on_points'] = guesses_to_compute(
         config['calculate_guesses'], enumerate_from, len_geometries)
@@ -74,7 +81,11 @@ def initialize(config: dict) -> dict:
         atoms = change_mol_units(atoms)
 
     # Save Basis to HDF5
-    save_basis_to_hdf5(config)
+    if comm is None or comm.Get_rank() == 0:
+        save_basis_to_hdf5(config)
+
+    if comm is not None:
+        comm.Barrier()
 
     return config
 

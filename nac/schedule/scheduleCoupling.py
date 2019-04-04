@@ -283,12 +283,16 @@ def calculate_overlap(config: dict, mo_paths_hdf5: list) -> list:
             'molecules': select_molecules(config, geometries, i),
             'mo_paths': [mo_paths_hdf5[i + j][1] for j in range(2)]}
 
-    return [lazy_overlaps(config, create_input_dict(i)) for i in range(nPoints)]
+    comm = config.mpi_comm
+    if comm is None or comm.Get_rank() == 0:
+        return [lazy_overlaps(config, create_input_dict(i)) for i in range(nPoints)]
+    else:
+        return None
 
 
 def select_molecules(config: dict, geometries: list, i: int):
     """
-    Select the pairs of molecules to compute the couplings
+    Select the pairs of molecules to compute the couplings.
     """
     if config.overlaps_deph:
         return tuple(map(lambda idx: parse_string_xyz(geometries[idx]),
