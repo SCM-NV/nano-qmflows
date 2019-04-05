@@ -107,15 +107,24 @@ def hardness(s: str):
 
 def xc(s: str) -> dict:
     d = {
-        'pbe':  {'type':'pure', 'alpha1': 1.42, 'alpha2': 0.48, 'ax': 0.0, 'beta1': 0.2, 'beta2': 1.83},
-        'blyp': {'type':'pure','alpha1': 1.42, 'alpha2': 0.48, 'ax': 0.0, 'beta1': 0.2, 'beta2': 1.83},
-        'bp':   {'type':'pure','alpha1': 1.42, 'alpha2': 0.48, 'ax': 0.0, 'beta1': 0.2, 'beta2': 1.83},
-        'pbe0': {'type':'hybrid','alpha1': 1.42, 'alpha2': 0.48, 'ax': 0.25, 'beta1': 0.2, 'beta2': 1.83},
-        'b3lyp': {'type':'hybrid','alpha1': 1.42, 'alpha2': 0.48, 'ax': 0.20, 'beta1': 0.2, 'beta2': 1.83},
-        'bhlyp': {'type':'hybrid','alpha1': 1.42, 'alpha2': 0.48, 'ax': 0.50, 'beta1': 0.2, 'beta2': 1.83},
-        'cam-b3lyp': {'type':'rhs','alpha1': 1.86, 'alpha2': 0.00, 'ax': 0.38, 'beta1': 0.90, 'beta2': 0.0},
-        'lc-blyp': {'type':'rhs', 'alpha1': 8.0, 'alpha2': 0.00, 'ax': 0.53, 'beta1': 4.50, 'beta2': 0.0},
-        'wb97': {'type':'rhs', 'alpha1': 8.0, 'alpha2': 0.00, 'ax': 0.61, 'beta1': 4.41, 'beta2': 0.0}}
+        'pbe': {
+            'type': 'pure', 'alpha1': 1.42, 'alpha2': 0.48, 'ax': 0, 'beta1': 0.2, 'beta2': 1.83},
+        'blyp': {
+            'type': 'pure', 'alpha1': 1.42, 'alpha2': 0.48, 'ax': 0, 'beta1': 0.2, 'beta2': 1.83},
+        'bp':   {
+            'type': 'pure', 'alpha1': 1.42, 'alpha2': 0.48, 'ax': 0, 'beta1': 0.2, 'beta2': 1.83},
+        'pbe0': {
+            'type': 'hybrid', 'alpha1': 1.42, 'alpha2': 0.48, 'ax': 0.25, 'beta1': 0.2, 'beta2': 1.83},
+        'b3lyp': {
+            'type': 'hybrid', 'alpha1': 1.42, 'alpha2': 0.48, 'ax': 0.20, 'beta1': 0.2, 'beta2': 1.83},
+        'bhlyp': {
+            'type': 'hybrid', 'alpha1': 1.42, 'alpha2': 0.48, 'ax': 0.50, 'beta1': 0.2, 'beta2': 1.83},
+        'cam-b3lyp': {
+            'type': 'rhs', 'alpha1': 1.86, 'alpha2': 0.00, 'ax': 0.38, 'beta1': 0.90, 'beta2': 0},
+        'lc-blyp': {
+            'type': 'rhs',  'alpha1': 8.0, 'alpha2': 0.00, 'ax': 0.53, 'beta1': 4.50, 'beta2': 0},
+        'wb97': {
+            'type': 'rhs', 'alpha1': 8.0, 'alpha2': 0.00, 'ax': 0.61, 'beta1': 4.41, 'beta2': 0.0}}
     return d[s]
 
 
@@ -245,27 +254,6 @@ def calc_orbital_Slabels(name, fss):
                    for l, fs in zip(angularM, fss)])
 
 
-def calc_orbital_Clabels(name, fss):
-    """
-    Labels of the Cartesian CGFs
-    """
-    def funClabels(d, l, fs):
-        if isinstance(fs, list):
-            fs = sum(fs)
-        labels = [d[l]] * fs
-        return labels
-
-    angularM = ['s', 'p', 'd', 'f', 'g']
-    if name == 'cp2k':
-        dict_Ord_Labels = dict_cp2kOrd_cartesian
-    if name == 'turbomole':
-        dict_Ord_Labels = dict_turbomoleOrd_cartesian
-        raise NotImplementedError
-
-    return concat([funClabels(dict_Ord_Labels, l, fs)
-                  for l, fs in zip(angularM, fss)])
-
-
 def read_basis_format(name, basisFormat):
     if name == 'cp2k':
         s = basisFormat.replace('[', '').split(']')[0]
@@ -284,51 +272,4 @@ dict_cp2kOrder_spherical = {
     'p': ['py', 'pz', 'px'],
     'd': ['d-2', 'd-1', 'd0', 'd+1', 'd+2'],
     'f': ['f-3', 'f-2', 'f-1', 'f0', 'f+1', 'f+2', 'f+3']
-}
-
-dict_cp2kOrd_cartesian = {
-    's': ['S'],
-    'p': ['Px', 'Py', 'Pz'],
-    'd': ['Dxx', 'Dxy', 'Dxz', 'Dyy', 'Dyz', 'Dzz'],
-    'f': ['Fxxx', 'Fxxy', 'Fxxz', 'Fxyy', 'Fxyz', 'Fxzz',
-          'Fyyy', 'Fyyz', 'Fyzz', 'Fzzz']
-}
-
-dict_turbomoleOrd_cartesian = {
-    's': 'S',
-    'p': ['Px', 'Py', 'Pz'],
-    'd': ['Dxx', 'Dyy', 'Dzz', 'Dxy', 'Dxz', 'Dyz'],
-    'f': ['Fxxx', 'Fyyy', 'Fzzz', 'Fxyy', 'Fxxy', 'Fxxz', 'Fxzz',
-          'Fyzz', 'Fyyz', 'Fxyz']
-}
-
-dict_Slabel_to_lm = {
-    's': [0, 0],
-    'px': [1, 1], 'py': [1, -1], 'pz': [1, 0],   # Is these the Cp2k Standard?
-    'd-2': [2, -2], 'd-1': [2, -1], 'd0': [2, 0], 'd+1': [2, 1], 'd+2': [2, 2],
-    'f-3': [3, -3], 'f-2': [3, -2], 'f-1': [3, -1], 'f0': [3, 0],
-    'f+1': [3, 1], 'f+2': [3, 2], 'f+3': [3, 3]
-}
-
-dict_Clabel_to_xyz = {
-    "S": [0, 0, 0],
-    "Px": [1, 0, 0],
-    "Py": [0, 1, 0],
-    "Pz": [0, 0, 1],
-    "Dxx": [2, 0, 0],
-    "Dxy": [1, 1, 0],
-    "Dxz": [1, 0, 1],
-    "Dyy": [0, 2, 0],
-    "Dyz": [0, 1, 1],
-    "Dzz": [0, 0, 2],
-    "Fxxx": [3, 0, 0],
-    "Fxxy": [2, 1, 0],
-    "Fxxz": [2, 0, 1],
-    "Fxyy": [1, 2, 0],
-    "Fxyz": [1, 1, 1],
-    "Fxzz": [1, 0, 2],
-    "Fyyy": [0, 3, 0],
-    "Fyyz": [0, 2, 1],
-    "Fyzz": [0, 1, 2],
-    "Fzzz": [0, 0, 3]
 }

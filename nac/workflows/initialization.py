@@ -1,4 +1,4 @@
-__all__ = ['initialize', 'read_swaps', 'split_trajectory']
+__all__ = ['initialize', 'split_trajectory']
 
 from nac.common import (
     InputKey, Matrix, change_mol_units, retrieve_hdf5_data, is_data_in_hdf5)
@@ -119,20 +119,6 @@ def guesses_to_compute(calculate_guesses: str, enumerate_from: int, len_geometri
         logger.info(msg)
 
     return points_guess
-
-
-def read_swaps(path_hdf5: str, project_name: str) -> Matrix:
-    """
-    Read the crossing tracking for the Molecular orbital
-    """
-    path_swaps = join(project_name, 'swaps')
-    if is_data_in_hdf5(path_hdf5, path_swaps):
-        return retrieve_hdf5_data(path_hdf5, path_swaps)
-    else:
-        msg = """There is not a tracking file called: {}
-        This file is automatically created when running the worflow_coupling
-        simulations""".format(path_swaps)
-        raise RuntimeError(msg)
 
 
 def split_trajectory(path: str, nBlocks: int, pathOut: str) -> list:
