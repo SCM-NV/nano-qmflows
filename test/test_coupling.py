@@ -54,13 +54,13 @@ def test_mpi_couplings(tmp_path):
     config = setup_config(tmp_path, input_path, 'mpi_couplings.hdf5')
     input_yaml = print_final_input(config, tmp_path)
     cmd = "mpirun -np 2 run_workflow.py -i {}".format(input_yaml)
-    # p = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, shell=True)
-    # rs = p.communicate()
+    p = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, shell=True)
+    rs = p.communicate()
 
-    # # Check for errors
-    # err = rs[1]
-    # if err:
-    #     raise RuntimeError(err)
+    # Check for errors
+    err = rs[1]
+    if err:
+        raise RuntimeError(err)
 
 
 def check_couplings(config: dict) -> None:
