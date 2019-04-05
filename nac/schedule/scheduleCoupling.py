@@ -297,7 +297,7 @@ def calculate_overlap(config: dict, mo_paths_hdf5: list) -> list:
         if overlap_is_done[i]:
             p = all_overlaps_paths[i]
         elif comm is not None:
-            p = distribute_overlaps(config, mo_paths_hdf5, shape_coeffs, i)
+            p = mpi_overlaps(config, mo_paths_hdf5, shape_coeffs, i)
         else:
             p = single_machine_overlaps(config, mo_paths_hdf5, i)
         paths.append(p)
@@ -321,7 +321,7 @@ def check_if_overlap_is_done(config: dict, overlaps_paths_hdf5: str) -> bool:
         return False
 
 
-def distribute_overlaps(config: dict, mo_paths_hdf5: list, shape_coeffs: tuple, i: int) -> str:
+def mpi_overlaps(config: dict, mo_paths_hdf5: list, shape_coeffs: tuple, i: int) -> str:
     """
     Use All the available CPUs with MPI.
     """

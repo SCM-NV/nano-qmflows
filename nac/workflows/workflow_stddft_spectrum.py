@@ -3,13 +3,13 @@ __all__ = ['workflow_stddft']
 from nac.common import (
     DictConfig, angs2au, change_mol_units, h2ev, hardness, retrieve_hdf5_data,
     is_data_in_hdf5, number_spherical_functions_per_atom, store_arrays_in_hdf5, xc)
-from nac.integrals.multipole_matrices import get_multipole_matrix
+from nac.integrals.multipole_matrices import (
+    compute_matrix_multipole, get_multipole_matrix)
 from nac.schedule.components import calculate_mos
 from nac.workflows.initialization import initialize
 from os.path import join
 from qmflows.parsers import parse_string_xyz
 from qmflows import run
-from noodles import (gather, schedule)
 from scipy.linalg import sqrtm
 from scipy.spatial.distance import cdist
 import logging
@@ -27,26 +27,39 @@ def workflow_stddft(config: dict) -> None:
     `data/schemas/absorption_spectrum.json
     :returns: None
     """
+    # MPI communicator
+    comm = config.mpi_comm
+
     # Dictionary containing the general configuration
     config.update(initialize(config))
 
     # Single Point calculations settings using CP2K
-    mo_paths_hdf5 = calculate_mos(config)
+    if comm is None or comm.Get_rank() == 0:
+        mo_paths_hdf5 = run(calculate_mos(config), folder=config['workdir'])
+        mol = parse_string_xyz(config.geometries[0])
+        shape_multipoles = compute_shape_multipole(config, mol, 'dipole')
+    else:
+        mo_paths_hdf5 = None
+        shape_multipoles = None
+
+    if comm is not None:
+        mo_paths_hdf5 = comm.bcast(mo_paths_hdf5, root=0)
+        shape_multipoles = comm.bcast(shape_multipoles, root=0)
+
+    # Store the shape of the array containig the multipoles
+    config["shape_multipoles"] = shape_multipoles
 
     # Read structures
     molecules_au = [change_mol_units(parse_string_xyz(gs))
                     for i, gs in enumerate(config.geometries)
                     if (i % config.stride) == 0]
 
-    # Noodles promised call
-    scheduleTDDFT = schedule(compute_excited_states_tddft)
+    results = [compute_excited_states_tddft(
+        config, mo_paths_hdf5[i],
+        DictConfig({'i': i * config.stride, 'mol': mol}))
+               for i, mol in enumerate(molecules_au)]
 
-    results = gather(
-       *[scheduleTDDFT(config, mo_paths_hdf5[i], DictConfig(
-           {'i': i * config.stride, 'mol': mol}))
-         for i, mol in enumerate(molecules_au)])
-
-    return run(results, folder=config['workdir'])
+    return results
 
 
 def compute_excited_states_tddft(config: dict, path_MOs: list, dict_input: dict):
@@ -54,33 +67,116 @@ def compute_excited_states_tddft(config: dict, path_MOs: list, dict_input: dict)
     Compute the excited states properties (energy and coefficients) for a given
     `mo_index_range` using the `tddft` method and `xc_dft` exchange functional.
     """
+    if config.mpi_comm is None:
+        copy_dict = extend_input_with_mol(dict_input)
+        dict_input["multipoles"] = get_multipole_matrix(config, copy_dict, 'dipole')
+        return prepare_oscillators_computation(config, dict_input, path_MOs)
+    else:
+        # compute the multipoles with MPI
+        dict_input["multipoles"] = mpi_multipoles(config, dict_input, path_MOs)
+        # Compute the rest in a single MPI worker
+        if config.Get_rank() == 0:
+            return prepare_oscillators_computation(config, dict_input, path_MOs)
+        else:
+            return None
+
+
+def mpi_multipoles(config: dict, inp: dict, path_MOs: list, multipole: str = 'dipole'):
+    """
+    Distribute the multipole integrals in several mpi processors integrals
+    """
+    # MPI variables
+    comm = config.mpi_comm
+    rank = comm.Get_rank()
+    size = comm.Get_size()
+    worker = (inp.i // config.stride) % size
+
+    # Node inside the HDF5 where the multipole is stored
+    path_multipole_hdf5 = join(config.project_name, 'multipole', 'point_{}'.format(inp.i))
+
+    if rank == 0:
+        is_multipole_available = is_data_in_hdf5(config.path_hdf5, path_multipole_hdf5)
+        # Send the info to the worker except if the worker is itself
+        if worker != 0:
+            comm.Send(is_multipole_available, dest=worker, tag=10000)
+        # Check if the multipole is done
+        if is_multipole_available:
+            return retrieve_hdf5_data(config.path_hdf5, path_multipole_hdf5)
+
+    if worker != rank:
+        is_multipole_available = None
+        comm.Recv(is_multipole_available, source=0, tag=10000)
+
+        # If the multipole is presented in the HDF5 return
+        if is_multipole_available:
+            return None
+        else:
+            multipoles = compute_matrix_multipole(inp.mol, config, multipole)
+            if rank != 0:
+                comm.Send(multipoles, dest=0, tag=inp.i)
+
+    if rank == 0:
+        # Do not receive the array from the same process
+        if worker != 0:
+            multipoles = np.empty(config.shape_multipoles, dtype=np.float64)
+            comm.Recv(multipoles, source=worker, tag=inp.i)
+            store_arrays_in_hdf5(config.path_hdf5, path_multipole_hdf5, multipoles)
+
+        return multipoles
+
+
+def compute_shape_multipole(config: dict, mol: list, multipole: str) -> tuple:
+    """
+    """
+    # Shape of the multipole tensor
+    basis = config.cp2k_general_settings["basis"]
+    spherical_basis = number_spherical_functions_per_atom(
+        mol, config['package_name'], basis, config.path_hdf5)
+    if multipole == 'overlap':
+        return (spherical_basis, spherical_basis)
+    elif multipole == 'dipole':
+        return (4, spherical_basis, spherical_basis)
+    elif multipole == 'quadrupole':
+        return (7, spherical_basis, spherical_basis)
+    else:
+        raise NotImplementedError("Multipole {} has not been implemented".format(multipole))
+
+
+def extend_input_with_mol(inp: dict) -> dict:
+    """
+    Add molecule to the dict and return a `DictConfig` object
+    """
+    copy_dict = DictConfig(inp.copy())
+    copy_dict["mol"] = change_mol_units(inp["mol"], factor=1/angs2au)
+
+    return copy_dict
+
+
+def prepare_oscillators_computation(config: dict, inp: dict, path_MOs: list):
+    """
+    Distribute the multipole integrals in the available cores
+    """
     logger.info("Reading energies and mo coefficients")
     # type of calculation
     energy, c_ao = retrieve_hdf5_data(config.path_hdf5, path_MOs)
 
-    # Number of virtual orbitals
-    nocc = config.active_space[0]
-    nvirt = config.active_space[1]
-    dict_input.update({"energy": energy, "c_ao": c_ao, "nocc": nocc, "nvirt": nvirt})
-
-    # Pass the molecule in Angstrom to the libint calculator
-    copy_dict = DictConfig(dict_input.copy())
-    copy_dict["mol"] = change_mol_units(dict_input["mol"], factor=1/angs2au)
-
-    # compute the multipoles if they are not stored
-    multipoles = get_multipole_matrix(config, copy_dict, 'dipole')
+    # Dictionary with the input to compute the multipoles
+    inp.update({
+        "energy": energy, "c_ao": c_ao, "nocc": config.active_space[0],
+        "nvirt": config.active_space[1]})
 
     # read data from the HDF5 or calculate it on the fly
-    dict_input["overlap"] = multipoles[0]
+    inp["overlap"] = inp.multipoles[0]
 
     # retrieve or compute the omega xia values
-    omega, xia = get_omega_xia(config, dict_input)
+    omega, xia = get_omega_xia(config, inp)
 
     # add arrays to the dictionary
-    dict_input.update({"multipoles": multipoles[1:], "omega": omega, "xia": xia})
+    multipoles = inp.multipoles
+    inp.update({"multipoles": multipoles[1:], "omega": omega, "xia": xia})
 
     return compute_oscillator_strengths(
-        config, dict_input)
+        config, inp)
 
 
 def get_omega_xia(config: dict, dict_input: dict):

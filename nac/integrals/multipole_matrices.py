@@ -3,8 +3,12 @@ from nac.common import (
     Matrix, retrieve_hdf5_data, is_data_in_hdf5,
     store_arrays_in_hdf5, tuplesXYZ_to_plams)
 from os.path import join
+import logging
 import os
 import uuid
+
+# Starting logger
+logger = logging.getLogger(__name__)
 
 
 def get_multipole_matrix(config: dict, inp: dict, multipole: str) -> Matrix:
@@ -28,10 +32,10 @@ def search_multipole_in_hdf5(path_hdf5: str, path_multipole_hdf5: str, multipole
     Search if the multipole is already store in the HDFt
     """
     if is_data_in_hdf5(path_hdf5, path_multipole_hdf5):
-        print("retrieving multipole: {} from the hdf5".format(multipole))
+        logger.info("retrieving multipole: {} from the hdf5".format(multipole))
         return retrieve_hdf5_data(path_hdf5, path_multipole_hdf5)
     else:
-        print("computing multipole: {}".format(multipole))
+        logger.info("computing multipole: {}".format(multipole))
         return None
 
 

@@ -40,7 +40,7 @@ before_script:
   - conda list
 
 script:
-  - py.test -m "not (slow or long)" --cov=nac test
+  - py.test -m "not (slow or long)" --cov=nac test -v
   - coverage xml && coverage report -m
 
 after_success:

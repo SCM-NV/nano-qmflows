@@ -1,7 +1,6 @@
 __all__ = ['initialize', 'split_trajectory']
 
-from nac.common import (
-    InputKey, Matrix, change_mol_units, retrieve_hdf5_data, is_data_in_hdf5)
+from nac.common import (InputKey, change_mol_units)
 from nac.schedule.components import (
     create_point_folder, split_file_geometries)
 from os.path import join
