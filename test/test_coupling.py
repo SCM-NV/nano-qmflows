@@ -53,7 +53,7 @@ def test_mpi_couplings(tmp_path):
     input_path = 'test/test_files/input_mpi_test_derivative_couplings.yml'
     config = setup_config(tmp_path, input_path, 'mpi_couplings.hdf5')
     input_yaml = print_final_input(config, tmp_path)
-    cmd = "mpirun -np 2 run_workflow.py -i {}".format(input_yaml)
+    cmd = "mpirun -np 1 run_workflow.py -i {}".format(input_yaml)
     p = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, shell=True)
     rs = p.communicate()
 
