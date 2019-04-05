@@ -12,11 +12,11 @@ import os
 from nac.integrals import (
     calculate_couplings_levine, calculate_couplings_3points,
     compute_overlaps_for_coupling, correct_phases)
+from nac.integrals.nonAdiabaticCoupling import (
+    compute_range_orbitals, read_overlap_data)
 from nac.common import (
     Matrix, Vector, Tensor3D,
-    femtosec2au, retrieve_hdf5_data,
-    is_data_in_hdf5, store_arrays_in_hdf5)
-from noodles import schedule
+    femtosec2au, is_data_in_hdf5, retrieve_hdf5_data, store_arrays_in_hdf5)
 from qmflows.parsers import parse_string_xyz
 
 # Types hint
@@ -281,12 +281,15 @@ def calculate_overlap(config: dict, mo_paths_hdf5: list) -> list:
     all_overlaps_paths = [create_overlap_path(config, i) for i in range(nPoints)]
     if comm is None or comm.Get_rank() == 0:
         overlap_is_done = [check_if_overlap_is_done(config, p) for p in all_overlaps_paths]
+        shape_coeffs = compute_shape_coefficients(config, mo_paths_hdf5[0][1])
     elif comm.Get_rank() != 0:
         overlap_is_done = None
+        shape_coeffs = None
 
     if comm is not None:
         # receive what Overlaps needs to be computed
         overlap_is_done = comm.bcast(overlap_is_done, root=0)
+        shape_coeffs = comm.bcast(shape_coeffs, root=0)
 
     # Check if using MPI
     paths = []
@@ -294,7 +297,7 @@ def calculate_overlap(config: dict, mo_paths_hdf5: list) -> list:
         if overlap_is_done[i]:
             p = all_overlaps_paths[i]
         elif comm is not None:
-            p = distribute_overlaps(config, mo_paths_hdf5, i)
+            p = distribute_overlaps(config, mo_paths_hdf5, shape_coeffs, i)
         else:
             p = single_machine_overlaps(config, mo_paths_hdf5, i)
         paths.append(p)
@@ -318,7 +321,7 @@ def check_if_overlap_is_done(config: dict, overlaps_paths_hdf5: str) -> bool:
         return False
 
 
-def distribute_overlaps(config: dict, mo_paths_hdf5: list, i: int) -> str:
+def distribute_overlaps(config: dict, mo_paths_hdf5: list, shape_coeffs: tuple, i: int) -> str:
     """
     Use All the available CPUs with MPI.
     """
@@ -326,22 +329,42 @@ def distribute_overlaps(config: dict, mo_paths_hdf5: list, i: int) -> str:
     comm = config.mpi_comm
     rank = comm.Get_rank()
     size = comm.Get_size()
+    residue = i % size
 
     # Size of the array to communicate
     shape_array = tuple(config.active_space)
 
-    # Parameters to compute the Couplings
-    inp = {
-        'i': i,
-        'molecules': select_molecules(config, i),
-        'mo_paths': [mo_paths_hdf5[i + j][1] for j in range(2)]}
+    # # Read the MOs coefficients
+    if rank == 0:
+        mo_paths = [mo_paths_hdf5[i + j][1] for j in range(2)]
+        css0, css1 = read_overlap_data(config, mo_paths)
+        # send coefficients
+        if residue != 0:
+            comm.Send(np.ascontiguousarray(css0, dtype=np.float64), dest=residue, tag=10000)
+            comm.Send(np.ascontiguousarray(css1, dtype=np.float64), dest=residue, tag=11000)
 
     # compute Overlaps
     overlaps_paths_hdf5 = create_overlap_path(config, i)
-    residue = i % size
+
     if residue == rank:
         logger.info("computing coupling: {} by worker: {}".format(i, rank))
-        overlaps = compute_overlaps_for_coupling(config, inp)
+
+        # Data to compute the overlaps
+        pair_molecules = select_molecules(config, i)
+
+        # Receive coefficients from worker 0
+        if rank != 0:
+            css0 = np.empty(shape_coeffs, dtype=np.float64)
+            css1 = np.empty(shape_coeffs, dtype=np.float64)
+            comm.Recv(css0, source=0, tag=10000)
+            comm.Recv(css1, source=0, tag=11000)
+
+        # Compute the overlap
+        # mo_paths = [mo_paths_hdf5[i + j][1] for j in range(2)]
+        coefficients = css0, css1  # read_overlap_data(config, mo_paths)
+        overlaps = compute_overlaps_for_coupling(
+            config, pair_molecules, coefficients)
+
         # Do not send the array to the same process!
         if rank != 0:
             comm.Send(overlaps, dest=0, tag=i)
@@ -361,28 +384,27 @@ def single_machine_overlaps(config: dict, mo_paths_hdf5: list, i: int):
     Compute the overlaps in the CPUs avaialable on the local machine
     """
     # Data to compute the overlaps
-    inp = {'i': i,
-           'molecules': select_molecules(config, i),
-           'mo_paths': [mo_paths_hdf5[i + j][1] for j in range(2)]}
+    pair_molecules = select_molecules(config, i)
+    mo_paths = [mo_paths_hdf5[i + j][1] for j in range(2)]
+    coefficients = read_overlap_data(config, mo_paths)
 
+    # Compute the overlap
+    overlaps = compute_overlaps_for_coupling(
+        config, pair_molecules, coefficients)
+
+    # Store the array in the HDF5
     overlaps_paths_hdf5 = create_overlap_path(config, i)
-    overlaps = compute_overlaps_for_coupling(config, inp)
     store_arrays_in_hdf5(config.path_hdf5, overlaps_paths_hdf5, overlaps)
 
     return overlaps_paths_hdf5
 
 
-def select_molecules(config: dict, i: int):
+def select_molecules(config: dict, i: int) -> tuple:
     """
     Select the pairs of molecules to compute the couplings.
     """
-    geometries = config.geometries
-    if config.overlaps_deph:
-        return tuple(map(lambda idx: parse_string_xyz(geometries[idx]),
-                         [0, i + 1]))
-    else:
-        return tuple(map(lambda idx: parse_string_xyz(geometries[idx]),
-                         [i, i + 1]))
+    k = 0 if config.overlaps_deph else i
+    return tuple(parse_string_xyz(config.geometries[idx]) for idx in (k, i + 1))
 
 
 def create_overlap_path(config: dict, i: int) -> str:
@@ -391,6 +413,17 @@ def create_overlap_path(config: dict, i: int) -> str:
     """
     root = join(config.project_name, 'overlaps_{}'.format(i + config.enumerate_from))
     return join(root, 'mtx_sji_t0')
+
+
+def compute_shape_coefficients(config: dict, path_coeffs: str) -> tuple:
+    """
+    Calculate the shape of the subarray of coefficients used to compute the overlaps
+    """
+    mos = retrieve_hdf5_data(config.path_hdf5, path_coeffs)
+    nOrbitals = mos.shape[1]
+    lowest, highest = compute_range_orbitals(nOrbitals, config.nHOMO, config.mo_index_range)
+
+    return mos[:, lowest:highest].shape
 
 
 def write_hamiltonians(config: dict, crossing_and_couplings: Tuple, mo_paths_hdf5: list) -> list:

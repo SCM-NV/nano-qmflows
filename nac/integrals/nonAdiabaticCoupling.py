@@ -106,17 +106,17 @@ def correct_phases(overlaps: Tensor3D, mtx_phases: Matrix) -> list:
 
 
 def compute_overlaps_for_coupling(
-        config: dict, dict_input: dict) -> Tuple:
+        config: dict, pair_molecules: tuple, coefficients: tuple) -> Tuple:
     """
     Compute the Overlap matrices used to compute the couplings
 
     :returns: [Matrix] containing the overlaps at different times
     """
     # Atomic orbitals overlap
-    suv = calcOverlapMtx(config,  dict_input)
+    suv = calcOverlapMtx(config,  pair_molecules)
 
     # Read Orbitals Coefficients
-    css0, css1 = read_overlap_data(config, dict_input["mo_paths"])
+    css0, css1 = coefficients
 
     return np.dot(css0.T, np.dot(suv, css1))
 
@@ -128,13 +128,14 @@ def read_overlap_data(config: dict, mo_paths: list) -> Tuple:
     mos = retrieve_hdf5_data(config.path_hdf5, mo_paths)
 
     # Extract a subset of molecular orbitals to compute the coupling
-    lowest, highest = compute_range_orbitals(mos[0], config.nHOMO, config.mo_index_range)
+    nOrbitals = mos[0].shape[1]
+    lowest, highest = compute_range_orbitals(nOrbitals, config.nHOMO, config.mo_index_range)
     css0, css1 = tuple(map(lambda xs: xs[:, lowest: highest], mos))
 
     return css0, css1
 
 
-def compute_range_orbitals(mtx: Matrix, nHOMO: int,
+def compute_range_orbitals(nOrbitals, nHOMO: int,
                            mo_index_range: Tuple) -> Tuple:
     """
     Compute the lowest and highest index used to extract
@@ -143,7 +144,6 @@ def compute_range_orbitals(mtx: Matrix, nHOMO: int,
     # If the user does not define the number of HOMOs and LUMOs
     # assume that the first half of the read MO from the HDF5
     # are HOMOs and the last Half are LUMOs.
-    _, nOrbitals = mtx.shape
     nHOMO = nHOMO if nHOMO is not None else nOrbitals // 2
 
     # If the mo_index_range variable is not define I assume
@@ -158,12 +158,12 @@ def compute_range_orbitals(mtx: Matrix, nHOMO: int,
     return lowest, highest
 
 
-def calcOverlapMtx(config: dict, dict_input: dict) -> Matrix:
+def calcOverlapMtx(config: dict, molecules) -> Matrix:
     """
     Parallel calculation of the overlap matrix using the libint2 library
     at two different geometries: R0 and R1.
     """
-    mol_i, mol_j = tuple(tuplesXYZ_to_plams(x) for x in dict_input["molecules"])
+    mol_i, mol_j = tuple(tuplesXYZ_to_plams(x) for x in molecules)
 
     # unique molecular paths
     path_i = join(config["scratch_path"], "molecule_{}.xyz".format(uuid.uuid4()))

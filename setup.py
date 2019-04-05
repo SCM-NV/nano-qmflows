@@ -30,6 +30,8 @@ conda_prefix = os.environ["CONDA_PREFIX"]
 if conda_prefix is None:
     raise RuntimeError("No conda module found. A Conda environment is required")
 
+python_version = "python3.{}m".format(sys.version_info.minor)
+
 conda_include = join(conda_prefix, 'include')
 conda_lib = join(conda_prefix, 'lib')
 ext_pybind = Extension(
@@ -40,14 +42,14 @@ ext_pybind = Extension(
         'libint/include',
         conda_include,
         join(conda_include, 'eigen3'),
-        join(conda_include, 'python3.6m'),
+        join(conda_include, python_version),
         get_pybind_include(),
         get_pybind_include(user=True),
         '/usr/include/eigen3'
     ],
-    libraries=['hdf5', 'int2'],
+    libraries=['int2', 'hdf5'],
     library_dirs=[conda_lib],
-    language='c++')
+    language='C++11')
 
 
 # As of Python 3.6, CCompiler has a `has_flag` method.
