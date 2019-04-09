@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from nac.common import DictConfig
+from nac.common import (DictConfig, read_cell_parameters_as_array)
 from nac.workflows.input_validation import process_input
 from nac.workflows.initialization import split_trajectory
 from os.path import join
@@ -222,18 +222,6 @@ def compute_number_of_geometries(file_name):
     lines_per_geometry = numat + 2
 
     return int(wc) // lines_per_geometry
-
-
-def read_cell_parameters_as_array(file_cell_parameters: str) -> tuple:
-    """
-    Read the cell parameters as a numpy array
-    """
-    arr = np.loadtxt(file_cell_parameters, skiprows=1)
-
-    with open(file_cell_parameters, 'r') as f:
-        header = f.readline()
-
-    return header, arr
 
 
 def add_chunk_cell_parameters(
