@@ -1,7 +1,7 @@
 Derivative coupling calculation
 ===============================
 
-These tutorials focus on how to compute non-adiabatic coupling vectors between molecular orbitals belonging at two different time steps, t and t+dt, of a pre-computed molecular dynamics trajectory. What this program does is to compute at each point of the trajectory, the electronic structure using DFT, and then the overlap integrals :math: `\langle \psi_{i}(t) \mid \psi_{j}(t+dt)>`. These integrals are stored and finally used to compute numerically the non-adiabatic couplings. These and the orbital energies are written in a format readable by PYXAID to perform surface hopping dynamics. 
+These tutorials focus on how to compute non-adiabatic coupling vectors between molecular orbitals belonging at two different time steps, t and t+dt, of a pre-computed molecular dynamics trajectory. What this program does is to compute at each point of the trajectory, the electronic structure using DFT, and then the overlap integrals :math:`\langle \psi_{i}(t) \mid \psi_{j}(t+dt)>`. These integrals are stored and finally used to compute numerically the non-adiabatic couplings. These and the orbital energies are written in a format readable by PYXAID to perform surface hopping dynamics. 
 When using this tutorial, ensure you have the latest version of QMFlows and QMFlows-NAMD installed.
 
 Preparing the input
