@@ -25,8 +25,8 @@ In order to install the *QMFlows-NAMD* library you need to install miniconda_.
 .. _miniconda: http://conda.pydata.org/miniconda.html
 
 Then,  to install the **QMFlows-NAMD** library type the following commands inside the conda environment:
- - ``conda install -c conda-forge h5py cython eigen rdkit libint highfive pybind11``
- - ``pip install git+https://github.com/SCM-NV/qmflows-namd#egg=qmflows-namd --upgrade``
+  - ``conda install -c conda-forge rdkit cython eigen h5py libint highfive pybind11 mpi4py``
+  - ``pip install git+https://github.com/SCM-NV/qmflows-namd#egg=qmflows-namd --upgrade``
 
 .. note:: If you want to use the hybrid *MPI* and *OpenMP* mode to distribute the integrals in several
 	  nodes of a supercomputer, you need to install mpi4py_ like:

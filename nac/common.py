@@ -273,3 +273,15 @@ dict_cp2kOrder_spherical = {
     'd': ['d-2', 'd-1', 'd0', 'd+1', 'd+2'],
     'f': ['f-3', 'f-2', 'f-1', 'f0', 'f+1', 'f+2', 'f+3']
 }
+
+
+def read_cell_parameters_as_array(file_cell_parameters: str) -> tuple:
+    """
+    Read the cell parameters as a numpy array
+    """
+    arr = np.loadtxt(file_cell_parameters, skiprows=1)
+
+    with open(file_cell_parameters, 'r') as f:
+        header = f.readline()
+
+    return header, arr

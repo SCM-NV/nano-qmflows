@@ -14,7 +14,7 @@ import shutil
 
 # ==================> Internal modules <==========
 from nac.schedule.scheduleCp2k import prepare_job_cp2k
-from nac.common import is_data_in_hdf5
+from nac.common import (Matrix, is_data_in_hdf5, read_cell_parameters_as_array)
 from qmflows.hdf5 import dump_to_hdf5
 from qmflows.utils import chunksOf
 from qmflows.warnings_qmflows import SCF_Convergence_Warning
@@ -53,6 +53,12 @@ def calculate_mos(config: dict) -> list:
     :returns: path to nodes in the HDF5 file to MO energies
               and MO coefficients.
     """
+    # Read Cell parameters file
+    general = config['cp2k_general_settings']
+    file_cell_parameters = general["file_cell_parameters"]
+    if file_cell_parameters is not None:
+        array_cell_parameters = read_cell_parameters_as_array(file_cell_parameters)[1]
+
     # First calculation has no initial guess
     # calculate the rest of the jobs using the previous point as initial guess
     orbitals = []  # list to the nodes in the HDF5 containing the MOs
@@ -79,6 +85,9 @@ def calculate_mos(config: dict) -> list:
         else:
             logger.info("point_{} has been scheduled".format(k))
 
+            # Add cell parameters from file if given
+            if file_cell_parameters is not None:
+                adjust_cell_parameters(general, array_cell_parameters, j)
             # Path to I/O files
             dict_input["point_dir"] = config.folders[j]
             dict_input["job_files"] = create_file_names(dict_input["point_dir"], k)
@@ -204,7 +213,7 @@ def create_point_folder(work_dir, n, enumerate_from):
     return folders
 
 
-def split_file_geometries(pathXYZ):
+def split_file_geometries(pathXYZ: str) -> list:
     """
     Reads a set of molecular geometries in xyz format and returns
     a list of string, where is element a molecular geometry
@@ -219,7 +228,7 @@ def split_file_geometries(pathXYZ):
     return list(map(''.join, chunksOf(xss, numat + 2)))
 
 
-def create_file_names(work_dir, i):
+def create_file_names(work_dir: str, i: int):
     """
     Creates a namedTuple with the name of the 4 files used
     for each point in the trajectory
@@ -232,3 +241,13 @@ def create_file_names(work_dir, i):
     file_MO = join(work_dir, 'mo_coeff_{}.out'.format(i))
 
     return JobFiles(file_xyz, file_inp, file_out, file_MO)
+
+
+def adjust_cell_parameters(general: dict, array_cell_parameters: Matrix, j: int) -> None:
+    """
+    If the cell parameters change during the MD simulations, adjust them
+    for the molecular orbitals computation
+    """
+    for s in (general[p] for p in ('cp2k_settings_main', 'cp2k_settings_guess')):
+        s.cell_parameters = array_cell_parameters[j, 2:11].reshape(3, 3).tolist()
+        s.cell_angles = None

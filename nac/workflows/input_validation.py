@@ -164,14 +164,13 @@ def add_cell_parameters(general: dict) -> None:
     """
     # Search for a file containing the cell parameters
     file_cell_parameters = general["file_cell_parameters"]
-    if file_cell_parameters is None:
-        for s in (general[p] for p in ['cp2k_settings_main', 'cp2k_settings_guess']):
+    for s in (general[p] for p in ['cp2k_settings_main', 'cp2k_settings_guess']):
+        if file_cell_parameters is None:
             s.cell_parameters = general['cell_parameters']
             s.cell_angles = general['cell_angles']
-    else:
-        for s in (general[p] for p in ['cp2k_settings_main', 'cp2k_settings_guess']):
-            s.specific.cp2k.force_eval.subsys.cell.CELL_FILE_NAME = os.path.abspath(
-                file_cell_parameters)
+        else:
+            s.cell_parameters = None
+            s.cell_angles = None
 
 
 def add_periodic(general: dict) -> None:
