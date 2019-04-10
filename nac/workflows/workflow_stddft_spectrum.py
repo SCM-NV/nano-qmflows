@@ -75,7 +75,7 @@ def compute_excited_states_tddft(config: dict, path_MOs: list, dict_input: dict)
         # compute the multipoles with MPI
         dict_input["multipoles"] = mpi_multipoles(config, dict_input, path_MOs)
         # Compute the rest in a single MPI worker
-        if config.Get_rank() == 0:
+        if config.mpi_comm.Get_rank() == 0:
             return prepare_oscillators_computation(config, dict_input, path_MOs)
         else:
             return None
