@@ -55,8 +55,9 @@ The input *template_distribute_absorption_spectrum.yml* file contains all settin
 
 - **stride**: this parameter controls the accuracy of sampling of geometries contained in the MD trajectory of reference. For example, a value of stride: 10 indicates that the spectrum analysis will be performed on 1 out of 10 points in the reference trajectory. 
 Two important things have to be pointed out:
-1. The workflow will perform SCF calculations for each point in the trajectory; only afterwards it will sample the number of structures on which the spectrum analysis will be performed
-2. Down-sampling issues might arise from the number of points that are actually printed during the MD calculations. Some programs, indeed, offer the possibility to print (in the output file) only one point out of ten (or more) calculated. In this case, applying a stride: 10 would in practice mean that you are sampling 1 point out of 100 points in the trajectory.
+#. The workflow will perform SCF calculations for each point in the trajectory; only afterwards it will sample the number of structures on which the spectrum analysis will be performed
+#. Down-sampling issues might arise from the number of points that are actually printed during the MD calculations. Some programs, indeed, offer the possibility to print (in the output file) only one point out of ten (or more) calculated. In this case, applying a stride: 10 would in practice mean that you are sampling 1 point out of 100 points in the trajectory.
+
 - **blocks**: this parameter indicates into how many blocks has the job to be split. This will generate as many chunks’ folders in your working directory, all of each containing th
 
 Note: TRIPLETs
