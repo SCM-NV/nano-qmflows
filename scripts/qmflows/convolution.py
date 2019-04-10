@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 import glob
 import argparse
 
-def main(sigmai, n):
+def main(sigma, n):
     # Check output files 
     files = sorted(glob.glob('output_*.txt'))
     if n is None:
