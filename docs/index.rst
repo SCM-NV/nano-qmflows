@@ -15,7 +15,11 @@ Contents:
    :maxdepth: 2
    :caption: Tutorials 
 
-   tutorials
+   intro
+   derivative_couplings
+   absorption_spectrum
+   distribute_absorption_spectrum
+    
 
 
 Indices and tables

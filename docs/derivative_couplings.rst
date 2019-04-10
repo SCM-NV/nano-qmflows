@@ -1,18 +1,8 @@
-Tutorials
-====================
-
-The *qmflows-namd* packages offers a set of workflows to compute different properties like:
-
- * derivative_coupling
- * absorption_spectrum
-
+Derivative coupling calculation
+===============================
 
 These tutorials focus on how to compute non-adiabatic coupling vectors between molecular orbitals belonging at two different time steps, t and t+dt, of a pre-computed molecular dynamics trajectory. What this program does is to compute at each point of the trajectory, the electronic structure using DFT, and then the overlap integrals <psi_i(t)|psi_j(t+dt)>. These integrals are stored and finally used to compute numerically the non-adiabatic couplings. These and the orbital energies are written in a format readable by PYXAID to perform surface hopping dynamics. 
-
 When using this tutorial, ensure you have the latest version of QMFlows and QMFlows-NAMD installed.
-
-Derivative coupling calculation
--------------------------------
 
 Preparing the input
 --------------------
@@ -142,13 +132,6 @@ Once the remaining overlaps and the couplings have been calculated successfully,
    represent a parallelepiped and finally a list of list contains the ABC vectors describing the unit cell.
    Alternatively, you can pass the angles of the cell using the cell_angles variable.
 
-Absorption Spectrum 
--------------------------------
-This other workflow compute the absorption spectrum for different snapshots in a MD trajectory.
-
-.. literalinclude:: ../test/test_files/input_test_absorption_spectrum.yml
-       :linenos:
-
 Restarting a Job
 ----------------
 
@@ -160,14 +143,6 @@ Both the *molecular orbitals* and the *derivative couplings* for a given molecul
 Then, in order to restart the job you need to perform the following actions:
 
   * **Do Not remove** the file called ``cache.db`` from the current work  directory.
-
-Known Issues
-------------
-
-Coupling distribution in multiple nodes
-#########################################
-
-`CP2K` can uses multiple nodes to perform the computation of the molecular orbitals using the **MPI** protocol. Unfortunately, the `MPI` implementation for the computation of the *derivative coupling matrix* is experimental and unestable. The practical consequences of the aforemention issues, is that **the calculation of the coupling matrices are carried out in only 1 computational node**. It means that if you want ask for more than 1 node to compute the molecular orbitals with `CP2K`, once the workflow starts to compute the *derivative couplings* only 1 node will be used at a time and the rest will remain idle wating computational resources.
 
 
 Reporting a bug or requesting a feature
