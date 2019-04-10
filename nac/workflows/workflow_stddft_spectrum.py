@@ -118,10 +118,14 @@ def mpi_multipoles(config: dict, inp: dict, path_MOs: list, multipole: str = 'di
             if rank != 0:
                 comm.Send(multipoles, dest=0, tag=inp.i)
 
-    if rank == 0 and worker != 0:
+    if rank == 0 and not is_multipole_available:
         # Do not receive the array from the same process
-        multipoles = np.empty(config.shape_multipoles, dtype=np.float64)
-        comm.Recv(multipoles, source=worker, tag=inp.i)
+        if worker != 0:
+            multipoles = np.empty(config.shape_multipoles, dtype=np.float64)
+            comm.Recv(multipoles, source=worker, tag=inp.i)
+
+        print("storing array: ", path_multipole_hdf5)
+        print("path_hdf5: ", config.path_hdf5)
         store_arrays_in_hdf5(config.path_hdf5, path_multipole_hdf5, multipoles)
 
     return multipoles
