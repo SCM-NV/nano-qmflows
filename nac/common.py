@@ -146,7 +146,7 @@ def is_data_in_hdf5(path_hdf5, xs):
 
 
 def store_arrays_in_hdf5(path_hdf5: str, paths, tensor: Array,
-                         dtype=np.float32)-> None:
+                         dtype=np.float32) -> None:
     """
     Store the corrected overlaps in the HDF5 file
     """
@@ -182,3 +182,15 @@ def tuplesXYZ_to_plams(xs):
         plams_mol.add_atom(Atom(symbol=symb, coords=tuple(cs)))
 
     return plams_mol
+
+
+def read_cell_parameters_as_array(file_cell_parameters: str) -> tuple:
+    """
+    Read the cell parameters as a numpy array
+    """
+    arr = np.loadtxt(file_cell_parameters, skiprows=1)
+
+    with open(file_cell_parameters, 'r') as f:
+        header = f.readline()
+
+    return header, arr
