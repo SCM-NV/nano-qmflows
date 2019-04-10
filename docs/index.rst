@@ -6,10 +6,16 @@ Contents:
 
 .. toctree::
    :maxdepth: 2
+   :caption: Introduction 
 
    includereadme
    theory
-   tutorial
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Tutorials 
+
+   tutorials
 
 
 Indices and tables
