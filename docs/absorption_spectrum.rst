@@ -1,10 +1,10 @@
 Absorption Spectrum 
--------------------------------
+===================
+
 This other workflow compute the absorption spectrum for different snapshots in a MD trajectory.
 
 .. literalinclude:: ../test/test_files/input_test_absorption_spectrum.yml
        :linenos:
-
 
 Reporting a bug or requesting a feature
 ---------------------------------------
