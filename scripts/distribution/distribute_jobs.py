@@ -236,7 +236,7 @@ def add_chunk_cell_parameters(
 
     # extract cell parameters for a chunk
     header, arr = header_array_cell_parameters
-    size = arr.shape[0] // config.blocks
+    size = int(np.ceil(arr.shape[0] / config.blocks))
     low = dict_input.index * size
     high = low + size
     step = config.stride
