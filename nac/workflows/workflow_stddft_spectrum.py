@@ -101,7 +101,7 @@ def mpi_multipoles(config: dict, inp: dict, path_MOs: list, multipole: str = 'di
             comm.Send(is_multipole_available, dest=worker, tag=10000)
         # Check if the multipole is done
         if is_multipole_available:
-            return retrieve_hdf5_data(config.path_hdf5, path_multipole_hdf5)
+            multipoles = retrieve_hdf5_data(config.path_hdf5, path_multipole_hdf5)
 
     if worker != rank:
         is_multipole_available = None
@@ -109,7 +109,7 @@ def mpi_multipoles(config: dict, inp: dict, path_MOs: list, multipole: str = 'di
 
         # If the multipole is presented in the HDF5 return
         if is_multipole_available:
-            return None
+            multipole = None
         else:
             multipoles = compute_matrix_multipole(inp.mol, config, multipole)
             if rank != 0:
