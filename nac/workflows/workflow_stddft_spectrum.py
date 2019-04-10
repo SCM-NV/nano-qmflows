@@ -96,21 +96,20 @@ def mpi_multipoles(config: dict, inp: dict, path_MOs: list, multipole: str = 'di
 
     if rank == 0:
         is_multipole_available = is_data_in_hdf5(config.path_hdf5, path_multipole_hdf5)
-        # Send the info to the worker except if the worker is itself
-        if worker != 0:
-            comm.Send(is_multipole_available, dest=worker, tag=10000)
+
         # Check if the multipole is done
         if is_multipole_available:
             multipoles = retrieve_hdf5_data(config.path_hdf5, path_multipole_hdf5)
+    else:
+        is_multipole_available = None
 
+    is_multipole_available = comm.bcast(is_multipole_available, root=0)
+
+    # Current worker does nothing
     if rank != worker:
         multipoles = None
     else:
-        if worker != 0:
-            is_multipole_available = None
-            comm.Recv(is_multipole_available, source=0, tag=10000)
-
-        # If the multipole is presented in the HDF5 return
+        # If the multipole is presented in the HDF5 continue
         if is_multipole_available:
             multipole = None
         else:
@@ -124,8 +123,6 @@ def mpi_multipoles(config: dict, inp: dict, path_MOs: list, multipole: str = 'di
             multipoles = np.empty(config.shape_multipoles, dtype=np.float64)
             comm.Recv(multipoles, source=worker, tag=inp.i)
 
-        print("storing array: ", path_multipole_hdf5)
-        print("path_hdf5: ", config.path_hdf5)
         store_arrays_in_hdf5(config.path_hdf5, path_multipole_hdf5, multipoles)
 
     return multipoles
@@ -136,8 +133,8 @@ def compute_shape_multipole(config: dict, mol: list, multipole: str) -> tuple:
     """
     # Shape of the multipole tensor
     basis = config.cp2k_general_settings["basis"]
-    spherical_basis = number_spherical_functions_per_atom(
-        mol, config['package_name'], basis, config.path_hdf5)
+    spherical_basis = sum(number_spherical_functions_per_atom(
+        mol, config['package_name'], basis, config.path_hdf5))
     if multipole == 'overlap':
         return (spherical_basis, spherical_basis)
     elif multipole == 'dipole':
