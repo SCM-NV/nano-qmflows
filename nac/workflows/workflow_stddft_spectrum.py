@@ -103,9 +103,12 @@ def mpi_multipoles(config: dict, inp: dict, path_MOs: list, multipole: str = 'di
         if is_multipole_available:
             multipoles = retrieve_hdf5_data(config.path_hdf5, path_multipole_hdf5)
 
-    if worker != rank:
-        is_multipole_available = None
-        comm.Recv(is_multipole_available, source=0, tag=10000)
+    if rank != worker:
+        multipoles = None
+    else:
+        if worker != 0:
+            is_multipole_available = None
+            comm.Recv(is_multipole_available, source=0, tag=10000)
 
         # If the multipole is presented in the HDF5 return
         if is_multipole_available:
@@ -115,14 +118,13 @@ def mpi_multipoles(config: dict, inp: dict, path_MOs: list, multipole: str = 'di
             if rank != 0:
                 comm.Send(multipoles, dest=0, tag=inp.i)
 
-    if rank == 0:
+    if rank == 0 and worker != 0:
         # Do not receive the array from the same process
-        if worker != 0:
-            multipoles = np.empty(config.shape_multipoles, dtype=np.float64)
-            comm.Recv(multipoles, source=worker, tag=inp.i)
-            store_arrays_in_hdf5(config.path_hdf5, path_multipole_hdf5, multipoles)
+        multipoles = np.empty(config.shape_multipoles, dtype=np.float64)
+        comm.Recv(multipoles, source=worker, tag=inp.i)
+        store_arrays_in_hdf5(config.path_hdf5, path_multipole_hdf5, multipoles)
 
-        return multipoles
+    return multipoles
 
 
 def compute_shape_multipole(config: dict, mol: list, multipole: str) -> tuple:
