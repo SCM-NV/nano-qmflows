@@ -79,6 +79,9 @@ dict_general_options = {
     # Number of occupied/virtual orbitals to use
     'active_space': And(list, lambda xs: len(xs) == 2),
 
+    # Use MPI to compute the couplings
+    Optional("mpi", default=False): bool,
+
     # Index of the HOMO
     Optional("nHOMO"): int,
 
@@ -130,9 +133,6 @@ dict_derivative_couplings = {
     # Algorithm used to compute the derivative couplings
     Optional("algorithm", default="levine"):
     And(str, Use(str.lower), lambda s: ("levine", "3points")),
-
-    # Use MPI to compute the couplings
-    Optional("mpi", default=False): bool,
 
     # Track the crossing between states
     Optional("tracking", default=True): bool,
