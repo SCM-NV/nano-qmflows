@@ -105,25 +105,17 @@ def correct_phases(overlaps: Tensor3D, mtx_phases: Matrix) -> list:
     return overlaps
 
 
-def compute_overlaps_for_coupling(config: dict, dict_input: dict) -> Tuple:
+def compute_overlaps_for_coupling(
+        config: dict, pair_molecules: tuple, coefficients: tuple) -> Tuple:
     """
     Compute the Overlap matrices used to compute the couplings
-
-    :parameter geometries: Tuple of molecular geometries.
-    :type      geometries: ([AtomXYZ], [AtomXYZ], [AtomXYZ])
-    :parameter mo_paths: Path to the MO inside the HDF5.
-    :paramter dictCGFS: Dictionary from Atomic Label to basis set.
-    :type     dictCGFS: Dict String [CGF], CGF = ([Primitives],
-    AngularMomentum), Primitive = (Coefficient, Exponent)
-    :param trans_mtx: path to the transformation matrix to
-    translate from Cartesian to Sphericals.
     :returns: [Matrix] containing the overlaps at different times
     """
     # Atomic orbitals overlap
-    suv = calcOverlapMtx(config,  dict_input)
+    suv = calcOverlapMtx(config,  pair_molecules)
 
     # Read Orbitals Coefficients
-    css0, css1 = read_overlap_data(config, dict_input["mo_paths"])
+    css0, css1 = coefficients
 
     return np.dot(css0.T, np.dot(suv, css1))
 
@@ -165,12 +157,12 @@ def compute_range_orbitals(mtx: Matrix, nHOMO: int,
     return lowest, highest
 
 
-def calcOverlapMtx(config: dict, dict_input: dict) -> Matrix:
+def calcOverlapMtx(config: dict, molecules: tuple) -> Matrix:
     """
     Parallel calculation of the overlap matrix using the libint2 library
     at two different geometries: R0 and R1.
     """
-    mol_i, mol_j = tuple(tuplesXYZ_to_plams(x) for x in dict_input["molecules"])
+    mol_i, mol_j = tuple(tuplesXYZ_to_plams(x) for x in molecules)
 
     # unique molecular paths
     path_i = join(config["scratch_path"], "molecule_{}.xyz".format(uuid.uuid4()))
