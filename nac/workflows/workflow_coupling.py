@@ -32,9 +32,9 @@ def workflow_derivative_couplings(config: dict) -> list:
     logger.info("starting!")
 
     # compute the molecular orbitals
-    # mo_paths_hdf5 = calculate_mos(config)
+    mo_paths_hdf5 = calculate_mos(config)
 
-    mo_paths_hdf5 = run(calculate_mos(config), folder=config.workdir)
+    # mo_paths_hdf5 = run(calculate_mos(config), folder=config.workdir)
 
     # Overlap matrix at two different times
     promised_overlaps = calculate_overlap(config, mo_paths_hdf5)
