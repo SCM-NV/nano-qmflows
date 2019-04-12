@@ -1,8 +1,10 @@
 ---
 name: Feature request
-about: I would like a new feature to be included in the **qmflows-namd** library
+about: I would like a new feature to be included in the library
 title: ''
 labels: enhancement
 assignees: ''
 
 ---
+
+Tell us what would be a nice feature to make the **qmflows-namd** library even better!
