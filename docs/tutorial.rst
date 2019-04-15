@@ -56,6 +56,27 @@ Both the *molecular orbitals* and the *derivative couplings* for a given molecul
 Then, in order to restart the job you need to perform the following actions:
 
   * **Do Not remove** the file called ``cache.db`` from the current work  directory.
+  
+
+Distribute Absorption Spectrum
+------------------------------
+
+This workflow computes the absorption spectra for a given molecular system and returns a set of files in TXT format. The principle of distribution workflow is dividing the work in multiple, separated, instances (chunks), in order to be able to split time-consuming jobs into smaller, quicker ones.
+The input is described in YAML format as showed in the following example:
+
+.. literalinclude:: ../test/test_files/guanine_distribution.yml
+    :linenos:
+
+The input file guanine_distribution.yml contains all settings to perform the perform the calculation of absorption spectra of Guanine over a trajectory described by multiple geometries, and needs to be edited according to your system and preferences. Pay attention to the following parameters, which are specific for this workflow:
+
+ * **Stride:** this parameter controls the accuracy of sampling of geometries contained in the MD trajectory of reference. For example, a value of stride: 10 indicates that the spectrum analysis will be performed on 1 out of 10 points in the reference trajectory. 
+ 
+Two important things have to be pointed out:
+  1.	The workflow will perform SCF calculations for each point in the trajectory; only afterwards it will sample the number of structures on which the spectrum analysis will be performed
+  2.	Down-sampling issues might arise from the number of points that are actually printed during the MD calculations. Some programs, indeed, offer the possibility to print (in the output file) only one point out of ten (or more) calculated. In this case, applying a - stride: 10 - would in practice mean that you are sampling 1 point out of 100 points in the trajectory.
+
+ * **Blocks:** this parameter indicates into how many blocks has the job to be split. This will generate as many chunks’ folders in your working directory, all of each containing the specific input and launch files.
+ 
 
 Known Issues
 ------------
