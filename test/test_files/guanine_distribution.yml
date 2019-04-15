@@ -1,0 +1,45 @@
+workflow:
+  distribute_absorption_spectrum
+project_name:
+  DMSO_PbBr4
+xc_dft:
+  pbe
+tddft:
+  stda
+active_space: [20, 20]
+stride:
+  10
+path_hdf5:
+  "/scratch-shared/frazac/tutorial/guanine.hdf5"
+path_traj_xyz:
+  "/home/frazac/IVAN/Guanine/MD/qmworks-cp2k-pos-1.xyz"
+scratch_path:
+  "/scratch-shared/frazac/guanine/"
+workdir: "."
+blocks: 5
+
+job_scheduler:
+  scheduler: SLURM
+  nodes: 1
+  tasks: 24
+  wall_time: "1:00:00"
+  queue_name: "short"
+  load_modules: "source activate qmflows\nmodule load eb\nmodule load CP2K/5.1-foss-2017b"
+
+
+cp2k_general_settings:
+  basis:  "DZVP-MOLOPT-SR-GTH"
+  potential: "GTH-PBE"
+  path_basis: "/home/frazac/cp2k_basis"
+  periodic: "xyz"
+  charge: 0
+  cell_parameters: 25.0
+  cell_angles: [90.0,90.0,90.0]
+
+  cp2k_settings_main:
+    specific:
+      template: pbe_main
+
+  cp2k_settings_guess:
+     specific:
+      template: pbe_guess
