@@ -11,8 +11,10 @@ def remove_files():
     """ Remove tmp files in cwd """
     for path in fnmatch.filter(os.listdir('.'), "plams_workdir*"):
         shutil.rmtree(path)
-    if os.path.exists("cache.db"):
-        os.remove("cache.db")
+    for ext in ("hdf5", "db", "lock"):
+        name = "cache.{}".format(ext)
+        if os.path.exists(name):
+            os.remove(name)
 
 
 def cp2k_available():
