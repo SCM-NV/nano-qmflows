@@ -1,10 +1,11 @@
 __all__ = ['workflow_stddft']
 
 from nac.common import (
-    DictConfig, angs2au, change_mol_units, h2ev, hardness, retrieve_hdf5_data,
-    is_data_in_hdf5, store_arrays_in_hdf5, xc)
+    DictConfig, angs2au, calc_orbital_Slabels, change_mol_units,
+    is_data_in_hdf5, h2ev,
+    hardness, read_basis_format, retrieve_hdf5_data,
+    store_arrays_in_hdf5, xc)
 from nac.integrals.multipole_matrices import get_multipole_matrix
-from nac.integrals.spherical_Cartesian_cgf import (calc_orbital_Slabels, read_basis_format)
 from nac.schedule.components import calculate_mos
 from nac.workflows.initialization import initialize
 from os.path import join

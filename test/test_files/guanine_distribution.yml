@@ -1,0 +1,45 @@
+workflow:
+  distribute_absorption_spectrum
+project_name:
+  guanine_distribution
+xc_dft:
+  pbe
+tddft:
+  stda
+active_space: [20, 20]
+stride:
+  10
+path_hdf5:
+  "/test/test_files/guanine.hdf5"
+path_traj_xyz:
+  "test/test_files/trajectory.xyz"
+scratch_path:
+  "test/test_files/"
+workdir: "."
+blocks: 5
+
+job_scheduler:
+  scheduler: SLURM
+  nodes: 1
+  tasks: 24
+  wall_time: "1:00:00"
+  queue_name: "normal"
+  load_modules: "source activate qmflows\nmodule load eb\nmodule load CP2K/5.1-foss-2017b"
+
+
+cp2k_general_settings:
+  basis:  "DZVP-MOLOPT-SR-GTH"
+  potential: "GTH-PBE"
+  path_basis: "/home/user/cp2k_basis"
+  periodic: "xyz"
+  charge: 0
+  cell_parameters: 25.0
+  cell_angles: [90.0,90.0,90.0]
+
+  cp2k_settings_main:
+    specific:
+      template: pbe_main
+
+  cp2k_settings_guess:
+     specific:
+      template: pbe_guess

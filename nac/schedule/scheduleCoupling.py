@@ -12,6 +12,8 @@ import os
 from nac.integrals import (
     calculate_couplings_levine, calculate_couplings_3points,
     compute_overlaps_for_coupling, correct_phases)
+from nac.integrals.nonAdiabaticCoupling import (
+    read_overlap_data)
 from nac.common import (
     Matrix, Vector, Tensor3D,
     femtosec2au, retrieve_hdf5_data,
@@ -274,58 +276,69 @@ def calculate_overlap(config: dict, mo_paths_hdf5: list) -> list:
 
     :returns: paths to the Overlap matrices inside the HDF5.
     """
-    geometries = config.geometries
-    nPoints = len(geometries) - 1
+    # Number of couplings to compute
+    nPoints = len(config.geometries) - 1
+    # Check what are the missing Couplings
+    all_overlaps_paths = [create_overlap_path(config, i) for i in range(nPoints)]
+    overlap_is_done = [check_if_overlap_is_done(config, p) for p in all_overlaps_paths]
 
-    # Compute Overlaps between two different geometries
-    paths_overlaps = [
-        lazy_overlaps(
-            config,
-            {'i': i,
-             'molecules': select_molecules(config, geometries, i),
-             'mo_paths': [mo_paths_hdf5[i + j][1] for j in range(2)]})
-        for i in range(nPoints)]
+    paths = []
+    for i in range(nPoints):
+        if overlap_is_done[i]:
+            p = all_overlaps_paths[i]
+        else:
+            p = single_machine_overlaps(config, mo_paths_hdf5, i)
+        paths.append(p)
 
-    return paths_overlaps
+    return paths
 
 
-def select_molecules(config: dict, geometries: list, i: int):
+def single_machine_overlaps(config: dict, mo_paths_hdf5: list, i: int):
     """
-    Select the pairs of molecules to compute the couplings
+    Compute the overlaps in the CPUs avaialable on the local machine
     """
-    if config.overlaps_deph:
-        return tuple(map(lambda idx: parse_string_xyz(geometries[idx]),
-                         [0, i + 1]))
-    else:
-        return tuple(map(lambda idx: parse_string_xyz(geometries[idx]),
-                         [i, i + 1]))
+    # Data to compute the overlaps
+    pair_molecules = select_molecules(config, i)
+    mo_paths = [mo_paths_hdf5[i + j][1] for j in range(2)]
+    coefficients = read_overlap_data(config, mo_paths)
 
+    # Compute the overlap
+    overlaps = compute_overlaps_for_coupling(
+        config, pair_molecules, coefficients)
 
-def lazy_overlaps(config: dict, dict_input: dict) -> str:
-    """
-    Calculate the 4 overlap matrix used to compute the subsequent couplings.
-    The overlap matrices are computed using 3 consecutive set of MOs and
-    3 consecutive geometries( in atomic units), from a molecular dynamics.
-
-    :returns: path to the overlaps inside the HDF5
-    """
-    # Path inside the HDF5 where the overlaps are stored
-    i = dict_input["i"]
-    root = join(config.project_name, 'overlaps_{}'.format(i + config.enumerate_from))
-    overlaps_paths_hdf5 = join(root, 'mtx_sji_t0')
-
-    # If the Overlaps are not in the HDF5 file compute them
-    if is_data_in_hdf5(config.path_hdf5, overlaps_paths_hdf5):
-        logger.info("{} Overlaps are already in the HDF5".format(root))
-    else:
-        # Read the Molecular orbitals from the HDF5
-        logger.info("Computing: {}".format(root))
-
-        # Paths the MOs inside the HDF5
-        overlaps = compute_overlaps_for_coupling(config, dict_input)
-        store_arrays_in_hdf5(config.path_hdf5, overlaps_paths_hdf5, overlaps)
+    # Store the array in the HDF5
+    overlaps_paths_hdf5 = create_overlap_path(config, i)
+    store_arrays_in_hdf5(config.path_hdf5, overlaps_paths_hdf5, overlaps)
 
     return overlaps_paths_hdf5
+
+
+def create_overlap_path(config: dict, i: int) -> str:
+    """
+    Create the path inside the HDF5 where the overlap is going to be store.
+    """
+    root = join(config.project_name, 'overlaps_{}'.format(i + config.enumerate_from))
+    return join(root, 'mtx_sji_t0')
+
+
+def select_molecules(config: dict, i: int) -> tuple:
+    """
+    Select the pairs of molecules to compute the couplings.
+    """
+    k = 0 if config.overlaps_deph else i
+    return tuple(parse_string_xyz(config.geometries[idx]) for idx in (k, i + 1))
+
+
+def check_if_overlap_is_done(config: dict, overlaps_paths_hdf5: str) -> bool:
+    """
+    Search for a given Overlap inside the HDF5.
+    """
+    if is_data_in_hdf5(config.path_hdf5, overlaps_paths_hdf5):
+        logger.info("{} Overlaps are already in the HDF5".format(overlaps_paths_hdf5))
+        return True
+    else:
+        logger.info("Computing: {}".format(overlaps_paths_hdf5))
+        return False
 
 
 def write_hamiltonians(config: dict, crossing_and_couplings: Tuple, mo_paths_hdf5: list) -> list:
