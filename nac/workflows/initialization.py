@@ -29,17 +29,12 @@ def initialize(config: dict) -> dict:
     Initialize all the data required to schedule the workflows associated with
     the nonadaibatic coupling
     """
-    project_name = config["project_name"]
+    log_config(config)
 
-    # Start logging event
-    file_log = '{}.log'.format(project_name)
-    logging.basicConfig(filename=file_log, level=logging.DEBUG,
-                        format='%(levelname)s:%(message)s  %(asctime)s\n',
-                        datefmt='%m/%d/%Y %I:%M:%S %p')
     # Scratch folder
     scratch_path = config["scratch_path"]
     if scratch_path is None:
-        scratch_path = join(tempfile.gettempdir(), getpass.getuser(), project_name)
+        scratch_path = join(tempfile.gettempdir(), getpass.getuser(), config.project_name)
         logger.warning("path to scratch was not defined, using: {}".format(scratch_path))
     config['workdir'] = scratch_path
 
@@ -163,12 +158,18 @@ def split_trajectory(path: str, nBlocks: int, pathOut: str) -> list:
         return fnmatch.filter(os.listdir(), "chunk_xyz_?")
 
 
-def log_config(workdir, path_hdf5, algorithm):
+def log_config(config):
     """
     Print initial configuration
     """
-    # Get logger
-    logger = logging.getLogger(__name__)
+    workdir = os.path.abspath('.')
+    file_log = '{}.log'.format(config.project_name)
+    logging.basicConfig(filename=file_log, level=logging.DEBUG,
+                        format='%(asctime)s---%(levelname)s\n%(message)s\n',
+                        datefmt='[%I:%M:%S]')
+    logging.getLogger("noodles").setLevel(logging.WARNING)
+    handler = logging.StreamHandler()
+    handler.terminator = ""
 
     version = pkg_resources.get_distribution('qmflows-namd').version
     path = nac.__path__
@@ -176,5 +177,4 @@ def log_config(workdir, path_hdf5, algorithm):
     logger.info("Using qmflows-namd version: {} ".format(version))
     logger.info("qmflows-namd path is: {}".format(path))
     logger.info("Working directory is: {}".format(workdir))
-    logger.info("Data will be stored in HDF5 file: {}".format(path_hdf5))
-    logger.info("The chosen algorithm to compute the coupling is: {}\n".format(algorithm))
+    logger.info("Data will be stored in HDF5 file: {}".format(config.path_hdf5))

@@ -143,7 +143,7 @@ map_shell_to_basis_function(const std::vector<Shell> &shells) {
   std::vector<size_t> result;
   result.reserve(shells.size());
 
-  size_t n = 0;
+  auto n = 0;
   for (auto shell : shells) {
     result.push_back(n);
     n += shell.size();
