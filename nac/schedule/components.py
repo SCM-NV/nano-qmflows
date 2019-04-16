@@ -142,7 +142,7 @@ def store_enery(config: dict, dict_input: dict, promise_qm: object) -> str:
     store_arrays_in_hdf5(
         config.path_hdf5, dict_input['node_energy'], promise_qm.energy)
 
-    logger.info("Total energy point of point {} is: {}".format(
+    logger.info("Total energy of point {} is: {}".format(
         dict_input['k'], promise_qm.energy))
 
     return dict_input["node_energy"]
