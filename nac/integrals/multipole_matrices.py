@@ -11,7 +11,7 @@ def get_multipole_matrix(config: dict, inp: dict, multipole: str) -> Matrix:
     """
     Retrieve the `multipole` number `i` from the trajectory. Otherwise compute it.
     """
-    root = join(config['project_name'], 'multipole', 'point_{}'.format(inp.i))
+    root = join(config['project_name'], 'multipole', 'point_{}'.format(inp.i + config.enumerate_from))
     path_hdf5 = config['path_hdf5']
     path_multipole_hdf5 = join(root, multipole)
     matrix_multipole = search_multipole_in_hdf5(path_hdf5, path_multipole_hdf5, multipole)
