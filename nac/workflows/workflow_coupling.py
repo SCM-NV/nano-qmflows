@@ -6,7 +6,7 @@ from nac.schedule.components import calculate_mos
 from nac.schedule.scheduleCoupling import (
     calculate_overlap, lazy_couplings, write_hamiltonians)
 from nac.workflows.initialization import initialize
-from noodles import schedule
+from noodles import (gather, schedule, unpack)
 from os.path import join
 from qmflows import run
 
@@ -32,7 +32,7 @@ def workflow_derivative_couplings(config: dict) -> list:
     logger.info("starting!")
 
     # compute the molecular orbitals
-    mo_paths_hdf5 = calculate_mos(config)
+    mo_paths_hdf5, energy_paths_hdf5 = unpack(calculate_mos(config), 2)
 
     # mo_paths_hdf5 = run(calculate_mos(config), folder=config.workdir)
 
@@ -56,7 +56,7 @@ def workflow_derivative_couplings(config: dict) -> list:
     promise_files = schedule_write_ham(
         config, promised_crossing_and_couplings, mo_paths_hdf5)
 
-    results = run(promise_files, folder=config.workdir)
+    results = run(gather(promise_files, energy_paths_hdf5), folder=config.workdir)
 
     remove_folders(config.folders)
 

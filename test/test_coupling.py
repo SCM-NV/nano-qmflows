@@ -26,7 +26,7 @@ def test_fast_couplings(tmp_path):
     shutil.copy(config.path_hdf5, tmp_hdf5)
     config['path_hdf5'] = tmp_hdf5
     try:
-        hamiltonians = workflow_derivative_couplings(config)
+        hamiltonians, _ = workflow_derivative_couplings(config)
         os.remove('cache.db')
         check_couplings(config, tmp_hdf5)
         check_hamiltonians(hamiltonians)

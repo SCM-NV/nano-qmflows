@@ -75,7 +75,7 @@ int main() {
 
 // OpenMP or multithread computations
 namespace libint2 {
-  auto nthreads = 1; 
+auto nthreads = 1;
 
 /// fires off \c nthreads instances of lambda in parallel
 template <typename Lambda> void parallel_do(Lambda &lambda) {
@@ -168,7 +168,7 @@ Matrix compute_overlaps_for_couplings(const std::vector<Shell> &shells_1,
   engines[0] = libint2::Engine(Operator::overlap, max_nprim(shells_1),
                                max_l(shells_1), 0);
 
-  for (size_t i = 1; i != nthreads; ++i) {
+  for (auto i = 1; i != nthreads; ++i) {
     engines[i] = engines[0];
   }
 
@@ -237,7 +237,7 @@ std::vector<Matrix> compute_multipoles(
 
   // pass operator params to the engines
   engines[0].set_params(oparams);
-  for (size_t i = 1; i != nthreads; ++i) {
+  for (auto i = 1; i != nthreads; ++i) {
     engines[i] = engines[0];
   }
 
@@ -269,7 +269,7 @@ std::vector<Matrix> compute_multipoles(
         // compute shell pair
         engines[thread_id].compute(shells[s1], shells[s2]);
 
-        for (unsigned int op = 0; op != nopers; ++op) {
+        for (auto op = 0; op != nopers; ++op) {
           // "map" buffer to a const Eigen Matrix, and copy it to the
           // corresponding blocks of the result
           Eigen::Map<const Matrix> buf_mat(buf[op], n1, n2);
