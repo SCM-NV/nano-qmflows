@@ -135,7 +135,7 @@ def write_input(folder_path: str, config: dict) -> None:
         config["cp2k_general_settings"]["path_basis"])
 
     # remove keys from input
-    for k in ['blocks', 'calculate_guesses', 'job_scheduler', 'mo_index_range',
+    for k in ['blocks', 'job_scheduler', 'mo_index_range',
               'workdir']:
         del config[k]
 
