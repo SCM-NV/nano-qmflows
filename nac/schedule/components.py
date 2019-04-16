@@ -14,7 +14,8 @@ import shutil
 
 # ==================> Internal modules <==========
 from nac.schedule.scheduleCp2k import prepare_job_cp2k
-from nac.common import (Matrix, is_data_in_hdf5, read_cell_parameters_as_array)
+from nac.common import (
+    Matrix, is_data_in_hdf5, read_cell_parameters_as_array, store_arrays_in_hdf5)
 from qmflows.hdf5 import dump_to_hdf5
 from qmflows.utils import chunksOf
 from qmflows.warnings_qmflows import SCF_Convergence_Warning
@@ -62,6 +63,7 @@ def calculate_mos(config: dict) -> list:
     # First calculation has no initial guess
     # calculate the rest of the jobs using the previous point as initial guess
     orbitals = []  # list to the nodes in the HDF5 containing the MOs
+    energies = []
     guess_job = None
     for j, gs in enumerate(config.geometries):
 
@@ -75,13 +77,14 @@ def calculate_mos(config: dict) -> list:
 
         # Path where the MOs will be store in the HDF5
         root = join(config.project_name, 'point_{}'.format(k), config.package_name, 'mo')
-        dict_input["node_paths"] = [join(root, 'eigenvalues'), join(root, 'coefficients')]
+        dict_input["node_MOs"] = [join(root, 'eigenvalues'), join(root, 'coefficients')]
+        dict_input["node_energy"] = join(root, 'energy')
 
         # If the MOs are already store in the HDF5 format return the path
         # to them and skip the calculation
-        if is_data_in_hdf5(config.path_hdf5, dict_input["node_paths"]):
+        if is_data_in_hdf5(config.path_hdf5, dict_input["node_MOs"]):
             logger.info("point_{} has already been calculated".format(k))
-            orbitals.append(dict_input["node_paths"])
+            orbitals.append(dict_input["node_MOs"])
         else:
             logger.info("point_{} has been scheduled".format(k))
 
@@ -100,35 +103,49 @@ def calculate_mos(config: dict) -> list:
             promise_qm = schedule_check(promise_qm, config, dict_input)
 
             # Store the computation
-            path_MOs = store_in_hdf5(config, dict_input, promise_qm)
+            orbitals.append(store_MOs(config, dict_input, promise_qm))
+            energies.append(store_enery(config, dict_input, promise_qm))
 
             guess_job = promise_qm
-            orbitals.append(path_MOs)
 
-    return gather(*orbitals)
+    return gather(gather(*orbitals), gather(*energies))
 
 
 @schedule
-def store_in_hdf5(config: dict, dict_input: dict, promise_qm: object) -> str:
+def store_MOs(config: dict, dict_input: dict, promise_qm: object) -> str:
     """
     Store the MOs in the HDF5
     """
     # Molecular Orbitals
     mos = promise_qm.orbitals
-    if mos is not None:
-        # Store in the HDF5
-        try:
-            with h5py.File(config.path_hdf5, 'r+') as f5:
-                dump_to_hdf5(
-                    mos, 'cp2k', f5,
-                    project_name=config.project_name, job_name=dict_input["job_name"])
-        # Remove the ascii MO file
-        finally:
-            work_dir = promise_qm.archive['work_dir']
-            path_MOs = fnmatch.filter(os.listdir(work_dir), 'mo_*MOLog')[0]
-            os.remove(join(work_dir, path_MOs))
 
-    return dict_input["node_paths"]
+    # Store in the HDF5
+    try:
+        with h5py.File(config.path_hdf5, 'r+') as f5:
+            dump_to_hdf5(
+                mos, 'cp2k', f5,
+                project_name=config.project_name, job_name=dict_input["job_name"])
+    # Remove the ascii MO file
+    finally:
+        work_dir = promise_qm.archive['work_dir']
+        path_MOs = fnmatch.filter(os.listdir(work_dir), 'mo_*MOLog')[0]
+        os.remove(join(work_dir, path_MOs))
+
+    return dict_input["node_MOs"]
+
+
+@schedule
+def store_enery(config: dict, dict_input: dict, promise_qm: object) -> str:
+    """
+    Store the total energy in the HDF5 file.
+    """
+    store_arrays_in_hdf5(
+        config.path_hdf5, dict_input['node_energy'], promise_qm.energy)
+
+    logger.info("Total energy point of point {} is: {}".format(
+        dict_input['k'], promise_qm.energy))
+
+    return dict_input["node_energy"]
 
 
 def compute_orbitals(config: dict, dict_input: dict, guess_job) -> list:

@@ -11,7 +11,7 @@ from nac.workflows.initialization import initialize
 from os.path import join
 from qmflows.parsers import parse_string_xyz
 from qmflows import run
-from noodles import (gather, schedule)
+from noodles import (gather, schedule, unpack)
 from scipy.linalg import sqrtm
 from scipy.spatial.distance import cdist
 import h5py
@@ -34,7 +34,7 @@ def workflow_stddft(config: dict) -> None:
     config.update(initialize(config))
 
     # Single Point calculations settings using CP2K
-    mo_paths_hdf5 = calculate_mos(config)
+    mo_paths_hdf5, energy_paths_hdf5 = unpack(calculate_mos(config), 2)
 
     # Read structures
     molecules_au = [change_mol_units(parse_string_xyz(gs))
@@ -49,7 +49,7 @@ def workflow_stddft(config: dict) -> None:
            {'i': i * config.stride, 'mol': mol}))
          for i, mol in enumerate(molecules_au)])
 
-    return run(results, folder=config['workdir'])
+    return run(gather(results, energy_paths_hdf5), folder=config['workdir'])
 
 
 def compute_excited_states_tddft(config: dict, path_MOs: list, dict_input: dict):
@@ -107,8 +107,8 @@ def get_omega_xia(config: dict, dict_input: dict):
         return tuple(retrieve_hdf5_data(config.path_hdf5, paths_omega_xia))
     else:
         omega, xia = compute_omega_xia()
-        store_arrays_in_hdf5(config.path_hdf5, paths_omega_xia[0], omega)
-        store_arrays_in_hdf5(config.path_hdf5, paths_omega_xia[1], xia)
+        store_arrays_in_hdf5(config.path_hdf5, paths_omega_xia[0], omega, dtype=omega.dtype)
+        store_arrays_in_hdf5(config.path_hdf5, paths_omega_xia[1], xia, dtype=xia.dtype)
 
         return omega, xia
 

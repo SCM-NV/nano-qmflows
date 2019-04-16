@@ -8,7 +8,6 @@ from qmflows import run
 
 import logging
 
-
 # Starting logger
 logger = logging.getLogger(__name__)
 
@@ -26,8 +25,9 @@ def workflow_single_points(config: dict) -> list:
     logger.info("starting!")
 
     # compute the molecular orbitals
+    # Unpack
     mo_paths_hdf5 = calculate_mos(config)
-
+    # Pack
     results = run(mo_paths_hdf5, folder=config.workdir)
 
     return results
