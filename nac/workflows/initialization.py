@@ -101,7 +101,7 @@ def guesses_to_compute(calculate_guesses: str, enumerate_from: int, len_geometri
         points_guess = [enumerate_from]
         msg = "An initial Calculation will be computed as guess for the wave function"
         logger.info(msg)
-    else:
+    elif calculate_guesses.lower() in 'all':
         # Calculate new Guess in each geometry
         points_guess = [enumerate_from + i for i in range(len_geometries)]
         msg = "A guess calculation will be done for each geometry"

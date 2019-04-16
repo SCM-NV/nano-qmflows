@@ -16,6 +16,7 @@ scratch_path:
   "/tmp/namd"
 workdir: "."
 blocks: 5
+calculate_guesses: "all"
 
 job_scheduler:
   scheduler: SLURM
