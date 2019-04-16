@@ -100,7 +100,7 @@ def get_omega_xia(config: dict, dict_input: dict):
             return compute_std_aproximation(config, dict_input)
 
     # search data in HDF5
-    root = join(config.project_name, 'omega_xia', tddft, 'point_{}'.format(dict_input.i))
+    root = join(config.project_name, 'omega_xia', tddft, 'point_{}'.format(dict_input.i + config.enumerate_from))
     paths_omega_xia = [join(root, x) for x in ("omega", "xia")]
 
     if is_data_in_hdf5(config.path_hdf5, paths_omega_xia):
@@ -233,11 +233,11 @@ def write_output(config: dict, inp: dict):
     """
     output = write_output_tddft(inp)
 
-    path_output = join(config.workdir, 'output_{}_{}.txt'.format(inp.i, config.tddft))
+    path_output = join(config.workdir, 'output_{}_{}.txt'.format(inp.i + config.enumerate_from, config.tddft))
     fmt = '{:^5s}{:^14s}{:^8s}{:^11s}{:^11s}{:^11s}{:^11s}{:<5s}{:^10s}{:<5s}{:^11s}{:^11s}'
     header = fmt.format(
-        'state', 'inp.energy', 'f', 't_dip_x', 't_dip_y', 't_dip_y', 'weight',
-        'from', 'inp.energy', 'to', 'inp.energy', 'delta_E')
+        'state', 'energy', 'f', 't_dip_x', 't_dip_y', 't_dip_y', 'weight',
+        'from', 'energy', 'to', 'energy', 'delta_E')
     np.savetxt(path_output, output,
                fmt='%5d %10.3f %10.5f %10.5f %10.5f %10.5f %10.5f %3d %10.3f %3d %10.3f %10.3f',
                header=header)
