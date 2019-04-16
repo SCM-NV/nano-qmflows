@@ -167,7 +167,11 @@ def add_cell_parameters(general: dict) -> None:
     for s in (general[p] for p in ['cp2k_settings_main', 'cp2k_settings_guess']):
         if file_cell_parameters is None:
             s.cell_parameters = general['cell_parameters']
-            s.cell_angles = general['cell_angles']
+            # If the parameters are matrix remove the angles
+            if isinstance(general['cell_parameters'], list):
+                s.cell_angles = None
+            else:
+                s.cell_angles = general['cell_angles']
         else:
             s.cell_parameters = None
             s.cell_angles = None
