@@ -11,7 +11,7 @@ You can choose to write the coordinates obtained from the convolution with the w
 
 import numpy as np
 from nac.analysis import convolute, func_conv
-import matplotlib.pyplot as onvert in nm if request
+import matplotlib.pyplot as plt
 import glob
 import argparse
 
