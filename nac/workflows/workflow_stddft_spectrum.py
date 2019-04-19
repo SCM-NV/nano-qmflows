@@ -223,10 +223,6 @@ def compute_oscillator_strengths(config: dict, inp: dict):
         compute_transition_matrix(m) for m in td_matrices)
 
     # 4) Compute the oscillator strength
-
-#    if tddft == 'sing_orb':
-#        f = 2 / 3 * inp.omega * (td_matrices[0] ** 2 + td_matrices[1] ** 2 + td_matrices[2] ** 2)
-#    else:
     f = 2 / 3 * inp.omega * (d_x ** 2 + d_y ** 2 + d_z ** 2)
 
     # Write to output
