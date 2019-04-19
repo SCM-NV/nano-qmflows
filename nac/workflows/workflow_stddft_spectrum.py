@@ -195,10 +195,17 @@ def compute_oscillator_strengths(config: dict, inp: dict):
         inp.energy[inp.nocc:].reshape(inp.nvirt, 1).T).reshape(inp.nocc*inp.nvirt)
 
     def compute_transition_matrix(matrix):
-        return np.stack(
+        if tddft == 'sing_orb':
+           tm = np.stack(
+            [np.sum( 
+                 delta_ia / inp.omega[i] * inp.xia[:, i] * matrix)
+                   for i in range(inp.nocc*inp.nvirt)])
+        else:
+           tm = np.stack(
             [np.sum(
                 np.sqrt(2 * delta_ia / inp.omega[i]) * inp.xia[:, i] * matrix)
-             for i in range(inp.nocc*inp.nvirt)])
+                  for i in range(inp.nocc*inp.nvirt)])
+        return tm 
 
     # 2) Compute the transition dipole matrix TDM(i->a)
     # Call the function that computes transition dipole moments integrals
@@ -217,10 +224,10 @@ def compute_oscillator_strengths(config: dict, inp: dict):
 
     # 4) Compute the oscillator strength
 
-    if tddft == 'sing_orb':
-        f = 2 / 3 * inp.omega * (td_matrices[0] ** 2 + td_matrices[1] ** 2 + td_matrices[2] ** 2)
-    else:
-        f = 2 / 3 * inp.omega * (d_x ** 2 + d_y ** 2 + d_z ** 2)
+#    if tddft == 'sing_orb':
+#        f = 2 / 3 * inp.omega * (td_matrices[0] ** 2 + td_matrices[1] ** 2 + td_matrices[2] ** 2)
+#    else:
+    f = 2 / 3 * inp.omega * (d_x ** 2 + d_y ** 2 + d_z ** 2)
 
     # Write to output
     inp.update({"dipole": (d_x, d_y, d_z), "oscillator": f})
