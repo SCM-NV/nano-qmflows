@@ -4,9 +4,9 @@ This script convolutes the calculated oscillator strengts for different snapshot
 Usage:
 convolution.py -sigma 0.05 -n 2 -nm True -write True
 Use the sigma flag to change the sigma parameter of the gaussian functions used in the convolution.
-If you use the n flag you imply that you want to plot only the spectrum of snapshot number n (starting from 0)instead of an average over all strucutures.
+If you use the n flag you imply that you want to plot only the spectrum of snapshot number n (starting from 0) instead of an average over all strucutures.
 Use the nm to obtain a plot in nm scale.
-You can choose to write the coordinates obtained from the convolution with the write flag
+You can choose to write the coordinates obtained from the convolution with the write flag.
 """
 
 import numpy as np
@@ -47,12 +47,12 @@ def main(sigma, n, nm, write):
        y_grid = convolute(data[:, 0], data[:, 1], x_grid, sigma)
 
     #Convert in nm if request
-    if nm:
+    if nm == True:
        x_grid = 1240/x_grid
 
     #plot
     plt.plot(x_grid, y_grid)
-    if nm:
+    if nm == True:
        plt.xlabel('Wavelenght[nm]')
     else:
        plt.xlabel('Energy[eV]')
@@ -60,12 +60,12 @@ def main(sigma, n, nm, write):
     plt.show()
 
     #Write convoluted coordinates if request
-    if write:
+    if write == True:
        output = np.empty((len(x_grid), 2))
        output[:, 0] = x_grid
        output[:, 1] = y_grid
        fmt = '{:^10s}{:^10s}'
-       if nm:
+       if nm == True:
           header = fmt.format(
               'nm', 'f')
           output = output[::-1]
@@ -96,9 +96,9 @@ if __name__ == "__main__":
                         help='Sigma parameter of the gaussian functions')
     parser.add_argument('-n', default=None, type=int,
                         help='Plot only the spectrum of the strucure number n')
-    parser.add_argument('-nm',
+    parser.add_argument('-nm', default=False, type=bool,
                         help='Convert the x axis in nm')
-    parser.add_argument('-write',
+    parser.add_argument('-write', default=False, type=bool,
                         help='Write the coordinates from the convolution')
 
 
