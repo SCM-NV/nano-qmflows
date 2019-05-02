@@ -47,12 +47,12 @@ def main(sigma, n, nm, write):
        y_grid = convolute(data[:, 0], data[:, 1], x_grid, sigma)
 
     #Convert in nm if request
-    if nm == True:
+    if nm:
        x_grid = 1240/x_grid
 
     #plot
     plt.plot(x_grid, y_grid)
-    if nm == True:
+    if nm:
        plt.xlabel('Wavelenght[nm]')
     else:
        plt.xlabel('Energy[eV]')
@@ -60,12 +60,12 @@ def main(sigma, n, nm, write):
     plt.show()
 
     #Write convoluted coordinates if request
-    if write == True:
+    if write:
        output = np.empty((len(x_grid), 2))
        output[:, 0] = x_grid
        output[:, 1] = y_grid
        fmt = '{:^10s}{:^10s}'
-       if nm == True:
+       if nm:
           header = fmt.format(
               'nm', 'f')
           output = output[::-1]
