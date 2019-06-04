@@ -6,6 +6,12 @@ import setuptools
 import sys
 
 
+here = os.path.abspath(os.path.dirname(__file__))
+version = {}
+with open(os.path.join(here, '__version__.py')) as f:
+    exec(f.read(), version)
+
+
 def readme():
     with open('README.rst') as f:
         return f.read()
@@ -108,14 +114,14 @@ class BuildExt(build_ext):
 
 setup(
     name='qmflows-namd',
-    version='0.8.0',
+    version=version['__version__'],
     description='Derivative coupling calculation',
     license='Apache-2.0',
     url='https://github.com/SCM-NV/qmflows-namd',
     author=['Felipe Zapata', 'Ivan Infante'],
     author_email='f.zapata@esciencecenter.nl',
     keywords='chemistry Photochemistry Simulation',
-    long_description=readme(),
+    long_description=readme() + '\n\n',
     long_description_content_type='text/markdown',
     packages=find_packages(),
     classifiers=[
@@ -135,7 +141,9 @@ setup(
     cmdclass={'build_ext': BuildExt},
     ext_modules=[ext_pybind],
     extras_require={
-        'test': ['coverage', 'pytest>=3.9', 'pytest-cov', 'codacy-coverage']},
+        'test': ['coverage', 'pytest>=3.9', 'pytest-cov', 'codacy-coverage'],
+        'doc': ['sphinx', 'sphinx-autodoc-typehints', 'sphinx_rtd_theme', 'nbsphinx']
+    },
     include_package_data=True,
     package_data={
         'nac': ['basis/*.json', 'basis/BASIS*', 'basis/GTH_POTENTIALS']
