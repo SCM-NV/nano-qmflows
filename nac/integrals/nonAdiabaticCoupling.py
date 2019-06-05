@@ -127,32 +127,19 @@ def read_overlap_data(config: dict, mo_paths: list) -> Tuple:
     mos = retrieve_hdf5_data(config.path_hdf5, mo_paths)
 
     # Extract a subset of molecular orbitals to compute the coupling
-    lowest, highest = compute_range_orbitals(mos[0], config.nHOMO, config.mo_index_range)
+    lowest, highest = compute_range_orbitals(config)
     css0, css1 = tuple(map(lambda xs: xs[:, lowest: highest], mos))
 
     return css0, css1
 
 
-def compute_range_orbitals(mtx: Matrix, nHOMO: int,
-                           mo_index_range: Tuple) -> Tuple:
+def compute_range_orbitals(config: dict) -> Tuple:
     """
     Compute the lowest and highest index used to extract
     a subset of Columns from the MOs
     """
-    # If the user does not define the number of HOMOs and LUMOs
-    # assume that the first half of the read MO from the HDF5
-    # are HOMOs and the last Half are LUMOs.
-    _, nOrbitals = mtx.shape
-    nHOMO = nHOMO if nHOMO is not None else nOrbitals // 2
-
-    # If the mo_index_range variable is not define I assume
-    # that the number of LUMOs is equal to the HOMOs.
-    if all(x is not None for x in [nHOMO, mo_index_range]):
-        lowest = nHOMO - mo_index_range[0]
-        highest = nHOMO + mo_index_range[1]
-    else:
-        lowest = 0
-        highest = nOrbitals
+    lowest = config.nHOMO - (config.mo_index_range[0] + config.active_space[0])
+    highest = config.nHOMO + config.active_space[1] - config.mo_index_range[0]
 
     return lowest, highest
 
