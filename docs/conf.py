@@ -14,11 +14,9 @@
 #
 import os
 import sys
-import nac
-# sys.path.insert(0, os.path.abspath('.'))
+
 
 # -- Project information -----------------------------------------------------
-
 
 project = 'qmflows-namd'
 copyright = '2019, Felipe Zapata and Ivan Infante'
@@ -27,10 +25,15 @@ author = 'Felipe Zapata and Ivan Infante'
 here = os.path.dirname(__file__)
 sys.path.insert(0, os.path.abspath(os.path.join(here, '..')))
 
+vers = {}
+with open(os.path.join(here, '..', '__version__.py')) as f:
+    exec(f.read(), vers)
+
+
 # The short X.Y version
-version = nac.__version__
+version = vers["__version__"]
 # The full version, including alpha/beta/rc tags
-release = nac.__version__
+release = vers["__version__"]
 
 
 # -- General configuration ---------------------------------------------------
