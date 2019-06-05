@@ -13,7 +13,7 @@ from nac.integrals import (
     calculate_couplings_levine, calculate_couplings_3points,
     compute_overlaps_for_coupling, correct_phases)
 from nac.integrals.nonAdiabaticCoupling import (
-    read_overlap_data)
+    compute_range_orbitals, read_overlap_data)
 from nac.common import (
     Matrix, Vector, Tensor3D,
     femtosec2au, retrieve_hdf5_data,
@@ -371,8 +371,7 @@ def write_hamiltonians(config: dict, crossing_and_couplings: Tuple, mo_paths_hdf
 
         # Print Energies in the range given by the user
         if all(x is not None for x in [nHOMO, mo_index_range]):
-            lowest = nHOMO - mo_index_range[0]
-            highest = nHOMO + mo_index_range[1]
+            lowest, highest = compute_range_orbitals(config)
             energies = energies[lowest: highest]
 
         # Swap the energies of the states that are crossing

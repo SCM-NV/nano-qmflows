@@ -172,6 +172,7 @@ def add_cell_parameters(general: dict) -> None:
             s.cell_parameters = None
             s.cell_angles = None
 
+
 def add_periodic(general: dict) -> None:
     """
     Add the keyword for the periodicity of the system
