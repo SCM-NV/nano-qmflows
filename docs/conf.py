@@ -12,16 +12,20 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
-# import os
-# import sys
-# sys.path.insert(0, os.path.abspath('.'))
+import os
+import sys
 import nac
+# sys.path.insert(0, os.path.abspath('.'))
 
 # -- Project information -----------------------------------------------------
+
 
 project = 'qmflows-namd'
 copyright = '2019, Felipe Zapata and Ivan Infante'
 author = 'Felipe Zapata and Ivan Infante'
+
+here = os.path.dirname(__file__)
+sys.path.insert(0, os.path.abspath(os.path.join(here, '..')))
 
 # The short X.Y version
 version = nac.__version__
