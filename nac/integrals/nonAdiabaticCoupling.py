@@ -5,7 +5,6 @@ from compute_integrals import compute_integrals_couplings
 from nac.common import (
     Matrix, Tensor3D, retrieve_hdf5_data, tuplesXYZ_to_plams)
 from os.path import join
-from typing import Tuple
 import numpy as np
 import os
 import uuid
@@ -32,10 +31,7 @@ def calculate_couplings_levine(dt: float, w_jk: Matrix,
     Garrett A. Meek and Benjamin G. Levine.
     dx.doi.org/10.1021/jz5009449 | J. Phys. Chem. Lett. 2014, 5, 2351−2356
     """
-    # Orthonormalize the Overlap matrices
-    w_jk = np.linalg.qr(w_jk)[0]
-    w_kj = np.linalg.qr(w_kj)[0]
-
+    # In numpy sinc is defined as sin(pi * x) / (pi * x)
     # Diagonal matrix
     w_jj = np.diag(np.diag(w_jk))
     w_kk = np.diag(np.diag(w_kj))
@@ -50,8 +46,8 @@ def calculate_couplings_levine(dt: float, w_jk: Matrix,
 
     a = acos_w_jj - asin_w_jk
     b = acos_w_jj + asin_w_jk
-    A = - np.sin(np.sinc(a))
-    B = np.sin(np.sinc(b))
+    A = - np.sin(np.sinc(a / np.pi))
+    B = np.sin(np.sinc(b / np.pi))
 
     # Components C + D
     acos_w_kk = np.arccos(w_kk)
@@ -59,8 +55,8 @@ def calculate_couplings_levine(dt: float, w_jk: Matrix,
 
     c = acos_w_kk - asin_w_kj
     d = acos_w_kk + asin_w_kj
-    C = np.sin(np.sinc(c))
-    D = np.sin(np.sinc(d))
+    C = np.sin(np.sinc(c / np.pi))
+    D = np.sin(np.sinc(d / np.pi))
 
     # Components E
     w_lj = np.sqrt(1 - (w_jj ** 2) - (w_kj ** 2))
@@ -77,9 +73,7 @@ def calculate_couplings_levine(dt: float, w_jk: Matrix,
     E_nonzero = 2 * asin_w_lj * t / (asin_w_lj2 - asin_w_lk2)
 
     # Check whether w_lj is different of zero
-    E1 = np.where(np.abs(w_lj) > 1e-8, E_nonzero, np.zeros(A.shape))
-
-    E = np.where(np.isclose(asin_w_lj2, asin_w_lk2), w_lj ** 2, E1)
+    E = np.where(np.isclose(asin_w_lj2, asin_w_lk2), w_lj ** 2, E_nonzero)
 
     cte = 1 / (2 * dt)
     return cte * (np.arccos(w_jj) * (A + B) + np.arcsin(w_kj) * (C + D) + E)
@@ -106,7 +100,7 @@ def correct_phases(overlaps: Tensor3D, mtx_phases: Matrix) -> list:
 
 
 def compute_overlaps_for_coupling(
-        config: dict, pair_molecules: tuple, coefficients: tuple) -> Tuple:
+        config: dict, pair_molecules: tuple, coefficients: tuple) -> tuple:
     """
     Compute the Overlap matrices used to compute the couplings
     :returns: [Matrix] containing the overlaps at different times
@@ -120,7 +114,7 @@ def compute_overlaps_for_coupling(
     return np.dot(css0.T, np.dot(suv, css1))
 
 
-def read_overlap_data(config: dict, mo_paths: list) -> Tuple:
+def read_overlap_data(config: dict, mo_paths: list) -> tuple:
     """
     Read the Molecular orbital coefficients and the transformation matrix
     """
@@ -133,7 +127,7 @@ def read_overlap_data(config: dict, mo_paths: list) -> Tuple:
     return css0, css1
 
 
-def compute_range_orbitals(config: dict) -> Tuple:
+def compute_range_orbitals(config: dict) -> tuple:
     """
     Compute the lowest and highest index used to extract
     a subset of Columns from the MOs

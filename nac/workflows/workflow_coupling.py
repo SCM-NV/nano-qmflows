@@ -29,7 +29,7 @@ def workflow_derivative_couplings(config: dict) -> list:
     # Dictionary containing the general configuration
     config.update(initialize(config))
 
-    logger.info("starting!")
+    logger.info("starting couplings calculation!")
 
     # compute the molecular orbitals
     mo_paths_hdf5, energy_paths_hdf5 = unpack(calculate_mos(config), 2)
