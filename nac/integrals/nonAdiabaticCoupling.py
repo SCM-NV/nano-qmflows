@@ -31,6 +31,7 @@ def calculate_couplings_levine(dt: float, w_jk: Matrix,
     Garrett A. Meek and Benjamin G. Levine.
     dx.doi.org/10.1021/jz5009449 | J. Phys. Chem. Lett. 2014, 5, 2351−2356
     """
+    # In numpy sinc is defined as sin(pi * x) / (pi * x)
     # Diagonal matrix
     w_jj = np.diag(np.diag(w_jk))
     w_kk = np.diag(np.diag(w_kj))
@@ -72,9 +73,7 @@ def calculate_couplings_levine(dt: float, w_jk: Matrix,
     E_nonzero = 2 * asin_w_lj * t / (asin_w_lj2 - asin_w_lk2)
 
     # Check whether w_lj is different of zero
-    E1 = np.where(np.abs(w_lj) > 1e-8, E_nonzero, np.zeros(A.shape))
-
-    E = np.where(np.isclose(asin_w_lj2, asin_w_lk2), w_lj ** 2, E1)
+    E = np.where(np.isclose(asin_w_lj2, asin_w_lk2), w_lj ** 2, E_nonzero)
 
     cte = 1 / (2 * dt)
     return cte * (np.arccos(w_jj) * (A + B) + np.arcsin(w_kj) * (C + D) + E)
