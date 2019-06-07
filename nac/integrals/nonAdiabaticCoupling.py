@@ -5,7 +5,6 @@ from compute_integrals import compute_integrals_couplings
 from nac.common import (
     Matrix, Tensor3D, retrieve_hdf5_data, tuplesXYZ_to_plams)
 from os.path import join
-from typing import Tuple
 import numpy as np
 import os
 import uuid
@@ -106,7 +105,7 @@ def correct_phases(overlaps: Tensor3D, mtx_phases: Matrix) -> list:
 
 
 def compute_overlaps_for_coupling(
-        config: dict, pair_molecules: tuple, coefficients: tuple) -> Tuple:
+        config: dict, pair_molecules: tuple, coefficients: tuple) -> tuple:
     """
     Compute the Overlap matrices used to compute the couplings
     :returns: [Matrix] containing the overlaps at different times
@@ -120,7 +119,7 @@ def compute_overlaps_for_coupling(
     return np.dot(css0.T, np.dot(suv, css1))
 
 
-def read_overlap_data(config: dict, mo_paths: list) -> Tuple:
+def read_overlap_data(config: dict, mo_paths: list) -> tuple:
     """
     Read the Molecular orbital coefficients and the transformation matrix
     """
@@ -133,7 +132,7 @@ def read_overlap_data(config: dict, mo_paths: list) -> Tuple:
     return css0, css1
 
 
-def compute_range_orbitals(config: dict) -> Tuple:
+def compute_range_orbitals(config: dict) -> tuple:
     """
     Compute the lowest and highest index used to extract
     a subset of Columns from the MOs
