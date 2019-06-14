@@ -30,8 +30,11 @@ def calculate_couplings_levine(dt: float, w_jk: Matrix,
     State Transition Probabilities from Numerical Simulations`.
     Garrett A. Meek and Benjamin G. Levine.
     dx.doi.org/10.1021/jz5009449 | J. Phys. Chem. Lett. 2014, 5, 2351−2356
+
+    NOTE:
+     In numpy sinc is defined as sin(pi * x) / (pi * x)
     """
-    # In numpy sinc is defined as sin(pi * x) / (pi * x)
+
     # Diagonal matrix
     w_jj = np.diag(np.diag(w_jk))
     w_kk = np.diag(np.diag(w_kj))
@@ -46,8 +49,8 @@ def calculate_couplings_levine(dt: float, w_jk: Matrix,
 
     a = acos_w_jj - asin_w_jk
     b = acos_w_jj + asin_w_jk
-    A = - np.sin(np.sinc(a / np.pi))
-    B = np.sin(np.sinc(b / np.pi))
+    A = - np.sinc(a / np.pi)
+    B = np.sinc(b / np.pi)
 
     # Components C + D
     acos_w_kk = np.arccos(w_kk)
@@ -55,8 +58,8 @@ def calculate_couplings_levine(dt: float, w_jk: Matrix,
 
     c = acos_w_kk - asin_w_kj
     d = acos_w_kk + asin_w_kj
-    C = np.sin(np.sinc(c / np.pi))
-    D = np.sin(np.sinc(d / np.pi))
+    C = np.sinc(c / np.pi)
+    D = np.sinc(d / np.pi)
 
     # Components E
     w_lj = np.sqrt(1 - (w_jj ** 2) - (w_kj ** 2))
@@ -73,7 +76,10 @@ def calculate_couplings_levine(dt: float, w_jk: Matrix,
     E_nonzero = 2 * asin_w_lj * t / (asin_w_lj2 - asin_w_lk2)
 
     # Check whether w_lj is different of zero
-    E = np.where(np.isclose(asin_w_lj2, asin_w_lk2), w_lj ** 2, E_nonzero)
+    E1 = np.where(np.abs(w_lj) > 1e-8, E_nonzero, np.zeros(A.shape))
+
+    # Check whether w_lj is different of zero
+    E = np.where(np.isclose(asin_w_lj2, asin_w_lk2), w_lj ** 2, E1)
 
     cte = 1 / (2 * dt)
     return cte * (np.arccos(w_jj) * (A + B) + np.arcsin(w_kj) * (C + D) + E)
