@@ -56,7 +56,8 @@ def workflow_derivative_couplings(config: dict) -> list:
     promise_files = schedule_write_ham(
         config, promised_crossing_and_couplings, mo_paths_hdf5)
 
-    results = run(gather(promise_files, energy_paths_hdf5), folder=config.workdir)
+    results = run(
+        gather(promise_files, energy_paths_hdf5), folder=config.workdir, always_cache=False)
 
     remove_folders(config.folders)
 
