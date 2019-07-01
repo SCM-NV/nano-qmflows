@@ -54,6 +54,13 @@ def check_couplings(config: dict, tmp_hdf5: str) -> None:
     tensor_couplings = np.stack(retrieve_hdf5_data(tmp_hdf5, couplings))
     assert np.isfinite(tensor_couplings).all()
 
+    # Check that the couplings are anti-symetric
+    for mtx in tensor_couplings[:]:
+        assert np.allclose(mtx, -mtx.T)
+
+    # Check that there are not NaN
+    assert (not np.all(np.isnan(tensor_couplings)))
+
 
 def check_hamiltonians(hamiltonians: str) -> None:
     """
