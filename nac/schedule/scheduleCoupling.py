@@ -159,7 +159,8 @@ def calculate_couplings(config: dict, i: int, fixed_phase_overlaps: Tensor3D) ->
             # Extract the overlap matrices involved in the coupling computation
             sji_t0 = fixed_phase_overlaps[i]
             # Compute the couplings with the phase corrected overlaps
-            couplings = config["fun_coupling"](dt_au, sji_t0, sji_t0.transpose())
+            couplings = config["fun_coupling"](
+                dt_au, sji_t0, sji_t0.transpose())
         elif config.algorithm == '3points':
             sji_t0, sji_t1 = fixed_phase_overlaps[i: i + 2]
             couplings = config["fun_coupling"](dt_au, sji_t0, sji_t0.transpose(), sji_t1,
@@ -279,8 +280,10 @@ def calculate_overlap(config: dict, mo_paths_hdf5: list) -> list:
     # Number of couplings to compute
     nPoints = len(config.geometries) - 1
     # Check what are the missing Couplings
-    all_overlaps_paths = [create_overlap_path(config, i) for i in range(nPoints)]
-    overlap_is_done = [check_if_overlap_is_done(config, p) for p in all_overlaps_paths]
+    all_overlaps_paths = [create_overlap_path(
+        config, i) for i in range(nPoints)]
+    overlap_is_done = [check_if_overlap_is_done(
+        config, p) for p in all_overlaps_paths]
 
     paths = []
     for i in range(nPoints):
@@ -317,7 +320,8 @@ def create_overlap_path(config: dict, i: int) -> str:
     """
     Create the path inside the HDF5 where the overlap is going to be store.
     """
-    root = join(config.project_name, 'overlaps_{}'.format(i + config.enumerate_from))
+    root = join(config.project_name, 'overlaps_{}'.format(
+        i + config.enumerate_from))
     return join(root, 'mtx_sji_t0')
 
 
@@ -334,7 +338,8 @@ def check_if_overlap_is_done(config: dict, overlaps_paths_hdf5: str) -> bool:
     Search for a given Overlap inside the HDF5.
     """
     if is_data_in_hdf5(config.path_hdf5, overlaps_paths_hdf5):
-        logger.info("{} Overlaps are already in the HDF5".format(overlaps_paths_hdf5))
+        logger.info("{} Overlaps are already in the HDF5".format(
+            overlaps_paths_hdf5))
         return True
     else:
         logger.info("Computing: {}".format(overlaps_paths_hdf5))
@@ -364,7 +369,8 @@ def write_hamiltonians(config: dict, crossing_and_couplings: Tuple, mo_paths_hdf
         # The first coupling is compute at time t + dt
         # Then I'm shifting the energies dt to get the correct value
         energies_t0 = retrieve_hdf5_data(config.path_hdf5, mo_paths_hdf5[i][0])
-        energies_t1 = retrieve_hdf5_data(config.path_hdf5, mo_paths_hdf5[i + 1][0])
+        energies_t1 = retrieve_hdf5_data(
+            config.path_hdf5, mo_paths_hdf5[i + 1][0])
 
         # Return the average between time t and t + dt
         energies = np.average((energies_t0, energies_t1), axis=0)

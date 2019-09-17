@@ -11,10 +11,12 @@ def get_multipole_matrix(config: dict, inp: dict, multipole: str) -> Matrix:
     """
     Retrieve the `multipole` number `i` from the trajectory. Otherwise compute it.
     """
-    root = join(config['project_name'], 'multipole', 'point_{}'.format(inp.i + config.enumerate_from))
+    root = join(config['project_name'], 'multipole',
+                'point_{}'.format(inp.i + config.enumerate_from))
     path_hdf5 = config['path_hdf5']
     path_multipole_hdf5 = join(root, multipole)
-    matrix_multipole = search_multipole_in_hdf5(path_hdf5, path_multipole_hdf5, multipole)
+    matrix_multipole = search_multipole_in_hdf5(
+        path_hdf5, path_multipole_hdf5, multipole)
 
     if matrix_multipole is None:
         matrix_multipole = compute_matrix_multipole(inp.mol, config, multipole)
@@ -57,10 +59,12 @@ def compute_matrix_multipole(
     basis_name = config["cp2k_general_settings"]["basis"]
 
     if multipole == 'overlap':
-        matrix_multipole = compute_integrals_multipole(path, path_hdf5, basis_name, multipole)
+        matrix_multipole = compute_integrals_multipole(
+            path, path_hdf5, basis_name, multipole)
     elif multipole == 'dipole':
         # The tensor contains the overlap + {x, y, z} dipole matrices
-        super_matrix = compute_integrals_multipole(path, path_hdf5, basis_name, multipole)
+        super_matrix = compute_integrals_multipole(
+            path, path_hdf5, basis_name, multipole)
         dim = super_matrix.shape[1]
 
         # Reshape the super_matrix as a tensor containing overlap + {x, y, z} dipole matrices
@@ -68,7 +72,8 @@ def compute_matrix_multipole(
 
     elif multipole == 'quadrupole':
         # The tensor contains the overlap + {xx, xy, xz, yy, yz, zz} quadrupole matrices
-        super_matrix = compute_integrals_multipole(path, path_hdf5, basis_name, multipole)
+        super_matrix = compute_integrals_multipole(
+            path, path_hdf5, basis_name, multipole)
         dim = super_matrix.shape[1]
 
         # Reshape to 3d tensor containing overlap + {xx, xy, xz, yy, yz, zz} quadrupole matrices
