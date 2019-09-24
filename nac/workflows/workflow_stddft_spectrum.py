@@ -1,9 +1,10 @@
 __all__ = ['workflow_stddft']
 
+from .tools import number_spherical_functions_per_atom
 from nac.common import (
-    DictConfig, angs2au, calc_orbital_Slabels, change_mol_units,
+    DictConfig, angs2au,  change_mol_units,
     is_data_in_hdf5, h2ev,
-    hardness, read_basis_format, retrieve_hdf5_data,
+    hardness, retrieve_hdf5_data,
     store_arrays_in_hdf5, xc)
 from nac.integrals.multipole_matrices import get_multipole_matrix
 from nac.schedule.components import calculate_mos
@@ -14,7 +15,6 @@ from qmflows import run
 from noodles import (gather, schedule, unpack)
 from scipy.linalg import sqrtm
 from scipy.spatial.distance import cdist
-import h5py
 import logging
 import numpy as np
 
@@ -473,20 +473,6 @@ def write_output_tddft(inp: dict):
     output[:, 0] = np.arange(inp.nocc * inp.nvirt) + 1
 
     return output
-
-
-def number_spherical_functions_per_atom(mol, package_name, basis_name, path_hdf5):
-    """
-    Compute the number of spherical shells per atom
-    """
-    with h5py.File(path_hdf5, 'r') as f5:
-        xs = [f5['{}/basis/{}/{}/coefficients'.format(
-            package_name, atom[0], basis_name)] for atom in mol]
-        ys = [calc_orbital_Slabels(
-            package_name, read_basis_format(
-                package_name, path.attrs['basisFormat'])) for path in xs]
-
-        return np.stack([sum(len(x) for x in ys[i]) for i in range(len(mol))])
 
 
 def transition_density_charges(mol, config, s, c_ao):
