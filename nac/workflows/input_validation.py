@@ -1,7 +1,12 @@
 from .schemas import (
-    schema_absorption_spectrum, schema_derivative_couplings,
-    schema_distribute_absorption_spectrum, schema_distribute_derivative_couplings,
-    schema_distribute_single_points, schema_cp2k_general_settings, schema_single_points)
+    schema_absorption_spectrum,
+    schema_derivative_couplings,
+    schema_distribute_absorption_spectrum,
+    schema_distribute_derivative_couplings,
+    schema_distribute_single_points,
+    schema_cp2k_general_settings,
+    schema_single_points,
+    schema_ipr)
 from .templates import (create_settings_from_template, valence_electrons)
 from nac.common import DictConfig
 from os.path import join
@@ -24,7 +29,8 @@ schema_workflows = {
     'cp2k_general_settings': schema_cp2k_general_settings,
     'distribute_derivative_couplings': schema_distribute_derivative_couplings,
     'distribute_absorption_spectrum': schema_distribute_absorption_spectrum,
-    'distribute_single_points': schema_distribute_single_points
+    'distribute_single_points': schema_distribute_single_points,
+    'ipr_calculation': schema_ipr
 }
 
 
@@ -78,7 +84,10 @@ def apply_templates(general: Dict, path_traj_xyz: str) -> None:
     """
     Apply a template for CP2K if the user request so.
     """
-    for s in [general[x] for x in ['cp2k_settings_main', 'cp2k_settings_guess']]:
+    for s in [
+        general[x] for x in [
+            'cp2k_settings_main',
+            'cp2k_settings_guess']]:
         val = s['specific']
 
         if "template" in val:
@@ -94,7 +103,10 @@ def add_missing_keywords(d: Dict) -> Dict:
     # Add keywords if missing
 
     if d.get('nHOMO') is None:
-        d['nHOMO'] = compute_HOMO_index(d['path_traj_xyz'], general['basis'], general['charge'])
+        d['nHOMO'] = compute_HOMO_index(
+            d['path_traj_xyz'],
+            general['basis'],
+            general['charge'])
 
     # Added_mos keyword
     add_mo_index_range(d)
@@ -164,7 +176,10 @@ def add_cell_parameters(general: dict) -> None:
     """
     # Search for a file containing the cell parameters
     file_cell_parameters = general["file_cell_parameters"]
-    for s in (general[p] for p in ['cp2k_settings_main', 'cp2k_settings_guess']):
+    for s in (
+        general[p] for p in [
+            'cp2k_settings_main',
+            'cp2k_settings_guess']):
         if file_cell_parameters is None:
             s.cell_parameters = general['cell_parameters']
             s.cell_angles = None
@@ -177,7 +192,10 @@ def add_periodic(general: dict) -> None:
     """
     Add the keyword for the periodicity of the system
     """
-    for s in (general[p] for p in ['cp2k_settings_main', 'cp2k_settings_guess']):
+    for s in (
+        general[p] for p in [
+            'cp2k_settings_main',
+            'cp2k_settings_guess']):
         s.specific.cp2k.force_eval.subsys.cell.periodic = general['periodic']
 
 
@@ -185,7 +203,10 @@ def add_charge(general: dict) -> None:
     """
     Add the keyword for the charge of the system
     """
-    for s in (general[p] for p in ['cp2k_settings_main', 'cp2k_settings_guess']):
+    for s in (
+        general[p] for p in [
+            'cp2k_settings_main',
+            'cp2k_settings_guess']):
         s.specific.cp2k.force_eval.dft.charge = general['charge']
 
 
@@ -194,7 +215,10 @@ def add_multiplicity(general: dict) -> None:
     Add the keyword for the multiplicity of the system only if greater than 1
     """
     if general['multiplicity'] > 1:
-        for s in (general[p] for p in ['cp2k_settings_main', 'cp2k_settings_guess']):
+        for s in (
+            general[p] for p in [
+                'cp2k_settings_main',
+                'cp2k_settings_guess']):
             s.specific.cp2k.force_eval.dft.multiplicity = general['multiplicity']
             s.specific.cp2k.force_eval.dft.uks = ""
 
@@ -222,7 +246,8 @@ def add_mo_index_range(dict_input: dict) -> None:
     # mo_index_range keyword
     cp2k_main = dict_input['cp2k_general_settings']['cp2k_settings_main']
     dft_main_print = cp2k_main.specific.cp2k.force_eval.dft.print
-    dft_main_print.mo.mo_index_range = "{} {}".format(mo_index_range[0] + 1, mo_index_range[1])
+    dft_main_print.mo.mo_index_range = "{} {}".format(
+        mo_index_range[0] + 1, mo_index_range[1])
     # added_mos
     cp2k_main.specific.cp2k.force_eval.dft.scf.added_mos = mo_index_range[1] - nHOMO
 
@@ -240,7 +265,8 @@ def compute_HOMO_index(path_traj_xyz: str, basis: str, charge: int) -> int:
     number_of_electrons = number_of_electrons - charge
 
     if (number_of_electrons % 2) != 0:
-        raise RuntimeError("Unpair number of electrons detected when computing the HOMO")
+        raise RuntimeError(
+            "Unpair number of electrons detected when computing the HOMO")
 
     return number_of_electrons // 2
 
