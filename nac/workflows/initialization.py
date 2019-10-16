@@ -34,8 +34,10 @@ def initialize(config: dict) -> dict:
     # Scratch folder
     scratch_path = config["scratch_path"]
     if scratch_path is None:
-        scratch_path = join(tempfile.gettempdir(), getpass.getuser(), config.project_name)
-        logger.warning("path to scratch was not defined, using: {}".format(scratch_path))
+        scratch_path = join(tempfile.gettempdir(),
+                            getpass.getuser(), config.project_name)
+        logger.warning(
+            "path to scratch was not defined, using: {}".format(scratch_path))
     config['workdir'] = scratch_path
 
     # If the directory does not exist create it
@@ -46,7 +48,8 @@ def initialize(config: dict) -> dict:
     path_hdf5 = config["path_hdf5"]
     if path_hdf5 is None:
         path_hdf5 = join(scratch_path, 'quantum.hdf5')
-        logger.warning("path to the HDF5 was not defined, using: {}".format(path_hdf5))
+        logger.warning(
+            "path to the HDF5 was not defined, using: {}".format(path_hdf5))
 
     # all_geometries type :: [String]
     geometries = split_file_geometries(config["path_traj_xyz"])
@@ -82,7 +85,8 @@ def save_basis_to_hdf5(config: dict, package_name: str = "cp2k") -> None:
     with h5py.File(config["path_hdf5"]) as f5:
         if basis_location not in f5:
             # Search Path to the file containing the basis set
-            path_basis = pkg_resources.resource_filename("nac", "basis/BASIS_MOLOPT")
+            path_basis = pkg_resources.resource_filename(
+                "nac", "basis/BASIS_MOLOPT")
             keyBasis = InputKey("basis", [path_basis])
             cp2k2hdf5(f5, [keyBasis])
 

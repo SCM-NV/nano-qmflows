@@ -144,7 +144,8 @@ dict_derivative_couplings = {
     Optional("overlaps_deph", default=False): bool
 }
 
-dict_merged_derivative_couplings = merge(dict_general_options, dict_derivative_couplings)
+dict_merged_derivative_couplings = merge(
+    dict_general_options, dict_derivative_couplings)
 
 schema_derivative_couplings = Schema(
     dict_merged_derivative_couplings)
@@ -206,7 +207,8 @@ dict_absorption_spectrum = {
 }
 
 
-dict_merged_absorption_spectrum = merge(dict_general_options, dict_absorption_spectrum)
+dict_merged_absorption_spectrum = merge(
+    dict_general_options, dict_absorption_spectrum)
 
 schema_absorption_spectrum = Schema(dict_merged_absorption_spectrum)
 

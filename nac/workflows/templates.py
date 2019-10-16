@@ -10,7 +10,8 @@ import pkg_resources as pkg
 import yaml
 
 
-path_valence_electrons = pkg.resource_filename("nac", "basis/valence_electrons.json")
+path_valence_electrons = pkg.resource_filename(
+    "nac", "basis/valence_electrons.json")
 path_aux_fit = pkg.resource_filename("nac", "basis/aux_fit.json")
 
 with open(path_valence_electrons, 'r') as f1, open(path_aux_fit, 'r') as f2:
@@ -23,7 +24,8 @@ def generate_auxiliar_basis(sett: Settings, auxiliar_basis: str, quality: str) -
     Generate the `auxiliar_basis` for all the atoms in the `sett` using the
     `quality` of the auxiliar basis provided by the user.
     """
-    quality_to_number = {"low": 0, "medium": 1, "good": 2, "verygood": 3, "excellent": 4}
+    quality_to_number = {"low": 0, "medium": 1,
+                         "good": 2, "verygood": 3, "excellent": 4}
     kind = sett.cp2k.force_eval.subsys.kind
     for atom in kind.keys():
         index = quality_to_number[quality.lower()]
@@ -252,10 +254,9 @@ def generate_kinds(elements: list, basis: str, potential: str) -> Settings:
 
 # available templates
 templates_dict = {
-        "pbe_guess": cp2k_pbe_guess, "pbe_main": cp2k_pbe_main,
-        "pbe0_guess": cp2k_pbe0_guess, "pbe0_main": cp2k_pbe0_main,
-        "hse06_guess": cp2k_hse06_guess, "hse06_main": cp2k_hse06_main}
-
+    "pbe_guess": cp2k_pbe_guess, "pbe_main": cp2k_pbe_main,
+    "pbe0_guess": cp2k_pbe0_guess, "pbe0_main": cp2k_pbe0_main,
+    "hse06_guess": cp2k_hse06_guess, "hse06_main": cp2k_hse06_main}
 
 
 def create_settings_from_template(
@@ -271,7 +272,7 @@ def create_settings_from_template(
     if 'pbe0' in template_name:
         s = Settings()
         s.cp2k.force_eval.dft.xc.hf.interaction_potential.t_c_g_data = os.path.abspath(
-              join(general['path_basis'], "t_c_g.dat"))
+            join(general['path_basis'], "t_c_g.dat"))
         return generate_auxiliar_basis(setts + s + kinds, general['basis'], general['aux_fit'])
     elif 'hse06' in template_name:
         return generate_auxiliar_basis(setts + kinds, general['basis'], general['aux_fit'])

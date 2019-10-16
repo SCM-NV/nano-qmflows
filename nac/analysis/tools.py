@@ -62,7 +62,8 @@ def dephasing(f, dt):
     hbar_au = hbar / h2ev
     ts = np.arange(f.shape[0]) * dt
     cumu_ii = np.stack(np.sum(f[0:i]) for i in range(ts.size)) * dt / hbar_au
-    cumu_i = np.stack(np.sum(cumu_ii[0:i]) for i in range(ts.size)) * dt / hbar_au
+    cumu_i = np.stack(np.sum(cumu_ii[0:i])
+                      for i in range(ts.size)) * dt / hbar_au
     deph = np.exp(-cumu_i)
     np.seterr(over='ignore')
     popt = curve_fit(gauss_function, ts, deph)[0]
@@ -92,7 +93,8 @@ def read_couplings(path_hams, ts):
     This function reads the non adiabatic coupling vectors from the files
     generated for the NAMD simulations
     """
-    files_im = [os.path.join(path_hams, 'Ham_{}_im'.format(i)) for i in range(ts)]
+    files_im = [os.path.join(path_hams, 'Ham_{}_im'.format(i))
+                for i in range(ts)]
     xs = np.stack(np.loadtxt(fn) for fn in files_im)
     return xs * r2meV  # return energies in meV
 
@@ -102,7 +104,8 @@ def read_energies(path_hams, ts):
     This function reads the molecular orbital energies of each state from
     the files generated for the NAMD simulations
     """
-    files_re = [os.path.join(path_hams, 'Ham_{}_re'.format(i)) for i in range(ts)]
+    files_re = [os.path.join(path_hams, 'Ham_{}_re'.format(i))
+                for i in range(ts)]
     xs = np.stack(np.diag(np.loadtxt(fn)) for fn in files_re)
     return xs * r2meV / 1000  # return energies in eV
 
@@ -142,7 +145,8 @@ def parse_list_of_lists(xs):
     enclosed = pa.Forward()  # Parser to be defined later
     natural = pa.Word(pa.nums)  # Natural Number
     # Nested Grammar
-    nestedBrackets = pa.nestedExpr(pa.Suppress('['), pa.Suppress(']'), content=enclosed)
+    nestedBrackets = pa.nestedExpr(pa.Suppress(
+        '['), pa.Suppress(']'), content=enclosed)
     enclosed << (natural | pa.Suppress(',') | nestedBrackets)
     try:
         rs = enclosed.parseString(xs).asList()[0]

@@ -152,8 +152,10 @@ def calcOverlapMtx(config: dict, molecules: tuple) -> Matrix:
     mol_i, mol_j = tuple(tuplesXYZ_to_plams(x) for x in molecules)
 
     # unique molecular paths
-    path_i = join(config["scratch_path"], "molecule_{}.xyz".format(uuid.uuid4()))
-    path_j = join(config["scratch_path"], "molecule_{}.xyz".format(uuid.uuid4()))
+    path_i = join(config["scratch_path"],
+                  "molecule_{}.xyz".format(uuid.uuid4()))
+    path_j = join(config["scratch_path"],
+                  "molecule_{}.xyz".format(uuid.uuid4()))
 
     # Write the molecules in atomic units
     mol_i.write(path_i)
@@ -161,7 +163,8 @@ def calcOverlapMtx(config: dict, molecules: tuple) -> Matrix:
 
     basis_name = config["cp2k_general_settings"]["basis"]
     try:
-        integrals = compute_integrals_couplings(path_i, path_j, config["path_hdf5"], basis_name)
+        integrals = compute_integrals_couplings(
+            path_i, path_j, config["path_hdf5"], basis_name)
     finally:
         os.remove(path_i)
         os.remove(path_j)

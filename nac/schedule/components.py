@@ -58,7 +58,8 @@ def calculate_mos(config: dict) -> list:
     general = config['cp2k_general_settings']
     file_cell_parameters = general["file_cell_parameters"]
     if file_cell_parameters is not None:
-        array_cell_parameters = read_cell_parameters_as_array(file_cell_parameters)[1]
+        array_cell_parameters = read_cell_parameters_as_array(file_cell_parameters)[
+            1]
 
     # First calculation has no initial guess
     # calculate the rest of the jobs using the previous point as initial guess
@@ -76,8 +77,10 @@ def calculate_mos(config: dict) -> list:
         dict_input["k"] = k
 
         # Path where the MOs will be store in the HDF5
-        root = join(config.project_name, 'point_{}'.format(k), config.package_name, 'mo')
-        dict_input["node_MOs"] = [join(root, 'eigenvalues'), join(root, 'coefficients')]
+        root = join(config.project_name, 'point_{}'.format(k),
+                    config.package_name, 'mo')
+        dict_input["node_MOs"] = [
+            join(root, 'eigenvalues'), join(root, 'coefficients')]
         dict_input["node_energy"] = join(root, 'energy')
 
         # If the MOs are already store in the HDF5 format return the path
@@ -93,7 +96,8 @@ def calculate_mos(config: dict) -> list:
                 adjust_cell_parameters(general, array_cell_parameters, j)
             # Path to I/O files
             dict_input["point_dir"] = config.folders[j]
-            dict_input["job_files"] = create_file_names(dict_input["point_dir"], k)
+            dict_input["job_files"] = create_file_names(
+                dict_input["point_dir"], k)
             dict_input["job_name"] = 'point_{}'.format(k)
 
             # Compute the MOs and return a new guess
@@ -155,7 +159,8 @@ def compute_orbitals(config: dict, dict_input: dict, guess_job) -> list:
     returns a new guess.
     """
 
-    dict_input["job_files"] = create_file_names(dict_input["point_dir"], dict_input["k"])
+    dict_input["job_files"] = create_file_names(
+        dict_input["point_dir"], dict_input["k"])
 
     # Calculating initial guess
     compute_guess = config.calc_new_wf_guess_on_points is not None
@@ -164,7 +169,8 @@ def compute_orbitals(config: dict, dict_input: dict, guess_job) -> list:
     # wf guesses are not empty
     is_restart = guess_job is None and compute_guess
 
-    pred = (dict_input['k'] in config.calc_new_wf_guess_on_points) or is_restart
+    pred = (dict_input['k']
+            in config.calc_new_wf_guess_on_points) or is_restart
 
     general = config.cp2k_general_settings
 
@@ -172,7 +178,8 @@ def compute_orbitals(config: dict, dict_input: dict, guess_job) -> list:
         guess_job = prepare_job_cp2k(
             general["cp2k_settings_guess"], dict_input, guess_job)
 
-    promise_qm = prepare_job_cp2k(general["cp2k_settings_main"], dict_input, guess_job)
+    promise_qm = prepare_job_cp2k(
+        general["cp2k_settings_main"], dict_input, guess_job)
 
     return promise_qm
 
@@ -197,11 +204,13 @@ def schedule_check(
         logger.warning(msg)
 
         # recompute a new guess
-        msg1 = "Computing a new wave function guess for job: {}".format(job_name)
+        msg1 = "Computing a new wave function guess for job: {}".format(
+            job_name)
         logger.warning(msg1)
 
         # Remove the previous ascii file containing the MOs
-        msg2 = "removing file containig the previous failed MOs of {}".format(job_name)
+        msg2 = "removing file containig the previous failed MOs of {}".format(
+            job_name)
         logger.warning(msg2)
         path = fnmatch.filter(os.listdir(point_dir), 'mo*MOLog')[0]
         os.remove(join(point_dir, path))
@@ -266,5 +275,6 @@ def adjust_cell_parameters(general: dict, array_cell_parameters: Matrix, j: int)
     for the molecular orbitals computation
     """
     for s in (general[p] for p in ('cp2k_settings_main', 'cp2k_settings_guess')):
-        s.cell_parameters = array_cell_parameters[j, 2:11].reshape(3, 3).tolist()
+        s.cell_parameters = array_cell_parameters[j, 2:11].reshape(
+            3, 3).tolist()
         s.cell_angles = None
