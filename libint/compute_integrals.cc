@@ -117,10 +117,10 @@ void set_nthread() {
 }
 
 size_t nbasis(const std::vector<libint2::Shell> &shells) {
-  size_t n = 0;
-  for (const auto &shell : shells)
-    n += shell.size();
-  return n;
+  return std::accumulate(cbegin(shells), cend(shells), 0,
+                         [](size_t acc, const libint2::Shell &shell) {
+                           return acc + shell.size();
+                         });
 }
 
 size_t max_nprim(const std::vector<libint2::Shell> &shells) {
