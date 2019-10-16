@@ -193,7 +193,8 @@ std::vector<Matrix> compute_multipoles(
                             // different threads
   using libint2::nthreads;
 
-  const unsigned int nopers = libint2::operator_traits<operator_type>::nopers;
+  constexpr unsigned int nopers =
+      libint2::operator_traits<operator_type>::nopers;
 
   // number of shells
   const auto n = nbasis(shells);
