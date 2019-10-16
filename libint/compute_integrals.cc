@@ -7,36 +7,7 @@
 
 // Copyright (C) 2019 the Netherlands eScience Center.
 
-#include <algorithm>
-#include <fstream>
-#include <iostream>
-#include <string>
-#include <thread>
-#include <tuple>
-#include <unordered_map>
-#include <unordered_set>
-#include <vector>
-
-// integrals library
-#include <libint2.hpp>
-
-#include <pybind11/eigen.h>
-#include <pybind11/pybind11.h>
-
-// Eigen matrix algebra library
-#include <Eigen/Dense>
-
-// HDF5 funcionality
-#include <highfive/H5DataSet.hpp>
-#include <highfive/H5DataSpace.hpp>
-#include <highfive/H5File.hpp>
-
-// Constants
 #include "namd.h"
-
-#if defined(_OPENMP)
-#include <omp.h>
-#endif
 
 namespace py = pybind11;
 using HighFive::Attribute;
@@ -75,25 +46,25 @@ int main() {
 
 // OpenMP or multithread computations
 namespace libint2 {
-auto nthreads = 1;
+int nthreads = 1;
 
 /// fires off \c nthreads instances of lambda in parallel
 template <typename Lambda> void parallel_do(Lambda &lambda) {
 #ifdef _OPENMP
 #pragma omp parallel
   {
-    auto thread_id = omp_get_thread_num();
+    int thread_id = omp_get_thread_num();
     lambda(thread_id);
   }
 #else // use C++11 threads
   std::vector<std::thread> threads;
-  for (auto thread_id = 0; thread_id != libint2::nthreads; ++thread_id) {
+  for (int thread_id = 0; thread_id != libint2::nthreads; ++thread_id) {
     if (thread_id != nthreads - 1)
       threads.push_back(std::thread(lambda, thread_id));
     else
       lambda(thread_id);
   } // threads_id
-  for (auto thread_id = 0; thread_id < nthreads - 1; ++thread_id)
+  for (int thread_id = 0; thread_id < nthreads - 1; ++thread_id)
     threads[thread_id].join();
 #endif
 }
@@ -125,15 +96,16 @@ size_t nbasis(const std::vector<libint2::Shell> &shells) {
 
 size_t max_nprim(const std::vector<libint2::Shell> &shells) {
   size_t n = 0;
-  for (auto shell : shells)
+  for (const auto &shell : shells)
     n = std::max(shell.nprim(), n);
   return n;
 }
 
 int max_l(const std::vector<libint2::Shell> &shells) {
+
   int l = 0;
-  for (auto shell : shells)
-    for (auto c : shell.contr)
+  for (const auto &shell : shells)
+    for (const auto &c : shell.contr)
       l = std::max(c.l, l);
   return l;
 }
@@ -144,7 +116,7 @@ map_shell_to_basis_function(const std::vector<Shell> &shells) {
   result.reserve(shells.size());
 
   auto n = 0;
-  for (auto shell : shells) {
+  for (const auto &shell : shells) {
     result.push_back(n);
     n += shell.size();
   }
@@ -168,7 +140,7 @@ Matrix compute_overlaps_for_couplings(const std::vector<Shell> &shells_1,
   engines[0] = libint2::Engine(Operator::overlap, max_nprim(shells_1),
                                max_l(shells_1), 0);
 
-  for (auto i = 1; i != nthreads; ++i) {
+  for (int i = 1; i != nthreads; ++i) {
     engines[i] = engines[0];
   }
 
@@ -181,19 +153,19 @@ Matrix compute_overlaps_for_couplings(const std::vector<Shell> &shells_1,
     const auto &buf = engines[thread_id].results();
 
     // loop over unique shell pairs, {s1,s2}
-    for (auto s1 = 0; s1 != shells_1.size(); ++s1) {
+    for (int s1 = 0; s1 != static_cast<int>(shells_1.size()); ++s1) {
 
-      auto bf1 = shell2bf[s1]; // first basis function in this shell
-      auto n1 = shells_1[s1].size();
+      int bf1 = shell2bf[s1]; // first basis function in this shell
+      int n1 = shells_1[s1].size();
 
-      for (auto s2 = 0; s2 != shells_2.size(); ++s2) {
-        auto acc = s2 + s1 * shells_1.size();
+      for (int s2 = 0; s2 != static_cast<int>(shells_2.size()); ++s2) {
+        int acc = s2 + s1 * shells_1.size();
         if (acc % nthreads != thread_id)
           continue;
 
         // extract basis
-        auto bf2 = shell2bf[s2];
-        auto n2 = shells_2[s2].size();
+        int bf2 = shell2bf[s2];
+        int n2 = shells_2[s2].size();
 
         // compute shell pair and return pointer to the buffer
         engines[thread_id].compute(shells_1[s1], shells_2[s2]);
@@ -237,7 +209,7 @@ std::vector<Matrix> compute_multipoles(
 
   // pass operator params to the engines
   engines[0].set_params(oparams);
-  for (auto i = 1; i != nthreads; ++i) {
+  for (int i = 1; i != nthreads; ++i) {
     engines[i] = engines[0];
   }
 
@@ -252,24 +224,24 @@ std::vector<Matrix> compute_multipoles(
     // loop over unique shell pairs, {s1,s2} such that s1 >= s2
     // this is due to the permutational symmetry of the real integrals over
     // Hermitian operators: (1|2) = (2|1)
-    for (auto s1 = 0; s1 != shells.size(); ++s1) {
+    for (int s1 = 0; s1 != static_cast<int>(shells.size()); ++s1) {
 
-      auto bf1 = shell2bf[s1]; // first basis function in this shell
-      auto n1 = shells[s1].size();
+      int bf1 = shell2bf[s1]; // first basis function in this shell
+      int n1 = shells[s1].size();
 
-      for (auto s2 = 0; s2 <= s1; ++s2) {
+      for (int s2 = 0; s2 <= s1; ++s2) {
         // Select integrals for current thread
-        auto acc = s2 + s1 * shells.size();
+        int acc = s2 + s1 * shells.size();
         if (acc % nthreads != thread_id)
           continue;
 
-        auto bf2 = shell2bf[s2];
-        auto n2 = shells[s2].size();
+        int bf2 = shell2bf[s2];
+        int n2 = shells[s2].size();
 
         // compute shell pair
         engines[thread_id].compute(shells[s1], shells[s2]);
 
-        for (auto op = 0; op != nopers; ++op) {
+        for (int op = 0; op != nopers; ++op) {
           // "map" buffer to a const Eigen Matrix, and copy it to the
           // corresponding blocks of the result
           Eigen::Map<const Matrix> buf_mat(buf[op], n1, n2);
@@ -384,9 +356,9 @@ std::vector<Shell> create_shells_for_atom(const CP2K_Basis_Atom &data,
   std::vector<int> basis_format = data.basis_format;
   std::vector<Shell> shells;
 
-  auto acc = 0;
-  for (auto i = 0; i + 4 < basis_format.size(); i++) {
-    for (auto j = 0; j < basis_format[i + 4]; j++) {
+  int acc = 0;
+  for (int i = 0; i + 4 < static_cast<int>(basis_format.size()); i++) {
+    for (int j = 0; j < basis_format[i + 4]; j++) {
       shells.push_back({data.exponents,
                         {// compute integrals in sphericals
                          {i, true, data.coefficients[acc]}},
@@ -450,7 +422,7 @@ Matrix compute_integrals_couplings(const string &path_xyz_1,
 
 std::array<double, 3> calculate_center_of_mass(const std::vector<Atom> &atoms) {
   // Compute the center of mass for atoms
-  auto n = atoms.size();
+  int n = atoms.size();
 
   std::array<double, 3> rs{0, 0, 0};
   for (auto i = 0; i < n; i++) {
@@ -479,6 +451,8 @@ std::vector<Matrix> select_multipole(const std::vector<Atom> &atoms,
     return compute_multipoles<Operator::emultipole1>(shells, center);
   else if (multipole == "quadrupole")
     return compute_multipoles<Operator::emultipole2>(shells, center);
+  else
+    throw std::runtime_error("Unkown multipole");
 }
 
 Matrix compute_integrals_multipole(const string &path_xyz,
@@ -503,8 +477,8 @@ Matrix compute_integrals_multipole(const string &path_xyz,
   libint2::finalize();
 
   Matrix super_matrix(matrices[0].rows() * matrices.size(), matrices[0].cols());
-  for (auto op = 0; op != matrices.size(); ++op) {
-    auto i = op * matrices[0].rows();
+  for (int op = 0; op != static_cast<int>(matrices.size()); ++op) {
+    int i = op * matrices[0].rows();
     super_matrix.block(i, 0, matrices[op].rows(), matrices[op].cols()) =
         matrices[op];
   }
