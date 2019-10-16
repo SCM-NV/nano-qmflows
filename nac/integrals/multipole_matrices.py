@@ -12,7 +12,7 @@ def get_multipole_matrix(config: dict, inp: dict, multipole: str) -> Matrix:
     Retrieve the `multipole` number `i` from the trajectory. Otherwise compute it.
     """
     root = join(config['project_name'], 'multipole',
-                'point_{}'.format(inp.i + config.enumerate_from))
+                f'point_{inp.i + config.enumerate_from}')
     path_hdf5 = config['path_hdf5']
     path_multipole_hdf5 = join(root, multipole)
     matrix_multipole = search_multipole_in_hdf5(
@@ -30,10 +30,10 @@ def search_multipole_in_hdf5(path_hdf5: str, path_multipole_hdf5: str, multipole
     Search if the multipole is already store in the HDFt
     """
     if is_data_in_hdf5(path_hdf5, path_multipole_hdf5):
-        print("retrieving multipole: {} from the hdf5".format(multipole))
+        print(f"retrieving multipole: {multipole} from the hdf5")
         return retrieve_hdf5_data(path_hdf5, path_multipole_hdf5)
     else:
-        print("computing multipole: {}".format(multipole))
+        print(f"computing multipole: {multipole}")
         return None
 
 
@@ -51,7 +51,7 @@ def compute_matrix_multipole(
     path_hdf5 = config['path_hdf5']
 
     # Write molecule in temporal file
-    path = join(config["scratch_path"], "molecule_{}.xyz".format(uuid.uuid4()))
+    path = join(config["scratch_path"], f"molecule_{uuid.uuid4()}.xyz")
     mol_plams = tuplesXYZ_to_plams(mol)
     mol_plams.write(path)
 

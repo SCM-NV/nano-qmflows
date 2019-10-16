@@ -153,9 +153,9 @@ def calcOverlapMtx(config: dict, molecules: tuple) -> Matrix:
 
     # unique molecular paths
     path_i = join(config["scratch_path"],
-                  "molecule_{}.xyz".format(uuid.uuid4()))
+                  f"molecule_{uuid.uuid4()}.xyz")
     path_j = join(config["scratch_path"],
-                  "molecule_{}.xyz".format(uuid.uuid4()))
+                  "molecule_{uuid.uuid4()}.xyz")
 
     # Write the molecules in atomic units
     mol_i.write(path_i)

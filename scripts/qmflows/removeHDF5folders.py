@@ -12,7 +12,7 @@ def main(project_name, path_hdf5, remove_overlaps):
         join(project_name, name.format(i)) for i in range(10000)]
     if remove_overlaps:
         paths_overlaps = [
-            join(project_name, 'overlaps_{}/mtx_sji_t0'.format(i)) for i in range(10000)]
+            join(project_name, 'overlaps_{i}/mtx_sji_t0') for i in range(10000)]
     else:
         paths_overlaps = []
 

@@ -1,12 +1,13 @@
 #! /usr/bin/env python
 """
 This script plots the stacked contribution of each atom type to a given MO.
-You can also group together the contribution of a set of atoms (for example that form a ligand).
-Usage:
+You can also group together the contribution of a set of atoms
+(for example that form a ligand). Usage:
 
 plot_dos.py -ligand 2 3 -emin -5.0 -emax 2.0
 
-When you use the ligand flag you imply that some atom kinds, in this case k2 and k3, can be grouped together.
+When you use the ligand flag you imply that some atom kinds,
+in this case k2 and k3, can be grouped together.
 If you dont use the ligand flag, each atom contributes independently.
 emin and emax indicates the energy window to make the plot.
 """
@@ -41,11 +42,13 @@ def convolute(x, y, x_points, sigma):
 
 def plot_stuff(ys, energies, legends, emin, emax):
     # In case you need more colors, this list should be expanded
-    colors = ['black', 'orange', 'blue', 'red', 'green', 'magenta', 'cyan', 'black', 'yellow']
+    colors = ['black', 'orange', 'blue', 'red',
+              'green', 'magenta', 'cyan', 'black', 'yellow']
     #   First plot
     left = 0
     for i in range(ys.shape[1]):
-        plt.barh(energies, ys[:, i], height=0.02, left=left, lw=0, color=colors[i], label=legends[i])
+        plt.barh(energies, ys[:, i], height=0.02, left=left,
+                 lw=0, color=colors[i], label=legends[i])
         left += ys[:, i]
 
     plt.figure(1)
@@ -63,17 +66,20 @@ def plot_stuff(ys, energies, legends, emin, emax):
     dos = np.stack(convolute(
         energies, ys[:, i], x_points, sigma) for i in range(ys.shape[1])).T
     # Cumulate dos for all atoms/ligands
-    cum_dos = np.stack(np.sum(dos[:, 0:i+1], axis=1) for i in range(dos.shape[1])).T
+    cum_dos = np.stack(np.sum(dos[:, 0:i+1], axis=1)
+                       for i in range(dos.shape[1])).T
     #   Plotting now
     plt.figure(2)
     ref = np.zeros(x_points.size)
     # Add a zero line for filling colors
     cum_dos = np.column_stack((ref, cum_dos))
     plt.xlim(emin, emax)
-    max_y_plot = np.amax(cum_dos[np.where(x_points > emin) and np.where(x_points < emax), -1])
+    max_y_plot = np.amax(
+        cum_dos[np.where(x_points > emin) and np.where(x_points < emax), -1])
     plt.ylim(0, max_y_plot)
     for i in range(cum_dos.shape[1]-1):
-        plt.fill_between(x_points, cum_dos[:, i], cum_dos[:, i + 1], color=colors[i], label=legends[i])
+        plt.fill_between(
+            x_points, cum_dos[:, i], cum_dos[:, i + 1], color=colors[i], label=legends[i])
     plt.legend(loc='upper right').draggable()
     plt.tick_params(direction='out')
     interactive(False)
@@ -90,18 +96,19 @@ def main(group, emin, emax):
     energies = np.loadtxt(files[0], usecols=1)
     # Convert energies to eV
     energies *= 27.211
-    #Occupation 
+    # Occupation
     occ = np.loadtxt(files[0], usecols=2)
-    lumos_indx = np.where(occ == 0)    
-    lumo_indx = lumos_indx[0][0] 
+    lumos_indx = np.where(occ == 0)
+    lumo_indx = lumos_indx[0][0]
     homo_indx = lumo_indx - 1
-    hl_gap = (energies[lumo_indx] - energies[homo_indx]) 
-    print('The homo-lumo gap is: {} eV'.format(hl_gap))  
-    
+    hl_gap = (energies[lumo_indx] - energies[homo_indx])
+    print(f'The homo-lumo gap is: {hl_gap} eV')
+
     # Read Files with PDOS info
     xs = [np.loadtxt(files[i]) for i in range(len(files))]
     # Add up all orbitals contribution for each atom type
-    ys = np.stack(np.sum(xs[i][:,3:], axis=1) for i in range(len(files))).transpose()
+    ys = np.stack(np.sum(xs[i][:, 3:], axis=1)
+                  for i in range(len(files))).transpose()
 
     if group:
         lig_atoms = 0

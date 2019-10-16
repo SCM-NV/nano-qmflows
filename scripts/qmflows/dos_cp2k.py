@@ -39,7 +39,7 @@ def main(file_xyz, cell, restart, basis, basis_folder):
     s.specific.cp2k.force_eval.dft.basis_set_file_name = basisCP2K
     s.specific.cp2k.force_eval.dft.potential_file_name = potCP2K
     s.specific.cp2k.force_eval.dft.print.pdos.nlumo = '1000'
-    s.specific.cp2k.force_eval.dft.wfn_restart_file_name = '{}'.format(restart)
+    s.specific.cp2k.force_eval.dft.wfn_restart_file_name = f'{restart}'
     s.specific.cp2k.force_eval.dft.scf.ot.minimizer = 'DIIS'
     s.specific.cp2k.force_eval.dft.scf.ot.n_diis = 7
     s.specific.cp2k.force_eval.dft.scf.ot.preconditioner = 'FULL_SINGLE_INVERSE'

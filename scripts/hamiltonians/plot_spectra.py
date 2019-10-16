@@ -1,4 +1,4 @@
-#!/home/v13/miniconda3/envs/qmworks/bin/python
+#!/usr/bin/env python
 """
 This program plots several properties related to the interaction of a pair of states s1 and s2.
 1. The energies of the two states along the MD trajectory
@@ -76,10 +76,12 @@ def plot_stuff(ens, coupls, acf, sd, deph, rate, s1, s2, ts, wsd, wdeph, dt):
 #    ax5.plot(sd[:, 1, 0], sd[:, 0, 0], c='r')
 #    ax5.plot(sd[:, 1, 1], sd[:, 0, 1], c='b')
     ax5.plot(sd[:, 1, 2], sd[:, 0, 2], c='g')
-    print('The dephasing time is : {:f} fs'.format(rate))
-    print('The homogenous line broadening is  : {:f} nm'.format(1 / rate * fs_to_nm))
+    print(f'The dephasing time is : {rate:f} fs')
+    print('The homogenous line broadening is  : {:f} nm'.format(
+        1 / rate * fs_to_nm))
     # Conversion 1 fs = 4.13567 eV
-    print('The homogenous line broadening is  : {:f} eV'.format(1 / rate * 4.13567))
+    print('The homogenous line broadening is  : {:f} eV'.format(
+        1 / rate * 4.13567))
 
     ax6 = plt.subplot(322)
     ax6.set_xlabel('Time (fs)')
@@ -87,7 +89,7 @@ def plot_stuff(ens, coupls, acf, sd, deph, rate, s1, s2, ts, wsd, wdeph, dt):
     ax6.plot(dim_x, coupls[:, s1, s2], c='b')
     av_coupl = np.average(abs(coupls[:, s1, s2]))
     ax6.axhline(av_coupl, c="black")
-    print('The average coupling strength is : {:f} meV'.format(av_coupl))
+    print(f'The average coupling strength is : {av_coupl:f} meV')
 
     fileName = "MOs.png"
     plt.savefig(fileName, format='png', dpi=300)
