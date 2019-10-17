@@ -1,6 +1,5 @@
 __author__ = "Ivan Infante and Felipe Zapata"
 
-# ================> Python Standard  and third-party <==========
 import numpy as np
 import os
 import pyparsing as pa
