@@ -77,7 +77,7 @@ def calculate_mos(config: dict) -> list:
         dict_input["k"] = k
 
         # Path where the MOs will be store in the HDF5
-        root = join(config.project_name, 'point_{}'.format(k),
+        root = join(config.project_name, f'point_{k}',
                     config.package_name, 'mo')
         dict_input["node_MOs"] = [
             join(root, 'eigenvalues'), join(root, 'coefficients')]
@@ -86,10 +86,10 @@ def calculate_mos(config: dict) -> list:
         # If the MOs are already store in the HDF5 format return the path
         # to them and skip the calculation
         if is_data_in_hdf5(config.path_hdf5, dict_input["node_MOs"]):
-            logger.info("point_{} has already been calculated".format(k))
+            logger.info(f"point_{k} has already been calculated")
             orbitals.append(dict_input["node_MOs"])
         else:
-            logger.info("point_{} has been scheduled".format(k))
+            logger.info(f"point_{k} has been scheduled")
 
             # Add cell parameters from file if given
             if file_cell_parameters is not None:
@@ -98,7 +98,7 @@ def calculate_mos(config: dict) -> list:
             dict_input["point_dir"] = config.folders[j]
             dict_input["job_files"] = create_file_names(
                 dict_input["point_dir"], k)
-            dict_input["job_name"] = 'point_{}'.format(k)
+            dict_input["job_name"] = f'point_{k}'
 
             # Compute the MOs and return a new guess
             promise_qm = compute_orbitals(config, dict_input, guess_job)
@@ -146,8 +146,7 @@ def store_enery(config: dict, dict_input: dict, promise_qm: object) -> str:
     store_arrays_in_hdf5(
         config.path_hdf5, dict_input['node_energy'], promise_qm.energy)
 
-    logger.info("Total energy of point {} is: {}".format(
-        dict_input['k'], promise_qm.energy))
+    logger.info(f"Total energy of point {dict_input['k']} is: {promise_qm.energy}")
 
     return dict_input["node_energy"]
 
@@ -200,17 +199,15 @@ def schedule_check(
     if not config.ignore_warnings and warnings is not None and any(
             w == SCF_Convergence_Warning for msg, w in warnings.items()):
         # Report the failure
-        msg = "Job: {} Finished with Warnings: {}".format(job_name, warnings)
+        msg = f"Job: {job_name} Finished with Warnings: {warnings}"
         logger.warning(msg)
 
         # recompute a new guess
-        msg1 = "Computing a new wave function guess for job: {}".format(
-            job_name)
+        msg1 = "Computing a new wave function guess for job: {job_name}"
         logger.warning(msg1)
 
         # Remove the previous ascii file containing the MOs
-        msg2 = "removing file containig the previous failed MOs of {}".format(
-            job_name)
+        msg2 = f"removing file containig the previous failed MOs of {job_name}"
         logger.warning(msg2)
         path = fnmatch.filter(os.listdir(point_dir), 'mo*MOLog')[0]
         os.remove(join(point_dir, path))
@@ -230,7 +227,7 @@ def create_point_folder(work_dir, n, enumerate_from):
     """
     folders = []
     for k in range(enumerate_from, n + enumerate_from):
-        new_dir = join(work_dir, 'point_{}'.format(k))
+        new_dir = join(work_dir, f'point_{k}')
         if os.path.exists(new_dir):
             shutil.rmtree(new_dir)
         os.makedirs(new_dir)
@@ -261,10 +258,10 @@ def create_file_names(work_dir: str, i: int):
 
     :returns: Namedtuple containing the IO files
     """
-    file_xyz = join(work_dir, 'coordinates_{}.xyz'.format(i))
-    file_inp = join(work_dir, 'point_{}.inp'.format(i))
-    file_out = join(work_dir, 'point_{}.out'.format(i))
-    file_MO = join(work_dir, 'mo_coeff_{}.out'.format(i))
+    file_xyz = join(work_dir, f'coordinates_{i}.xyz')
+    file_inp = join(work_dir, f'point_{i}.inp')
+    file_out = join(work_dir, f'point_{i}.out')
+    file_MO = join(work_dir, f'mo_coeff_{i}.out')
 
     return JobFiles(file_xyz, file_inp, file_out, file_MO)
 

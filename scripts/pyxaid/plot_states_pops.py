@@ -55,7 +55,7 @@ def plot_stuff(outs, pops):
 def read_populations(path, fn, nconds, ms):
     inpfile = os.path.join(path, fn)
     cols = list(map(lambda row: tuple(map(lambda x: x * 2 + 3, row)), ms))
-    xs = [np.stack(np.loadtxt('{}{}'.format(inpfile, j), usecols=col)
+    xs = [np.stack(np.loadtxt(f'{inpfile}{j}', usecols=col)
                    for j in range(nconds)) for col in cols]
     return xs
 

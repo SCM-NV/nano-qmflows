@@ -7,12 +7,12 @@ import h5py
 def main(project_name, path_hdf5, remove_overlaps):
 
     path_swaps = [join(project_name, 'swaps')]
-    name = 'overlaps_{}/mtx_sji_t0_corrected'
+    name =
     paths_overlaps_corrected = [
-        join(project_name, name.format(i)) for i in range(10000)]
+        join(project_name, f'overlaps_{i}/mtx_sji_t0_corrected') for i in range(10000)]
     if remove_overlaps:
         paths_overlaps = [
-            join(project_name, 'overlaps_{}/mtx_sji_t0'.format(i)) for i in range(10000)]
+            join(project_name, 'overlaps_{i}/mtx_sji_t0') for i in range(10000)]
     else:
         paths_overlaps = []
 
@@ -46,5 +46,6 @@ if __name__ == "__main__":
                         help='project name')
     parser.add_argument('-hdf5', required=True,
                         help='Index of the first state')
-    parser.add_argument('-o', help='Remove the overlap matrices', action='store_true')
+    parser.add_argument(
+        '-o', help='Remove the overlap matrices', action='store_true')
     main(*read_cmd_line(parser))

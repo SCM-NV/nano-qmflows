@@ -23,7 +23,7 @@ import argparse
 def read_energies(path, fn, nstates):
     inpfile = os.path.join(path, fn)
     cols = tuple(range(5, nstates * 2 + 5, 2))
-    xs = np.loadtxt('{}'.format(inpfile), usecols=cols)
+    xs = np.loadtxt(f'{inpfile}', usecols=cols)
     return xs
 
 
@@ -42,12 +42,12 @@ def main(path_output, nstates, iconds, excess, delta, cool):
     # Find the index of the states with a given excess energy
     indexes = [np.where(
         (en_scaled[iconds[i]] > excess-delta) & (en_scaled[iconds[i]] < excess + delta))
-                for i in range(len(iconds))]
+        for i in range(len(iconds))]
 
     # Print the states
     t = 'Time Init Cond    List with State Indexes\n'
     for i in range(len(iconds)):
-        t +=  ' {}           {}\n'.format(iconds[i], indexes[i][0] + 1)
+        t += f' {iconds[i]}           {indexes[i][0] + 1}\n'
 
     with open('initial_conditions.out', 'w') as f:
         f.write(t)

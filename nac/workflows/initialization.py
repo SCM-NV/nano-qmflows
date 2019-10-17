@@ -37,7 +37,7 @@ def initialize(config: dict) -> dict:
         scratch_path = join(tempfile.gettempdir(),
                             getpass.getuser(), config.project_name)
         logger.warning(
-            "path to scratch was not defined, using: {}".format(scratch_path))
+            f"path to scratch was not defined, using: {scratch_path}")
     config['workdir'] = scratch_path
 
     # If the directory does not exist create it
@@ -49,7 +49,7 @@ def initialize(config: dict) -> dict:
     if path_hdf5 is None:
         path_hdf5 = join(scratch_path, 'quantum.hdf5')
         logger.warning(
-            "path to the HDF5 was not defined, using: {}".format(path_hdf5))
+            f"path to the HDF5 was not defined, using: {path_hdf5}")
 
     # all_geometries type :: [String]
     geometries = split_file_geometries(config["path_traj_xyz"])
@@ -117,9 +117,9 @@ def read_swaps(path_hdf5: str, project_name: str) -> Matrix:
     if is_data_in_hdf5(path_hdf5, path_swaps):
         return retrieve_hdf5_data(path_hdf5, path_swaps)
     else:
-        msg = """There is not a tracking file called: {}
+        msg = f"""There is not a tracking file called: {path_swaps}
         This file is automatically created when running the worflow_coupling
-        simulations""".format(path_swaps)
+        simulations"""
         raise RuntimeError(msg)
 
 
@@ -138,7 +138,7 @@ def split_trajectory(path: str, nBlocks: int, pathOut: str) -> list:
         numat = int(ls.split()[0])
 
     # Number of lines in the file
-    cmd = "wc -l {}".format(path)
+    cmd = f"wc -l {path}"
     ls = subprocess.check_output(cmd.split()).decode()
     lines = int(ls.split()[0])
     if (lines % (numat + 2)) != 0:
@@ -152,12 +152,12 @@ def split_trajectory(path: str, nBlocks: int, pathOut: str) -> list:
     lines_per_block = nChunks * (numat + 2)
     # Path where the splitted xyz files are written
     prefix = join(pathOut, 'chunk_xyz_')
-    cmd = 'split -a 1 -l {} {} {}'.format(lines_per_block, path, prefix)
+    cmd = f'split -a 1 -l {lines_per_block} {path} {prefix}'
     p = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, shell=True)
     rs = p.communicate()
     err = rs[1]
     if err:
-        raise RuntimeError("Submission Errors: {}".format(err))
+        raise RuntimeError(f"Submission Errors: {err}")
     else:
         return fnmatch.filter(os.listdir(), "chunk_xyz_?")
 
@@ -167,7 +167,7 @@ def log_config(config):
     Print initial configuration
     """
     workdir = os.path.abspath('.')
-    file_log = '{}.log'.format(config.project_name)
+    file_log = f'{config.project_name}.log'
     logging.basicConfig(filename=file_log, level=logging.DEBUG,
                         format='%(asctime)s---%(levelname)s\n%(message)s\n',
                         datefmt='[%I:%M:%S]')
@@ -178,7 +178,7 @@ def log_config(config):
     version = pkg_resources.get_distribution('qmflows-namd').version
     path = nac.__path__
 
-    logger.info("Using qmflows-namd version: {} ".format(version))
-    logger.info("qmflows-namd path is: {}".format(path))
-    logger.info("Working directory is: {}".format(workdir))
-    logger.info("Data will be stored in HDF5 file: {}".format(config.path_hdf5))
+    logger.info(f"Using qmflows-namd version: {version} ")
+    logger.info(f"qmflows-namd path is: {path}")
+    logger.info(f"Working directory is: {workdir}")
+    logger.info(f"Data will be stored in HDF5 file: {config.path_hdf5}")
