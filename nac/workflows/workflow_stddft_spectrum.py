@@ -246,8 +246,8 @@ def write_output(config: dict, inp: dict):
     """
     output = write_output_tddft(inp)
 
-    path_output = join(config.workdir, 'output_{}_{}.txt'.format(
-        inp.i + config.enumerate_from, config.tddft))
+    path_output = join(config.workdir,
+                       f'output_{inp.i + config.enumerate_from}_{config.tddft}.txt')
     fmt = '{:^5s}{:^14s}{:^8s}{:^11s}{:^11s}{:^11s}{:^11s}{:<5s}{:^10s}{:<5s}{:^11s}{:^11s}'
     header = fmt.format(
         'state', 'energy', 'f', 't_dip_x', 't_dip_y', 't_dip_y', 'weight',
@@ -421,7 +421,7 @@ def get_exciton_positions(d0I_ao, s, moment, n_lowest, carrier):
     elif carrier == 'both':
         return tuple(compute_component_he(k) for k in range(3))
     else:
-        raise RuntimeError("unkown option: {}".format(carrier))
+        raise RuntimeError(f"unkown option: {carrier}")
 
 
 # def write_output_tddft(nocc, nvirt, omega, f, d_x, d_y, d_z, xia, e):

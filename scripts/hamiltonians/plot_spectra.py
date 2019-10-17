@@ -77,11 +77,10 @@ def plot_stuff(ens, coupls, acf, sd, deph, rate, s1, s2, ts, wsd, wdeph, dt):
 #    ax5.plot(sd[:, 1, 1], sd[:, 0, 1], c='b')
     ax5.plot(sd[:, 1, 2], sd[:, 0, 2], c='g')
     print(f'The dephasing time is : {rate:f} fs')
-    print('The homogenous line broadening is  : {:f} nm'.format(
-        1 / rate * fs_to_nm))
+    print(f'The homogenous line broadening is  : {1 / rate * fs_to_nm:f} nm')
     # Conversion 1 fs = 4.13567 eV
-    print('The homogenous line broadening is  : {:f} eV'.format(
-        1 / rate * 4.13567))
+    lb = 1 / rate * 4.13567
+    print(f'The homogenous line broadening is  : {lb:f} eV')
 
     ax6 = plt.subplot(322)
     ax6.set_xlabel('Time (fs)')
