@@ -4,15 +4,15 @@ __all__ = ['workflow_ipr']
 from nac.workflows import workflow_single_points
 
 # Modules for IPR caluclation
-import h5py
 from nac.common import (
     number_spherical_functions_per_atom,
     retrieve_hdf5_data)
 from nac.integrals.multipole_matrices import compute_matrix_multipole
+from nac.workflows.initialization import initialize
 import numpy as np
 from qmflows.parsers.xyzParser import readXYZ
+from scipy.constants import physical_constants
 from scipy.linalg import sqrtm
-from nac.workflows.initialization import initialize
 
 import logging
 
@@ -30,15 +30,22 @@ def workflow_ipr(config: dict) -> list:
 
     # Call the single point workflow to calculate the eigenvalues and
     # coefficients
+    # hdf5_path contains the paths to the coefficients and eigenvalues in the
+    # hdf5 file
     hdf5_path = workflow_single_points(config)
 
     # Logger info
     logger.info("Starting IPR calculation.")
 
-    # Get eigenvalues and coefficients from hdf5 file
-    c_AO = retrieve_hdf5_data(config["path_hdf5"], hdf5_path[0][0][1])
-    Energies = retrieve_hdf5_data(config["path_hdf5"], hdf5_path[0][0][0])
-    Energies = Energies * 27.211  # To get them from Hartree to eV
+    # Get eigenvalues and coefficients from hdf5_path, weird indexes are
+    # because hdf5_path is a list in a list in a list
+    path_coefficients = hdf5_path[0][0][1]
+    c_AO = retrieve_hdf5_data(config["path_hdf5"], path_coefficients)
+
+    path_eigenvalues = hdf5_path[0][0][0]  # path to the eigenvalues
+    Energies = retrieve_hdf5_data(config["path_hdf5"], path_eigenvalues)
+    h2ev = physical_constants['Hartree energy in eV'][0]
+    Energies = Energies * h2ev  # To get them from Hartree to eV
 
     # Converting the xyz-file to a mol-file
     mol = readXYZ(config["path_traj_xyz"])
@@ -57,15 +64,10 @@ def workflow_ipr(config: dict) -> list:
         config["cp2k_general_settings"]["basis"],
         config["path_hdf5"])  # Array with number of spherical orbitals per atom
 
-    j = 0
     # New matrix with the atoms on the rows and the MOs on the columns
-    c_MO_cont = np.zeros((len(sphericals), c_MO.shape[1]))
-
-    for i in range(len(sphericals)):
-        number = sphericals[i]
-        # We add up all the rows that belong to the same atom
-        c_MO_cont[i, :] = np.sum(c_MO[j:j + number, :], 0)
-        j += number
+    Indices = np.zeros(len(mol), dtype='int')
+    Indices[1:] = np.cumsum(sphericals[:-1])
+    c_MO_cont = np.add.reduceat(c_MO, Indices, 0)
 
     # Finally, we can calculate the IPR
     IPR = np.zeros(c_MO_cont.shape[1])
