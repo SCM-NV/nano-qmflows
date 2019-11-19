@@ -5,7 +5,7 @@ project_name: CdSe_sp
 active_space: [500, 500]
 path_hdf5: "test/test_files/Cd33Se33.hdf5"
 path_traj_xyz: "test/test_files/Cd33Se33.xyz"
-scratch_path: "/scratch-shared/IPR"
+scratch_path: "/tmp/IPR"
 
 
 cp2k_general_settings:

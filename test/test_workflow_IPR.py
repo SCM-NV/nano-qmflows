@@ -11,7 +11,7 @@ file_path = pkg.resource_filename('nac', '')
 root = os.path.split(file_path)[0]
 
 def test_workflow_IPR(tmp_path):
-    file_path = join(root, 'test/test_files/input_test_ipr.yml')
+    file_path = join(root, 'test/test_files/input_test_IPR.yml')
     config = process_input(file_path, 'ipr_calculation')
     print("config: ", config)
     try:
