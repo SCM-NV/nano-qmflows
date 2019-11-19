@@ -6,44 +6,48 @@ from nac.workflows import workflow_single_points
 # Modules for IPR caluclation
 from nac.common import (
     number_spherical_functions_per_atom,
-    retrieve_hdf5_data)
+    retrieve_hdf5_data, is_data_in_hdf5)
 from nac.integrals.multipole_matrices import compute_matrix_multipole
 from nac.workflows.initialization import initialize
 import numpy as np
 from qmflows.parsers.xyzParser import readXYZ
 from scipy.constants import physical_constants
 from scipy.linalg import sqrtm
-
 import logging
 
 # Starting logger
 logger = logging.getLogger(__name__)
 
-
 def workflow_ipr(config: dict) -> list:
 
-    # Dictionary containt the general information
+    # Dictionary containing the general information
     config.update(initialize(config))
 
-    # Logger info
-    logger.info("Starting single point calculation.")
+    # Checking if hdf5 contains the required eigenvalues and coefficients
+    path_coefficients = '{}/point_0/cp2k/mo/coefficients'.format(
+        config["project_name"])
+    path_eigenvalues = '{}/point_0/cp2k/mo/eigenvalues'.format(
+        config["project_name"])
 
-    # Call the single point workflow to calculate the eigenvalues and
-    # coefficients
-    # hdf5_path contains the paths to the coefficients and eigenvalues in the
-    # hdf5 file
-    hdf5_path = workflow_single_points(config)
+    if is_data_in_hdf5(
+            config["path_hdf5"],
+            path_coefficients) and is_data_in_hdf5(
+            config["path_hdf5"],
+            path_eigenvalues):
+        logger.info("Coefficients and eigenvalues already in hdf5.")
+    else:
+        # Call the single point workflow to calculate the eigenvalues and
+        # coefficients
+        logger.info("Starting single point calculation.")
+        hdf5_path = workflow_single_points(config)
 
     # Logger info
     logger.info("Starting IPR calculation.")
 
-    # Get eigenvalues and coefficients from hdf5_path, weird indexes are
-    # because hdf5_path is a list in a list in a list
-    path_coefficients = hdf5_path[0][0][1]
+    # Get eigenvalues and coefficients from hdf5
     c_AO = retrieve_hdf5_data(config["path_hdf5"], path_coefficients)
-
-    path_eigenvalues = hdf5_path[0][0][0]  # path to the eigenvalues
     Energies = retrieve_hdf5_data(config["path_hdf5"], path_eigenvalues)
+
     h2ev = physical_constants['Hartree energy in eV'][0]
     Energies = Energies * h2ev  # To get them from Hartree to eV
 
@@ -70,15 +74,15 @@ def workflow_ipr(config: dict) -> list:
     c_MO_cont = np.add.reduceat(c_MO, Indices, 0)
 
     # Finally, we can calculate the IPR
-    IPR = np.zeros(c_MO_cont.shape[1])
+    ipr = np.zeros(c_MO_cont.shape[1])
 
     for i in range(c_MO_cont.shape[1]):
-        IPR[i] = np.sum(np.absolute(c_MO_cont[:, i])**4) / \
+        ipr[i] = np.sum(np.absolute(c_MO_cont[:, i])**4) / \
             (np.sum(np.absolute(c_MO_cont[:, i])**2))**2
 
     # Lastly, we save the output as a txt-file
-    RESULT = np.zeros((c_MO_cont.shape[1], 2))
-    RESULT[:, 0], RESULT[:, 1] = Energies, 1 / IPR
+    result = np.zeros((c_MO_cont.shape[1], 2))
+    result[:, 0], result[:, 1] = Energies, 1 / ipr
 
-    np.savetxt('IPR.txt', RESULT)
-    return RESULT
+    np.savetxt('IPR.txt', result)
+    return result
