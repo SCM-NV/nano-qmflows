@@ -1,6 +1,6 @@
 workflow:
   ipr_calculation
-project_name: CdSe_sp
+project_name: Cd33Se33
 
 active_space: [50, 50]
 path_hdf5: "test/test_files/Cd33Se33.hdf5"
