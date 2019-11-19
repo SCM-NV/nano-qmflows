@@ -39,7 +39,7 @@ def workflow_ipr(config: dict) -> list:
         # Call the single point workflow to calculate the eigenvalues and
         # coefficients
         logger.info("Starting single point calculation.")
-        hdf5_path = workflow_single_points(config)
+        workflow_single_points(config)
 
     # Logger info
     logger.info("Starting IPR calculation.")
