@@ -2,9 +2,9 @@ workflow:
   ipr_calculation
 project_name: CdSe_sp
 
-active_space: [500, 500]
-path_hdf5: "test/test_files/Cd68Se55Cl26.hdf5"
-path_traj_xyz: "test/test_files/Cd68Se55Cl26.xyz"
+active_space: [50, 50]
+path_hdf5: "test/test_files/Cd33Se33.hdf5"
+path_traj_xyz: "test/test_files/Cd33Se33.xyz"
 scratch_path: "/tmp/IPR"
 
 
