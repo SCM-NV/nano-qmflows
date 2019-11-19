@@ -15,7 +15,10 @@ import shutil
 # ==================> Internal modules <==========
 from nac.schedule.scheduleCp2k import prepare_job_cp2k
 from nac.common import (
-    Matrix, is_data_in_hdf5, read_cell_parameters_as_array, store_arrays_in_hdf5)
+    Matrix,
+    is_data_in_hdf5,
+    read_cell_parameters_as_array,
+    store_arrays_in_hdf5)
 from qmflows.hdf5 import dump_to_hdf5
 from qmflows.utils import chunksOf
 from qmflows.warnings_qmflows import SCF_Convergence_Warning
@@ -80,7 +83,9 @@ def calculate_mos(config: dict) -> list:
         root = join(config.project_name, f'point_{k}',
                     config.package_name, 'mo')
         dict_input["node_MOs"] = [
-            join(root, 'eigenvalues'), join(root, 'coefficients')]
+            join(
+                root, 'eigenvalues'), join(
+                root, 'coefficients')]
         dict_input["node_energy"] = join(root, 'energy')
 
         # If the MOs are already store in the HDF5 format return the path
@@ -127,8 +132,11 @@ def store_MOs(config: dict, dict_input: dict, promise_qm: object) -> str:
     try:
         with h5py.File(config.path_hdf5, 'r+') as f5:
             dump_to_hdf5(
-                mos, 'cp2k', f5,
-                project_name=config.project_name, job_name=dict_input["job_name"])
+                mos,
+                'cp2k',
+                f5,
+                project_name=config.project_name,
+                job_name=dict_input["job_name"])
     # Remove the ascii MO file
     finally:
         work_dir = promise_qm.archive['work_dir']
@@ -266,12 +274,18 @@ def create_file_names(work_dir: str, i: int):
     return JobFiles(file_xyz, file_inp, file_out, file_MO)
 
 
-def adjust_cell_parameters(general: dict, array_cell_parameters: Matrix, j: int) -> None:
+def adjust_cell_parameters(
+        general: dict,
+        array_cell_parameters: Matrix,
+        j: int) -> None:
     """
     If the cell parameters change during the MD simulations, adjust them
     for the molecular orbitals computation
     """
-    for s in (general[p] for p in ('cp2k_settings_main', 'cp2k_settings_guess')):
+    for s in (
+        general[p] for p in (
+            'cp2k_settings_main',
+            'cp2k_settings_guess')):
         s.cell_parameters = array_cell_parameters[j, 2:11].reshape(
             3, 3).tolist()
         s.cell_angles = None

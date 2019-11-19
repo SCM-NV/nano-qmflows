@@ -82,7 +82,7 @@ def save_basis_to_hdf5(config: dict, package_name: str = "cp2k") -> None:
     Store the specification of the basis set in the HDF5 to compute the integrals
     """
     basis_location = join(package_name, 'basis')
-    with h5py.File(config["path_hdf5"]) as f5:
+    with h5py.File(config["path_hdf5"], 'a') as f5:
         if basis_location not in f5:
             # Search Path to the file containing the basis set
             path_basis = pkg_resources.resource_filename(
