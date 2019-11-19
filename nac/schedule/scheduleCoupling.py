@@ -88,7 +88,7 @@ def compute_the_fixed_phase_overlaps(
     number_of_frames = len(paths_overlaps)
     # Pasth to the overlap matrices after the tracking
     # and phase correction
-    roots = [join(project_name, 'overlaps_{}'.format(i))
+    roots = [join(project_name, f'overlaps_{i}')
              for i in range(enumerate_from, number_of_frames + enumerate_from)]
     paths_corrected_overlaps = [join(r, 'mtx_sji_t0_corrected') for r in roots]
     # Paths inside the HDF5 to the array containing the tracking of the
@@ -147,14 +147,14 @@ def calculate_couplings(config: dict, i: int, fixed_phase_overlaps: Tensor3D) ->
 
     # Path were the couplinp is store
     k = i + config.enumerate_from
-    path = join(config.project_name, 'coupling_{}'.format(k))
+    path = join(config.project_name, f'coupling_{k}')
 
     # Skip the computation if the coupling is already done
     if is_data_in_hdf5(config.path_hdf5, path):
-        logger.info("Coupling: {} has already been calculated".format(path))
+        logger.info(f"Coupling: {path} has already been calculated")
         return path
     else:
-        logger.info("Computing coupling: {}".format(path))
+        logger.info(f"Computing coupling: {path}")
         if config.algorithm == 'levine':
             # Extract the overlap matrices involved in the coupling computation
             sji_t0 = fixed_phase_overlaps[i]
@@ -221,7 +221,7 @@ def track_unavoided_crossings(overlaps: Tensor3D, nHOMO: int) -> Tuple:
 
     for k in range(nOverlaps):
         # Cost matrix to track the corssings
-        logger.info("Tracking crossings at time: {}".format(k))
+        logger.info(f"Tracking crossings at time: {k}")
         cost_mtx_homos = np.negative(overlaps[k, :nHOMO, :nHOMO] ** 2)
         cost_mtx_lumos = np.negative(overlaps[k, nHOMO:, nHOMO:] ** 2)
 
@@ -338,11 +338,10 @@ def check_if_overlap_is_done(config: dict, overlaps_paths_hdf5: str) -> bool:
     Search for a given Overlap inside the HDF5.
     """
     if is_data_in_hdf5(config.path_hdf5, overlaps_paths_hdf5):
-        logger.info("{} Overlaps are already in the HDF5".format(
-            overlaps_paths_hdf5))
+        logger.info(f"{overlaps_paths_hdf5} Overlaps are already in the HDF5")
         return True
     else:
-        logger.info("Computing: {}".format(overlaps_paths_hdf5))
+        logger.info(f"Computing: {overlaps_paths_hdf5}")
         return False
 
 
@@ -385,8 +384,8 @@ def write_hamiltonians(config: dict, crossing_and_couplings: Tuple, mo_paths_hdf
 
         # FileNames
         path_dir_results = config.path_hamiltonians
-        file_ham_im = join(path_dir_results, 'Ham_{}_im'.format(j))
-        file_ham_re = join(path_dir_results, 'Ham_{}_re'.format(j))
+        file_ham_im = join(path_dir_results, f'Ham_{i}_im')
+        file_ham_re = join(path_dir_results, f'Ham_{j}_re')
 
         # convert to Rydbergs
         ham_im = 2.0 * css
@@ -420,6 +419,6 @@ def write_overlaps_in_ascii(overlaps: Tensor3D) -> None:
     nFrames = overlaps.shape[0]
     for k in range(nFrames):
         mtx_Sji = overlaps[k]
-        path_Sji = 'overlaps/mtx_Sji_{}'.format(k)
+        path_Sji = f'overlaps/mtx_Sji_{k}'
 
         np.savetxt(path_Sji, mtx_Sji, fmt='%10.5e', delimiter='  ')

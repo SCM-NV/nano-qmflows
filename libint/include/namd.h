@@ -1,9 +1,33 @@
 #ifndef NAMD_H_
 #define NAMD_H_
 
+#include <algorithm>
+#include <fstream>
+#include <iostream>
 #include <string>
+#include <thread>
+#include <tuple>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
+
+// integrals library
+#include <libint2.hpp>
+
+#include <pybind11/eigen.h>
+#include <pybind11/pybind11.h>
+
+// Eigen matrix algebra library
+#include <Eigen/Dense>
+
+// HDF5 funcionality
+#include <highfive/H5DataSet.hpp>
+#include <highfive/H5DataSpace.hpp>
+#include <highfive/H5File.hpp>
+
+#if defined(_OPENMP)
+#include <omp.h>
+#endif
 
 namespace namd {
 

@@ -30,7 +30,7 @@ def generate_auxiliar_basis(sett: Settings, auxiliar_basis: str, quality: str) -
     for atom in kind.keys():
         index = quality_to_number[quality.lower()]
         cfit = aux_fit[atom][index]
-        kind[atom]["BASIS_SET"] = "AUX_FIT " + "CFIT{}".format(cfit)
+        kind[atom]["BASIS_SET"] = "AUX_FIT " + f"CFIT{cfit}"
 
     return sett
 
@@ -246,8 +246,8 @@ def generate_kinds(elements: list, basis: str, potential: str) -> Settings:
     subsys = s.cp2k.force_eval.subsys
     for e in elements:
         q = valence_electrons['-'.join((e, basis))]
-        subsys.kind[e]['basis_set'] = "{}-q{}".format(basis, q)
-        subsys.kind[e]['potential'] = "{}-q{}".format(potential, q)
+        subsys.kind[e]['basis_set'] = f"{basis}-q{q}"
+        subsys.kind[e]['potential'] = f"{potential}-q{q}"
 
     return s
 

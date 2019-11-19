@@ -1,6 +1,5 @@
 __author__ = "Ivan Infante and Felipe Zapata"
 
-# ================> Python Standard  and third-party <==========
 import numpy as np
 import os
 import pyparsing as pa
@@ -93,7 +92,7 @@ def read_couplings(path_hams, ts):
     This function reads the non adiabatic coupling vectors from the files
     generated for the NAMD simulations
     """
-    files_im = [os.path.join(path_hams, 'Ham_{}_im'.format(i))
+    files_im = [os.path.join(path_hams, f'Ham_{i}_im')
                 for i in range(ts)]
     xs = np.stack(np.loadtxt(fn) for fn in files_im)
     return xs * r2meV  # return energies in meV
@@ -104,7 +103,7 @@ def read_energies(path_hams, ts):
     This function reads the molecular orbital energies of each state from
     the files generated for the NAMD simulations
     """
-    files_re = [os.path.join(path_hams, 'Ham_{}_re'.format(i))
+    files_re = [os.path.join(path_hams, f'Ham_{i}_re')
                 for i in range(ts)]
     xs = np.stack(np.diag(np.loadtxt(fn)) for fn in files_re)
     return xs * r2meV / 1000  # return energies in eV
@@ -117,7 +116,7 @@ def read_energies_pyxaid(path, fn, nstates, nconds):
     """
     inpfile = os.path.join(path, fn)
     cols = tuple(range(5, nstates * 2 + 5, 2))
-    xs = np.stack(np.loadtxt('{}{}'.format(inpfile, j), usecols=cols)
+    xs = np.stack(np.loadtxt(f'{inpfile}{j}', usecols=cols)
                   for j in range(nconds)).transpose()
     # Rows = timeframes ; Columns = states ; tensor = initial conditions
     xs = xs.swapaxes(0, 1)
@@ -131,7 +130,7 @@ def read_pops_pyxaid(path, fn, nstates, nconds):
     """
     inpfile = os.path.join(path, fn)
     cols = tuple(range(3, nstates * 2 + 3, 2))
-    xs = np.stack(np.loadtxt('{}{}'.format(inpfile, j), usecols=cols)
+    xs = np.stack(np.loadtxt(f'{inpfile}{j}', usecols=cols)
                   for j in range(nconds)).transpose()
     # Rows = timeframes ; Columns = states ; tensor = initial conditions
     xs = xs.swapaxes(0, 1)

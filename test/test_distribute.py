@@ -44,7 +44,7 @@ def check_scripts():
             try:
                 next(p.glob(f))
             except StopIteration:
-                msg = "There is not file: {}".format(f)
+                msg = f"There is not file: {f}"
                 print(msg)
                 raise RuntimeError(msg)
 

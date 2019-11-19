@@ -1,5 +1,14 @@
 # Change Log
 
+# 0.8.1 [17/10/19]
+
+## Change
+* Use [f-strings](https://docs.python.org/3/reference/lexical_analysis.html#f-strings)
+* Clean [C++ interface](https://cgithub.com/SCM-NV/qmflows-namd/blob/master/libint/compute_integrals.cc) to [libint](https://github.com/evaleev/libint)
+
+## Removed
+* Unused code to compile the [C++ interface](https://cgithub.com/SCM-NV/qmflows-namd/blob/master/libint/compute_integrals.cc) to [libint](https://github.com/evaleev/libint)
+
 # 0.8.0
 
 ### Fixed
