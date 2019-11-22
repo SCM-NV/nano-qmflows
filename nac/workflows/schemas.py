@@ -6,7 +6,8 @@ __all__ = [
     'schema_distribute_derivative_couplings',
     'schema_distribute_single_points',
     'schema_absorption_spectrum',
-    'schema_ipr']
+    'schema_ipr',
+    'schema_coop']
 
 
 from numbers import Real
@@ -237,7 +238,7 @@ schema_distribute_absorption_spectrum = Schema(
 dict_single_points = {
     # Name of the workflow to run
     "workflow": And(
-        str, Use(str.lower), lambda s: any(s == x for x in ("single_points", "ipr_calculation"))),
+        str, Use(str.lower), lambda s: any(s == x for x in ("single_points", "ipr_calculation", "coop_calculation"))),
 
     # General settings
     "cp2k_general_settings": schema_cp2k_general_settings
@@ -250,11 +251,18 @@ dict_distribute_single_points = {
         str, Use(str.lower), lambda s: s == "distribute_single_points")
 }
 
+dict_coop = {
+    # List of the two elements to calculate the COOP for
+    "coop_elements": list} 
+
 dict_merged_single_points = merge(dict_general_options, dict_single_points)
 
 schema_single_points = Schema(dict_merged_single_points)
 
 schema_ipr = schema_single_points
+
+dict_merged_coop = merge(dict_merged_single_points, dict_coop)
+schema_coop = Schema(dict_merged_coop)
 
 schema_distribute_single_points = Schema(
     merge(dict_distribute, merge(

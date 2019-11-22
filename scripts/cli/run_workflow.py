@@ -2,7 +2,10 @@
 
 from nac.workflows.input_validation import process_input
 from nac.workflows import (
-    workflow_derivative_couplings, workflow_single_points, workflow_stddft)
+    workflow_derivative_couplings,
+    workflow_single_points,
+    workflow_stddft,
+    workflow_crystal_orbital_overlap_population)
 from nac.workflows.workflow_ipr import workflow_ipr
 import argparse
 
@@ -20,7 +23,8 @@ dict_workflows = {
     'absorption_spectrum': workflow_stddft,
     'derivative_couplings': workflow_derivative_couplings,
     'single_points': workflow_single_points,
-    'ipr_calculation': workflow_ipr}
+    'ipr_calculation': workflow_ipr,
+    'coop_calculation': workflow_crystal_orbital_overlap_population}
 
 
 def main():
