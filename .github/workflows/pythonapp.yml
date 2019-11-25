@@ -1,4 +1,4 @@
-name: Python application
+name: building with conda
 
 on: [push]
 
