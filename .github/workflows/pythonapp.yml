@@ -21,8 +21,13 @@ jobs:
 
     - name: Install the package
       run: pip install .[test] -v
+      env:
+        CONDA_PREFIX: /usr/share/miniconda
 
     - name: Lint with flake8
+      env:
+        CONDA_PREFIX: /usr/share/miniconda
+
       run: |
         pip install flake8
         # stop the build if there are Python syntax errors or undefined names
@@ -31,7 +36,11 @@ jobs:
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
 
     - name: Check python
+      env:
+        CONDA_PREFIX: /usr/share/miniconda
       run: which python
 
     - name: Test with pytest
+      env:
+        CONDA_PREFIX: /usr/share/miniconda
       run: pytest tests
