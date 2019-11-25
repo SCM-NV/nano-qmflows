@@ -6,7 +6,8 @@
    :target: https://qmflows-namd.readthedocs.io/en/latest/?badge=latest
 .. image:: https://zenodo.org/badge/60843787.svg
    :target: https://zenodo.org/badge/latestdoi/60843787
-
+.. image:: https://github.com/SCM-NV/qmflows-namd/workflows/build%20with%20conda/badge.svg
+   :target: https://github.com/SCM-NV/qmflows-namd/actions
 ====================
 QMFlows-NAMD
 ====================
