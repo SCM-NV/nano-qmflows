@@ -11,13 +11,15 @@ jobs:
     - uses: actions/checkout@master
     - name: Setup conda
       uses: s-weigand/setup-conda@master
-    # - name: Set up Python 3.7
-    #   uses: actions/setup-python@v1
       with:
         update-conda: true
         python-version: 3.7
         conda-channels: anaconda, conda-forge
     - run: conda --version
+    - run: which python
+    - run: conda install -c conda-forge rdkit cython eigen h5py libint==2.4.2 highfive pybind11
+
+    - name: Check python
     - run: which python
     # - name: Install dependencies
     #   run: |
