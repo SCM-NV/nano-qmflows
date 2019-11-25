@@ -39,4 +39,4 @@ jobs:
         CONDA_PREFIX: /usr/share/miniconda
       run: |
         which python
-        pytest tests
+        pytest test
