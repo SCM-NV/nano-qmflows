@@ -17,9 +17,7 @@ import pkg_resources as pkg
 
 
 def merge(d1, d2):
-    """
-    merge two dictionaries using without modifying the original
-    """
+    """merge two dictionaries using without modifying the original."""
     x = d1.copy()
 
     x.update(d2)

@@ -2,15 +2,16 @@
 __all__ = ['workflow_crystal_orbital_overlap_population']
 
 import logging
+
 import numpy as np
-from nac.common import (
-    number_spherical_functions_per_atom,
-    retrieve_hdf5_data, is_data_in_hdf5)
+from qmflows.parsers.xyzParser import readXYZ
+from scipy.constants import physical_constants
+
+from nac.common import (is_data_in_hdf5, number_spherical_functions_per_atom,
+                        retrieve_hdf5_data)
 from nac.integrals.multipole_matrices import compute_matrix_multipole
 from nac.workflows.initialization import initialize
 from nac.workflows.workflow_single_points import workflow_single_points
-from scipy.constants import physical_constants
-from qmflows.parsers.xyzParser import readXYZ
 
 # Starting logger
 LOGGER = logging.getLogger(__name__)
@@ -56,8 +57,10 @@ def workflow_crystal_orbital_overlap_population(config: dict):
 
 
 def check_hdf5_for_eigenvalues_coefficients(config: dict):
-    """Checks if hdf5 contains the required eigenvalues and coefficients.
-    If not, it runs the single point calculation."""
+    """Check if hdf5 contains the required eigenvalues and coefficients.
+
+    If not, it runs the single point calculation.
+    """
     path_coefficients = '{}/point_0/cp2k/mo/coefficients'.format(
         config["project_name"])
     path_eigenvalues = '{}/point_0/cp2k/mo/eigenvalues'.format(
@@ -97,8 +100,10 @@ def get_eigenvalues_coefficients(config: dict):
 
 
 def compute_overlap_and_atomic_orbitals(mol: list, config: dict):
-    """Computes the indices of the atomic orbitals of the two selected elements.
-    Computes the overlap matrix, containing only the elements related to those two elements."""
+    """Compute the indices of the atomic orbitals of the two selected elements.
+
+    Computes the overlap matrix, containing only the elements related to those two elements.
+    """
     # Computing the overlap-matrix S
     overlap = compute_matrix_multipole(mol, config, 'overlap')
 
@@ -178,7 +183,7 @@ def compute_coop(
 
 
 def print_coop(energies, coop):
-    """Saves the COOP in a txt-file."""
+    """Save the COOP in a txt-file."""
     result_coop = np.zeros((len(coop), 2))
     result_coop[:, 0], result_coop[:, 1] = energies, coop
     np.savetxt('COOP.txt', result_coop)
