@@ -17,7 +17,9 @@ jobs:
         conda-channels: anaconda
     - run: conda --version
     - run: which python
-    - run: conda install -c conda-forge/label/gcc7 highfive h5py eigen cython rdkit pybind11 libint==2.4.2
+    - run: |
+        conda install -c conda-forge/label/gcc7 highfive h5py eigen cython rdkit pybind11
+        conda install -c conda-forge libint==2.4.2
 
     - name: Install the package
       run: pip install -e .[test]
