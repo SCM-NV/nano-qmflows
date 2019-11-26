@@ -151,38 +151,31 @@ def compute_overlap_and_atomic_orbitals(mol: list, config: dict):
 def compute_coop(
         atomic_orbitals: np.array,
         overlap_reduced: np.array,
-        el_1_orbital_ind,
-        el_2_orbital_ind):
+        el_1_orbital_ind: np.array,
+        el_2_orbital_ind: np.array):
     """Defines the function that computes the crystal orbital overlap population,
     and applies it to each column of the coefficent matrix."""
     # Define a function to be applied to each column of the coefficient matrix
-    def coop_func(
-            atomic_orbitals,
-            overlap_reduced,
-            el_1_orbital_ind,
-            el_2_orbital_ind):
+    def coop_func(column_of_coefficient_matrix: np.array):
         # Multiply each coefficient-product with the relevant overlap, and sum
         # everything
         return np.sum(
             np.tensordot(
-                atomic_orbitals[el_1_orbital_ind],
-                atomic_orbitals[el_2_orbital_ind],
+                column_of_coefficient_matrix[el_1_orbital_ind],
+                column_of_coefficient_matrix[el_2_orbital_ind],
                 0) * overlap_reduced)
 
     # Call the function
     coop = np.apply_along_axis(
         coop_func,
         0,
-        atomic_orbitals,
-        overlap_reduced,
-        el_1_orbital_ind,
-        el_2_orbital_ind)
+        atomic_orbitals)
 
     # Return the calculated crystal orbital overlap population
     return coop
 
 
-def print_coop(energies, coop):
+def print_coop(energies: np.array, coop: np.array):
     """Save the COOP in a txt-file."""
     result_coop = np.zeros((len(coop), 2))
     result_coop[:, 0], result_coop[:, 1] = energies, coop
