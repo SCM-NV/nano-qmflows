@@ -15,8 +15,7 @@ def test_workflow_coop(tmp_path):
     config = process_input(file_path, 'coop_calculation')
     print("config: ", config)
     try:
-        result = workflow_crystal_orbital_overlap_population(config)
-        print("COOP", result)
+        workflow_crystal_orbital_overlap_population(config)
     except BaseException:
         print("scratch_path: ", tmp_path)
         print("Unexpected error:", sys.exc_info()[0])
