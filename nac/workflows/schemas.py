@@ -253,7 +253,7 @@ dict_distribute_single_points = {
 
 dict_coop = {
     # List of the two elements to calculate the COOP for
-    "coop_elements": list} 
+    "coop_elements": list}
 
 dict_merged_single_points = merge(dict_general_options, dict_single_points)
 

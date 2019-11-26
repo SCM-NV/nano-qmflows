@@ -15,12 +15,49 @@ from qmflows.parsers.xyzParser import readXYZ
 # Starting logger
 LOGGER = logging.getLogger(__name__)
 
-def workflow_crystal_orbital_overlap_population(config: dict) -> list:
+
+def workflow_crystal_orbital_overlap_population(config: dict):
     """Crystal Orbital Overlap Population  main function."""
     # Dictionary containing the general information
     config.update(initialize(config))
 
-    # Checking if hdf5 contains the required eigenvalues and coefficients
+    # Checking hdf5 for eigenvalues and coefficients. If not present, they are
+    # computed.
+    check_hdf5_for_eigenvalues_coefficients(config)
+
+    # Logger info
+    LOGGER.info("Starting COOP calculation.")
+
+    # Get eigenvalues and coefficients from hdf5
+    atomic_orbitals, energies = get_eigenvalues_coefficients(config)
+
+    # Converting the xyz-file to a mol-file
+    mol = readXYZ(config["path_traj_xyz"])
+
+    # Computing the indices of the atomic orbitals of the two selected
+    # elements, and the overlap matrix that contains only elements related to
+    # the two elements
+    el_1_orbital_ind, el_2_orbital_ind, overlap_reduced = compute_overlap_and_atomic_orbitals(
+        mol, config)
+
+    # Compute the crystal orbital overlap population between the two selected
+    # elements
+    coop = compute_coop(
+        atomic_orbitals,
+        overlap_reduced,
+        el_1_orbital_ind,
+        el_2_orbital_ind)
+
+    # Lastly, we save the COOP as a txt-file
+    result_coop = print_coop(energies, coop)
+    LOGGER.info("COOP calculation completed.")
+
+    return result_coop
+
+
+def check_hdf5_for_eigenvalues_coefficients(config: dict):
+    """Checks if hdf5 contains the required eigenvalues and coefficients.
+    If not, it runs the single point calculation."""
     path_coefficients = '{}/point_0/cp2k/mo/coefficients'.format(
         config["project_name"])
     path_eigenvalues = '{}/point_0/cp2k/mo/eigenvalues'.format(
@@ -37,20 +74,31 @@ def workflow_crystal_orbital_overlap_population(config: dict) -> list:
         LOGGER.info("Starting single point calculation.")
         workflow_single_points(config)
 
-    # Logger info
-    LOGGER.info("Starting COOP calculation.")
 
-    # Get eigenvalues and coefficients from hdf5
+def get_eigenvalues_coefficients(config: dict):
+    """Retrieves eigenvalues and coefficients from hdf5 file."""
+    # Define paths to eigenvalues and coefficients hdf5
+    path_coefficients = '{}/point_0/cp2k/mo/coefficients'.format(
+        config["project_name"])
+    path_eigenvalues = '{}/point_0/cp2k/mo/eigenvalues'.format(
+        config["project_name"])
+
+    # Retrieves eigenvalues and coefficients
     atomic_orbitals = retrieve_hdf5_data(
         config["path_hdf5"], path_coefficients)
     energies = retrieve_hdf5_data(config["path_hdf5"], path_eigenvalues)
 
+    # Energies converted from Hartree to eV
     h2ev = physical_constants['Hartree energy in eV'][0]
-    energies = energies * h2ev  # To get them from Hartree to eV
+    energies = energies * h2ev
 
-    # Converting the xyz-file to a mol-file
-    mol = readXYZ(config["path_traj_xyz"])
+    # Return atomic orbitals and energies
+    return atomic_orbitals, energies
 
+
+def compute_overlap_and_atomic_orbitals(mol: list, config: dict):
+    """Computes the indices of the atomic orbitals of the two selected elements.
+    Computes the overlap matrix, containing only the elements related to those two elements."""
     # Computing the overlap-matrix S
     overlap = compute_matrix_multipole(mol, config, 'overlap')
 
@@ -90,6 +138,18 @@ def workflow_crystal_orbital_overlap_population(config: dict) -> list:
     # Then select from those rows the columns that belong to species element_2
     overlap_reduced = overlap_reduced[:, el_2_orbital_ind]
 
+    # Return lists of indices of atomic orbitals, and the reduced overlap
+    # matrix
+    return el_1_orbital_ind, el_2_orbital_ind, overlap_reduced
+
+
+def compute_coop(
+        atomic_orbitals,
+        overlap_reduced,
+        el_1_orbital_ind,
+        el_2_orbital_ind):
+    """Defines the function that computes the crystal orbital overlap population,
+    and applies it to each column of the coefficent matrix."""
     # Define a function to be applied to each column of the coefficient matrix
     def coop_func(
             atomic_orbitals,
@@ -113,7 +173,14 @@ def workflow_crystal_orbital_overlap_population(config: dict) -> list:
         el_1_orbital_ind,
         el_2_orbital_ind)
 
-    # Lastly, we save the output as a txt-file
-    result = np.zeros((len(coop), 2))
-    result[:, 0], result[:, 1] = energies, coop
-    np.savetxt('COOP.txt', result)
+    # Return the calculated crystal orbital overlap population
+    return coop
+
+
+def print_coop(energies, coop):
+    """Saves the COOP in a txt-file."""
+    result_coop = np.zeros((len(coop), 2))
+    result_coop[:, 0], result_coop[:, 1] = energies, coop
+    np.savetxt('COOP.txt', result_coop)
+
+    return result_coop
