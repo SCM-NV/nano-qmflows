@@ -149,8 +149,8 @@ def compute_overlap_and_atomic_orbitals(mol: list, config: dict):
 
 
 def compute_coop(
-        atomic_orbitals,
-        overlap_reduced,
+        atomic_orbitals: np.array,
+        overlap_reduced: np.array,
         el_1_orbital_ind,
         el_2_orbital_ind):
     """Defines the function that computes the crystal orbital overlap population,
