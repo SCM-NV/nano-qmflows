@@ -6,7 +6,8 @@ from .schemas import (
     schema_distribute_single_points,
     schema_cp2k_general_settings,
     schema_single_points,
-    schema_ipr)
+    schema_ipr,
+    schema_coop)
 from .templates import (create_settings_from_template, valence_electrons)
 from nac.common import DictConfig
 from pathlib import Path
@@ -31,7 +32,8 @@ schema_workflows = {
     'distribute_derivative_couplings': schema_distribute_derivative_couplings,
     'distribute_absorption_spectrum': schema_distribute_absorption_spectrum,
     'distribute_single_points': schema_distribute_single_points,
-    'ipr_calculation': schema_ipr
+    'ipr_calculation': schema_ipr,
+    'coop_calculation': schema_coop
 }
 
 
