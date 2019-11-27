@@ -12,6 +12,7 @@ import logging
 import os
 import shutil
 
+from qmflows.hdf5.quantumHDF5 import StoreasHDF5
 from more_itertools import chunked
 from nac.schedule.scheduleCp2k import prepare_job_cp2k
 from nac.common import (
@@ -19,7 +20,7 @@ from nac.common import (
     is_data_in_hdf5,
     read_cell_parameters_as_array,
     store_arrays_in_hdf5)
-from qmflows.hdf5 import dump_to_hdf5
+from os.path import join
 from qmflows.warnings_qmflows import SCF_Convergence_Warning
 
 # Tuple contanining file paths
@@ -27,7 +28,26 @@ JobFiles = namedtuple("JobFiles", ("get_xyz", "get_inp", "get_out", "get_MO"))
 
 # Starting logger
 logger = logging.getLogger(__name__)
-# ==============================> Tasks <=====================================
+
+
+def dump_orbitals_to_hdf5(data: tuple, file_h5: str, project_name: str, job_name: str):
+    """
+    Store the result in HDF5 format.
+
+    :param file_h5: Path to the HDF5 file that contains the
+    numerical results.
+    :returns: None
+    """
+    job_name = job_name if job_name is not None else "job"
+    store_hdf5 = StoreasHDF5(file_h5, 'cp2k')
+
+    es = "cp2k/mo/eigenvalues"
+    css = "cp2k/mo/coefficients"
+    pathEs = join(project_name, job_name, es)
+    pathCs = join(project_name, job_name, css)
+
+    for p, d in zip([pathEs, pathCs], [data.eigenVals, data.coeffs]):
+        store_hdf5.funHDF5(p, d)
 
 
 def calculate_mos(config: dict) -> list:
@@ -130,12 +150,11 @@ def store_MOs(config: dict, dict_input: dict, promise_qm: object) -> str:
     # Store in the HDF5
     try:
         with h5py.File(config.path_hdf5, 'r+') as f5:
-            dump_to_hdf5(
+            dump_orbitals_to_hdf5(
                 mos,
-                'cp2k',
                 f5,
-                project_name=config.project_name,
-                job_name=dict_input["job_name"])
+                config.project_name,
+                dict_input["job_name"])
     # Remove the ascii MO file
     finally:
         work_dir = promise_qm.archive['work_dir']
