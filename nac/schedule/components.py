@@ -12,7 +12,7 @@ import logging
 import os
 import shutil
 
-# ==================> Internal modules <==========
+from more_itertools import chunked
 from nac.schedule.scheduleCp2k import prepare_job_cp2k
 from nac.common import (
     Matrix,
@@ -20,7 +20,6 @@ from nac.common import (
     read_cell_parameters_as_array,
     store_arrays_in_hdf5)
 from qmflows.hdf5 import dump_to_hdf5
-from qmflows.utils import chunksOf
 from qmflows.warnings_qmflows import SCF_Convergence_Warning
 
 # Tuple contanining file paths
@@ -256,7 +255,7 @@ def split_file_geometries(pathXYZ: str) -> list:
         xss = f.readlines()
 
     numat = int(xss[0].split()[0])
-    return list(map(''.join, chunksOf(xss, numat + 2)))
+    return list(map(''.join, chunked(xss, numat + 2)))
 
 
 def create_file_names(work_dir: str, i: int):

@@ -122,7 +122,7 @@ setup(
         'topic :: scientific/engineering :: chemistry'
     ],
     install_requires=[
-        'numpy', 'h5py', 'noodles==0.3.3', 'pybind11>=2.2.4',
+        'numpy', 'h5py', 'more-itertools', 'noodles==0.3.3', 'pybind11>=2.2.4',
         'scipy', 'schema', 'pyyaml>=5.1',
         'plams@git+https://github.com/SCM-NV/PLAMS@v1.4',
         'qmflows@git+https://github.com/SCM-NV/qmflows@master'
