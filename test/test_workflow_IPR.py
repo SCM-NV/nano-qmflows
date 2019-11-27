@@ -14,10 +14,9 @@ def test_workflow_IPR(tmp_path):
     """Test the Inverse Participation Ratio workflow."""
     file_path = join(root, 'test/test_files/input_test_IPR.yml')
     config = process_input(file_path, 'ipr_calculation')
-    print("config: ", config)
     try:
-        result = workflow_ipr(config)
-        print("IPR", result)
+        workflow_ipr(config)
+        os.remove("IPR.txt")
     except BaseException:
         print("scratch_path: ", tmp_path)
         print("Unexpected error:", sys.exc_info()[0])
