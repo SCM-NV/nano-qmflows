@@ -18,7 +18,7 @@ import nac
 from nac.common import (Matrix, change_mol_units, is_data_in_hdf5,
                         retrieve_hdf5_data)
 from nac.schedule.components import create_point_folder, split_file_geometries
-from nac.schedule.hdf5_interface import StoreasHDF5
+from nac.hdf5_interface import StoreasHDF5
 from qmflows.parsers import parse_string_xyz
 from qmflows.parsers.cp2KParser import readCp2KBasis
 
