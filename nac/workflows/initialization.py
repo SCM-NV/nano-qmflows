@@ -18,8 +18,9 @@ import nac
 from nac.common import (Matrix, change_mol_units, is_data_in_hdf5,
                         retrieve_hdf5_data)
 from nac.schedule.components import create_point_folder, split_file_geometries
-from nac.schedule.hdf5_interface import store_cp2k_basis
+from nac.schedule.hdf5_interface import StoreasHDF5
 from qmflows.parsers import parse_string_xyz
+from qmflows.parsers.cp2KParser import readCp2KBasis
 
 # Starting logger
 logger = logging.getLogger(__name__)
@@ -87,6 +88,27 @@ def save_basis_to_hdf5(config: dict, package_name: str = "cp2k") -> None:
             path_basis = pkg_resources.resource_filename(
                 "nac", "basis/BASIS_MOLOPT")
             store_cp2k_basis(f5, path_basis)
+
+
+def store_cp2k_basis(file_h5, path_basis):
+    """Read the CP2K basis set into an HDF5 file."""
+    stocker = StoreasHDF5(file_h5)
+
+    keys, vals = readCp2KBasis(path_basis)
+    pathsExpo = [join("cp2k/basis", xs.atom, xs.basis, "exponents")
+                 for xs in keys]
+    pathsCoeff = [join("cp2k/basis", xs.atom, xs.basis,
+                       "coefficients") for xs in keys]
+
+    for ps, es in zip(pathsExpo, [xs.exponents for xs in vals]):
+        stocker.save_data(ps, es)
+
+    fss = [xs.basisFormat for xs in keys]
+    css = [xs.coefficients for xs in vals]
+
+    # save basis set coefficients and their correspoding format
+    for path, fs, css in zip(pathsCoeff, fss, css):
+        stocker.save_data_attrs("basisFormat", str(fs), path, css)
 
 
 def guesses_to_compute(calculate_guesses: str, enumerate_from: int, len_geometries) -> list:

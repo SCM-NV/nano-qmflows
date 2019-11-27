@@ -4,7 +4,7 @@ import os
 import h5py
 import pkg_resources
 
-from nac.schedule.hdf5_interface import store_cp2k_basis
+from nac.workflows.initialization import store_cp2k_basis
 
 
 def test_read_cp2k_basis(tmp_path):
