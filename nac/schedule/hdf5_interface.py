@@ -1,8 +1,7 @@
 """Module to store data in the HDF5."""
 
-__all__ = ['StoreasHDF5', 'cp2k2hdf5']
+__all__ = ['StoreasHDF5', 'store_cp2k_basis']
 
-from functools import partial
 from os.path import join
 
 import numpy as np
@@ -15,21 +14,20 @@ class StoreasHDF5:
 
     def __init__(self, file_h5):
         self.file_h5 = file_h5
-        self.name = 'cp2k'
 
-    def funHDF5(self, pathProperty, data):
+    def save_data(self, path_property, data):
         """Create a data set using ``data`` and saves the data using `pathProperty` in the HDF5 file.
 
         :param pathProperty: path to store the property in HDF5.
         :type pathProperty: String
         :param data: Numeric array containing the property.
         :type data: Numpy array
-        :returns: None
+        :returns: h5py.Dataset
         """
-        self.file_h5.require_dataset(pathProperty, shape=np.shape(data),
-                                     data=data, dtype=np.float32)
+        return self.file_h5.require_dataset(path_property, shape=np.shape(data),
+                                            data=data, dtype=np.float32)
 
-    def funHDF5_attrs(self, nameAttr, attr, pathProperty, data):
+    def save_data_attrs(self, nameAttr, attr, pathProperty, data):
         """Create a data set using ``data`` and some attributes.
 
         :param nameAttr: Name of the attribute assoaciated with the data.
@@ -43,8 +41,7 @@ class StoreasHDF5:
         :returns: None
         """
 
-        dset = self.file_h5.require_dataset(pathProperty, shape=np.shape(data),
-                                            data=data, dtype=np.float32)
+        dset = self.save_data(pathProperty, data)
         dset.attrs[nameAttr] = attr
 
     def saveBasis(self, parserFun, pathBasis):
@@ -59,46 +56,24 @@ class StoreasHDF5:
         :returns: None
         """
         keys, vals = parserFun(pathBasis)
-        pathsExpo = [join(self.name, "basis", xs.atom, xs.basis, "exponents")
+        pathsExpo = [join("cp2k/basis", xs.atom, xs.basis, "exponents")
                      for xs in keys]
-        pathsCoeff = [join(self.name, "basis", xs.atom, xs.basis,
+        pathsCoeff = [join("cp2k/basis", xs.atom, xs.basis,
                            "coefficients") for xs in keys]
 
         for ps, es in zip(pathsExpo, [xs.exponents for xs in vals]):
-            self.funHDF5(ps, es)
+            self.save_data(ps, es)
 
         fss = [xs.basisFormat for xs in keys]
         css = [xs.coefficients for xs in vals]
 
         # save basis set coefficients and their correspoding format
         for path, fs, css in zip(pathsCoeff, fss, css):
-            self.funHDF5_attrs("basisFormat", str(fs), path, css)
+            self.save_data_attrs("basisFormat", str(fs), path, css)
 
 
-# =======================================================
-# CP2K Interface
-
-def cp2k2hdf5(file_h5, keys):
-    """
-    Use a list of namedtuple ``keys`` to retrieve information
-    from text otuput files and store it in HDF5 format
-    """
-    for k in keys:
-        cp2kOpts(file_h5, k)
-
-
-def cp2kOpts(file_h5, key):
-    """
-    Read from a text file some numerical information and store it in HDF5
-    Format. The available options to read and store are:
-    - basis set
-    - Molecular orbitals
-    -Overlap Mtrix
-    """
+def store_cp2k_basis(file_h5, key):
+    """Read the CP2K basis set into an HDF5 file."""
     storeCp2k = StoreasHDF5(file_h5)
 
-    args = key.args
-    name = key.name
-    d = {"basis": partial(storeCp2k.saveBasis, readCp2KBasis)}
-
-    return d[name](*args)
+    return storeCp2k.saveBasis(readCp2KBasis, *key.args)

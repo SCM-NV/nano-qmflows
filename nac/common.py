@@ -166,7 +166,7 @@ def is_data_in_hdf5(path_hdf5, xs):
 
 
 def store_arrays_in_hdf5(
-        path_hdf5: str, paths, tensor: Array, dtype=np.float32) -> None:
+        path_hdf5: str, paths, tensor: Array, dtype=np.float32, attribute=None) -> None:
     """Store the corrected overlaps in the HDF5 file."""
     with h5py.File(path_hdf5, 'r+') as f5:
         if isinstance(paths, list):
@@ -177,7 +177,7 @@ def store_arrays_in_hdf5(
         else:
             f5.require_dataset(paths, shape=np.shape(tensor),
                                data=tensor, dtype=dtype)
-
+        
 
 def change_mol_units(mol, factor=angs2au):
     """
@@ -207,7 +207,8 @@ def number_spherical_functions_per_atom(mol, package_name, basis_name, path_hdf5
     Compute the number of spherical shells per atom
     """
     with h5py.File(path_hdf5, 'r') as f5:
-        xs = [f5[f'{package_name}/basis/{atom[0]}/{basis_name}/coefficients'] for atom in mol]
+        xs = [f5[f'{package_name}/basis/{atom[0]}/{basis_name}/coefficients']
+              for atom in mol]
         ys = [calc_orbital_Slabels(
             package_name, read_basis_format(
                 package_name, path.attrs['basisFormat'])) for path in xs]

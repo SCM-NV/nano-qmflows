@@ -1,4 +1,4 @@
-"""Crystal Orbital Overlap Population  calculation."""
+"""Crystal Orbital Overlap Population calculation."""
 __all__ = ['workflow_crystal_orbital_overlap_population']
 
 import logging
