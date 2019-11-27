@@ -12,8 +12,8 @@ import logging
 import os
 import shutil
 
-from qmflows.hdf5.quantumHDF5 import StoreasHDF5
 from more_itertools import chunked
+from nac.schedule.hdf5_interface import dump_orbitals_to_hdf5
 from nac.schedule.scheduleCp2k import prepare_job_cp2k
 from nac.common import (
     Matrix,
@@ -28,26 +28,6 @@ JobFiles = namedtuple("JobFiles", ("get_xyz", "get_inp", "get_out", "get_MO"))
 
 # Starting logger
 logger = logging.getLogger(__name__)
-
-
-def dump_orbitals_to_hdf5(data: tuple, file_h5: str, project_name: str, job_name: str):
-    """
-    Store the result in HDF5 format.
-
-    :param file_h5: Path to the HDF5 file that contains the
-    numerical results.
-    :returns: None
-    """
-    job_name = job_name if job_name is not None else "job"
-    store_hdf5 = StoreasHDF5(file_h5, 'cp2k')
-
-    es = "cp2k/mo/eigenvalues"
-    css = "cp2k/mo/coefficients"
-    pathEs = join(project_name, job_name, es)
-    pathCs = join(project_name, job_name, css)
-
-    for p, d in zip([pathEs, pathCs], [data.eigenVals, data.coeffs]):
-        store_hdf5.funHDF5(p, d)
 
 
 def calculate_mos(config: dict) -> list:
