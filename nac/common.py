@@ -1,27 +1,31 @@
+"""Miscellaneous funcionality."""
 
 __all__ = ['Array', 'AtomBasisData', 'AtomBasisKey', 'AtomData', 'AtomXYZ',
-           'CGF', 'DictConfig', 'InfoMO', 'InputKey', 'Matrix', 'MO', 'Tensor3D', 'Vector',
+           'CGF', 'DictConfig', 'InfoMO', 'Matrix', 'MO', 'Tensor3D', 'Vector',
            'change_mol_units', 'getmass', 'h2ev', 'hardness',
            'number_spherical_functions_per_atom', 'retrieve_hdf5_data',
            'is_data_in_hdf5', 'store_arrays_in_hdf5']
 
 
+import os
 from collections import namedtuple
 from itertools import chain
-from scipy.constants import physical_constants
-from scm.plams import (Atom, Molecule)
 
 import h5py
 import numpy as np
-import os
+from scipy.constants import physical_constants
+from scm.plams import Atom, Molecule
 
 
 class DictConfig(dict):
+    """Class to extend the Dict class with `.` dot notation."""
 
     def __getattr__(self, attr):
+        """Extract key using dot notation."""
         return self.get(attr)
 
     def __setattr__(self, key, value):
+        """Set value using dot notation."""
         self.__setitem__(key, value)
 
     def __deepcopy__(self, _):
@@ -40,7 +44,6 @@ AtomBasisData = namedtuple("AtomBasisData", ("exponents", "coefficients"))
 AtomXYZ = namedtuple("AtomXYZ", ("symbol", "xyz"))
 CGF = namedtuple("CGF", ("primitives", "orbType"))
 InfoMO = namedtuple("InfoMO", ("eigenVals", "coeffs"))
-InputKey = namedtuple("InpuKey", ("name", "args"))
 MO = namedtuple("MO", ("coordinates", "cgfs", "coefficients"))
 
 # ================> Constants <================
@@ -166,10 +169,8 @@ def is_data_in_hdf5(path_hdf5, xs):
 
 
 def store_arrays_in_hdf5(
-        path_hdf5: str, paths, tensor: Array, dtype=np.float32) -> None:
-    """
-    Store the corrected overlaps in the HDF5 file
-    """
+        path_hdf5: str, paths, tensor: Array, dtype=np.float32, attribute=None) -> None:
+    """Store the corrected overlaps in the HDF5 file."""
     with h5py.File(path_hdf5, 'r+') as f5:
         if isinstance(paths, list):
             for k, path in enumerate(paths):
@@ -209,7 +210,8 @@ def number_spherical_functions_per_atom(mol, package_name, basis_name, path_hdf5
     Compute the number of spherical shells per atom
     """
     with h5py.File(path_hdf5, 'r') as f5:
-        xs = [f5[f'{package_name}/basis/{atom[0]}/{basis_name}/coefficients'] for atom in mol]
+        xs = [f5[f'{package_name}/basis/{atom[0]}/{basis_name}/coefficients']
+              for atom in mol]
         ys = [calc_orbital_Slabels(
             package_name, read_basis_format(
                 package_name, path.attrs['basisFormat'])) for path in xs]
