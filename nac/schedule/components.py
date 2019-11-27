@@ -13,13 +13,14 @@ import os
 import shutil
 
 from more_itertools import chunked
+from nac.schedule.hdf5_interface import dump_orbitals_to_hdf5
 from nac.schedule.scheduleCp2k import prepare_job_cp2k
 from nac.common import (
     Matrix,
     is_data_in_hdf5,
     read_cell_parameters_as_array,
     store_arrays_in_hdf5)
-from qmflows.hdf5 import dump_to_hdf5
+from os.path import join
 from qmflows.warnings_qmflows import SCF_Convergence_Warning
 
 # Tuple contanining file paths
@@ -27,7 +28,6 @@ JobFiles = namedtuple("JobFiles", ("get_xyz", "get_inp", "get_out", "get_MO"))
 
 # Starting logger
 logger = logging.getLogger(__name__)
-# ==============================> Tasks <=====================================
 
 
 def calculate_mos(config: dict) -> list:
@@ -130,12 +130,11 @@ def store_MOs(config: dict, dict_input: dict, promise_qm: object) -> str:
     # Store in the HDF5
     try:
         with h5py.File(config.path_hdf5, 'r+') as f5:
-            dump_to_hdf5(
+            dump_orbitals_to_hdf5(
                 mos,
-                'cp2k',
                 f5,
-                project_name=config.project_name,
-                job_name=dict_input["job_name"])
+                config.project_name,
+                dict_input["job_name"])
     # Remove the ascii MO file
     finally:
         work_dir = promise_qm.archive['work_dir']
