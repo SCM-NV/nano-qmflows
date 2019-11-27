@@ -1,9 +1,9 @@
 """Module to store data in the HDF5."""
 
-__all__ = ['StoreasHDF5', 'store_cp2k_basis']
-
+__all__ = ['store_cp2k_basis']
 from os.path import join
 
+import h5py
 import numpy as np
 
 from qmflows.parsers.cp2KParser import readCp2KBasis
@@ -13,49 +13,41 @@ class StoreasHDF5:
     """Class to store inside a HDF5 file numerical array with optional attributes."""
 
     def __init__(self, file_h5):
+        """Save the instance of the h5py File."""
         self.file_h5 = file_h5
 
-    def save_data(self, path_property, data):
-        """Create a data set using ``data`` and saves the data using `pathProperty` in the HDF5 file.
+    def save_data(self, path_property: str, data: np.array) -> h5py.Dataset:
+        """Create a data set using ``data`` and saves the data using `path_property` in the HDF5 file.
 
         :param pathProperty: path to store the property in HDF5.
-        :type pathProperty: String
         :param data: Numeric array containing the property.
-        :type data: Numpy array
-        :returns: h5py.Dataset
         """
         return self.file_h5.require_dataset(path_property, shape=np.shape(data),
                                             data=data, dtype=np.float32)
 
-    def save_data_attrs(self, nameAttr, attr, pathProperty, data):
+    def save_data_attrs(self, name_attr: str, attr: str, path_property: str, data: np.array):
         """Create a data set using ``data`` and some attributes.
 
-        :param nameAttr: Name of the attribute assoaciated with the data.
-        :type nameAttr: String
+        :param name_attr: Name of the attribute assoaciated with the data.
         :param attr: Actual atttribute.
-        :type attr: String | Numpy array
         :param pathProperty: path to store the property in HDF5.
-        :type pathProperty: String
         :param data: Numeric array containing the property.
-        :type data: Numpy array
         :returns: None
         """
+        dset = self.save_data(path_property, data)
+        dset.attrs[name_attr] = attr
 
-        dset = self.save_data(pathProperty, data)
-        dset.attrs[nameAttr] = attr
-
-    def saveBasis(self, parserFun, pathBasis):
+    def saveBasis(self, parser_fun: callable, path_basis: str):
         """Store the basis set.
 
-        :param parserFun: Function to parse the file containing the
+        :param parser_fun: Function to parse the file containing the
                           information about the primitive contracted Gauss
                           functions.
-        :param pathBasis: Absolute path to the file containing the basis
+        :param path_basis: Absolute path to the file containing the basis
                           sets information.
-        :type pathBasis: String.
         :returns: None
         """
-        keys, vals = parserFun(pathBasis)
+        keys, vals = parser_fun(path_basis)
         pathsExpo = [join("cp2k/basis", xs.atom, xs.basis, "exponents")
                      for xs in keys]
         pathsCoeff = [join("cp2k/basis", xs.atom, xs.basis,
@@ -72,8 +64,8 @@ class StoreasHDF5:
             self.save_data_attrs("basisFormat", str(fs), path, css)
 
 
-def store_cp2k_basis(file_h5, key):
+def store_cp2k_basis(file_h5, path_basis):
     """Read the CP2K basis set into an HDF5 file."""
     storeCp2k = StoreasHDF5(file_h5)
 
-    return storeCp2k.saveBasis(readCp2KBasis, *key.args)
+    return storeCp2k.saveBasis(readCp2KBasis, path_basis)

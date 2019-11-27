@@ -4,7 +4,6 @@ import os
 import h5py
 import pkg_resources
 
-from nac.common import InputKey
 from nac.schedule.hdf5_interface import store_cp2k_basis
 
 
@@ -15,10 +14,9 @@ def test_read_cp2k_basis(tmp_path):
     path_basis = pkg_resources.resource_filename(
         "nac", "basis/BASIS_MOLOPT")
 
-    keyBasis = InputKey("basis", [path_basis])
     coefficients_format_carbon_DZVP_MOLOPT_GTH = '[2, 0, 2, 7, 2, 2, 1]'
     with h5py.File(tmp_hdf5, 'a') as f5:
-        store_cp2k_basis(f5, keyBasis)
+        store_cp2k_basis(f5, path_basis)
 
         dset = f5["cp2k/basis/c/DZVP-MOLOPT-GTH/coefficients"]
         # Check that the format is store

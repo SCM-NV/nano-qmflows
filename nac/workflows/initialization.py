@@ -15,7 +15,7 @@ import numpy as np
 import pkg_resources
 
 import nac
-from nac.common import (InputKey, Matrix, change_mol_units, is_data_in_hdf5,
+from nac.common import (Matrix, change_mol_units, is_data_in_hdf5,
                         retrieve_hdf5_data)
 from nac.schedule.components import create_point_folder, split_file_geometries
 from nac.schedule.hdf5_interface import store_cp2k_basis
@@ -86,8 +86,7 @@ def save_basis_to_hdf5(config: dict, package_name: str = "cp2k") -> None:
             # Search Path to the file containing the basis set
             path_basis = pkg_resources.resource_filename(
                 "nac", "basis/BASIS_MOLOPT")
-            keyBasis = InputKey("basis", [path_basis])
-            store_cp2k_basis(f5, keyBasis)
+            store_cp2k_basis(f5, path_basis)
 
 
 def guesses_to_compute(calculate_guesses: str, enumerate_from: int, len_geometries) -> list:
