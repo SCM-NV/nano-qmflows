@@ -1,3 +1,4 @@
+"""Schemas to valid user input."""
 __all__ = [
     'schema_cp2k_general_settings',
     'schema_derivative_couplings',
@@ -10,14 +11,15 @@ __all__ = [
     'schema_coop']
 
 
-from numbers import Real
-from schema import (And, Optional, Or, Schema, Use)
 import os
+from numbers import Real
+
 import pkg_resources as pkg
+from schema import And, Optional, Or, Schema, Use
 
 
 def merge(d1, d2):
-    """merge two dictionaries using without modifying the original."""
+    """Merge two dictionaries using without modifying the original."""
     x = d1.copy()
 
     x.update(d2)

@@ -167,9 +167,7 @@ def is_data_in_hdf5(path_hdf5, xs):
 
 def store_arrays_in_hdf5(
         path_hdf5: str, paths, tensor: Array, dtype=np.float32) -> None:
-    """
-    Store the corrected overlaps in the HDF5 file
-    """
+    """Store the corrected overlaps in the HDF5 file."""
     with h5py.File(path_hdf5, 'r+') as f5:
         if isinstance(paths, list):
             for k, path in enumerate(paths):

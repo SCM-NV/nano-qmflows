@@ -1,24 +1,25 @@
+"""Initial configuration setup."""
 __all__ = ['initialize', 'read_swaps', 'split_trajectory']
-
-from nac.common import (
-    InputKey, Matrix, change_mol_units, retrieve_hdf5_data, is_data_in_hdf5)
-from nac.schedule.components import (
-    create_point_folder, split_file_geometries)
-from os.path import join
-from qmflows.hdf5.quantumHDF5 import cp2k2hdf5
-from qmflows.parsers import parse_string_xyz
-from subprocess import (PIPE, Popen)
 
 import fnmatch
 import getpass
-import h5py
 import logging
-import nac
-import numpy as np
 import os
-import pkg_resources
 import subprocess
 import tempfile
+from os.path import join
+from subprocess import PIPE, Popen
+
+import h5py
+import numpy as np
+import pkg_resources
+
+import nac
+from nac.common import (InputKey, Matrix, change_mol_units, is_data_in_hdf5,
+                        retrieve_hdf5_data)
+from nac.schedule.components import create_point_folder, split_file_geometries
+from nac.schedule.hdf5_interface import cp2k2hdf5
+from qmflows.parsers import parse_string_xyz
 
 # Starting logger
 logger = logging.getLogger(__name__)
@@ -78,9 +79,7 @@ def initialize(config: dict) -> dict:
 
 
 def save_basis_to_hdf5(config: dict, package_name: str = "cp2k") -> None:
-    """
-    Store the specification of the basis set in the HDF5 to compute the integrals
-    """
+    """Store the specification of the basis set in the HDF5 to compute the integrals."""
     basis_location = join(package_name, 'basis')
     with h5py.File(config["path_hdf5"], 'a') as f5:
         if basis_location not in f5:
@@ -92,7 +91,7 @@ def save_basis_to_hdf5(config: dict, package_name: str = "cp2k") -> None:
 
 
 def guesses_to_compute(calculate_guesses: str, enumerate_from: int, len_geometries) -> list:
-    """Guess for the wave function"""
+    """Guess for the wave function."""
     if calculate_guesses is None:
         points_guess = []
     elif calculate_guesses.lower() in 'first':
@@ -110,9 +109,7 @@ def guesses_to_compute(calculate_guesses: str, enumerate_from: int, len_geometri
 
 
 def read_swaps(path_hdf5: str, project_name: str) -> Matrix:
-    """
-    Read the crossing tracking for the Molecular orbital
-    """
+    """Read the crossing tracking for the Molecular orbital."""
     path_swaps = join(project_name, 'swaps')
     if is_data_in_hdf5(path_hdf5, path_swaps):
         return retrieve_hdf5_data(path_hdf5, path_swaps)
@@ -124,9 +121,8 @@ def read_swaps(path_hdf5: str, project_name: str) -> Matrix:
 
 
 def split_trajectory(path: str, nBlocks: int, pathOut: str) -> list:
-    """
-    Split an XYZ trajectory in n Block and write
-    them in a given path.
+    """Split an XYZ trajectory in n Block and write them in a given path.
+
     :Param path: Path to the XYZ file.
     :param nBlocks: number of Block into which the xyz file is split.
     :param pathOut: Path were the block are written.
@@ -163,9 +159,7 @@ def split_trajectory(path: str, nBlocks: int, pathOut: str) -> list:
 
 
 def log_config(config):
-    """
-    Print initial configuration
-    """
+    """Print initial configuration."""
     workdir = os.path.abspath('.')
     file_log = f'{config.project_name}.log'
     logging.basicConfig(filename=file_log, level=logging.DEBUG,

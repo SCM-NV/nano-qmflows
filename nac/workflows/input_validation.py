@@ -1,25 +1,26 @@
-from .schemas import (
-    schema_absorption_spectrum,
-    schema_derivative_couplings,
-    schema_distribute_absorption_spectrum,
-    schema_distribute_derivative_couplings,
-    schema_distribute_single_points,
-    schema_cp2k_general_settings,
-    schema_single_points,
-    schema_ipr,
-    schema_coop)
-from .templates import (create_settings_from_template, valence_electrons)
-from nac.common import DictConfig
-from pathlib import Path
-from os.path import join
-from scm.plams import Molecule
-from qmflows.settings import Settings
-from qmflows.utils import settings2Dict
-from schema import SchemaError
-from typing import Dict
+"""Check that the input provided by the user is valid."""
 import logging
 import os
+from os.path import join
+from pathlib import Path
+from typing import Dict
+
 import yaml
+from schema import SchemaError
+from scm.plams import Molecule
+
+from nac.common import DictConfig
+from qmflows.settings import Settings
+from qmflows.utils import settings2Dict
+
+from .schemas import (schema_absorption_spectrum, schema_coop,
+                      schema_cp2k_general_settings,
+                      schema_derivative_couplings,
+                      schema_distribute_absorption_spectrum,
+                      schema_distribute_derivative_couplings,
+                      schema_distribute_single_points, schema_ipr,
+                      schema_single_points)
+from .templates import create_settings_from_template, valence_electrons
 
 logger = logging.getLogger(__name__)
 
@@ -38,9 +39,10 @@ schema_workflows = {
 
 
 def process_input(input_file: str, workflow_name: str) -> Dict:
-    """
-    Read the `input_file` in YAML format, validate it against the
-    corresponding `workflow_name` schema and return a nested dictionary with the input.
+    """Read the `input_file` in YAML format and validate it.
+
+    Use the corresponding `workflow_name` schema and return a nested
+    dictionary with the input.
 
     :param str input_file: path to the input
     :return: Input as dictionary
@@ -84,9 +86,7 @@ def create_settings(d: Dict) -> Dict:
 
 
 def apply_templates(general: Dict, path_traj_xyz: str) -> None:
-    """
-    Apply a template for CP2K if the user request so.
-    """
+    """Apply a template for CP2K if the user request so."""
     for s in [
         general[x] for x in [
             'cp2k_settings_main',
@@ -99,9 +99,7 @@ def apply_templates(general: Dict, path_traj_xyz: str) -> None:
 
 
 def add_missing_keywords(d: Dict) -> Dict:
-    """
-    and add the `added_mos` and `mo_index_range` keywords
-    """
+    """Add the `added_mos` and `mo_index_range` keywords."""
     general = d['cp2k_general_settings']
     # Add keywords if missing
 
@@ -136,9 +134,7 @@ def add_missing_keywords(d: Dict) -> Dict:
 
 
 def add_basis(general: dict) -> None:
-    """
-    Add path to the basis and potential
-    """
+    """Add path to the basis and potential."""
     setts = [general[p] for p in ['cp2k_settings_main', 'cp2k_settings_guess']]
 
     # add basis and potential path
@@ -155,9 +151,7 @@ def add_basis(general: dict) -> None:
 
 
 def select_basis_file(sett: Settings, general: dict) -> str:
-    """
-    Choose the right basis set based on the potential and basis name
-    """
+    """Choose the right basis set based on the potential and basis name."""
     dft = sett.specific.cp2k.force_eval.dft
 
     dft["basis_set_file_name"] = os.path.abspath(
@@ -174,9 +168,7 @@ def select_basis_file(sett: Settings, general: dict) -> str:
 
 
 def add_cell_parameters(general: dict) -> None:
-    """
-    Add the Unit cell information to both the main and the guess settings
-    """
+    """Add the Unit cell information to both the main and the guess settings."""
     # Search for a file containing the cell parameters
     file_cell_parameters = general["file_cell_parameters"]
     for s in (
@@ -192,9 +184,7 @@ def add_cell_parameters(general: dict) -> None:
 
 
 def add_periodic(general: dict) -> None:
-    """
-    Add the keyword for the periodicity of the system
-    """
+    """Add the keyword for the periodicity of the system."""
     for s in (
         general[p] for p in [
             'cp2k_settings_main',
@@ -203,9 +193,7 @@ def add_periodic(general: dict) -> None:
 
 
 def add_charge(general: dict) -> None:
-    """
-    Add the keyword for the charge of the system
-    """
+    """Add the keyword for the charge of the system."""
     for s in (
         general[p] for p in [
             'cp2k_settings_main',
@@ -214,9 +202,7 @@ def add_charge(general: dict) -> None:
 
 
 def add_multiplicity(general: dict) -> None:
-    """
-    Add the keyword for the multiplicity of the system only if greater than 1
-    """
+    """Add the keyword for the multiplicity of the system only if greater than 1."""
     if general['multiplicity'] > 1:
         for s in (
             general[p] for p in [
@@ -227,9 +213,7 @@ def add_multiplicity(general: dict) -> None:
 
 
 def add_restart_point(general: dict) -> None:
-    """
-    add a restart file if the user provided it
-    """
+    """Add a restart file if the user provided it."""
     guess = general['cp2k_settings_guess']
     wfn = general['wfn_restart_file_name']
     if wfn is not None and wfn:
@@ -238,9 +222,7 @@ def add_restart_point(general: dict) -> None:
 
 
 def add_mo_index_range(dict_input: dict) -> None:
-    """
-    Compute the MO range to print
-    """
+    """Compute the MO range to print."""
     active_space = dict_input['active_space']
     nHOMO = dict_input["nHOMO"]
     mo_index_range = nHOMO - active_space[0], nHOMO + active_space[1]
@@ -257,9 +239,7 @@ def add_mo_index_range(dict_input: dict) -> None:
 
 
 def compute_HOMO_index(path_traj_xyz: str, basis: str, charge: int) -> int:
-    """
-    Compute the HOMO index
-    """
+    """Compute the HOMO index."""
     mol = Molecule(path_traj_xyz, 'xyz')
 
     number_of_electrons = sum(
@@ -276,9 +256,7 @@ def compute_HOMO_index(path_traj_xyz: str, basis: str, charge: int) -> int:
 
 
 def recursive_traverse(val):
-    """
-    Check if the value of a key is a Settings instance a transform it to plain dict.
-    """
+    """Check if the value of a key is a Settings instance a transform it to plain dict."""
     if isinstance(val, dict):
         if isinstance(val, Settings):
             return settings2Dict(val)
@@ -289,9 +267,7 @@ def recursive_traverse(val):
 
 
 def print_final_input(d: dict) -> None:
-    """
-    Print the input after post-processing
-    """
+    """Print the input after post-processing."""
     xs = d.copy()
 
     for k, v in d.items():

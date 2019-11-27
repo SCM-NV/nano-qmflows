@@ -1,6 +1,6 @@
 """Module to store data in the HDF5."""
 
-__all__ = ['StoreasHDF5', 'cp2k2hdf5', 'dump_orbitals_to_hdf5']
+__all__ = ['StoreasHDF5', 'cp2k2hdf5']
 
 from functools import partial
 from os.path import join
@@ -11,30 +11,26 @@ from qmflows.parsers.cp2KParser import readCp2KBasis
 
 
 class StoreasHDF5:
-    """
-    Class to store inside a HDF5 file numerical array with optional attributes.
-    """
-    def __init__(self, file_h5, packageName):
+    """Class to store inside a HDF5 file numerical array with optional attributes."""
+
+    def __init__(self, file_h5):
         self.file_h5 = file_h5
-        self.name = packageName
+        self.name = 'cp2k'
 
     def funHDF5(self, pathProperty, data):
-        """
-        creates a data set using ``data`` and saves the data using
-        ``pathProperty`` in the HDF5 file.
+        """Create a data set using ``data`` and saves the data using `pathProperty` in the HDF5 file.
 
         :param pathProperty: path to store the property in HDF5.
         :type pathProperty: String
         :param data: Numeric array containing the property.
         :type data: Numpy array
-        :returns: **None**
+        :returns: None
         """
         self.file_h5.require_dataset(pathProperty, shape=np.shape(data),
                                      data=data, dtype=np.float32)
 
     def funHDF5_attrs(self, nameAttr, attr, pathProperty, data):
-        """
-        creates a data set using ``data`` and some attributes.
+        """Create a data set using ``data`` and some attributes.
 
         :param nameAttr: Name of the attribute assoaciated with the data.
         :type nameAttr: String
@@ -44,7 +40,7 @@ class StoreasHDF5:
         :type pathProperty: String
         :param data: Numeric array containing the property.
         :type data: Numpy array
-        :returns: **None**
+        :returns: None
         """
 
         dset = self.file_h5.require_dataset(pathProperty, shape=np.shape(data),
@@ -52,8 +48,7 @@ class StoreasHDF5:
         dset.attrs[nameAttr] = attr
 
     def saveBasis(self, parserFun, pathBasis):
-        """
-        Store the basis set.
+        """Store the basis set.
 
         :param parserFun: Function to parse the file containing the
                           information about the primitive contracted Gauss
@@ -61,9 +56,8 @@ class StoreasHDF5:
         :param pathBasis: Absolute path to the file containing the basis
                           sets information.
         :type pathBasis: String.
-        :returns: **None**
+        :returns: None
         """
-
         keys, vals = parserFun(pathBasis)
         pathsExpo = [join(self.name, "basis", xs.atom, xs.basis, "exponents")
                      for xs in keys]
@@ -101,30 +95,10 @@ def cp2kOpts(file_h5, key):
     - Molecular orbitals
     -Overlap Mtrix
     """
-    storeCp2k = StoreasHDF5(file_h5, "cp2k")
+    storeCp2k = StoreasHDF5(file_h5)
 
     args = key.args
     name = key.name
     d = {"basis": partial(storeCp2k.saveBasis, readCp2KBasis)}
 
     return d[name](*args)
-
-
-def dump_orbitals_to_hdf5(data: tuple, file_h5: str, project_name: str, job_name: str):
-    """
-    Store the result in HDF5 format.
-
-    :param file_h5: Path to the HDF5 file that contains the
-    numerical results.
-    :returns: None
-    """
-    job_name = job_name if job_name is not None else "job"
-    store_hdf5 = StoreasHDF5(file_h5, 'cp2k')
-
-    es = "cp2k/mo/eigenvalues"
-    css = "cp2k/mo/coefficients"
-    pathEs = join(project_name, job_name, es)
-    pathCs = join(project_name, job_name, css)
-
-    for p, d in zip([pathEs, pathCs], [data.eigenVals, data.coeffs]):
-        store_hdf5.funHDF5(p, d)

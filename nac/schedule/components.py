@@ -1,26 +1,21 @@
+"""Molecular orbitals calculation."""
+
 __all__ = ["calculate_mos", "create_point_folder",
            "split_file_geometries"]
 
-# ================> Python Standard  and third-party <==========
-from collections import (defaultdict, namedtuple)
-from noodles import (gather, schedule)
-from os.path import join
-
 import fnmatch
-import h5py
 import logging
 import os
 import shutil
+from collections import defaultdict, namedtuple
+from os.path import join
 
 from more_itertools import chunked
-from nac.schedule.hdf5_interface import dump_orbitals_to_hdf5
+from noodles import gather, schedule
+
+from nac.common import (Matrix, is_data_in_hdf5, read_cell_parameters_as_array,
+                        store_arrays_in_hdf5)
 from nac.schedule.scheduleCp2k import prepare_job_cp2k
-from nac.common import (
-    Matrix,
-    is_data_in_hdf5,
-    read_cell_parameters_as_array,
-    store_arrays_in_hdf5)
-from os.path import join
 from qmflows.warnings_qmflows import SCF_Convergence_Warning
 
 # Tuple contanining file paths
@@ -129,12 +124,8 @@ def store_MOs(config: dict, dict_input: dict, promise_qm: object) -> str:
 
     # Store in the HDF5
     try:
-        with h5py.File(config.path_hdf5, 'r+') as f5:
-            dump_orbitals_to_hdf5(
-                mos,
-                f5,
-                config.project_name,
-                dict_input["job_name"])
+        dump_orbitals_to_hdf5(mos, config.path_hdf5, config.project_name,
+                              dict_input["job_name"])
     # Remove the ascii MO file
     finally:
         work_dir = promise_qm.archive['work_dir']
@@ -144,15 +135,30 @@ def store_MOs(config: dict, dict_input: dict, promise_qm: object) -> str:
     return dict_input["node_MOs"]
 
 
+def dump_orbitals_to_hdf5(data: tuple, file_h5: str, project_name: str, job_name: str):
+    """Store the result in HDF5 format.
+
+    :param file_h5: Path to the HDF5 file that contains the
+    numerical results.
+    :returns: None
+    """
+    es = "cp2k/mo/eigenvalues"
+    css = "cp2k/mo/coefficients"
+    path_eigenvalues = join(project_name, job_name, es)
+    path_coefficients = join(project_name, job_name, css)
+
+    store_arrays_in_hdf5(file_h5, path_eigenvalues, data.eigenVals)
+    store_arrays_in_hdf5(file_h5, path_coefficients, data.coeffs)
+
+
 @schedule
 def store_enery(config: dict, dict_input: dict, promise_qm: object) -> str:
-    """
-    Store the total energy in the HDF5 file.
-    """
+    """Store the total energy in the HDF5 file."""
     store_arrays_in_hdf5(
         config.path_hdf5, dict_input['node_energy'], promise_qm.energy)
 
-    logger.info(f"Total energy of point {dict_input['k']} is: {promise_qm.energy}")
+    logger.info(
+        f"Total energy of point {dict_input['k']} is: {promise_qm.energy}")
 
     return dict_input["node_energy"]
 
