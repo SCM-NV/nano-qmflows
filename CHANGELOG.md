@@ -1,8 +1,14 @@
 # Change Log
 
+# 0.8.2 [25/11/19]
+
+## Changed
+
+* Replace `qmflows.utils` with [more-itertools](https://more-itertools.readthedocs.io/en/stable/index.html)
+
 # 0.8.1 [17/10/19]
 
-## Change
+## Changed
 * Use [f-strings](https://docs.python.org/3/reference/lexical_analysis.html#f-strings)
 * Clean [C++ interface](https://cgithub.com/SCM-NV/qmflows-namd/blob/master/libint/compute_integrals.cc) to [libint](https://github.com/evaleev/libint)
 
