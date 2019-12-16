@@ -1,13 +1,13 @@
 #! /usr/bin/env python
-from os.path import join
 import argparse
+from os.path import join
+
 import h5py
 
 
 def main(project_name, path_hdf5, remove_overlaps):
-
+    """Remove unused array from the HDF5."""
     path_swaps = [join(project_name, 'swaps')]
-    name =
     paths_overlaps_corrected = [
         join(project_name, f'overlaps_{i}/mtx_sji_t0_corrected') for i in range(10000)]
     if remove_overlaps:
@@ -17,19 +17,16 @@ def main(project_name, path_hdf5, remove_overlaps):
         paths_overlaps = []
 
     with h5py.File(path_hdf5, 'r+') as f5:
-        xs = list(filter(lambda x: 'coupling' in x, f5[project_name].keys()))
+        xs = filter(lambda x: 'coupling' in x, f5[project_name].keys())
         paths_css = [join(project_name, x) for x in xs]
         paths = paths_css + paths_overlaps_corrected + path_swaps + paths_overlaps
-        ps = (p for p in paths if p in f5)
-        for p in ps:
-            print(p)
+        for p in (p for p in paths if p in f5):
+            print("removing: ", p)
             del f5[p]
 
 
 def read_cmd_line(parser):
-    """
-    Parse Command line options.
-    """
+    """Parse Command line options."""
     args = parser.parse_args()
 
     attributes = ['pn', 'hdf5', 'o']
