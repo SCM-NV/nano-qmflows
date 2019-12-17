@@ -9,15 +9,8 @@ env:
     - PYTHON_VERSION=3.6
     - PYTHON_VERSION=3.7
 
-install:
-  - export CXX="g++-7"
-  - export CC="gcc-7"
-
-addons:
-  apt:
-    packages: g++-7
-    sources:
-      - ubuntu-toolchain-r-test
+before_install:
+  - sudo apt-get -y install cp2k
 
 install:
   - export CC=gcc-7
