@@ -8,6 +8,9 @@
    :target: https://zenodo.org/badge/latestdoi/60843787
 .. image:: https://github.com/SCM-NV/qmflows-namd/workflows/build%20with%20conda/badge.svg
    :target: https://github.com/SCM-NV/qmflows-namd/actions
+.. image:: https://api.codacy.com/project/badge/Coverage/2bb0085352354caa9dd2ca655c2a8db3
+   :target: https://www.codacy.com/manual/tifonzafel/qmflows-namd?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=SCM-NV/qmflows-namd&amp;utm_campaign=Badge_Coverage
+
 ====================
 QMFlows-NAMD
 ====================
