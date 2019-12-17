@@ -1,17 +1,18 @@
 """Check that the input provided by the user is valid."""
 import logging
 import os
+import warnings
 from os.path import join
 from pathlib import Path
 from typing import Dict
 
 import yaml
+from qmflows.settings import Settings
+from qmflows.utils import settings2Dict
 from schema import SchemaError
 from scm.plams import Molecule
 
 from nac.common import DictConfig
-from qmflows.settings import Settings
-from qmflows.utils import settings2Dict
 
 from .schemas import (schema_absorption_spectrum, schema_coop,
                       schema_cp2k_general_settings,
@@ -249,10 +250,10 @@ def compute_HOMO_index(path_traj_xyz: str, basis: str, charge: int) -> int:
     number_of_electrons = number_of_electrons - charge
 
     if (number_of_electrons % 2) != 0:
-        raise RuntimeError(
+        warnings.warn(
             "Unpair number of electrons detected when computing the HOMO")
 
-    return number_of_electrons // 2
+    return number_of_electrons // 2 + (number_of_electrons % 2)
 
 
 def recursive_traverse(val):
