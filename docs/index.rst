@@ -6,10 +6,20 @@ Contents:
 
 .. toctree::
    :maxdepth: 2
+   :caption: Introduction 
 
    includereadme
    theory
-   tutorial
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Tutorials 
+
+   intro
+   derivative_couplings
+   absorption_spectrum
+   distribute_absorption_spectrum
+    
 
 
 Indices and tables

@@ -1,8 +1,7 @@
-Tutorial on QMFlows-NAMD calculations (YML input)
-====================
+Derivative coupling calculation
+===============================
 
-This tutorial focus on how to compute non-adiabatic coupling vectors between molecular orbitals belonging at two different time steps, t and t+dt, of a pre-computed molecular dynamics trajectory. What this program does is to compute at each point of the trajectory, the electronic structure using DFT, and then the overlap integrals <psi_i(t)|psi_j(t+dt)>. These integrals are stored and finally used to compute numerically the non-adiabatic couplings. These and the orbital energies are written in a format readable by PYXAID to perform surface hopping dynamics. 
-
+These tutorials focus on how to compute non-adiabatic coupling vectors between molecular orbitals belonging at two different time steps, t and t+dt, of a pre-computed molecular dynamics trajectory. What this program does is to compute at each point of the trajectory, the electronic structure using DFT, and then the overlap integrals :math:`\langle \psi_{i}(t) \mid \psi_{j}(t+dt)>`. These integrals are stored and finally used to compute numerically the non-adiabatic couplings. These and the orbital energies are written in a format readable by PYXAID to perform surface hopping dynamics. 
 When using this tutorial, ensure you have the latest version of QMFlows and QMFlows-NAMD installed.
 
 Preparing the input
@@ -33,8 +32,8 @@ The following is an example of the inputfile for the calculation of derivative c
       
     cp2k_general_settings:
       basis:  "DZVP-MOLOPT-SR-GTH"
-      path_basis: "test/test_files"
       potential: "GTH-PBE"
+      path_basis: "test/test_files"
       cell_parameters: 28.0
       cell_angles: [90.0, 90.0, 90.0]
 
@@ -126,3 +125,34 @@ Using the script in this manner will only allow the couplings to be removed.
 - Relaunch the calculation.
 
 Once the remaining overlaps and the couplings have been calculated successfully, the hdf5 files and hamiltonians will be written to both the working directory as well as the scratch folder in a format suitable for PYXAID to run the non-adiabatic excited state molecular dynamics. If requested, also the overlap integrals can be found in the working directory.
+
+.. note::
+   There are several way to declare the parameters of the unit cell, you can passed to the cell_parameters
+   variable either a number, a list or a list or list. A single number represent a cubic box, while a list
+   represent a parallelepiped and finally a list of list contains the ABC vectors describing the unit cell.
+   Alternatively, you can pass the angles of the cell using the cell_angles variable.
+
+Restarting a Job
+----------------
+
+Both the *molecular orbitals* and the *derivative couplings* for a given molecular dynamic trajectory are stored in a HDF5_. The library check wether the *MO* orbitals or the coupling under consideration are already present in the HDF5_ file, otherwise compute it. Therefore  if the workflow computation fails due to a recoverable issue like:
+
+  * Cancelation due to time limit.
+  * Manual suspension or cancelation for another reasons.
+
+Then, in order to restart the job you need to perform the following actions:
+
+  * **Do Not remove** the file called ``cache.db`` from the current work  directory.
+
+
+Reporting a bug or requesting a feature
+---------------------------------------
+To report an issue or request a new feature you can use the github issues_ tracker.
+
+.. _HDF5: http://www.h5py.org/
+.. _issues: https://github.com/SCM-NV/qmflows-namd/issues
+.. _QMflows: https://github.com/SCM-NV/qmflows
+.. _PYXAID: https://www.acsu.buffalo.edu/~alexeyak/pyxaid/overview.html
+.. _YAML: https://pyyaml.org/wiki/PyYAML
+
+
