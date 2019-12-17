@@ -1,6 +1,6 @@
 """Miscellaneous funcionality."""
 
-__all__ = ['Array', 'AtomBasisData', 'AtomBasisKey', 'AtomData', 'AtomXYZ',
+__all__ = ['AtomBasisData', 'AtomBasisKey', 'AtomData', 'AtomXYZ',
            'CGF', 'DictConfig', 'InfoMO', 'Matrix', 'MO', 'Tensor3D', 'Vector',
            'change_mol_units', 'getmass', 'h2ev', 'hardness',
            'number_spherical_functions_per_atom', 'retrieve_hdf5_data',
@@ -10,6 +10,7 @@ __all__ = ['Array', 'AtomBasisData', 'AtomBasisKey', 'AtomData', 'AtomXYZ',
 import os
 from collections import namedtuple
 from itertools import chain
+from typing import Union
 
 import h5py
 import numpy as np
@@ -60,7 +61,6 @@ fs_to_nm = 299.79246  # conversion from fs to nm
 hbar = 1e15 * physical_constants['Planck constant over 2 pi in eV s'][0]
 
 # Numpy type hints
-Array = np.ndarray  # Generic Array
 Vector = np.ndarray
 Matrix = np.ndarray
 Tensor3D = np.ndarray
@@ -131,12 +131,10 @@ def xc(s: str) -> dict:
     return d[s]
 
 
-def retrieve_hdf5_data(path_hdf5, paths_to_prop):
-    """
-    Read Numerical properties from ``paths_hdf5``.
+def retrieve_hdf5_data(path_hdf5: str, paths_to_prop: Union[str, list]):
+    """Read Numerical properties from ``paths_hdf5``.
 
     :params path_hdf5: Path to the hdf5 file
-    :type path_hdf5: string
     :returns: numerical array
 
     """
@@ -169,7 +167,7 @@ def is_data_in_hdf5(path_hdf5, xs):
 
 
 def store_arrays_in_hdf5(
-        path_hdf5: str, paths, tensor: Array, dtype=np.float32, attribute=None) -> None:
+        path_hdf5: str, paths, tensor: np.array, dtype=np.float32, attribute=None) -> None:
     """Store the corrected overlaps in the HDF5 file."""
     with h5py.File(path_hdf5, 'r+') as f5:
         if isinstance(paths, list):
@@ -183,8 +181,8 @@ def store_arrays_in_hdf5(
 
 
 def change_mol_units(mol, factor=angs2au):
-    """
-    change the units of the molecular coordinates
+    """hange the units of the molecular coordinates.
+
     :returns: New XYZ namedtuple
     """
     newMol = []
@@ -205,10 +203,9 @@ def tuplesXYZ_to_plams(xs):
     return plams_mol
 
 
-def number_spherical_functions_per_atom(mol, package_name, basis_name, path_hdf5):
-    """
-    Compute the number of spherical shells per atom
-    """
+def number_spherical_functions_per_atom(
+        mol: list, package_name: str, basis_name: str, path_hdf5: str):
+    """Compute the number of spherical shells per atom."""
     with h5py.File(path_hdf5, 'r') as f5:
         xs = [f5[f'{package_name}/basis/{atom[0]}/{basis_name}/coefficients']
               for atom in mol]
@@ -277,9 +274,7 @@ dict_cp2kOrder_spherical = {
 
 
 def read_cell_parameters_as_array(file_cell_parameters: str) -> tuple:
-    """
-    Read the cell parameters as a numpy array
-    """
+    """Read the cell parameters as a numpy array."""
     arr = np.loadtxt(file_cell_parameters, skiprows=1)
 
     with open(file_cell_parameters, 'r') as f:

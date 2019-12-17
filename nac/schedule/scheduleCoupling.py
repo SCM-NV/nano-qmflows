@@ -252,10 +252,9 @@ def track_unavoided_crossings(overlaps: Tensor3D, nHOMO: int) -> Tuple:
     return overlaps, arr
 
 
-def swap_forward(overlaps: Tensor3D, swaps: Vector) -> Tensor3D:
-    """
-    Track all the crossings that happend previous to the current
-    time.
+def swap_forward(overlaps: Tensor3D, swaps: np.array) -> Tensor3D:
+    """Track all the crossings that happend previous to the current time.
+
     Swap the index i corresponding to the ith Molecular orbital
     with the corresponding swap at time t0.
     Repeat the same procedure with the index and swap at time t1.

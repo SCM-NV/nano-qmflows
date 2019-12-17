@@ -1,3 +1,5 @@
+"""Miscellaneous functions to analyze the simulation results."""
+
 __author__ = "Ivan Infante and Felipe Zapata"
 
 import numpy as np
@@ -7,11 +9,8 @@ from nac.common import (hbar, h2ev, r2meV, fs_to_cm)
 from scipy.optimize import curve_fit
 
 
-def autocorrelate(f):
-    """
-    Compute and returns the un-normalized and normalized autocorrelation
-    of given function
-    """
+def autocorrelate(f: callable):
+    """Compute the un-normalized and normalized autocorrelation of a function."""
     d_f = f - f.mean()
     # Compute the autocorrelation function
     uacf = np.correlate(d_f, d_f, "full")[-d_f.size:] / d_f.size
@@ -20,23 +19,19 @@ def autocorrelate(f):
     return uacf, nacf
 
 
-def gauss_function(x, sigma):
-    """
-    Gaussian function used to fit the dephasing time
-    """
+def gauss_function(x: float, sigma: float):
+    """Compute a Gaussian function used to fit the dephasing time."""
     return np.exp(-0.5 * (-x / sigma) ** 2)
 
 
 def func_conv(x_real, x_grid, delta):
-    """
-    A Gaussian function computed on a grid used to convolute spectra
-    """
+    """Compute a convolution on a grid using a Gaussian function."""
     return np.exp(-2 * (x_grid - x_real) ** 2 / delta ** 2)
 
 
 def convolute(x, y, x_points, sigma):
-    """
-    A function used to convolute spectra on a grid of x_points.
+    """Convolute a spectrum on a grid of x_points.
+
     You need as input x, y and the grid where to convolute.
     """
     # Compute gaussian prefactor
@@ -47,10 +42,10 @@ def convolute(x, y, x_points, sigma):
     return y_points
 
 
-def dephasing(f, dt):
-    """
-    Computes the dephasing time of a given function using optical response
-    formalisms:
+def dephasing(f: callable, dt: float):
+    """Compute the dephasing time of a given function.
+
+    Use the optical response formalisms:
     S. Mukamel, Principles of Nonlinear Optical Spectroscopy, 1995
     About the implementation we use the 2nd order cumulant expansion.
     See also eq. (2) in : Kilina et al. Phys. Rev. Lett., 110, 180404, (2013)
@@ -137,10 +132,8 @@ def read_pops_pyxaid(path, fn, nstates, nconds):
     return xs
 
 
-def parse_list_of_lists(xs):
-    """
-    Parse a list of list of integers using pyparsing
-    """
+def parse_list_of_lists(xs: list):
+    """Parse a list of list of integers using pyparsing."""
     enclosed = pa.Forward()  # Parser to be defined later
     natural = pa.Word(pa.nums)  # Natural Number
     # Nested Grammar
