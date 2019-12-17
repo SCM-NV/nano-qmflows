@@ -6,6 +6,10 @@
    :target: https://qmflows-namd.readthedocs.io/en/latest/?badge=latest
 .. image:: https://zenodo.org/badge/60843787.svg
    :target: https://zenodo.org/badge/latestdoi/60843787
+.. image:: https://github.com/SCM-NV/qmflows-namd/workflows/build%20with%20conda/badge.svg
+   :target: https://github.com/SCM-NV/qmflows-namd/actions
+.. image:: https://api.codacy.com/project/badge/Coverage/2bb0085352354caa9dd2ca655c2a8db3
+   :target: https://www.codacy.com/manual/tifonzafel/qmflows-namd?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=SCM-NV/qmflows-namd&amp;utm_campaign=Badge_Coverage
 
 ====================
 QMFlows-NAMD
@@ -25,7 +29,7 @@ In order to install the *QMFlows-NAMD* library you need to install first the **Q
 .. _here: https://github.com/SCM-NV/qmflows
 
 Then,  to install the **QMFlows-NAMD** library type the following commands inside the conda environment:
-  - ``conda install -c conda-forge rdkit cython eigen h5py libint highfive pybind11``
+  - ``conda install -c conda-forge rdkit cython eigen h5py libint==2.4.2 highfive pybind11``
   - ``pip install git+https://github.com/SCM-NV/qmflows-namd#egg=qmflows-namd --upgrade``
 
 

@@ -1,5 +1,6 @@
 
-from distribute_jobs import (SLURM, format_slurm_parameters, write_python_script)
+from distribute_jobs import (
+    SLURM, format_slurm_parameters, write_python_script)
 from os.path import join
 from qmflows import Settings
 
@@ -64,8 +65,8 @@ def main():
 def write_slurm_script(scratch, results_dir, script_name):
     slurm = SLURM(1, 24, "00:60:00", "merged_namd")
 
-    python = "python {}\n".format(script_name)
-    copy = "cp -r {} {}".format(join(scratch, 'hamiltonians'), results_dir)
+    python = f"python {script_name}\n"
+    copy = f"cp -r {join(scratch, 'hamiltonians')} {results_dir}"
 
     # script
     xs = format_slurm_parameters(slurm) + python + copy
@@ -82,7 +83,7 @@ def merge_hdf5(scratch, project_name, cwd, results_dir):
     Merge all the hdf5 into a unique file.
     """
     # create path to hdf5 containing all the results
-    file_hdf5 = join(results_dir, '{}.hdf5'.format(project_name))
+    file_hdf5 = join(results_dir, f'{project_name}.hdf5')
 
     # Equivalent to touch in unix
     with open(file_hdf5, 'a'):

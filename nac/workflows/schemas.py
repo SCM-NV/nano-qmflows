@@ -1,21 +1,25 @@
+"""Schemas to valid user input."""
 __all__ = [
-    'schema_cp2k_general_settings', 'schema_derivative_couplings', 'schema_single_points',
+    'schema_cp2k_general_settings',
+    'schema_derivative_couplings',
+    'schema_single_points',
     'schema_distribute_absorption_spectrum',
     'schema_distribute_derivative_couplings',
     'schema_distribute_single_points',
-    'schema_absorption_spectrum']
+    'schema_absorption_spectrum',
+    'schema_ipr',
+    'schema_coop']
 
 
-from numbers import Real
-from schema import (And, Optional, Or, Schema, Use)
 import os
+from numbers import Real
+
 import pkg_resources as pkg
+from schema import And, Optional, Or, Schema, Use
 
 
 def merge(d1, d2):
-    """
-    merge two dictionaries using without modifying the original
-    """
+    """Merge two dictionaries using without modifying the original."""
     x = d1.copy()
 
     x.update(d2)
@@ -44,12 +48,12 @@ schema_cp2k_general_settings = Schema({
         lambda xs: len(xs) == 3 and all(len(r) == 3 for r in xs)),
 
     # Type of periodicity
-    "periodic":  And(
+    "periodic": And(
         str, Use(str.lower), lambda s: s in (
             "none", "x", "y", "z", "xy", "xy", "yz", "xyz")),
 
     # Specify the angles between the vectors defining the unit cell
-    Optional("cell_angles", default=[90, 90, 90]): list,
+    Optional("cell_angles"): list,
 
     # Path to the folder containing the basis set specifications
     Optional("path_basis", default=pkg.resource_filename("nac", "basis")): os.path.isdir,
@@ -100,13 +104,15 @@ dict_general_options = {
     # path to xyz trajectory of the Molecular dynamics
     "path_traj_xyz": os.path.exists,
 
-    # Real from where to start enumerating the folders create for each point in the MD
+    # Real from where to start enumerating the folders create for each point
+    # in the MD
     Optional("enumerate_from", default=0): int,
 
     # Ignore the warning issues by the quantum package and keep computing
     Optional("ignore_warnings", default=False): bool,
 
-    # Calculate the guess wave function in either the first point of the trajectory or in all
+    # Calculate the guess wave function in either the first point of the
+    # trajectory or in all
     Optional("calculate_guesses", default="first"):
     And(str, Use(str.lower), lambda s: s in ("first", "all")),
 
@@ -144,7 +150,8 @@ dict_derivative_couplings = {
     Optional("overlaps_deph", default=False): bool
 }
 
-dict_merged_derivative_couplings = merge(dict_general_options, dict_derivative_couplings)
+dict_merged_derivative_couplings = merge(
+    dict_general_options, dict_derivative_couplings)
 
 schema_derivative_couplings = Schema(
     dict_merged_derivative_couplings)
@@ -185,8 +192,11 @@ dict_distribute_derivative_couplings = {
 
 
 schema_distribute_derivative_couplings = Schema(
-    merge(dict_distribute, merge(
-        dict_merged_derivative_couplings, dict_distribute_derivative_couplings)))
+    merge(
+        dict_distribute,
+        merge(
+            dict_merged_derivative_couplings,
+            dict_distribute_derivative_couplings)))
 
 dict_absorption_spectrum = {
 
@@ -199,14 +209,16 @@ dict_absorption_spectrum = {
         str, Use(str.lower), lambda s: s in ("sing_orb", "stda", "stdft")),
 
     # Interval between MD points where the oscillators are computed"
-    Optional("stride",  default=1): int,
+    Optional("stride", default=1): int,
 
-    # description: Exchange-correlation functional used in the DFT calculations,
+    # description: Exchange-correlation functional used in the DFT
+    # calculations,
     Optional("xc_dft", default="pbe"): str
 }
 
 
-dict_merged_absorption_spectrum = merge(dict_general_options, dict_absorption_spectrum)
+dict_merged_absorption_spectrum = merge(
+    dict_general_options, dict_absorption_spectrum)
 
 schema_absorption_spectrum = Schema(dict_merged_absorption_spectrum)
 
@@ -226,7 +238,7 @@ schema_distribute_absorption_spectrum = Schema(
 dict_single_points = {
     # Name of the workflow to run
     "workflow": And(
-        str, Use(str.lower), lambda s: s == "single_points"),
+        str, Use(str.lower), lambda s: any(s == x for x in ("single_points", "ipr_calculation", "coop_calculation"))),
 
     # General settings
     "cp2k_general_settings": schema_cp2k_general_settings
@@ -239,9 +251,18 @@ dict_distribute_single_points = {
         str, Use(str.lower), lambda s: s == "distribute_single_points")
 }
 
+dict_coop = {
+    # List of the two elements to calculate the COOP for
+    "coop_elements": list}
+
 dict_merged_single_points = merge(dict_general_options, dict_single_points)
 
 schema_single_points = Schema(dict_merged_single_points)
+
+schema_ipr = schema_single_points
+
+dict_merged_coop = merge(dict_merged_single_points, dict_coop)
+schema_coop = Schema(dict_merged_coop)
 
 schema_distribute_single_points = Schema(
     merge(dict_distribute, merge(

@@ -1,9 +1,15 @@
 from Cython.Distutils import build_ext
 from os.path import join
 from setuptools import (Extension, find_packages, setup)
+
 import os
 import setuptools
-import sys
+
+
+here = os.path.abspath(os.path.dirname(__file__))
+version = {}
+with open(os.path.join(here, '__version__.py')) as f:
+    exec(f.read(), version)
 
 
 def readme():
@@ -28,7 +34,8 @@ class get_pybind_include:
 # Set path to the conda libraries
 conda_prefix = os.environ["CONDA_PREFIX"]
 if conda_prefix is None:
-    raise RuntimeError("No conda module found. A Conda environment is required")
+    raise RuntimeError(
+        "No conda module found. A Conda environment is required")
 
 conda_include = join(conda_prefix, 'include')
 conda_lib = join(conda_prefix, 'lib')
@@ -40,7 +47,6 @@ ext_pybind = Extension(
         'libint/include',
         conda_include,
         join(conda_include, 'eigen3'),
-        join(conda_include, 'python3.6m'),
         get_pybind_include(),
         get_pybind_include(user=True),
         '/usr/include/eigen3'
@@ -50,11 +56,11 @@ ext_pybind = Extension(
     language='c++')
 
 
-# As of Python 3.6, CCompiler has a `has_flag` method.
-# cf http://bugs.python.org/issue26689
 def has_flag(compiler, flagname):
     """Return a boolean indicating whether a flag name is supported on
     the specified compiler.
+    As of Python 3.6, CCompiler has a `has_flag` method.
+    http: // bugs.python.org/issue26689
     """
     import tempfile
     with tempfile.NamedTemporaryFile('w', suffix='.cc') as f:
@@ -81,26 +87,15 @@ def cpp_flag(compiler):
 
 class BuildExt(build_ext):
     """A custom build extension for adding compiler-specific options."""
-    c_opts = {
-        'msvc': ['/EHsc'],
-        'unix': [],
-    }
-
-    if sys.platform == 'darwin':
-        c_opts['unix'] += ['-stdlib=libc++', '-mmacosx-version-min=10.7']
 
     def build_extensions(self):
-        ct = self.compiler.compiler_type
-        opts = self.c_opts.get(ct, [])
-        if ct == 'unix':
-            opts.append('-DVERSION_INFO="%s"' % self.distribution.get_version())
-            opts.append(cpp_flag(self.compiler))
-            if has_flag(self.compiler, '-fopenmp'):
-                opts.append('-fopenmp')
-            if has_flag(self.compiler, '-fvisibility=hidden'):
-                opts.append('-fvisibility=hidden')
-        elif ct == 'msvc':
-            opts.append('/DVERSION_INFO=\\"%s\\"' % self.distribution.get_version())
+        opts = []
+        opts.append('-DVERSION_INFO="%s"' %
+                    self.distribution.get_version())
+        opts.append(cpp_flag(self.compiler))
+        if has_flag(self.compiler, '-fopenmp'):
+            opts.append('-fopenmp')
+
         for ext in self.extensions:
             ext.extra_compile_args = opts
         build_ext.build_extensions(self)
@@ -108,14 +103,14 @@ class BuildExt(build_ext):
 
 setup(
     name='qmflows-namd',
-    version='0.8.0',
+    version=version['__version__'],
     description='Derivative coupling calculation',
     license='Apache-2.0',
     url='https://github.com/SCM-NV/qmflows-namd',
     author=['Felipe Zapata', 'Ivan Infante'],
     author_email='f.zapata@esciencecenter.nl',
     keywords='chemistry Photochemistry Simulation',
-    long_description=readme(),
+    long_description=readme() + '\n\n',
     long_description_content_type='text/markdown',
     packages=find_packages(),
     classifiers=[
@@ -127,15 +122,17 @@ setup(
         'topic :: scientific/engineering :: chemistry'
     ],
     install_requires=[
-        'numpy', 'h5py', 'noodles==0.3.3', 'pybind11>=2.2.4',
-        'pymonad', 'scipy', 'schema', 'pyyaml==5.1',
+        'numpy', 'h5py', 'more-itertools', 'noodles==0.3.3', 'pybind11>=2.2.4',
+        'scipy', 'schema', 'pyyaml>=5.1',
         'plams@git+https://github.com/SCM-NV/PLAMS@v1.4',
         'qmflows@git+https://github.com/SCM-NV/qmflows@master'
     ],
     cmdclass={'build_ext': BuildExt},
     ext_modules=[ext_pybind],
     extras_require={
-        'test': ['coverage', 'pytest>=3.9', 'pytest-cov', 'codacy-coverage']},
+        'test': ['coverage', 'pytest>=3.9', 'pytest-cov', 'codacy-coverage'],
+        'doc': ['sphinx', 'sphinx-autodoc-typehints', 'sphinx_rtd_theme', 'nbsphinx']
+    },
     include_package_data=True,
     package_data={
         'nac': ['basis/*.json', 'basis/BASIS*', 'basis/GTH_POTENTIALS']

@@ -35,10 +35,7 @@ def main(file_xyz, cell, restart, basis, basis_folder):
     s.cell_parameters = cell
     s.specific.cp2k.force_eval.dft.basis_set_file_name = basisCP2K
     s.specific.cp2k.force_eval.dft.potential_file_name = potCP2K
-#   s.specific.cp2k.force_eval.dft.uks = ''
-#   s.specific.cp2k.force_eval.dft.charge = '1'
-#   s.specific.cp2k.force_eval.dft.multiplicity = '2'
-    s.specific.cp2k.force_eval.dft.wfn_restart_file_name = '{}'.format(restart)
+    s.specific.cp2k.force_eval.dft.wfn_restart_file_name = f'{restart}'
 
     # =======================
     # Compute OPT files with CP2k

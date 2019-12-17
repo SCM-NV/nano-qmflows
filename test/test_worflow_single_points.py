@@ -28,8 +28,9 @@ def test_single_point(tmp_path):
     tmp_hdf5 = os.path.join(tmp_path, 'single_points.hdf5')
     config['path_hdf5'] = tmp_hdf5
     try:
-        path_orbitals = workflow_single_points(config)
+        path_orbitals, path_energies = workflow_single_points(config)
         print("path_orbitals: ", path_orbitals)
+        print("path_energies: ", path_energies)
         check_orbitals(path_orbitals[0], tmp_hdf5)
     except:
         print("scratch_path: ", tmp_path)

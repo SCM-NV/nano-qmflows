@@ -21,8 +21,8 @@ def try_to_read_wf(path_dir: str) -> str:
     if files:
         return join(path_dir, files[0])
     else:
-        msg = "There are no wave function file in path:{}".format(path_dir)
-        raise RuntimeError(msg)
+        raise RuntimeError(
+            "There are no wave function file in path:{path_dir}")
 
 
 def prepare_cp2k_settings(settings: object, dict_input: dict, guess_job: object) -> object:
@@ -41,11 +41,13 @@ def prepare_cp2k_settings(settings: object, dict_input: dict, guess_job: object)
     dft['print']['mo']['filename'] = dict_input["job_files"].get_MO
 
     # Global parameters for CP2K
-    settings.specific.cp2k['global']['project'] = 'point_{}'.format(dict_input["k"])
+    settings.specific.cp2k['global']['project'] = f'point_{dict_input["k"]}'
+
     settings.specific.cp2k['global']['run_type'] = 'Energy'
 
     if guess_job is not None:
-        dft.wfn_restart_file_name = try_to_read_wf(guess_job.archive['plams_dir'])
+        dft.wfn_restart_file_name = try_to_read_wf(
+            guess_job.archive['plams_dir'])
 
     input_args = templates.singlepoint.overlay(settings)
 

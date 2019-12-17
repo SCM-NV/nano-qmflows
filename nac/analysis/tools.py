@@ -1,6 +1,7 @@
+"""Miscellaneous functions to analyze the simulation results."""
+
 __author__ = "Ivan Infante and Felipe Zapata"
 
-# ================> Python Standard  and third-party <==========
 import numpy as np
 import os
 import pyparsing as pa
@@ -8,11 +9,8 @@ from nac.common import (hbar, h2ev, r2meV, fs_to_cm)
 from scipy.optimize import curve_fit
 
 
-def autocorrelate(f):
-    """
-    Compute and returns the un-normalized and normalized autocorrelation
-    of given function
-    """
+def autocorrelate(f: callable):
+    """Compute the un-normalized and normalized autocorrelation of a function."""
     d_f = f - f.mean()
     # Compute the autocorrelation function
     uacf = np.correlate(d_f, d_f, "full")[-d_f.size:] / d_f.size
@@ -21,23 +19,19 @@ def autocorrelate(f):
     return uacf, nacf
 
 
-def gauss_function(x, sigma):
-    """
-    Gaussian function used to fit the dephasing time
-    """
+def gauss_function(x: float, sigma: float):
+    """Compute a Gaussian function used to fit the dephasing time."""
     return np.exp(-0.5 * (-x / sigma) ** 2)
 
 
 def func_conv(x_real, x_grid, delta):
-    """
-    A Gaussian function computed on a grid used to convolute spectra
-    """
+    """Compute a convolution on a grid using a Gaussian function."""
     return np.exp(-2 * (x_grid - x_real) ** 2 / delta ** 2)
 
 
 def convolute(x, y, x_points, sigma):
-    """
-    A function used to convolute spectra on a grid of x_points.
+    """Convolute a spectrum on a grid of x_points.
+
     You need as input x, y and the grid where to convolute.
     """
     # Compute gaussian prefactor
@@ -48,10 +42,10 @@ def convolute(x, y, x_points, sigma):
     return y_points
 
 
-def dephasing(f, dt):
-    """
-    Computes the dephasing time of a given function using optical response
-    formalisms:
+def dephasing(f: callable, dt: float):
+    """Compute the dephasing time of a given function.
+
+    Use the optical response formalisms:
     S. Mukamel, Principles of Nonlinear Optical Spectroscopy, 1995
     About the implementation we use the 2nd order cumulant expansion.
     See also eq. (2) in : Kilina et al. Phys. Rev. Lett., 110, 180404, (2013)
@@ -62,7 +56,8 @@ def dephasing(f, dt):
     hbar_au = hbar / h2ev
     ts = np.arange(f.shape[0]) * dt
     cumu_ii = np.stack(np.sum(f[0:i]) for i in range(ts.size)) * dt / hbar_au
-    cumu_i = np.stack(np.sum(cumu_ii[0:i]) for i in range(ts.size)) * dt / hbar_au
+    cumu_i = np.stack(np.sum(cumu_ii[0:i])
+                      for i in range(ts.size)) * dt / hbar_au
     deph = np.exp(-cumu_i)
     np.seterr(over='ignore')
     popt = curve_fit(gauss_function, ts, deph)[0]
@@ -92,7 +87,8 @@ def read_couplings(path_hams, ts):
     This function reads the non adiabatic coupling vectors from the files
     generated for the NAMD simulations
     """
-    files_im = [os.path.join(path_hams, 'Ham_{}_im'.format(i)) for i in range(ts)]
+    files_im = [os.path.join(path_hams, f'Ham_{i}_im')
+                for i in range(ts)]
     xs = np.stack(np.loadtxt(fn) for fn in files_im)
     return xs * r2meV  # return energies in meV
 
@@ -102,7 +98,8 @@ def read_energies(path_hams, ts):
     This function reads the molecular orbital energies of each state from
     the files generated for the NAMD simulations
     """
-    files_re = [os.path.join(path_hams, 'Ham_{}_re'.format(i)) for i in range(ts)]
+    files_re = [os.path.join(path_hams, f'Ham_{i}_re')
+                for i in range(ts)]
     xs = np.stack(np.diag(np.loadtxt(fn)) for fn in files_re)
     return xs * r2meV / 1000  # return energies in eV
 
@@ -114,7 +111,7 @@ def read_energies_pyxaid(path, fn, nstates, nconds):
     """
     inpfile = os.path.join(path, fn)
     cols = tuple(range(5, nstates * 2 + 5, 2))
-    xs = np.stack(np.loadtxt('{}{}'.format(inpfile, j), usecols=cols)
+    xs = np.stack(np.loadtxt(f'{inpfile}{j}', usecols=cols)
                   for j in range(nconds)).transpose()
     # Rows = timeframes ; Columns = states ; tensor = initial conditions
     xs = xs.swapaxes(0, 1)
@@ -128,21 +125,20 @@ def read_pops_pyxaid(path, fn, nstates, nconds):
     """
     inpfile = os.path.join(path, fn)
     cols = tuple(range(3, nstates * 2 + 3, 2))
-    xs = np.stack(np.loadtxt('{}{}'.format(inpfile, j), usecols=cols)
+    xs = np.stack(np.loadtxt(f'{inpfile}{j}', usecols=cols)
                   for j in range(nconds)).transpose()
     # Rows = timeframes ; Columns = states ; tensor = initial conditions
     xs = xs.swapaxes(0, 1)
     return xs
 
 
-def parse_list_of_lists(xs):
-    """
-    Parse a list of list of integers using pyparsing
-    """
+def parse_list_of_lists(xs: list):
+    """Parse a list of list of integers using pyparsing."""
     enclosed = pa.Forward()  # Parser to be defined later
     natural = pa.Word(pa.nums)  # Natural Number
     # Nested Grammar
-    nestedBrackets = pa.nestedExpr(pa.Suppress('['), pa.Suppress(']'), content=enclosed)
+    nestedBrackets = pa.nestedExpr(pa.Suppress(
+        '['), pa.Suppress(']'), content=enclosed)
     enclosed << (natural | pa.Suppress(',') | nestedBrackets)
     try:
         rs = enclosed.parseString(xs).asList()[0]

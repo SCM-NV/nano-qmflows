@@ -12,21 +12,28 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
-# import os
-# import sys
-# sys.path.insert(0, os.path.abspath('.'))
+import os
+import sys
 
 
 # -- Project information -----------------------------------------------------
 
 project = 'qmflows-namd'
-copyright = '2018, Felipe Zapata and Ivan Infante'
+copyright = '2019, Felipe Zapata and Ivan Infante'
 author = 'Felipe Zapata and Ivan Infante'
 
+here = os.path.dirname(__file__)
+sys.path.insert(0, os.path.abspath(os.path.join(here, '..')))
+
+vers = {}
+with open(os.path.join(here, '..', '__version__.py')) as f:
+    exec(f.read(), vers)
+
+
 # The short X.Y version
-version = ''
+version = vers["__version__"]
 # The full version, including alpha/beta/rc tags
-release = ''
+release = vers["__version__"]
 
 
 # -- General configuration ---------------------------------------------------
@@ -46,6 +53,7 @@ extensions = [
     'sphinx.ext.mathjax',
     'sphinx.ext.ifconfig',
     'sphinx.ext.viewcode',
+    'sphinx.ext.napoleon',
 ]
 
 # Add any paths that contain templates here, relative to this directory.

@@ -83,14 +83,14 @@ def distribute_computations(config: dict, hamiltonians=False) -> None:
         header_array_cell_parameters = read_cell_parameters_as_array(file_cell_parameters)
 
     for index, file_xyz in enumerate(chunks_trajectory):
-        folder_path = os.path.abspath(join(config.workdir, 'chunk_{}'.format(index)))
+        folder_path = os.path.abspath(join(config.workdir, f'chunk_{index}'))
 
         dict_input = DictConfig({
             'folder_path': folder_path, "file_xyz": file_xyz, 'index': index})
 
         create_folders(config, dict_input)
         # HDF5 file where both the Molecular orbitals and coupling are stored
-        config.path_hdf5 = join(config.scratch_path, 'chunk_{}.hdf5'.format(index))
+        config.path_hdf5 = join(config.scratch_path, f'chunk_{index}.hdf5')
 
         # Change hdf5 and trajectory path of each batch
         config["path_traj_xyz"] = file_xyz
@@ -135,7 +135,7 @@ def write_input(folder_path: str, config: dict) -> None:
         config["cp2k_general_settings"]["path_basis"])
 
     # remove keys from input
-    for k in ['blocks', 'calculate_guesses', 'job_scheduler', 'mo_index_range',
+    for k in ['blocks', 'job_scheduler', 'mo_index_range',
               'workdir']:
         del config[k]
 
@@ -158,7 +158,7 @@ def create_folders(config: dict, dict_input: dict):
     shutil.move(dict_input.file_xyz, dict_input.folder_path)
 
     # Scratch directory
-    batch_dir = join(config.scratch_path, 'batch_{}'.format(dict_input.index))
+    batch_dir = join(config.scratch_path, f'batch_{dict_input.index}')
     os.makedirs(batch_dir, exist_ok=True)
 
 
@@ -169,7 +169,7 @@ def write_slurm_script(config: dict, dict_input: dict):
     index = dict_input.index
     python = "\n\nrun_workflow.py -i input.yml\n"
     results_dir = "results_chunk_" + str(index)
-    mkdir = "\nmkdir {}\n".format(results_dir)
+    mkdir = "\nmkdir {results_dir}\n"
     slurm_config = config.job_scheduler
 
     # Copy a subset of Hamiltonians
@@ -180,7 +180,7 @@ def write_slurm_script(config: dict, dict_input: dict):
         range_batch = (dim_batch * index, dim_batch * (index + 1) - 3)
         files_hams = '{}/Ham_{{{}..{}}}_*'.format(
             dict_input.hamiltonians_dir, *range_batch)
-        copy = 'cp -r {} {} {}\n'.format(config.path_hdf5, files_hams, results_dir)
+        copy = f'cp -r {config.path_hdf5} {files_hams} {results_dir}\n'
 
     # Script content
     content = format_slurm_parameters(slurm_config) + python + mkdir + copy
@@ -216,7 +216,7 @@ def compute_number_of_geometries(file_name):
     with open(file_name, 'r') as f:
         numat = int(f.readline())
 
-    cmd = "wc -l {}".format(file_name)
+    cmd = f"wc -l {file_name}"
     wc = subprocess.getoutput(cmd).split()[0]
 
     lines_per_geometry = numat + 2

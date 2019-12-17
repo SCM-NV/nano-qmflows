@@ -1,9 +1,10 @@
 __all__ = ['workflow_stddft']
 
+from .tools import number_spherical_functions_per_atom
 from nac.common import (
-    DictConfig, angs2au, calc_orbital_Slabels, change_mol_units,
+    DictConfig, angs2au,  change_mol_units,
     is_data_in_hdf5, h2ev,
-    hardness, read_basis_format, retrieve_hdf5_data,
+    hardness, retrieve_hdf5_data,
     store_arrays_in_hdf5, xc)
 from nac.integrals.multipole_matrices import get_multipole_matrix
 from nac.schedule.components import calculate_mos
@@ -11,10 +12,9 @@ from nac.workflows.initialization import initialize
 from os.path import join
 from qmflows.parsers import parse_string_xyz
 from qmflows import run
-from noodles import (gather, schedule)
+from noodles import (gather, schedule, unpack)
 from scipy.linalg import sqrtm
 from scipy.spatial.distance import cdist
-import h5py
 import logging
 import numpy as np
 
@@ -34,7 +34,7 @@ def workflow_stddft(config: dict) -> None:
     config.update(initialize(config))
 
     # Single Point calculations settings using CP2K
-    mo_paths_hdf5 = calculate_mos(config)
+    mo_paths_hdf5, energy_paths_hdf5 = unpack(calculate_mos(config), 2)
 
     # Read structures
     molecules_au = [change_mol_units(parse_string_xyz(gs))
@@ -45,11 +45,11 @@ def workflow_stddft(config: dict) -> None:
     scheduleTDDFT = schedule(compute_excited_states_tddft)
 
     results = gather(
-       *[scheduleTDDFT(config, mo_paths_hdf5[i], DictConfig(
-           {'i': i * config.stride, 'mol': mol}))
-         for i, mol in enumerate(molecules_au)])
+        *[scheduleTDDFT(config, mo_paths_hdf5[i], DictConfig(
+            {'i': i * config.stride, 'mol': mol}))
+          for i, mol in enumerate(molecules_au)])
 
-    return run(results, folder=config['workdir'])
+    return run(gather(results, energy_paths_hdf5), folder=config['workdir'])
 
 
 def compute_excited_states_tddft(config: dict, path_MOs: list, dict_input: dict):
@@ -64,7 +64,8 @@ def compute_excited_states_tddft(config: dict, path_MOs: list, dict_input: dict)
     # Number of virtual orbitals
     nocc = config.active_space[0]
     nvirt = config.active_space[1]
-    dict_input.update({"energy": energy, "c_ao": c_ao, "nocc": nocc, "nvirt": nvirt})
+    dict_input.update({"energy": energy, "c_ao": c_ao,
+                       "nocc": nocc, "nvirt": nvirt})
 
     # Pass the molecule in Angstrom to the libint calculator
     copy_dict = DictConfig(dict_input.copy())
@@ -80,7 +81,8 @@ def compute_excited_states_tddft(config: dict, path_MOs: list, dict_input: dict)
     omega, xia = get_omega_xia(config, dict_input)
 
     # add arrays to the dictionary
-    dict_input.update({"multipoles": multipoles[1:], "omega": omega, "xia": xia})
+    dict_input.update(
+        {"multipoles": multipoles[1:], "omega": omega, "xia": xia})
 
     return compute_oscillator_strengths(
         config, dict_input)
@@ -100,15 +102,18 @@ def get_omega_xia(config: dict, dict_input: dict):
             return compute_std_aproximation(config, dict_input)
 
     # search data in HDF5
-    root = join(config.project_name, 'omega_xia', tddft, 'point_{}'.format(dict_input.i))
+    root = join(config.project_name, 'omega_xia', tddft,
+                'point_{}'.format(dict_input.i + config.enumerate_from))
     paths_omega_xia = [join(root, x) for x in ("omega", "xia")]
 
     if is_data_in_hdf5(config.path_hdf5, paths_omega_xia):
         return tuple(retrieve_hdf5_data(config.path_hdf5, paths_omega_xia))
     else:
         omega, xia = compute_omega_xia()
-        store_arrays_in_hdf5(config.path_hdf5, paths_omega_xia[0], omega)
-        store_arrays_in_hdf5(config.path_hdf5, paths_omega_xia[1], xia)
+        store_arrays_in_hdf5(
+            config.path_hdf5, paths_omega_xia[0], omega, dtype=omega.dtype)
+        store_arrays_in_hdf5(
+            config.path_hdf5, paths_omega_xia[1], xia, dtype=xia.dtype)
 
         return omega, xia
 
@@ -117,7 +122,8 @@ def compute_sing_orb(inp: dict):
     """
     Single Orbital approximation.
     """
-    energy, nocc, nvirt = [getattr(inp, x) for x in ("energy", "nocc", "nvirt")]
+    energy, nocc, nvirt = [getattr(inp, x)
+                           for x in ("energy", "nocc", "nvirt")]
     omega = -np.subtract(
         energy[:nocc].reshape(nocc, 1), energy[nocc:].reshape(nvirt, 1).T).reshape(nocc*nvirt)
     xia = np.eye(nocc*nvirt)
@@ -139,7 +145,8 @@ def compute_std_aproximation(config: dict, dict_input: dict):
 
     # Make a function that compute the Mataga-Nishimoto-Ohno_Klopman
     # damped Columb and Excgange law functions
-    logger.info("Computing the gamma functions for Exchange and Coulomb integrals")
+    logger.info(
+        "Computing the gamma functions for Exchange and Coulomb integrals")
     gamma_J, gamma_K = compute_MNOK_integrals(dict_input["mol"], config.xc_dft)
 
     # Compute the Couloumb and Exchange integrals
@@ -150,8 +157,10 @@ def compute_std_aproximation(config: dict, dict_input: dict):
         size = dict_input.energy.size
         pqrs_J = np.zeros((size, size, size, size))
     else:
-        pqrs_J = np.tensordot(q, np.tensordot(q, gamma_J, axes=(0, 1)), axes=(0, 2))
-    pqrs_K = np.tensordot(q, np.tensordot(q, gamma_K, axes=(0, 1)), axes=(0, 2))
+        pqrs_J = np.tensordot(q, np.tensordot(
+            q, gamma_J, axes=(0, 1)), axes=(0, 2))
+    pqrs_K = np.tensordot(q, np.tensordot(
+        q, gamma_K, axes=(0, 1)), axes=(0, 2))
 
     # Construct the Tamm-Dancoff matrix A for each pair of i->a transition
     logger.info("Constructing the A matrix for TDDFT calculation")
@@ -162,7 +171,8 @@ def compute_std_aproximation(config: dict, dict_input: dict):
         logger.info('sTDDFT has not been implemented yet !')
         # Solve the eigenvalue problem = A * cis = omega * cis
     elif config.tddft == 'stda':
-        logger.info("This is a TDA calculation ! \n Solving the eigenvalue problem")
+        logger.info(
+            "This is a TDA calculation ! \n Solving the eigenvalue problem")
         omega, xia = np.linalg.eig(a_mat)
     else:
         msg = "Only the stda method is available"
@@ -195,10 +205,17 @@ def compute_oscillator_strengths(config: dict, inp: dict):
         inp.energy[inp.nocc:].reshape(inp.nvirt, 1).T).reshape(inp.nocc*inp.nvirt)
 
     def compute_transition_matrix(matrix):
-        return np.stack(
-            [np.sum(
-                np.sqrt(2 * delta_ia / inp.omega[i]) * inp.xia[:, i] * matrix)
-             for i in range(inp.nocc*inp.nvirt)])
+        if tddft == 'sing_orb':
+            tm = np.stack(
+                [np.sum(
+                 delta_ia / inp.omega[i] * inp.xia[:, i] * matrix)
+                 for i in range(inp.nocc*inp.nvirt)])
+        else:
+            tm = np.stack(
+                [np.sum(
+                 np.sqrt(2 * delta_ia / inp.omega[i]) * inp.xia[:, i] * matrix)
+                 for i in range(inp.nocc*inp.nvirt)])
+        return tm
 
     # 2) Compute the transition dipole matrix TDM(i->a)
     # Call the function that computes transition dipole moments integrals
@@ -216,11 +233,7 @@ def compute_oscillator_strengths(config: dict, inp: dict):
         compute_transition_matrix(m) for m in td_matrices)
 
     # 4) Compute the oscillator strength
-
-    if tddft == 'sing_orb':
-        f = 2 / 3 * inp.omega * (td_matrices[0] ** 2 + td_matrices[1] ** 2 + td_matrices[2] ** 2)
-    else:
-        f = 2 / 3 * inp.omega * (d_x ** 2 + d_y ** 2 + d_z ** 2)
+    f = 2 / 3 * inp.omega * (d_x ** 2 + d_y ** 2 + d_z ** 2)
 
     # Write to output
     inp.update({"dipole": (d_x, d_y, d_z), "oscillator": f})
@@ -233,11 +246,12 @@ def write_output(config: dict, inp: dict):
     """
     output = write_output_tddft(inp)
 
-    path_output = join(config.workdir, 'output_{}_{}.txt'.format(inp.i, config.tddft))
+    path_output = join(config.workdir,
+                       f'output_{inp.i + config.enumerate_from}_{config.tddft}.txt')
     fmt = '{:^5s}{:^14s}{:^8s}{:^11s}{:^11s}{:^11s}{:^11s}{:<5s}{:^10s}{:<5s}{:^11s}{:^11s}'
     header = fmt.format(
-        'state', 'inp.energy', 'f', 't_dip_x', 't_dip_y', 't_dip_y', 'weight',
-        'from', 'inp.energy', 'to', 'inp.energy', 'delta_E')
+        'state', 'energy', 'f', 't_dip_x', 't_dip_y', 't_dip_y', 'weight',
+        'from', 'energy', 'to', 'energy', 'delta_E')
     np.savetxt(path_output, output,
                fmt='%5d %10.3f %10.5f %10.5f %10.5f %10.5f %10.5f %3d %10.3f %3d %10.3f %10.3f',
                header=header)
@@ -297,7 +311,8 @@ def ex_descriptor(omega, f, xia, n_lowest, c_ao, s, tdm, tqm, nocc, nvirt, mol, 
     # binding energy approximated
     xs = np.stack((omega_ab[i, :, :] / r_ab) for i in range(n_lowest))
     xs[np.isinf(xs)] = 0
-    binding_en_apprx = np.stack((np.sum(xs[i, :, :]) / om[i]) for i in range(n_lowest))
+    binding_en_apprx = np.stack(
+        (np.sum(xs[i, :, :]) / om[i]) for i in range(n_lowest))
 
     descriptors = write_output_descriptors(
         d_exc, d_exc_apprx, d_he, sigma_h, sigma_e, r_eh, binding_en_apprx, n_lowest, omega, f)
@@ -406,7 +421,7 @@ def get_exciton_positions(d0I_ao, s, moment, n_lowest, carrier):
     elif carrier == 'both':
         return tuple(compute_component_he(k) for k in range(3))
     else:
-        raise RuntimeError("unkown option: {}".format(carrier))
+        raise RuntimeError(f"unkown option: {carrier}")
 
 
 # def write_output_tddft(nocc, nvirt, omega, f, d_x, d_y, d_z, xia, e):
@@ -415,7 +430,8 @@ def write_output_tddft(inp: dict):
 
     energy = inp.energy
 
-    excs = [(i, a) for i in range(inp.nocc) for a in range(inp.nocc, inp.nvirt + inp.nocc)]
+    excs = [(i, a) for i in range(inp.nocc)
+            for a in range(inp.nocc, inp.nvirt + inp.nocc)]
 
     output = np.empty((inp.nocc * inp.nvirt, 12))
     output[:, 0] = 0  # State number: we update it after reorder
@@ -427,7 +443,8 @@ def write_output_tddft(inp: dict):
     output[:, 4] = d_y  # Transition dipole moment in the y direction
     output[:, 5] = d_z  # Transition dipole moment in the z direction
     # Weight of the most important excitation
-    output[:, 6] = np.hstack([np.max(inp.xia[:, i] ** 2) for i in range(inp.nocc*inp.nvirt)])
+    output[:, 6] = np.hstack([np.max(inp.xia[:, i] ** 2)
+                              for i in range(inp.nocc*inp.nvirt)])
 
     # Find the index of this transition
     index_weight = np.hstack([
@@ -437,11 +454,13 @@ def write_output_tddft(inp: dict):
         for i in range(inp.nocc * inp.nvirt)]).reshape(inp.nocc*inp.nvirt)
 
     # Index of the hole for the most important excitation
-    output[:, 7] = np.stack([excs[index_weight[i]][0] for i in range(inp.nocc*inp.nvirt)]) + 1
+    output[:, 7] = np.stack([excs[index_weight[i]][0]
+                             for i in range(inp.nocc*inp.nvirt)]) + 1
     # These are the energies of the hole for the transition with the larger weight
     output[:, 8] = energy[output[:, 7].astype(int) - 1] * h2ev
     # Index of the electron for the most important excitation
-    output[:, 9] = np.stack([excs[index_weight[i]][1] for i in range(inp.nocc*inp.nvirt)]) + 1
+    output[:, 9] = np.stack([excs[index_weight[i]][1]
+                             for i in range(inp.nocc*inp.nvirt)]) + 1
     # These are the energies of the electron for the transition with the larger weight
     output[:, 10] = energy[output[:, 9].astype(int) - 1] * h2ev
     # This is the energy for the transition with the larger weight
@@ -454,20 +473,6 @@ def write_output_tddft(inp: dict):
     output[:, 0] = np.arange(inp.nocc * inp.nvirt) + 1
 
     return output
-
-
-def number_spherical_functions_per_atom(mol, package_name, basis_name, path_hdf5):
-    """
-    Compute the number of spherical shells per atom
-    """
-    with h5py.File(path_hdf5, 'r') as f5:
-        xs = [f5['{}/basis/{}/{}/coefficients'.format(
-            package_name, atom[0], basis_name)] for atom in mol]
-        ys = [calc_orbital_Slabels(
-            package_name, read_basis_format(
-                package_name, path.attrs['basisFormat'])) for path in xs]
-
-        return np.stack([sum(len(x) for x in ys[i]) for i in range(len(mol))])
 
 
 def transition_density_charges(mol, config, s, c_ao):
@@ -497,7 +502,8 @@ def compute_MNOK_integrals(mol, xc_dft):
     """
     n_atoms = len(mol)
     r_ab = get_r_ab(mol)
-    hardness_vec = np.stack([hardness(mol[i][0]) for i in range(n_atoms)]).reshape(n_atoms, 1)
+    hardness_vec = np.stack([hardness(mol[i][0])
+                             for i in range(n_atoms)]).reshape(n_atoms, 1)
     hard = np.add(hardness_vec, hardness_vec.T)
     beta = xc(xc_dft)['beta1'] + xc(xc_dft)['ax'] * xc(xc_dft)['beta2']
     alpha = xc(xc_dft)['alpha1'] + xc(xc_dft)['ax'] * xc(xc_dft)['alpha2']
@@ -506,7 +512,8 @@ def compute_MNOK_integrals(mol, xc_dft):
     else:
         gamma_J = np.power(
             1 / (np.power(r_ab, beta) + np.power((xc(xc_dft)['ax'] * hard), -beta)), 1/beta)
-    gamma_K = np.power(1 / (np.power(r_ab, alpha) + np.power(hard, -alpha)), 1/alpha)
+    gamma_K = np.power(1 / (np.power(r_ab, alpha) +
+                            np.power(hard, -alpha)), 1/alpha)
 
     return gamma_J, gamma_K
 
@@ -525,7 +532,8 @@ def construct_A_matrix_tddft(pqrs_J, pqrs_K, nocc, nvirt, xc_dft, e):
 
     # To get the correct order in the A matrix, i.e. (nocc, nvirt, nocc, nvirt),
     # we have to swap axes
-    k_ijab = np.swapaxes(k_ijab_tmp, axis1=1, axis2=2).reshape(nocc*nvirt, nocc*nvirt)
+    k_ijab = np.swapaxes(k_ijab_tmp, axis1=1, axis2=2).reshape(
+        nocc*nvirt, nocc*nvirt)
 
     # They are in the m x m format where m is the number of excitations = nocc * nvirt
     a_mat = 2 * k_iajb - k_ijab

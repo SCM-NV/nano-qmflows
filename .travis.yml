@@ -1,5 +1,6 @@
 sudo: required
 language: generic
+dist: bionic
 
 env:
   global:
@@ -8,15 +9,8 @@ env:
     - PYTHON_VERSION=3.6
     - PYTHON_VERSION=3.7
 
-install:
-  - export CXX="g++-7"
-  - export CC="gcc-7"
-
-addons:
-  apt:
-    packages: g++-7
-    sources:
-      - ubuntu-toolchain-r-test
+before_install:
+  - sudo apt-get -y install cp2k
 
 install:
   - export CC=gcc-7
@@ -33,7 +27,7 @@ install:
   - conda create --name namd python=${PYTHON_VERSION}
   - source activate namd
   - conda install -c conda-forge/label/gcc7 highfive h5py eigen cython rdkit pybind11
-  - conda install -c conda-forge libint
+  - conda install -c conda-forge libint==2.4.2
   - pip install .[test] -v
   
 

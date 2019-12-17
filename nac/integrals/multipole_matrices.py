@@ -11,10 +11,12 @@ def get_multipole_matrix(config: dict, inp: dict, multipole: str) -> Matrix:
     """
     Retrieve the `multipole` number `i` from the trajectory. Otherwise compute it.
     """
-    root = join(config['project_name'], 'multipole', 'point_{}'.format(inp.i))
+    root = join(config['project_name'], 'multipole',
+                f'point_{inp.i + config.enumerate_from}')
     path_hdf5 = config['path_hdf5']
     path_multipole_hdf5 = join(root, multipole)
-    matrix_multipole = search_multipole_in_hdf5(path_hdf5, path_multipole_hdf5, multipole)
+    matrix_multipole = search_multipole_in_hdf5(
+        path_hdf5, path_multipole_hdf5, multipole)
 
     if matrix_multipole is None:
         matrix_multipole = compute_matrix_multipole(inp.mol, config, multipole)
@@ -28,10 +30,10 @@ def search_multipole_in_hdf5(path_hdf5: str, path_multipole_hdf5: str, multipole
     Search if the multipole is already store in the HDFt
     """
     if is_data_in_hdf5(path_hdf5, path_multipole_hdf5):
-        print("retrieving multipole: {} from the hdf5".format(multipole))
+        print(f"retrieving multipole: {multipole} from the hdf5")
         return retrieve_hdf5_data(path_hdf5, path_multipole_hdf5)
     else:
-        print("computing multipole: {}".format(multipole))
+        print(f"computing multipole: {multipole}")
         return None
 
 
@@ -49,7 +51,7 @@ def compute_matrix_multipole(
     path_hdf5 = config['path_hdf5']
 
     # Write molecule in temporal file
-    path = join(config["scratch_path"], "molecule_{}.xyz".format(uuid.uuid4()))
+    path = join(config["scratch_path"], f"molecule_{uuid.uuid4()}.xyz")
     mol_plams = tuplesXYZ_to_plams(mol)
     mol_plams.write(path)
 
@@ -57,10 +59,12 @@ def compute_matrix_multipole(
     basis_name = config["cp2k_general_settings"]["basis"]
 
     if multipole == 'overlap':
-        matrix_multipole = compute_integrals_multipole(path, path_hdf5, basis_name, multipole)
+        matrix_multipole = compute_integrals_multipole(
+            path, path_hdf5, basis_name, multipole)
     elif multipole == 'dipole':
         # The tensor contains the overlap + {x, y, z} dipole matrices
-        super_matrix = compute_integrals_multipole(path, path_hdf5, basis_name, multipole)
+        super_matrix = compute_integrals_multipole(
+            path, path_hdf5, basis_name, multipole)
         dim = super_matrix.shape[1]
 
         # Reshape the super_matrix as a tensor containing overlap + {x, y, z} dipole matrices
@@ -68,7 +72,8 @@ def compute_matrix_multipole(
 
     elif multipole == 'quadrupole':
         # The tensor contains the overlap + {xx, xy, xz, yy, yz, zz} quadrupole matrices
-        super_matrix = compute_integrals_multipole(path, path_hdf5, basis_name, multipole)
+        super_matrix = compute_integrals_multipole(
+            path, path_hdf5, basis_name, multipole)
         dim = super_matrix.shape[1]
 
         # Reshape to 3d tensor containing overlap + {xx, xy, xz, yy, yz, zz} quadrupole matrices

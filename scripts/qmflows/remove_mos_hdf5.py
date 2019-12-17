@@ -13,13 +13,11 @@ def main(project_name, path_hdf5, indices, overlap_flag, mo_flag):
 
     # path to the failed points
     if mo_flag:
-        root_paths = join(project_name, 'point_{}')
-        mos = [root_paths.format(i) for i in indices]
+        mos = [join(project_name, f'point_{i}') for i in indices]
     else:
         mos = []
     if overlap_flag:
-        root_overlaps = join(project_name, 'overlaps_{}')
-        overlaps = [root_overlaps.format(i) for i in indices]
+        overlaps = [join(project_name, f'overlaps_{i}') for i in indices]
     else:
         overlaps = []
 
@@ -53,7 +51,8 @@ if __name__ == "__main__":
                         help='project name')
     parser.add_argument('-hdf5', required=True,
                         help='Path to the HDF5')
-    parser.add_argument('-o', help='flag to remove the overlaps', action='store_true')
+    parser.add_argument(
+        '-o', help='flag to remove the overlaps', action='store_true')
     parser.add_argument('-mo', help='flag to remove the molecular overlaps',
                         action='store_true')
     parser.add_argument('-i', help='Indices of the Molecular orbitals', required=True,

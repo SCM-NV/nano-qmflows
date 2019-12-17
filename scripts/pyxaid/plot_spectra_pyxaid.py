@@ -36,10 +36,10 @@ def plot_stuff(ens, acf, sd, deph, rate, s1, s2, dt, wsd, wdeph):
     arr - a vector of y-values that are plot
     plot_mean, save_plot - bools telling to plot the mean and save the plot or not, respectively
     """
-    dim_x = np.arange(ens.shape[1]) * dt 
+    dim_x = np.arange(ens.shape[1]) * dt
 
     plt.figure(1)
-    plt.title('Energies of state {} (red) and {} (blue)'.format(s1, s2))
+    plt.title(f'Energies of state {s1} (red) and {s2} (blue)')
     plt.xlabel('Time (fs)')
     plt.ylabel('Energy (eV)')
     plt.plot(dim_x, ens[0, :], c='r')
@@ -48,7 +48,7 @@ def plot_stuff(ens, acf, sd, deph, rate, s1, s2, dt, wsd, wdeph):
     plt.show()
 
     plt.figure(2)
-    plt.title('Normalized AUF between state {} and {}'.format(s1, s2))
+    plt.title(f'Normalized AUF between state {s1} and {s2}')
     plt.xlabel('Time (fs)')
     plt.ylabel('Normalized AUF')
     plt.ylim(-1, 1)
@@ -59,8 +59,8 @@ def plot_stuff(ens, acf, sd, deph, rate, s1, s2, dt, wsd, wdeph):
     interactive(True)
     plt.show()
 
-    plt.figure(3) 
-    plt.title('Un-normalized AUF between state {} and {}'.format(s1, s2))
+    plt.figure(3)
+    plt.title(f'Un-normalized AUF between state {s1} and {s2}')
     plt.xlabel('Time (fs)')
     plt.ylabel('Un-normalized AUF')
 #    plt.plot(ts, acf[:, 1, 0], c='r')
@@ -70,20 +70,21 @@ def plot_stuff(ens, acf, sd, deph, rate, s1, s2, dt, wsd, wdeph):
     interactive(True)
     plt.show()
 
-    plt.figure(4) 
-    plt.title('Dephasing time between state {} and {}'.format(s1, s2))
+    plt.figure(4)
+    plt.title(f'Dephasing time between state {s1} and {s2}')
     plt.xlabel('Time (fs)')
     plt.ylabel('Dephasing (arbitrary units)')
     plt.xlim(0, wdeph)
     plt.plot(dim_x, deph[:, 0], c='r')
     plt.plot(dim_x, deph[:, 1], c='b')
-    print('The dephasing time is : {:f} fs'.format(rate))
-    print('The homogenous line broadening is  : {:f} nm'.format(1 / rate * fs_to_nm))
+    print(f'The dephasing time is : {rate:f} fs')
+    line_broadening = 1 / rate * fs_to_nm
+    print(f'The homogenous line broadening is  : {line_broadening:f} nm')
     interactive(True)
     plt.show()
 
     plt.figure(5)
-    plt.title('Influence spectrum state {}'.format(s1))
+    plt.title(f'Influence spectrum state {s1}')
     plt.xlabel('Frequency (cm-1)')
     plt.ylabel('Spectral Density (arbitrary units)')
     plt.xlim(0, wsd)
@@ -92,7 +93,7 @@ def plot_stuff(ens, acf, sd, deph, rate, s1, s2, dt, wsd, wdeph):
     plt.show()
 
     plt.figure(6)
-    plt.title('Influence spectrum state {}'.format(s2))
+    plt.title(f'Influence spectrum state {s2}')
     plt.xlabel('Frequency (cm-1)')
     plt.ylabel('Spectral Density (arbitrary units)')
     plt.xlim(0, wsd)
@@ -101,7 +102,7 @@ def plot_stuff(ens, acf, sd, deph, rate, s1, s2, dt, wsd, wdeph):
     plt.show()
 
     plt.figure(7)
-    plt.title('Influence spectrum across state {} and {}'.format(s1, s2))
+    plt.title(f'Influence spectrum across state {s1} and {s2}')
     plt.xlabel('Frequency (cm-1)')
     plt.ylabel('Spectral Density (arbitrary units)')
     plt.xlim(0, wsd)
@@ -112,19 +113,19 @@ def plot_stuff(ens, acf, sd, deph, rate, s1, s2, dt, wsd, wdeph):
     plt.savefig(fileName, format='png', dpi=300)
 
 
-
 def main(path_output, s1, s2, dt, wsd, wdeph):
-    fn = 'me_energies0' # it is only necessary the first initial condition 
-    inpfile = os.path.join(path_output, fn) 
+    fn = 'me_energies0'  # it is only necessary the first initial condition
+    inpfile = os.path.join(path_output, fn)
     cols = (s1 * 2 + 5, s2 * 2 + 5)
-    energies = np.loadtxt(inpfile, usecols=cols) 
+    energies = np.loadtxt(inpfile, usecols=cols)
     # Compute the energy difference between pair of states
     d_E = energies[:, 0] - energies[:, 1]
     # Generate a matrix with s1, s2 and diff between them
     en_states = np.stack((energies[:, 0], energies[:, 1], d_E))
     # Compute autocorrelation function for each column (i.e. state)
+    # Take the transpose to have the correct shape for spectral_density
     acf = np.stack(autocorrelate(en_states[i, :])
-                            for i in range(en_states.shape[0])).T # Take the transpose to have the correct shape for spectral_density 
+                   for i in range(en_states.shape[0])).T
     # Compute the spectral density for each column using the normalized acf
     sd = np.stack(spectral_density(acf[:, 1, i], dt)
                   for i in range(en_states.shape[0]))
@@ -143,6 +144,7 @@ def read_cmd_line(parser):
     attributes = ['p', 's1', 's2', 'dt', 'wsd', 'wdeph']
 
     return [getattr(args, p) for p in attributes]
+
 
 # ============<>===============
 if __name__ == "__main__":

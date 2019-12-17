@@ -5,7 +5,6 @@ from compute_integrals import compute_integrals_couplings
 from nac.common import (
     Matrix, Tensor3D, retrieve_hdf5_data, tuplesXYZ_to_plams)
 from os.path import join
-from typing import Tuple
 import numpy as np
 import os
 import uuid
@@ -31,10 +30,10 @@ def calculate_couplings_levine(dt: float, w_jk: Matrix,
     State Transition Probabilities from Numerical Simulations`.
     Garrett A. Meek and Benjamin G. Levine.
     dx.doi.org/10.1021/jz5009449 | J. Phys. Chem. Lett. 2014, 5, 2351−2356
+
+    NOTE:
+     In numpy sinc is defined as sin(pi * x) / (pi * x)
     """
-    # Orthonormalize the Overlap matrices
-    w_jk = np.linalg.qr(w_jk)[0]
-    w_kj = np.linalg.qr(w_kj)[0]
 
     # Diagonal matrix
     w_jj = np.diag(np.diag(w_jk))
@@ -50,8 +49,8 @@ def calculate_couplings_levine(dt: float, w_jk: Matrix,
 
     a = acos_w_jj - asin_w_jk
     b = acos_w_jj + asin_w_jk
-    A = - np.sin(np.sinc(a))
-    B = np.sin(np.sinc(b))
+    A = - np.sinc(a / np.pi)
+    B = np.sinc(b / np.pi)
 
     # Components C + D
     acos_w_kk = np.arccos(w_kk)
@@ -59,8 +58,8 @@ def calculate_couplings_levine(dt: float, w_jk: Matrix,
 
     c = acos_w_kk - asin_w_kj
     d = acos_w_kk + asin_w_kj
-    C = np.sin(np.sinc(c))
-    D = np.sin(np.sinc(d))
+    C = np.sinc(c / np.pi)
+    D = np.sinc(d / np.pi)
 
     # Components E
     w_lj = np.sqrt(1 - (w_jj ** 2) - (w_kj ** 2))
@@ -79,6 +78,7 @@ def calculate_couplings_levine(dt: float, w_jk: Matrix,
     # Check whether w_lj is different of zero
     E1 = np.where(np.abs(w_lj) > 1e-8, E_nonzero, np.zeros(A.shape))
 
+    # Check whether w_lj is different of zero
     E = np.where(np.isclose(asin_w_lj2, asin_w_lk2), w_lj ** 2, E1)
 
     cte = 1 / (2 * dt)
@@ -106,7 +106,7 @@ def correct_phases(overlaps: Tensor3D, mtx_phases: Matrix) -> list:
 
 
 def compute_overlaps_for_coupling(
-        config: dict, pair_molecules: tuple, coefficients: tuple) -> Tuple:
+        config: dict, pair_molecules: tuple, coefficients: tuple) -> tuple:
     """
     Compute the Overlap matrices used to compute the couplings
     :returns: [Matrix] containing the overlaps at different times
@@ -120,39 +120,26 @@ def compute_overlaps_for_coupling(
     return np.dot(css0.T, np.dot(suv, css1))
 
 
-def read_overlap_data(config: dict, mo_paths: list) -> Tuple:
+def read_overlap_data(config: dict, mo_paths: list) -> tuple:
     """
     Read the Molecular orbital coefficients and the transformation matrix
     """
     mos = retrieve_hdf5_data(config.path_hdf5, mo_paths)
 
     # Extract a subset of molecular orbitals to compute the coupling
-    lowest, highest = compute_range_orbitals(mos[0], config.nHOMO, config.mo_index_range)
+    lowest, highest = compute_range_orbitals(config)
     css0, css1 = tuple(map(lambda xs: xs[:, lowest: highest], mos))
 
     return css0, css1
 
 
-def compute_range_orbitals(mtx: Matrix, nHOMO: int,
-                           mo_index_range: Tuple) -> Tuple:
+def compute_range_orbitals(config: dict) -> tuple:
     """
     Compute the lowest and highest index used to extract
     a subset of Columns from the MOs
     """
-    # If the user does not define the number of HOMOs and LUMOs
-    # assume that the first half of the read MO from the HDF5
-    # are HOMOs and the last Half are LUMOs.
-    _, nOrbitals = mtx.shape
-    nHOMO = nHOMO if nHOMO is not None else nOrbitals // 2
-
-    # If the mo_index_range variable is not define I assume
-    # that the number of LUMOs is equal to the HOMOs.
-    if all(x is not None for x in [nHOMO, mo_index_range]):
-        lowest = nHOMO - mo_index_range[0]
-        highest = nHOMO + mo_index_range[1]
-    else:
-        lowest = 0
-        highest = nOrbitals
+    lowest = config.nHOMO - (config.mo_index_range[0] + config.active_space[0])
+    highest = config.nHOMO + config.active_space[1] - config.mo_index_range[0]
 
     return lowest, highest
 
@@ -165,8 +152,10 @@ def calcOverlapMtx(config: dict, molecules: tuple) -> Matrix:
     mol_i, mol_j = tuple(tuplesXYZ_to_plams(x) for x in molecules)
 
     # unique molecular paths
-    path_i = join(config["scratch_path"], "molecule_{}.xyz".format(uuid.uuid4()))
-    path_j = join(config["scratch_path"], "molecule_{}.xyz".format(uuid.uuid4()))
+    path_i = join(config["scratch_path"],
+                  f"molecule_{uuid.uuid4()}.xyz")
+    path_j = join(config["scratch_path"],
+                  "molecule_{uuid.uuid4()}.xyz")
 
     # Write the molecules in atomic units
     mol_i.write(path_i)
@@ -174,7 +163,8 @@ def calcOverlapMtx(config: dict, molecules: tuple) -> Matrix:
 
     basis_name = config["cp2k_general_settings"]["basis"]
     try:
-        integrals = compute_integrals_couplings(path_i, path_j, config["path_hdf5"], basis_name)
+        integrals = compute_integrals_couplings(
+            path_i, path_j, config["path_hdf5"], basis_name)
     finally:
         os.remove(path_i)
         os.remove(path_j)
