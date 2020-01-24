@@ -153,9 +153,7 @@ def retrieve_hdf5_data(path_hdf5: str, paths_to_prop: Union[str, list]):
 
 
 def is_data_in_hdf5(path_hdf5, xs):
-    """
-    Search if the node exists in the HDF5 file.
-    """
+    """Search if the node exists in the HDF5 file."""
     if os.path.exists(path_hdf5):
         with h5py.File(path_hdf5, 'r') as f5:
             if isinstance(xs, list):

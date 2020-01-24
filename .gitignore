@@ -83,3 +83,9 @@ mtx_phases
 oscillators.txt
 overlaps
 libint/main
+
+# VScode
+.vscode
+
+# Input parameters
+input_parameters.yml
