@@ -1,29 +1,45 @@
 #!/usr/bin/env python
 """Perform a molecular optimization using a set of smiles and CP2K."""
 import argparse
+import logging
 import os
-import sys
-from os.path import join
+from collections import OrderedDict
 
+import numpy as np
 import pandas as pd
+import pkg_resources
 from noodles import gather
-from scm.plams import Molecule, from_smiles
+from scm.plams import Molecule, finish, from_smiles, init, run_crs_adf
 
-from nac.common import is_data_in_hdf5
+from nac.workflows.templates import generate_kinds
 from qmflows import Settings, cp2k, run, templates
+
+# Starting logger
+logger = logging.getLogger(__name__)
+
+# Solvent to compute properties
+solvents = OrderedDict({"toluene": "cc1ccccc1", "o-xylene": "cc1c(c)cccc1",
+                        "octadecene": "C=CCCCCCCCCCCCCCCCC"})
 
 
 def main(file_path: str):
     """Run script."""
-    df = pd.read_csv(file_path)
-    # HDF5 to store the arrays
-    path_hdf5 = "database.h5"
-    # Solvent to compute
-    solvents = {"toluene": "cc1ccccc1", "o-xylene": "cc1c(c)cccc1",
-     "octadecene": "C=CCCCCCCCCCCCCCCCC"}
+    set_logger()
+    # Read input smiles
+    df_smiles = pd.read_csv(file_path)
+    # Path results
+    path_results = "results.csv"
+    # Read the database file o create new db
+    df_results = pd.read_csv(path_results) if os.path.exists(
+        path_results) else pd.DataFrame(columns=solvents.keys())
+    # HDF5 to store the array
     # Compute the properties
-    # for smile in df["smiles"]:
-    #     if is_data_in_hdf5(path_hdf5, )
+    for smile in df_smiles["smiles"]:
+        if smile in df_results["smiles"]:
+            logger.info(f"properties of {smile} are already store!")
+        else:
+            results = compute_properties(smile)
+            store_results_in_df(results, path_results)
 
 
 if __name__ == "__main__":
@@ -38,114 +54,100 @@ if __name__ == "__main__":
     main(args.input)
 
 
-# def create_cp2k_job(smile: str) -> object:
-#     """Create a cp2k job for the given smile."""
-#     systems = from_smiles(smile)
-
-# # String representing the smile
-# smiles = ['CCNCC', 'CCCNCCC', 'CCCCNCCCC', 'CCCCCNCCCCC', 'CCCCCCNCCCCCC',
-#           'CCCCCCCNCCCCCCC', 'CCCCCCCCNCCCCCCCC', 'CCCCCCCCCNCCCCCCCCC',
-#           'CCCCCCCCCCNCCCCCCCCCC', 'CCCCCCCCCCCNCCCCCCCCCCC',
-#           'CCCCCCCCCCCCNCCCCCCCCCCCC', 'CCCCCCCCCCCCCNCCCCCCCCCCCCC',
-#           'CCCCCCCCCCCCCCNCCCCCCCCCCCCCC', 'CCCCCCCCCCCCCCCNCCCCCCCCCCCCCCC',
-#           'CCCCCCCCCCCCCCCCNCCCCCCCCCCCCCCCC',
-#           'CCCCCCCCCCCCCCCCCNCCCCCCCCCCCCCCCCC', 'CCCCCCCCCCCCCCCCCCNCCCCCCCCCCCCCCCCC']
-
-# systems = [from_smiles(s) for s in smiles]
-# name_systems = ['C' + str(x) for x in range(2, 19)]
-
-# # ======================
-# # Settings for CP2k
-# # ======================
-
-# # Set path for basis set
-# home = os.path.expanduser('~')
-# basisCP2K = join(home, "cp2k_basis/BASIS_MOLOPT")
-# potCP2K = join(home, "cp2k_basis/GTH_POTENTIALS")
-
-# # Settings specifics
-# s = Settings()
-# s.basis = "DZVP-MOLOPT-SR-GTH"
-# s.potential = "GTH-PBE"
-# s.cell_parameters = 5
-# s.specific.cp2k.force_eval.dft.basis_set_file_name = basisCP2K
-# s.specific.cp2k.force_eval.dft.potential_file_name = potCP2K
-# s.specific.cp2k.force_eval.subsys.cell.periodic = 'none'
-# s.specific.cp2k.force_eval.subsys.kind["Cd"]["BASIS_SET"] = "DZVP-MOLOPT-SR-GTH-q12"
-# s.specific.cp2k.force_eval.subsys.kind["Cd"]["POTENTIAL"] = "GTH-PBE-q12"
-# s.specific.cp2k.force_eval.subsys.kind["P"]["BASIS_SET"] = "DZVP-MOLOPT-SR-GTH-q5"
-# s.specific.cp2k.force_eval.subsys.kind["P"]["POTENTIAL"] = "GTH-PBE-q5"
-# s.specific.cp2k.force_eval.subsys.kind["C"]["BASIS_SET"] = "DZVP-MOLOPT-SR-GTH-q4"
-# s.specific.cp2k.force_eval.subsys.kind["C"]["POTENTIAL"] = "GTH-PBE-q4"
-# s.specific.cp2k.force_eval.subsys.kind["O"]["BASIS_SET"] = "DZVP-MOLOPT-SR-GTH-q6"
-# s.specific.cp2k.force_eval.subsys.kind["O"]["POTENTIAL"] = "GTH-PBE-q6"
-# s.specific.cp2k.force_eval.subsys.kind["H"]["BASIS_SET"] = "DZVP-MOLOPT-SR-GTH-q1"
-# s.specific.cp2k.force_eval.subsys.kind["H"]["POTENTIAL"] = "GTH-PBE-q1"
-# s.specific.cp2k.force_eval.subsys.kind["Se"]["BASIS_SET"] = "DZVP-MOLOPT-SR-GTH-q6"
-# s.specific.cp2k.force_eval.subsys.kind["Se"]["POTENTIAL"] = "GTH-PBE-q6"
-# s.specific.cp2k.force_eval.subsys.kind["Cl"]["BASIS_SET"] = "DZVP-MOLOPT-SR-GTH-q7"
-# s.specific.cp2k.force_eval.subsys.kind["Cl"]["POTENTIAL"] = "GTH-PBE-q7"
-# s.specific.cp2k.force_eval.dft.xc["xc_functional pbe"] = {}
-# s.specific.cp2k.force_eval.subsys.kind["S"]["BASIS_SET"] = "DZVP-MOLOPT-SR-GTH-q6"
-# s.specific.cp2k.force_eval.subsys.kind["S"]["POTENTIAL"] = "GTH-PBE-q6"
-# s.specific.cp2k.force_eval.subsys.kind["N"]["BASIS_SET"] = "DZVP-MOLOPT-SR-GTH-q5"
-# s.specific.cp2k.force_eval.subsys.kind["N"]["POTENTIAL"] = "GTH-PBE-q5"
-
-# # =======================
-# # Optimize geometries with CP2k
-# # =======================
-
-# cp2k_jobs = [cp2k(templates.geometry.overlay(s), system, job_name=name_system)
-#              for system, name_system in zip(systems, name_systems)]
-# # =======================
-# # Run the Calculations
-# # =======================
-# energies = gather(*[job.energy for job in cp2k_jobs])
-# molecules = gather(*[job.geometry for job in cp2k_jobs])
-# results_energies_cp2k, result_molecules_cp2k = run(
-#     gather(energies, molecules), folder='/tmp/smiles')
-
-# # ======================
-# # Output the results
-# # ======================
-
-# for name, energy, mol in zip(systems, results_energies_cp2k, result_molecules_cp2k):
-#     print("name: ", name)
-#     print("energy: ", energy)
-#     print("molecule: ", mol)
+def store_results_in_df(results: tuple, path_results: str):
+    """Store the computed properties in the results df."""
+    pass
 
 
-# == == == == == == == == == == == =
-# Single Point Calculation with ADF on geometries optimized with CP2k
-# == == == == == == == == == == == =
-# settings_adf = Settings()
-# settings_adf.input.basis.type = 'TZ2P'
-# settings_adf.input.xc.gga = 'PBE'
-# settings_adf.input.scf.converge = '1.0e-06'
+def compute_properties(smile: str) -> np.array:
+    """Compute properties for the given smile and solvent."""
+    # Create the CP2K job
+    job_cp2k = create_job_cp2k(smile, {smile})
 
-# settings_crs = Settings()
-# settings_crs.input.temperature = 298.15
-# settings_crs.input.property._h = 'activitycoef'
+    # Run the cp2k job
+    energy, optimized_geometry = run(
+        gather(job_cp2k.energy, job_cp2k.geometry), folder="/tmp/smiles")
 
-# settings_adf.runscript.pre = "export SCM_TMPDIR=$PWD"
-# settings_crs.runscript.pre = "export SCM_TMPDIR=$PWD"
+    # Create the ADF JOB
+    crs_dict = create_job_adf(smile, optimized_geometry)
+
+    # extract results
+    delta_g = pd.Series({name: try_to_readkf("delta_g")
+                         for name, results in crs_dict.items()})
+    gammas = pd.Series({name: try_to_readkf("gamma")
+                        for name, results in crs_dict.items()})
+
+    # Add name to the series
+    delta_g.name = "delta_g"
+    gammas.name = "gammas"
+
+    return delta_g, gammas
 
 
-# # ADF optimizations
-# solvents = [Molecule('Toluene.xyz'), Molecule(
-#     'Octadecene.xyz'), Molecule('DOE.xyz'), Molecule('o-xylene.xyz')]
+def create_job_cp2k(smile: str, job_name: str) -> object:
+    """Create a CP2K job object."""
+    # Set path for basis set
+    path_basis = pkg_resources.resource_filename("nac", "basis/BASIS_MOLOPT")
+    path_potential = pkg_resources.resource_filename(
+        "nac", "basis/GTH_POTENTIALS")
 
-# init('/home/frazac/ncligands/simplified/carboxilates')
-# crs_dict = run_crs_adf(settings_adf, settings_crs,
-#                        solvents, result_molecules_cp2k)
-# finish()
+    # Settings specifics
+    s = Settings()
+    s.basis = "DZVP-MOLOPT-SR-GTH"
+    s.potential = "GTH-PBE"
+    s.cell_parameters = None
+    s.specific.cp2k.force_eval.dft.basis_set_file_name = path_basis
+    s.specific.cp2k.force_eval.dft.potential_file_name = path_potential
 
-# property_dict: dict = {name: [results.readkf('ACTIVITYCOEF', 'deltag')[1], results.readkf(
-#     'ACTIVITYCOEF', 'gamma')[1]] for name, results in crs_dict.items()}
+    # Molecular geometry
+    system = from_smiles(smile)
 
-# df: pd.DataFrame = pd.DataFrame(property_dict).T
-# df.columns = ['energy', 'activity coefficient']
+    # Generate kinds for the atom types
+    elements = [x.symbol for x in system.atoms]
+    kinds = generate_kinds(elements, s.basis, s.potential)
 
-# # Export the DataFrame to a .csv file
-# filename: str = 'file.csv'
-# df.to_csv(filename)
+    # Update the setting with the kinds
+    s = s + kinds
+
+    return cp2k(templates.geometry.overlay(s), system, job_name=job_name)
+
+
+def create_job_adf(smile: str, optimized_geometry: Molecule, workdir: str = "tmp/smiles") -> object:
+    """Create a Single Point Calculation with ADF on geometries optimized with CP2k."""
+    settings_adf = Settings()
+    settings_adf.input.basis.type = 'TZ2P'
+    settings_adf.input.xc.gga = 'PBE'
+    settings_adf.input.scf.converge = '1.0e-06'
+
+    settings_crs = Settings()
+    settings_crs.input.temperature = 298.15
+    settings_crs.input.property._h = 'activitycoef'
+
+    settings_adf.runscript.pre = "export SCM_TMPDIR=$PWD"
+    settings_crs.runscript.pre = "export SCM_TMPDIR=$PWD"
+
+    # ADF optimizations
+    solvents_geometries = [from_smiles(smile) for smile in solvents.values()]
+
+    init(workdir)
+    crs_dict = run_crs_adf(settings_adf, settings_crs,
+                           solvents_geometries, optimized_geometry)
+    finish()
+
+    return crs_dict
+
+
+def try_to_readkf(results: object, property_name: str):
+    """Try to read the output from a KF binary file."""
+    try:
+        return results.readkf("ACTIVITYCOEF", property_name)[1]
+    except KeyError:
+        return None
+
+
+def set_logger():
+    """Set logging default behaviour."""
+    file_log = 'output.log'
+    logging.basicConfig(filename=file_log, level=logging.DEBUG,
+                        format='%(asctime)s---%(levelname)s\n%(message)s\n',
+                        datefmt='[%I:%M:%S]')
