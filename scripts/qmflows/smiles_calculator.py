@@ -32,7 +32,8 @@ def set_logger():
     logging.basicConfig(filename=file_log, level=logging.DEBUG,
                         format='%(asctime)s---%(levelname)s\n%(message)s\n',
                         datefmt='[%I:%M:%S]')
-
+    logging.getLogger("noodles").setLevel(logging.WARNING)
+    
 
 def create_multiindex_df() -> pd.DataFrame:
     """Create a multiindex DataFrame to store the compute properties for each smile/solvent."""
@@ -56,6 +57,7 @@ def compute_properties(smile: str) -> np.array:
 
     # Run the cp2k job
     optimized_geometry = run(job_cp2k.geometry, folder="/tmp/cp2k_job")
+
 
     # Create the ADF JOB
     crs_dict = create_job_adf(smile, optimized_geometry)
@@ -106,6 +108,7 @@ def try_to_optimize(smile: str) -> Molecule:
     try:
         # Try to optimize with RDKIT
         mol = Chem.MolFromSmiles(smile)
+        mol = Chem.AddHs(mol) 
         AllChem.EmbedMolecule(mol)
         AllChem.MMFFOptimizeMolecule(mol)
         mol = from_rdmol(mol)
