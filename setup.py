@@ -124,7 +124,7 @@ setup(
     install_requires=[
         'numpy', 'h5py', 'more-itertools', 'noodles==0.3.3', 'pybind11>=2.2.4',
         'scipy', 'schema', 'pyyaml>=5.1',
-        'plams@git+https://github.com/SCM-NV/PLAMS@v1.4',
+        'plams@git+https://github.com/SCM-NV/PLAMS@master',
         'qmflows@git+https://github.com/SCM-NV/qmflows@master'
     ],
     cmdclass={'build_ext': BuildExt},
@@ -151,5 +151,7 @@ setup(
         'scripts/qmflows/rdf.py',
         'scripts/qmflows/removeHDF5folders.py',
         'scripts/qmflows/remove_mos_hdf5.py',
-        'scripts/qmflows/convolution.py']
+        'scripts/qmflows/convolution.py',
+        'scripts/qmflows/smiles_calculator.py',
+    ]
 )
