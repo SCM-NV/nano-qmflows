@@ -21,7 +21,7 @@ from qmflows import Settings, cp2k, run, templates
 logger = logging.getLogger(__name__)
 
 toluene = """
-      15
+15
 
   C        22.4837131643       24.7351093186       24.9999999099
   H        22.0766706594       24.2346804798       25.8886380697
@@ -41,7 +41,7 @@ toluene = """
 """
 
 doe = """
-     51
+51
 
   C        -8.8157539199       -0.5652846174       -1.4422851129
   C        -7.3816134120       -0.2605727486       -0.9849636069
@@ -97,7 +97,7 @@ doe = """
 """
 
 o_xylene = """
-     18
+18
 
   C        -0.8186808571        1.9418110099       -0.1628229717
   C         0.0390072634        0.7039528702       -0.0606226004
@@ -181,8 +181,8 @@ octadecene = """
 # Solvent to compute properties
 names = ["toluene", "o_xylene", "doe", "octadecene"]
 solvents = {name: string_to_plams_Molecule(s)
-                        for name, s in
-                        zip(names, [toluene, o_xylene, doe, octadecene])}
+            for name, s in
+            zip(names, [toluene, o_xylene, doe, octadecene])}
 # Add name to molecule
 for name, mol in solvents.items():
     mol.properties.name = name
@@ -220,7 +220,7 @@ def compute_properties(smile: str, adf_solvents: dict, workdir: str) -> np.array
 
     # extract results
     deltag = pd.Series({name: try_to_readkf(results, "deltag")
-                         for name, results in crs_dict.items()})
+                        for name, results in crs_dict.items()})
     gammas = pd.Series({name: try_to_readkf(results, "gamma")
                         for name, results in crs_dict.items()})
 
@@ -264,7 +264,7 @@ def try_to_optimize_FF(smile: str) -> Molecule:
     try:
         # Try to optimize with RDKIT
         mol = Chem.MolFromSmiles(smile)
-        mol = Chem.AddHs(mol) 
+        mol = Chem.AddHs(mol)
         AllChem.EmbedMolecule(mol)
         AllChem.MMFFOptimizeMolecule(mol)
         mol = from_rdmol(mol)
@@ -282,10 +282,10 @@ def create_setting_adf() -> Settings:
     settings_adf.input.scf.converge = '1.0e-06'
 
     settings_adf = add_solvation_block(settings_adf)
-    
+
     return settings_adf
 
-    
+
 def create_crs_job(smile: str, optimized_geometry: Molecule, adf_solvents: dict, workdir: str) -> object:
     """Create a Single Point Calculation with ADF on geometries optimized with CP2k."""
 
@@ -296,14 +296,15 @@ def create_crs_job(smile: str, optimized_geometry: Molecule, adf_solvents: dict,
 
     # ADF Settings
     settings_adf = create_setting_adf()
-    
+
     settings_adf.runscript.pre = "export SCM_TMPDIR=$PWD"
     settings_crs.runscript.pre = "export SCM_TMPDIR=$PWD"
 
     # ADF CRS JOB
     init(workdir)
     solute = run_adfjob(optimized_geometry, settings_adf)
-    crs_dict = {name: run_crsjob(solvent, settings_crs, solute=solute) for name, solvent in adf_solvents.items()}
+    crs_dict = {name: run_crsjob(solvent, settings_crs, solute=solute)
+                for name, solvent in adf_solvents.items()}
     finish()
 
     return crs_dict
@@ -328,7 +329,7 @@ def create_dataframe(path: str) -> pd.DataFrame:
         idx = pd.MultiIndex.from_tuples([], names=["smile", "property"])
         return pd.DataFrame(columns=solvents.keys(), index=idx)
 
-    
+
 def main(file_path: str, workdir: str):
     """Run script."""
     set_logger()
@@ -343,13 +344,14 @@ def main(file_path: str, workdir: str):
     # Create workdir if it doesn't exist
     if not os.path.exists(workdir):
         os.makedirs(workdir)
-    
+
     # Compute the solvents first
     settings_adf = create_setting_adf()
     init(workdir)
-    adf_solvents = {name: run_adfjob(mol, settings_adf) for name, mol in solvents.items()}
+    adf_solvents = {name: run_adfjob(mol, settings_adf)
+                    for name, mol in solvents.items()}
     finish()
-    
+
     # Compute the properties
     for smile in df_smiles["smiles"]:
         logger.info(f"computing: {smile}")
