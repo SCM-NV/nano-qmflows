@@ -1,10 +1,13 @@
 # Change Log
 
-# 0.8.2 [25/11/19]
+# 0.8.2 [31/01/20]
 
 ## Changed
 
 * Replace `qmflows.utils` with [more-itertools](https://more-itertools.readthedocs.io/en/stable/index.html)
+
+## Added
+* [smiles_calculator](https://github.com/SCM-NV/qmflows-namd/blob/master/scripts/qmflows/smiles_calculator.py) script to compute molecular properties from smiles.
 
 # 0.8.1 [17/10/19]
 

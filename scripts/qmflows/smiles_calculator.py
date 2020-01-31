@@ -214,8 +214,7 @@ def compute_properties(smile: str, adf_solvents: dict, workdir: str) -> np.array
     job_cp2k = create_job_cp2k(smile, smile)
 
     # Run the cp2k job
-    # optimized_geometry = run(job_cp2k.geometry, folder="/tmp/cp2k_job")
-    optimized_geometry = try_to_optimize_FF(smile)
+    optimized_geometry = run(job_cp2k.geometry, folder="/tmp/cp2k_job")
 
     # Create the ADF JOB
     crs_dict = create_crs_job(smile, optimized_geometry, adf_solvents, workdir)
@@ -290,7 +289,6 @@ def create_setting_adf() -> Settings:
 
 def create_crs_job(smile: str, optimized_geometry: Molecule, adf_solvents: dict, workdir: str) -> object:
     """Create a Single Point Calculation with ADF on geometries optimized with CP2k."""
-
     # CRS job setting
     settings_crs = Settings()
     settings_crs.input.temperature = 298.15
@@ -318,12 +316,12 @@ def try_to_readkf(results: object, property_name: str):
         results = results.readkf("ACTIVITYCOEF", property_name)[1]
     except (KeyError, TypeError):
         results = None
-    
+
     return results
 
 
 def create_dataframe(path: str) -> pd.DataFrame:
-    """Read csv file if path exists otherwise create empty dataframe"""
+    """Read csv file if path exists otherwise create empty dataframe."""
     if os.path.exists(path):
         df = pd.read_csv(path)
         df.set_index(["smile", "property"], drop=True, inplace=True)
@@ -343,20 +341,24 @@ def read_or_compute_solvents(workdir: str):
         init(path_solvents)
         # Run the ADF job
         settings_adf = create_setting_adf()
-        adf_solvents = {name: run_adfjob(mol, settings_adf) for name, mol in solvents.items()}
+        adf_solvents = {name: run_adfjob(mol, settings_adf)
+                        for name, mol in solvents.items()}
         finish()
     else:
         init(workdir)
-        logger.info(f"Solvents are already computed and available at: {path_solvents}")
+        logger.info(
+            f"Solvents are already computed and available at: {path_solvents}")
         path = Path(path_solvents) / "plams_workdir"
-        dill_files = {x: next(path.glob(f"*.{x}/*.dill")).as_posix() for x in names}
-        adf_solvents = {name: load(file_name).results for name, file_name in dill_files.items()}
+        dill_files = {x: next(path.glob(f"*.{x}/*.dill")).as_posix()
+                      for x in names}
+        adf_solvents = {name: load(
+            file_name).results for name, file_name in dill_files.items()}
         print("dill_files: ", dill_files)
         finish()
-        
+
     return adf_solvents
 
-    
+
 def main(file_path: str, workdir: str):
     """Run script."""
     set_logger()
@@ -374,7 +376,7 @@ def main(file_path: str, workdir: str):
 
     # Read the solvents data if available otherwise compute it from scratch
     adf_solvents = read_or_compute_solvents(workdir)
-    
+
     # Compute the properties
     for smile in df_smiles["smiles"]:
         logger.info(f"computing: {smile}")
