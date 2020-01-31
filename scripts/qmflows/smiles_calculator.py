@@ -209,14 +209,25 @@ def store_results_in_df(smile: str, results: namedtuple, df_results: pd.DataFram
     df_results.to_csv(path_results)
 
 
-def compute_properties(smile: str, adf_solvents: dict, workdir: str) -> np.array:
+def store_optimized_molecule(smile: str, optimized_geometry: Molecule, path_optimized: str):
+    """Store the xyz molecular geometry."""
+    path_smile = f"{path_optimized}/{smile}"
+    if not os.path.exists(path_smile):
+        os.mkdir(path_smile)
+    with open(f"{path_smile}/geometry.xyz", 'w') as f:
+        optimized_geometry.writexyz(f)
+
+    
+def compute_properties(smile: str, adf_solvents: dict, workdir: str, path_optimized: str) -> np.array:
     """Compute properties for the given smile and solvent."""
     # Create the CP2K job
     job_cp2k = create_job_cp2k(smile, smile, workdir)
 
     # Run the cp2k job
     optimized_geometry = run(job_cp2k.geometry, folder=workdir)
-
+    store_optimized_molecule(smile, optimized_geometry, path_optimized)
+    logger.info(f"{smile} has been optimized with CP2K")
+    
     # Create the ADF JOB
     crs_dict = create_crs_job(smile, optimized_geometry, adf_solvents, workdir)
 
@@ -378,8 +389,13 @@ def main(file_path: str, workdir: str):
 
     # Create workdir if it doesn't exist
     if not os.path.exists(workdir):
-        os.makedirs(workdir)
+        os.mkdir(workdir)
 
+    # Create folder to store the cp2k optimize molecules
+    path_optimized = "optimized_molecules"
+    if not os.path.exists(path_optimized):
+        os.mkdir(path_optimized)
+        
     # Read the solvents data if available otherwise compute it from scratch
     adf_solvents = read_or_compute_solvents(workdir)
 
@@ -389,7 +405,7 @@ def main(file_path: str, workdir: str):
         if smile in df_results.index:
             logger.info(f"properties of {smile} are already store!")
         else:
-            results = compute_properties(smile, adf_solvents, workdir)
+            results = compute_properties(smile, adf_solvents, workdir, path_optimized)
             store_results_in_df(smile, results, df_results, path_results)
 
 
