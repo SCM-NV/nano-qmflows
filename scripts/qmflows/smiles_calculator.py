@@ -5,6 +5,7 @@ import logging
 import os
 from collections import namedtuple
 from pathlib import Path
+from copy import deepcopy
 
 import numpy as np
 import pandas as pd
@@ -211,10 +212,10 @@ def store_results_in_df(smile: str, results: namedtuple, df_results: pd.DataFram
 def compute_properties(smile: str, adf_solvents: dict, workdir: str) -> np.array:
     """Compute properties for the given smile and solvent."""
     # Create the CP2K job
-    job_cp2k = create_job_cp2k(smile, smile)
+    job_cp2k = create_job_cp2k(smile, smile, workdir)
 
     # Run the cp2k job
-    optimized_geometry = run(job_cp2k.geometry, folder="/tmp/cp2k_job")
+    optimized_geometry = run(job_cp2k.geometry, folder=workdir)
 
     # Create the ADF JOB
     crs_dict = create_crs_job(smile, optimized_geometry, adf_solvents, workdir)
@@ -228,7 +229,7 @@ def compute_properties(smile: str, adf_solvents: dict, workdir: str) -> np.array
     return Result(gammas, deltag)
 
 
-def create_job_cp2k(smile: str, job_name: str) -> object:
+def create_job_cp2k(smile: str, job_name: str, workdir: str) -> object:
     """Create a CP2K job object."""
     # Set path for basis set
     path_basis = pkg_resources.resource_filename("nac", "basis/BASIS_MOLOPT")
@@ -247,20 +248,21 @@ def create_job_cp2k(smile: str, job_name: str) -> object:
     s.specific.cp2k.force_eval.dft.xc["xc_functional"] = {}
 
     # Molecular geometry
-    system = try_to_optimize_FF(smile)
-
+    system_name = try_to_optimize_FF(smile, workdir)
+    mol = Molecule(system_name)
+    
     # Generate kinds for the atom types
-    elements = [x.symbol for x in system.atoms]
+    elements = [x.symbol for x in mol.atoms]
     kinds = generate_kinds(elements, s.basis, s.potential)
 
     # Update the setting with the kinds
     sett = templates.geometry.overlay(s)
     sett.specific = sett.specific + kinds
 
-    return cp2k(sett, system, job_name="cp2k_opt")
+    return cp2k(sett, mol, job_name="cp2k_opt")
 
 
-def try_to_optimize_FF(smile: str) -> Molecule:
+def try_to_optimize_FF(smile: str, workdir: str) -> Molecule:
     """Try to optimize the molecule with a force field."""
     try:
         # Try to optimize with RDKIT
@@ -272,7 +274,12 @@ def try_to_optimize_FF(smile: str) -> Molecule:
     except:
         mol = from_smiles(smile)
 
-    return mol
+    file_path = f"{workdir}/tmp.xyz"
+    with open(file_path, 'w') as f:
+        mol.writexyz(f)
+
+    # Pass a path otherwise there is a problem trying to copy
+    return file_path
 
 
 def create_setting_adf() -> Settings:
@@ -353,7 +360,6 @@ def read_or_compute_solvents(workdir: str):
                       for x in names}
         adf_solvents = {name: load(
             file_name).results for name, file_name in dill_files.items()}
-        print("dill_files: ", dill_files)
         finish()
 
     return adf_solvents
