@@ -78,9 +78,11 @@ def distribute_computations(config: dict, hamiltonians=False) -> None:
         config.path_traj_xyz, config.blocks, config.workdir)
     chunks_trajectory.sort()
 
-    file_cell_parameters = config.cp2k_general_settings.get("file_cell_parameters")
+    file_cell_parameters = config.cp2k_general_settings.get(
+        "file_cell_parameters")
     if file_cell_parameters is not None:
-        header_array_cell_parameters = read_cell_parameters_as_array(file_cell_parameters)
+        header_array_cell_parameters = read_cell_parameters_as_array(
+            file_cell_parameters)
 
     for index, file_xyz in enumerate(chunks_trajectory):
         folder_path = os.path.abspath(join(config.workdir, f'chunk_{index}'))
@@ -96,14 +98,17 @@ def distribute_computations(config: dict, hamiltonians=False) -> None:
         config["path_traj_xyz"] = file_xyz
 
         if file_cell_parameters is not None:
-            add_chunk_cell_parameters(header_array_cell_parameters, config, dict_input)
+            add_chunk_cell_parameters(
+                header_array_cell_parameters, config, dict_input)
 
         # files with PYXAID
         if hamiltonians:
-            dict_input.hamiltonians_dir = join(config.scratch_path, 'hamiltonians')
+            dict_input.hamiltonians_dir = join(
+                config.scratch_path, 'hamiltonians')
 
         # number of geometries per batch
-        dict_input.dim_batch = compute_number_of_geometries(join(folder_path, file_xyz))
+        dict_input.dim_batch = compute_number_of_geometries(
+            join(folder_path, file_xyz))
 
         # Write input file
         write_input(folder_path, config)
@@ -140,19 +145,18 @@ def write_input(folder_path: str, config: dict) -> None:
         del config[k]
 
     # rename the workflow to execute
+    dict_distribute = {"distribute_derivative_couplings": "derivative_couplings",
+                       "distribute_absorption_spectrum": "absorption_spectrum",
+                       "distribute_single_points": "single_points"
+                       }
     workflow_type = config["workflow"].lower()
-    if workflow_type == "distribute_derivative_couplings":
-        config['workflow'] = "derivative_couplings"
-    elif workflow_type == "distribute_absorption_spectrum":
-        config['workflow'] = "absorption_spectrum"
+    config['workflow'] = dict_distribute[workflow_type]
     with open(file_path, "w") as f:
         yaml.dump(config, f, default_flow_style=False, allow_unicode=True)
 
 
 def create_folders(config: dict, dict_input: dict):
-    """
-    Create folder for each batch and copy the xyz
-    """
+    """Create folder for each batch and copy the xyz."""
     # Move xyz to temporal file
     os.makedirs(dict_input.folder_path, exist_ok=True)
     shutil.move(dict_input.file_xyz, dict_input.folder_path)
@@ -163,9 +167,7 @@ def create_folders(config: dict, dict_input: dict):
 
 
 def write_slurm_script(config: dict, dict_input: dict):
-    """
-    write an Slurm launch script
-    """
+    """write an Slurm launch script."""
     index = dict_input.index
     python = "\n\nrun_workflow.py -i input.yml\n"
     results_dir = "results_chunk_" + str(index)
@@ -191,9 +193,7 @@ def write_slurm_script(config: dict, dict_input: dict):
 
 
 def format_slurm_parameters(slurm):
-    """
-    Format as a string some SLURM parameters
-    """
+    """Format as a string some SLURM parameters."""
     sbatch = "#SBATCH -{} {}\n".format
 
     header = "#! /bin/bash\n"
@@ -209,9 +209,7 @@ def format_slurm_parameters(slurm):
 
 
 def compute_number_of_geometries(file_name):
-    """
-    Count the number of geometries in XYZ formant in a given file.
-    """
+    """Count the number of geometries in XYZ formant in a given file."""
 
     with open(file_name, 'r') as f:
         numat = int(f.readline())
@@ -226,10 +224,9 @@ def compute_number_of_geometries(file_name):
 
 def add_chunk_cell_parameters(
         header_array_cell_parameters: tuple, config: dict, dict_input: dict) -> None:
-    """
-    Add the corresponding set of cell parameters for a given chunk
-    """
-    path_file_cell_parameters = join(dict_input.folder_path, "cell_parameters.txt")
+    """Add the corresponding set of cell parameters for a given chunk."""
+    path_file_cell_parameters = join(
+        dict_input.folder_path, "cell_parameters.txt")
 
     # Adjust settings
     config.cp2k_general_settings["file_cell_parameters"] = path_file_cell_parameters
@@ -250,7 +247,8 @@ def add_chunk_cell_parameters(
     matrix_cell_parameters[:, 0] = np.arange(size)
     # Save file
     fmt = '%d %.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f %.8f'
-    np.savetxt(path_file_cell_parameters, matrix_cell_parameters, header=header, fmt=fmt)
+    np.savetxt(path_file_cell_parameters,
+               matrix_cell_parameters, header=header, fmt=fmt)
 
 
 if __name__ == "__main__":
