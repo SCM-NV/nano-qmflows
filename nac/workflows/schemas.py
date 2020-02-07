@@ -240,6 +240,8 @@ dict_single_points = {
     "workflow": And(
         str, Use(str.lower), lambda s: any(s == x for x in ("single_points", "ipr_calculation", "coop_calculation"))),
 
+    Optional("compute_orbitals", default=True): bool,
+
     # General settings
     "cp2k_general_settings": schema_cp2k_general_settings
 }

@@ -111,7 +111,10 @@ def add_missing_keywords(d: Dict) -> Dict:
             general['charge'])
 
     # Added_mos keyword
-    add_mo_index_range(d)
+    if d.get('compute_orbitals'):
+        add_mo_index_range(d)
+    else:
+        logger.info("Orbitals are neither print nor store!")
 
     # Add restart point
     add_restart_point(general)
