@@ -1,7 +1,7 @@
 workflow:
   single_points
 project_name: pbe_C
-
+compute_orbitals: True
 active_space: [2, 2]
 path_hdf5: "test/test_files/ethylene.hdf5"
 path_traj_xyz: "test/test_files/ethylene.xyz"

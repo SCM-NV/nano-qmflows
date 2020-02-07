@@ -1,3 +1,4 @@
+"""Workflow to perform single point calculation in a trajectory."""
 
 __all__ = ['workflow_single_points']
 
@@ -13,8 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 def workflow_single_points(config: dict) -> list:
-    """
-    Single point calculations for a given trajectory
+    """Perform single point calculations for a given trajectory.
 
     :param workflow_settings: Arguments to run the single points calculations see:
     `nac/workflows/schemas.py

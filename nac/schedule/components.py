@@ -26,12 +26,12 @@ logger = logging.getLogger(__name__)
 
 
 def calculate_mos(config: dict) -> list:
-    """
-    Look for the MO in the HDF5 file if they do not exists calculate them by
-    splitting the jobs in batches given by the ``restart_chunk`` variables.
-    Only the first job is calculated from scratch while the rest of the
-    batch uses as guess the wave function of the first calculation in
-    the batch.
+    """Look for the MO in the HDF5 file and compute them if they are not present.
+
+    The orbitals are computed  by splitting the jobs in batches given by
+    the ``restart_chunk`` variables. Only the first job is calculated from scratch
+    while the rest of the batch uses as guess the wave function of the first calculation
+    inthe batch.
 
     The config dict contains:
 
@@ -106,7 +106,10 @@ def calculate_mos(config: dict) -> list:
             promise_qm = schedule_check(promise_qm, config, dict_input)
 
             # Store the computation
-            orbitals.append(store_MOs(config, dict_input, promise_qm))
+            if config["compute_orbitals"]:
+                orbitals.append(store_MOs(config, dict_input, promise_qm))
+            else:
+                orbitals.append(None)
             energies.append(store_enery(config, dict_input, promise_qm))
 
             guess_job = promise_qm
