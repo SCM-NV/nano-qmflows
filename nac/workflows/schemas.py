@@ -81,7 +81,7 @@ schema_cp2k_general_settings = Schema({
 dict_general_options = {
 
     # Number of occupied/virtual orbitals to use
-    'active_space': And(list, lambda xs: len(xs) == 2),
+    Optional('active_space', default=[10, 10]): And(list, lambda xs: len(xs) == 2),
 
     # Index of the HOMO
     Optional("nHOMO"): int,
