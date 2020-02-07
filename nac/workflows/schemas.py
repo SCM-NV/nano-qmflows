@@ -124,6 +124,9 @@ dict_general_options = {
     # Integration time step used for the MD (femtoseconds)
     Optional("dt", default=1): Real,
 
+    # Deactivate the computation of the orbitals for debugging purposes
+    Optional("compute_orbitals", default=True): bool,
+
     # General settings
     "cp2k_general_settings": schema_cp2k_general_settings
 }
@@ -239,8 +242,6 @@ dict_single_points = {
     # Name of the workflow to run
     "workflow": And(
         str, Use(str.lower), lambda s: any(s == x for x in ("single_points", "ipr_calculation", "coop_calculation"))),
-
-    Optional("compute_orbitals", default=True): bool,
 
     # General settings
     "cp2k_general_settings": schema_cp2k_general_settings
