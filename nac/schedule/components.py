@@ -84,7 +84,11 @@ def calculate_mos(config: dict) -> list:
 
         # If the MOs are already store in the HDF5 format return the path
         # to them and skip the calculation
-        if is_data_in_hdf5(config.path_hdf5, dict_input["node_MOs"]):
+        if config["compute_orbitals"]:
+            predicate = dict_input["node_MOs"]
+        else:
+            predicate = dict_input["node_energy"]
+        if is_data_in_hdf5(config.path_hdf5, predicate):
             logger.info(f"point_{k} has already been calculated")
             orbitals.append(dict_input["node_MOs"])
         else:
