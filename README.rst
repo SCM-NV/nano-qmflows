@@ -4,8 +4,8 @@
    :target: https://www.codacy.com/app/tifonzafel/nonAdiabaticCoupling?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=felipeZ/nonAdiabaticCoupling&amp;utm_campaign=Badge_Grade
 .. image:: https://readthedocs.org/projects/qmflows-namd/badge/?version=latest
    :target: https://qmflows-namd.readthedocs.io/en/latest/?badge=latest
-.. image:: https://zenodo.org/badge/60843787.svg
-   :target: https://zenodo.org/badge/latestdoi/60843787
+.. image:: https://zenodo.org/badge/DOI/10.5281/zenodo.3661036.svg
+   :target: https://doi.org/10.5281/zenodo.3661036
 .. image:: https://github.com/SCM-NV/qmflows-namd/workflows/build%20with%20conda/badge.svg
    :target: https://github.com/SCM-NV/qmflows-namd/actions
 .. image:: https://api.codacy.com/project/badge/Coverage/2bb0085352354caa9dd2ca655c2a8db3
