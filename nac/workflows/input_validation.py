@@ -95,8 +95,12 @@ def apply_templates(general: Dict, path_traj_xyz: str) -> None:
         val = s['specific']
 
         if "template" in val:
-            s['specific'] = create_settings_from_template(
+            cp2k_template = create_settings_from_template(
                 general, val['template'], path_traj_xyz)
+            # remove template
+            del s['specific']['template']
+            # Add other keywords
+            s['specific'] = cp2k_template.overlay(s['specific'])
 
 
 def add_missing_keywords(d: Dict) -> Dict:

@@ -43,8 +43,6 @@ def prepare_cp2k_settings(settings: object, dict_input: dict, guess_job: object)
     # Global parameters for CP2K
     settings.specific.cp2k['global']['project'] = f'point_{dict_input["k"]}'
 
-    settings.specific.cp2k['global']['run_type'] = 'Energy'
-
     if guess_job is not None:
         dft.wfn_restart_file_name = try_to_read_wf(
             guess_job.archive['plams_dir'])

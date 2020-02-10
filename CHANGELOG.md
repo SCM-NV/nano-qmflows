@@ -1,5 +1,10 @@
 # Change Log
 
+# 0.8.3
+
+## Changed
+* Add the global run_type  keyword in the templates
+
 # 0.8.2 [31/01/20]
 
 ## Changed

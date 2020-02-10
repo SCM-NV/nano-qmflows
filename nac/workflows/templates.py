@@ -39,6 +39,9 @@ def generate_auxiliar_basis(sett: Settings, auxiliar_basis: str, quality: str) -
 
 cp2k_pbe_guess = Settings(yaml.load("""
 cp2k:
+  global:
+    run_type:
+      energy
   force_eval:
     subsys:
       cell:
@@ -58,6 +61,10 @@ cp2k:
 
 cp2k_pbe_main = Settings(yaml.load("""
 cp2k:
+  global:
+    run_type:
+      energy
+
   force_eval:
     subsys:
       cell:
@@ -73,6 +80,10 @@ cp2k:
 
 cp2k_pbe0_guess = Settings(yaml.load("""
 cp2k:
+   global:
+     run_type:
+       energy
+
    force_eval:
      subsys:
        cell:
@@ -114,6 +125,10 @@ cp2k:
 
 cp2k_pbe0_main = Settings(yaml.load("""
 cp2k:
+   global:
+     run_type:
+       energy
+
    force_eval:
      subsys:
        cell:
@@ -148,6 +163,10 @@ cp2k:
 
 cp2k_hse06_guess = Settings(yaml.load("""
 cp2k:
+   global:
+     run_type:
+       energy
+
    force_eval:
      subsys:
        cell:
@@ -192,6 +211,10 @@ cp2k:
 
 cp2k_hse06_main = Settings(yaml.load("""
 cp2k:
+   global:
+     run_type:
+       energy
+
    force_eval:
      subsys:
        cell:
