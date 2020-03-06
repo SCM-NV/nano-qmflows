@@ -199,3 +199,11 @@ intersphinx_mapping = {'https://docs.python.org/': None}
 
 # If true, `todo` and `todoList` produce output, else they produce nothing.
 todo_include_todos = True
+
+# This value contains a list of modules to be mocked up.
+# This is useful when some external dependencies are not met at build time and break the building process.
+# You may only specify the root package of the dependencies themselves and omit the sub-modules:
+autodoc_mock_imports = [
+    'rdkit',
+    'h5py',
+]
