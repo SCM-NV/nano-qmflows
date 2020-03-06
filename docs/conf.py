@@ -206,4 +206,5 @@ todo_include_todos = True
 autodoc_mock_imports = [
     'rdkit',
     'h5py',
+    'Cython'
 ]
