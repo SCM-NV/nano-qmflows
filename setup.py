@@ -131,7 +131,7 @@ setup(
     ext_modules=[ext_pybind],
     extras_require={
         'test': ['coverage', 'pytest>=3.9', 'pytest-cov', 'codacy-coverage'],
-        'doc': ['sphinx', 'sphinx-autodoc-typehints', 'sphinx_rtd_theme', 'nbsphinx']
+        'doc': ['sphinx>=2.1', 'sphinx-autodoc-typehints', 'sphinx_rtd_theme', 'nbsphinx']
     },
     include_package_data=True,
     package_data={
