@@ -7,13 +7,14 @@ __all__ = ['AtomBasisData', 'AtomBasisKey', 'AtomData', 'AtomXYZ',
            'is_data_in_hdf5', 'store_arrays_in_hdf5']
 
 
-import mendeleev
 import os
 from collections import namedtuple
 from itertools import chain
+from pathlib import Path
 from typing import Union
 
 import h5py
+import mendeleev
 import numpy as np
 from scipy.constants import physical_constants
 from scm.plams import Atom, Molecule
@@ -130,7 +131,6 @@ def retrieve_hdf5_data(path_hdf5: str, paths_to_prop: Union[str, list]):
 
     :params path_hdf5: Path to the hdf5 file
     :returns: numerical array
-
     """
     try:
         with h5py.File(path_hdf5, 'r') as f5:
@@ -146,10 +146,10 @@ def retrieve_hdf5_data(path_hdf5: str, paths_to_prop: Union[str, list]):
         raise RuntimeError(msg)
 
 
-def is_data_in_hdf5(path_hdf5, xs):
+def is_data_in_hdf5(path_hdf5: str, xs: str) -> bool:
     """Search if the node exists in the HDF5 file."""
     if os.path.exists(path_hdf5):
-        with h5py.File(path_hdf5, 'r') as f5:
+        with h5py.File(path_hdf5, 'r+') as f5:
             if isinstance(xs, list):
                 return all(path in f5 for path in xs)
             else:
@@ -159,17 +159,24 @@ def is_data_in_hdf5(path_hdf5, xs):
 
 
 def store_arrays_in_hdf5(
-        path_hdf5: str, paths, tensor: np.array, dtype=np.float32, attribute=None) -> None:
-    """Store the corrected overlaps in the HDF5 file."""
+    path_hdf5: str, paths: Union[list, str], tensor: Union[np.array, list],
+        dtype: float = np.float32, attribute: Union[namedtuple, None] = None) -> None:
+    """Store a tensor in the HDF5."""
+    def add_attribute(data_set, k: int = 0):
+        if attribute is not None:
+            dset.attrs[attribute.name] = attribute.value[k]
+
     with h5py.File(path_hdf5, 'r+') as f5:
         if isinstance(paths, list):
             for k, path in enumerate(paths):
                 data = tensor[k]
-                f5.require_dataset(path, shape=np.shape(data),
-                                   data=data, dtype=dtype)
+                dset = f5.require_dataset(path, shape=np.shape(data),
+                                          data=data, dtype=dtype)
+                add_attribute(dset, k)
         else:
-            f5.require_dataset(paths, shape=np.shape(tensor),
-                               data=tensor, dtype=dtype)
+            dset = f5.require_dataset(paths, shape=np.shape(
+                tensor), data=tensor, dtype=dtype)
+            add_attribute(dset)
 
 
 def change_mol_units(mol: list, factor: float = angs2au) -> list:

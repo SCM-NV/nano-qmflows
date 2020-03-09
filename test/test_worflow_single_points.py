@@ -1,14 +1,17 @@
-from .utilsTest import (cp2k_available, remove_files)
-from nac.common import is_data_in_hdf5
-from nac.workflows.input_validation import process_input
-from nac.workflows.workflow_single_points import workflow_single_points
+"""Test a single point calculation using CP2K."""
+import os
+import sys
 from os.path import join
+from pathlib import Path
 
 import pkg_resources as pkg
 import pytest
-import os
-import sys
 
+from nac.common import is_data_in_hdf5
+from nac.workflows.input_validation import process_input
+from nac.workflows.workflow_single_points import workflow_single_points
+
+from .utilsTest import cp2k_available, remove_files
 
 # Environment data
 file_path = pkg.resource_filename('nac', '')
@@ -24,6 +27,7 @@ def test_single_point(tmp_path):
     config["scratch_path"] = tmp_path
     tmp_hdf5 = os.path.join(tmp_path, 'single_points.hdf5')
     config['path_hdf5'] = tmp_hdf5
+    Path(tmp_hdf5).touch()
     try:
         path_orbitals, path_energies = workflow_single_points(config)
         print("path_orbitals: ", path_orbitals)
