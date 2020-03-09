@@ -13,6 +13,7 @@ with open(os.path.join(here, '__version__.py')) as f:
 
 
 def readme():
+    """Load readme."""
     with open('README.rst') as f:
         return f.read()
 
@@ -57,8 +58,8 @@ ext_pybind = Extension(
 
 
 def has_flag(compiler, flagname):
-    """Return a boolean indicating whether a flag name is supported on
-    the specified compiler.
+    """Return a boolean indicating whether a flag name is supported on the specified compiler.
+
     As of Python 3.6, CCompiler has a `has_flag` method.
     http: // bugs.python.org/issue26689
     """
@@ -74,6 +75,7 @@ def has_flag(compiler, flagname):
 
 def cpp_flag(compiler):
     """Return the -std=c++[11/14] compiler flag.
+
     The c++14 is prefered over c++11 (when it is available).
     """
     if has_flag(compiler, '-std=c++14'):
@@ -89,6 +91,7 @@ class BuildExt(build_ext):
     """A custom build extension for adding compiler-specific options."""
 
     def build_extensions(self):
+        """Call the funcionality to compile the extension."""
         opts = []
         opts.append('-DVERSION_INFO="%s"' %
                     self.distribution.get_version())

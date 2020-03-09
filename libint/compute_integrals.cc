@@ -6,7 +6,7 @@
  * This module is based on libint, Eigen and pybind11.
  * Copyright (C) 2018-2020 the Netherlands eScience Center.
  */
-#include "namd.h"
+#include "namd.hpp"
 
 namespace py = pybind11;
 using HighFive::Attribute;
@@ -21,16 +21,20 @@ using namd::map_elements;
 using namd::Matrix;
 using std::string;
 
-Matrix compute_integrals_couplings(const string &path_xyz_1,
-                                   const string &path_xyz_2,
-                                   const string &path_hdf5,
-                                   const string &basis_name);
-
 std::vector<Atom> read_xyz_from_file(const string &path_xyz) {
   // Read molecule in XYZ format from file
   std::ifstream input_file(path_xyz);
   return libint2::read_dotxyz(input_file);
 }
+
+/**
+ * \brief Compute the coupling integrals for the 2 given molecular geometries
+ * and basis_name.
+ */
+Matrix compute_integrals_couplings(const string &path_xyz_1,
+                                   const string &path_xyz_2,
+                                   const string &path_hdf5,
+                                   const string &basis_name);
 
 int main() {
 
@@ -47,7 +51,9 @@ int main() {
 namespace libint2 {
 int nthreads = 1;
 
-/// fires off \c nthreads instances of lambda in parallel
+/**
+ * \brief fires off \c nthreads instances of lambda in parallel
+ */
 template <typename Lambda> void parallel_do(Lambda &lambda) {
 #ifdef _OPENMP
 #pragma omp parallel
@@ -69,6 +75,9 @@ template <typename Lambda> void parallel_do(Lambda &lambda) {
 }
 } // namespace libint2
 
+/**
+ * \brief Set the number of thread to use
+ */
 void set_nthread() {
 
   using libint2::nthreads;
@@ -86,13 +95,18 @@ void set_nthread() {
             << " threads" << std::endl;
 }
 
+/**
+ * \brief Get the number of basis
+ */
 size_t nbasis(const std::vector<libint2::Shell> &shells) {
   return std::accumulate(cbegin(shells), cend(shells), 0,
                          [](size_t acc, const libint2::Shell &shell) {
                            return acc + shell.size();
                          });
 }
-
+/**
+ * \brief compute the maximum number of n-primitives
+ */
 size_t max_nprim(const std::vector<libint2::Shell> &shells) {
   size_t n = 0;
   for (const auto &shell : shells)
@@ -100,6 +114,9 @@ size_t max_nprim(const std::vector<libint2::Shell> &shells) {
   return n;
 }
 
+/**
+ * \brief compute the maximum number of l-primitives
+ */
 int max_l(const std::vector<libint2::Shell> &shells) {
 
   int l = 0;
@@ -109,6 +126,9 @@ int max_l(const std::vector<libint2::Shell> &shells) {
   return l;
 }
 
+/**
+ * \brief Count the number of basis functions per shell.
+ */
 std::vector<size_t>
 map_shell_to_basis_function(const std::vector<Shell> &shells) {
   std::vector<size_t> result;
@@ -122,12 +142,12 @@ map_shell_to_basis_function(const std::vector<Shell> &shells) {
 
   return result;
 }
-
+/**
+ * \brief Compute the overlap integrals between two set of shells at different
+ * atomic positions
+ */
 Matrix compute_overlaps_for_couplings(const std::vector<Shell> &shells_1,
                                       const std::vector<Shell> &shells_2) {
-  // Compute the overlap integrals between two set of shells at different
-  // atomic positions
-
   // Distribute the computations among the available threads
   using libint2::nthreads;
 
@@ -270,11 +290,12 @@ std::vector<int> read_basisFormat(const string &basisFormat) {
   return rs;
 }
 
+/**
+ * \brief Read a basis set from HDF5 as a matrix
+ */
 CP2K_Basis_Atom read_basis_from_hdf5(const string &path_file,
                                      const string &symbol,
                                      const string &basis) {
-  // Read a basis set from HDF5 as a matrix
-
   std::vector<std::vector<double>> coefficients;
   std::vector<double> exponents;
   string format;
@@ -306,6 +327,9 @@ CP2K_Basis_Atom read_basis_from_hdf5(const string &path_file,
                          read_basisFormat(format)};
 }
 
+/**
+ * \brief Return a set of unique symbols
+ */
 std::vector<string> get_unique_symbols(const std::vector<Atom> &atoms) {
   // Return a set of unique symbols
   std::vector<int> elements;
@@ -396,10 +420,6 @@ std::vector<Shell> make_cp2k_basis(const std::vector<Atom> &atoms,
 
   return shells;
 }
-/**
- * \brief Compute the overlap integrals for the molecule define in `path_xyz`
- * using  the `basis_name`.
- */
 Matrix compute_integrals_couplings(const string &path_xyz_1,
                                    const string &path_xyz_2,
                                    const string &path_hdf5,
@@ -445,6 +465,9 @@ std::array<double, 3> calculate_center_of_mass(const std::vector<Atom> &atoms) {
   return {rs[0] / m, rs[1] / m, rs[2] / m};
 }
 
+/**
+ * \brief compute the given multipole.
+ */
 std::vector<Matrix> select_multipole(const std::vector<Atom> &atoms,
                                      const std::vector<Shell> &shells,
                                      const string &multipole) {
@@ -469,7 +492,7 @@ Matrix compute_integrals_multipole(const string &path_xyz,
                                    const string &path_hdf5,
                                    const string &basis_name,
                                    const string &multipole) {
-    set_nthread();
+  set_nthread();
   std::vector<Atom> mol = read_xyz_from_file(path_xyz);
 
   auto shells = make_cp2k_basis(mol, path_hdf5, basis_name);
