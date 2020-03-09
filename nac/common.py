@@ -30,11 +30,12 @@ class DictConfig(dict):
         self.__setitem__(key, value)
 
     def __deepcopy__(self, _):
+        """Deepcopy of the Settings object."""
         return DictConfig(self.copy())
 
 
 def concat(xss: iter):
-    """The concatenation of all the elements of a list"""
+    """Concatenate of all the elements of a list."""
     return list(chain(*xss))
 
 
@@ -125,7 +126,7 @@ def xc(s: str) -> dict:
         'cam-b3lyp': {
             'type': 'rhs', 'alpha1': 1.86, 'alpha2': 0.00, 'ax': 0.38, 'beta1': 0.90, 'beta2': 0},
         'lc-blyp': {
-            'type': 'rhs',  'alpha1': 8.0, 'alpha2': 0.00, 'ax': 0.53, 'beta1': 4.50, 'beta2': 0},
+            'type': 'rhs', 'alpha1': 8.0, 'alpha2': 0.00, 'ax': 0.53, 'beta1': 4.50, 'beta2': 0},
         'wb97': {
             'type': 'rhs', 'alpha1': 8.0, 'alpha2': 0.00, 'ax': 0.61, 'beta1': 4.41, 'beta2': 0.0}}
     return d[s]

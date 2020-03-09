@@ -9,12 +9,14 @@ import subprocess
 import tempfile
 from os.path import join
 from subprocess import PIPE, Popen
+from typing import Union
 
 import h5py
 import numpy as np
 import pkg_resources
 
 import nac
+from pathlib import Path
 from nac.common import (Matrix, change_mol_units, is_data_in_hdf5,
                         retrieve_hdf5_data)
 from nac.schedule.components import create_point_folder, split_file_geometries
@@ -27,29 +29,26 @@ logger = logging.getLogger(__name__)
 
 
 def initialize(config: dict) -> dict:
-    """
-    Initialize all the data required to schedule the workflows associated with
-    the nonadaibatic coupling
-    """
+    """Initialize all the data required to schedule the workflows."""
     log_config(config)
 
     # Scratch folder
-    scratch_path = config["scratch_path"]
+    scratch_path = create_path_option(config["scratch_path"])
     if scratch_path is None:
-        scratch_path = join(tempfile.gettempdir(),
-                            getpass.getuser(), config.project_name)
+        scratch_path = Path(tempfile.gettempdir()) / \
+            getpass.getuser() / config.project_name
         logger.warning(
             f"path to scratch was not defined, using: {scratch_path}")
     config['workdir'] = scratch_path
 
     # If the directory does not exist create it
-    if not os.path.exists(scratch_path):
-        os.makedirs(scratch_path)
+    if not scratch_path.exists():
+        scratch_path.mkdir()
 
     # HDF5 path
-    path_hdf5 = config["path_hdf5"]
+    path_hdf5 = create_path_option(config["path_hdf5"])
     if path_hdf5 is None:
-        path_hdf5 = join(scratch_path, 'quantum.hdf5')
+        path_hdf5 = scratch_path / 'quantum.hdf5'
         logger.warning(
             f"path to the HDF5 was not defined, using: {path_hdf5}")
 
@@ -197,3 +196,8 @@ def log_config(config):
     logger.info(f"qmflows-namd path is: {path}")
     logger.info(f"Working directory is: {workdir}")
     logger.info(f"Data will be stored in HDF5 file: {config.path_hdf5}")
+
+
+def create_path_option(path: str) -> Union[Path, None]:
+    """Create a Path object or return None if path is None."""
+    return Path(path) if path is not None else None

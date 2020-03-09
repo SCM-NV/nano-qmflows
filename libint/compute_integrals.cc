@@ -1,12 +1,11 @@
-// This module contains the implementation of several
-// kind of integrals used for non-adiabatic molecular dynamics,
-// including the overlaps integrals between different geometries
-// And the dipoles and quadrupoles to compute absorption spectra.
-
-// This module is based on libint, Eigen and pybind11.
-
-// Copyright (C) 2019 the Netherlands eScience Center.
-
+/*
+ * This module contains the implementation of several
+ * kind of integrals used for non-adiabatic molecular dynamics,
+ * including the overlaps integrals between different geometries
+ * And the dipoles and quadrupoles to compute absorption spectra.
+ * This module is based on libint, Eigen and pybind11.
+ * Copyright (C) 2018-2020 the Netherlands eScience Center.
+ */
 #include "namd.h"
 
 namespace py = pybind11;
@@ -337,9 +336,11 @@ create_map_symbols_basis(const string &path_hdf5,
   return dict;
 }
 
+/**
+ * \brief Create the shell specification for a given atom.
+ */
 std::vector<Shell> create_shells_for_atom(const CP2K_Basis_Atom &data,
                                           const Atom &atom) {
-  // Create the shell specification for a given atom.
   // The CP2K basis format is defined by a vector of integers, for each atom.
   // For example For the C atom and the Basis DZVP-MOLOPT-GTH the basis format
   // is:
@@ -371,11 +372,12 @@ std::vector<Shell> create_shells_for_atom(const CP2K_Basis_Atom &data,
   return shells;
 }
 
+/**
+ * \brief Make the shell for a CP2K specific basis
+ */
 std::vector<Shell> make_cp2k_basis(const std::vector<Atom> &atoms,
                                    const string &path_hdf5,
                                    const string &basis) {
-  // Make the shell for a CP2K specific basis
-
   std::vector<Shell> shells;
 
   // set of symbols
@@ -394,13 +396,14 @@ std::vector<Shell> make_cp2k_basis(const std::vector<Atom> &atoms,
 
   return shells;
 }
-
+/**
+ * \brief Compute the overlap integrals for the molecule define in `path_xyz`
+ * using  the `basis_name`.
+ */
 Matrix compute_integrals_couplings(const string &path_xyz_1,
                                    const string &path_xyz_2,
                                    const string &path_hdf5,
                                    const string &basis_name) {
-  // Compute the overlap integrals for the molecule define in `path_xyz` using
-  // the `basis_name`
 
   set_nthread();
   std::vector<Atom> mol_1 = read_xyz_from_file(path_xyz_1);
@@ -421,8 +424,10 @@ Matrix compute_integrals_couplings(const string &path_xyz_1,
   return S;
 }
 
+/**
+ * \brief Compute the center of mass for atoms
+ */
 std::array<double, 3> calculate_center_of_mass(const std::vector<Atom> &atoms) {
-  // Compute the center of mass for atoms
   int n = atoms.size();
 
   std::array<double, 3> rs{0, 0, 0};
@@ -456,14 +461,15 @@ std::vector<Matrix> select_multipole(const std::vector<Atom> &atoms,
     throw std::runtime_error("Unkown multipole");
 }
 
+/**
+ * \brief   Compute the overlap integrals for the molecule define in `path_xyz`
+ * using the `basis_name`
+ */
 Matrix compute_integrals_multipole(const string &path_xyz,
                                    const string &path_hdf5,
                                    const string &basis_name,
                                    const string &multipole) {
-  // Compute the overlap integrals for the molecule define in `path_xyz` using
-  // the `basis_name`
-
-  set_nthread();
+    set_nthread();
   std::vector<Atom> mol = read_xyz_from_file(path_xyz);
 
   auto shells = make_cp2k_basis(mol, path_hdf5, basis_name);
