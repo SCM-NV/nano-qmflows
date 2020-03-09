@@ -10,7 +10,6 @@ __all__ = ['AtomBasisData', 'AtomBasisKey', 'AtomData', 'AtomXYZ',
 import os
 from collections import namedtuple
 from itertools import chain
-from pathlib import Path
 from typing import Union
 
 import h5py
