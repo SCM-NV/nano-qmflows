@@ -502,8 +502,8 @@ def compute_MNOK_integrals(mol, xc_dft):
     """
     n_atoms = len(mol)
     r_ab = get_r_ab(mol)
-    hardness_vec = np.stack([hardness(mol[i][0])
-                             for i in range(n_atoms)]).reshape(n_atoms, 1)
+    hardness_vec = np.stack([hardness(m[0]) for m in mol]).reshape(n_atoms, 1)
+    print("hardness: ", [m[0].capitalize() for m in mol])
     hard = np.add(hardness_vec, hardness_vec.T)
     beta = xc(xc_dft)['beta1'] + xc(xc_dft)['ax'] * xc(xc_dft)['beta2']
     alpha = xc(xc_dft)['alpha1'] + xc(xc_dft)['ax'] * xc(xc_dft)['alpha2']
