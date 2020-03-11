@@ -1,3 +1,4 @@
+"""Test the IPR workflow."""
 import os
 import sys
 from os.path import join

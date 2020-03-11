@@ -1,4 +1,6 @@
+"""Test the COOP workflow."""
 import os
+import shutil
 import sys
 from os.path import join
 
@@ -17,6 +19,11 @@ def test_workflow_coop(tmp_path):
     """Test the Crystal Orbital Overlap Population workflow."""
     file_path = join(root, 'test/test_files/input_test_coop.yml')
     config = process_input(file_path, 'coop_calculation')
+
+    # create scratch path
+    shutil.copy(config.path_hdf5, tmp_path)
+    config.path_hdf5 = join(tmp_path, "Cd33Se33.hdf5")
+    config.workdir = tmp_path
     try:
         workflow_crystal_orbital_overlap_population(config)
         os.remove("COOP.txt")
