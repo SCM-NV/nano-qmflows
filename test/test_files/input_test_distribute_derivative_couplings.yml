@@ -22,7 +22,6 @@ job_scheduler:
   
 cp2k_general_settings:
   basis:  "DZVP-MOLOPT-SR-GTH"
-  path_basis: "test/test_files"
   potential: "GTH-PBE"
   cell_parameters: 28.0
   file_cell_parameters: "test/test_files/file_distribute_cell_parameters.txt"

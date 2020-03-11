@@ -12,7 +12,6 @@ scratch_path: "/tmp/namd"
   
 cp2k_general_settings:
   basis:  "DZVP-MOLOPT-SR-GTH"
-  path_basis: "test/test_files"
   potential: "GTH-PBE"
   cell_parameters: 5.0
   periodic: none

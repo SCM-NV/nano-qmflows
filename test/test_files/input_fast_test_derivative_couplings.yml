@@ -32,8 +32,7 @@ scratch_path:
   "/tmp/namd/fast_derivative_couplings"
 
 # CP2K Configuration
-cp2k_general_settings:  
-  path_basis: "test/test_files"
+cp2k_general_settings:
   potential: "GTH-PBE"
   basis: "DZVP-MOLOPT-SR-GTH"
   cell_parameters: 10.0
