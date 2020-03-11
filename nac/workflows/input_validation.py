@@ -64,8 +64,7 @@ def process_input(input_file: str, workflow_name: str) -> Dict:
 
 
 def create_settings(d: Dict) -> Dict:
-    """
-    Transform the input dict into Cp2K settings.
+    """Transform the input dict into Cp2K settings.
 
     :param d: input dict
     :return: dictionary with Settings to call Cp2k

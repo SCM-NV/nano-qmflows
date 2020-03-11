@@ -7,51 +7,42 @@ import logging
 import os
 import subprocess
 import tempfile
+from collections import namedtuple
 from os.path import join
+from pathlib import Path
 from subprocess import PIPE, Popen
+from typing import Union
 
-import h5py
 import numpy as np
 import pkg_resources
+from qmflows.parsers import parse_string_xyz
+from qmflows.parsers.cp2KParser import readCp2KBasis
 
 import nac
 from nac.common import (Matrix, change_mol_units, is_data_in_hdf5,
-                        retrieve_hdf5_data)
+                        retrieve_hdf5_data, store_arrays_in_hdf5)
 from nac.schedule.components import create_point_folder, split_file_geometries
-from nac.hdf5_interface import StoreasHDF5
-from qmflows.parsers import parse_string_xyz
-from qmflows.parsers.cp2KParser import readCp2KBasis
 
 # Starting logger
 logger = logging.getLogger(__name__)
 
 
 def initialize(config: dict) -> dict:
-    """
-    Initialize all the data required to schedule the workflows associated with
-    the nonadaibatic coupling
-    """
+    """Initialize all the data required to schedule the workflows."""
     log_config(config)
 
     # Scratch folder
-    scratch_path = config["scratch_path"]
+    scratch_path = create_path_option(config["scratch_path"])
     if scratch_path is None:
-        scratch_path = join(tempfile.gettempdir(),
-                            getpass.getuser(), config.project_name)
+        scratch_path = Path(tempfile.gettempdir()) / \
+            getpass.getuser() / config.project_name
         logger.warning(
             f"path to scratch was not defined, using: {scratch_path}")
     config['workdir'] = scratch_path
 
     # If the directory does not exist create it
-    if not os.path.exists(scratch_path):
-        os.makedirs(scratch_path)
-
-    # HDF5 path
-    path_hdf5 = config["path_hdf5"]
-    if path_hdf5 is None:
-        path_hdf5 = join(scratch_path, 'quantum.hdf5')
-        logger.warning(
-            f"path to the HDF5 was not defined, using: {path_hdf5}")
+    if not scratch_path.exists():
+        scratch_path.mkdir()
 
     # all_geometries type :: [String]
     geometries = split_file_geometries(config["path_traj_xyz"])
@@ -67,8 +58,7 @@ def initialize(config: dict) -> dict:
         config['calculate_guesses'], enumerate_from, len_geometries)
 
     # Generate a list of tuples containing the atomic label
-    # and the coordinates to generate
-    # the primitive CGFs
+    # and the coordinates to generate the primitive CGFs
     atoms = parse_string_xyz(geometries[0])
     if 'angstrom' in config["geometry_units"].lower():
         atoms = change_mol_units(atoms)
@@ -81,34 +71,29 @@ def initialize(config: dict) -> dict:
 
 def save_basis_to_hdf5(config: dict, package_name: str = "cp2k") -> None:
     """Store the specification of the basis set in the HDF5 to compute the integrals."""
-    basis_location = join(package_name, 'basis')
-    with h5py.File(config["path_hdf5"], 'a') as f5:
-        if basis_location not in f5:
-            # Search Path to the file containing the basis set
-            path_basis = pkg_resources.resource_filename(
-                "nac", "basis/BASIS_MOLOPT")
-            store_cp2k_basis(f5, path_basis)
+    path_basis = pkg_resources.resource_filename("nac", "basis/BASIS_MOLOPT")
+    if not is_data_in_hdf5(config.path_hdf5, path_basis):
+        store_cp2k_basis(config.path_hdf5, path_basis)
 
 
-def store_cp2k_basis(file_h5, path_basis):
+def store_cp2k_basis(path_hdf5: str, path_basis: str):
     """Read the CP2K basis set into an HDF5 file."""
-    stocker = StoreasHDF5(file_h5)
+    # Tuple that contains the name/value for the basis formats
+    BasisFormats = namedtuple("BasisFormats", "name value")
 
     keys, vals = readCp2KBasis(path_basis)
-    pathsExpo = [join("cp2k/basis", xs.atom, xs.basis, "exponents")
-                 for xs in keys]
-    pathsCoeff = [join("cp2k/basis", xs.atom, xs.basis,
-                       "coefficients") for xs in keys]
+    paths_exponents = [join("cp2k/basis", xs.atom, xs.basis, "exponents")
+                       for xs in keys]
+    paths_coefficients = [
+        join("cp2k/basis", xs.atom, xs.basis, "coefficients") for xs in keys]
 
-    for ps, es in zip(pathsExpo, [xs.exponents for xs in vals]):
-        stocker.save_data(ps, es)
+    exponents = [xs.exponents for xs in vals]
+    coefficients = [xs.coefficients for xs in vals]
+    formats = [str(xs.basisFormat) for xs in keys]
 
-    fss = [xs.basisFormat for xs in keys]
-    css = [xs.coefficients for xs in vals]
-
-    # save basis set coefficients and their correspoding format
-    for path, fs, css in zip(pathsCoeff, fss, css):
-        stocker.save_data_attrs("basisFormat", str(fs), path, css)
+    store_arrays_in_hdf5(path_hdf5, paths_exponents, exponents)
+    store_arrays_in_hdf5(path_hdf5, paths_coefficients, coefficients,
+                         attribute=BasisFormats(name="basisFormat", value=formats))
 
 
 def guesses_to_compute(calculate_guesses: str, enumerate_from: int, len_geometries) -> list:
@@ -197,3 +182,8 @@ def log_config(config):
     logger.info(f"qmflows-namd path is: {path}")
     logger.info(f"Working directory is: {workdir}")
     logger.info(f"Data will be stored in HDF5 file: {config.path_hdf5}")
+
+
+def create_path_option(path: str) -> Union[Path, None]:
+    """Create a Path object or return None if path is None."""
+    return Path(path) if path is not None else None

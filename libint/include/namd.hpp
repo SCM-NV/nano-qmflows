@@ -1,3 +1,12 @@
+/*
+ * This module contains the implementation of several
+ * kind of integrals used for non-adiabatic molecular dynamics,
+ * including the overlaps integrals between different geometries
+ * And the dipoles and quadrupoles to compute absorption spectra.
+ * This module is based on libint, Eigen and pybind11.
+ * Copyright (C) 2018-2020 the Netherlands eScience Center.
+ */
+
 #ifndef NAMD_H_
 #define NAMD_H_
 
@@ -31,11 +40,11 @@
 
 namespace namd {
 
+using real_t = libint2::scalar_type;
 // import dense, dynamically sized Matrix type from Eigen;
 // this is a matrix with row-major storage
 // (http://en.wikipedia.org/wiki/Row-major_order) to meet the layout of the
 // integrals returned by the Libint integral library
-using real_t = libint2::scalar_type;
 using Matrix =
     Eigen::Matrix<real_t, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
 
@@ -67,5 +76,4 @@ std::unordered_map<int, std::string> map_elements = {
     {91, "pa"}, {92, "u"},  {93, "np"}, {94, "pu"}, {95, "am"}, {96, "cm"}};
 
 } // namespace namd
-// end namespace
 #endif // NAMD_H_

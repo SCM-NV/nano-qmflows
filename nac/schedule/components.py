@@ -123,9 +123,7 @@ def calculate_mos(config: dict) -> list:
 
 @schedule
 def store_MOs(config: dict, dict_input: dict, promise_qm: object) -> str:
-    """
-    Store the MOs in the HDF5
-    """
+    """Store the MOs in the HDF5."""
     # Molecular Orbitals
     mos = promise_qm.orbitals
 
@@ -171,10 +169,10 @@ def store_enery(config: dict, dict_input: dict, promise_qm: object) -> str:
 
 
 def compute_orbitals(config: dict, dict_input: dict, guess_job) -> list:
-    """
-    Call a Quantum chemisty package to compute the MOs required to calculate
-    the nonadiabatic coupling. When finish store the MOs in the HdF5 and
-    returns a new guess.
+    """Call a Quantum chemisty package to compute the MOs.
+
+    The MO's are required to calculate the nonadiabatic coupling.
+    When finish store the MOs in the HdF5 and returns a new guess.
     """
 
     dict_input["job_files"] = create_file_names(
@@ -205,9 +203,7 @@ def compute_orbitals(config: dict, dict_input: dict, guess_job) -> list:
 @schedule
 def schedule_check(
         promise_qm: object, config: dict, dict_input: dict) -> object:
-    """
-    Check wether a calculation finishes succesfully otherwise run a new guess.
-    """
+    """Check wether a calculation finishes succesfully otherwise run a new guess."""
     job_name = dict_input["job_name"]
     point_dir = dict_input["point_dir"]
 
@@ -239,8 +235,7 @@ def schedule_check(
 
 
 def create_point_folder(work_dir, n, enumerate_from):
-    """
-    Create a new folder for each point in the MD trajectory.
+    """Create a new folder for each point in the MD trajectory.
 
     :returns: Paths lists.
     """
@@ -256,9 +251,7 @@ def create_point_folder(work_dir, n, enumerate_from):
 
 
 def split_file_geometries(pathXYZ: str) -> list:
-    """
-    Reads a set of molecular geometries in xyz format and returns
-    a list of string, where is element a molecular geometry
+    """Reads a set of molecular geometries in xyz format.
 
     :returns: String list containing the molecular geometries.
     """
@@ -271,9 +264,7 @@ def split_file_geometries(pathXYZ: str) -> list:
 
 
 def create_file_names(work_dir: str, i: int):
-    """
-    Creates a namedTuple with the name of the 4 files used
-    for each point in the trajectory
+    """Create a namedTuple with the name of the 4 files used for each point in the trajectory.
 
     :returns: Namedtuple containing the IO files
     """
@@ -289,7 +280,8 @@ def adjust_cell_parameters(
         general: dict,
         array_cell_parameters: Matrix,
         j: int) -> None:
-    """
+    """On the fly cell parameters adjustment.
+
     If the cell parameters change during the MD simulations, adjust them
     for the molecular orbitals computation
     """

@@ -13,6 +13,7 @@ from itertools import chain
 from typing import Union
 
 import h5py
+import mendeleev
 import numpy as np
 from scipy.constants import physical_constants
 from scm.plams import Atom, Molecule
@@ -30,11 +31,12 @@ class DictConfig(dict):
         self.__setitem__(key, value)
 
     def __deepcopy__(self, _):
+        """Deepcopy of the Settings object."""
         return DictConfig(self.copy())
 
 
 def concat(xss: iter):
-    """The concatenation of all the elements of a list"""
+    """Concatenate of all the elements of a list."""
     return list(chain(*xss))
 
 
@@ -54,9 +56,12 @@ angs2au = 1e-10 / physical_constants['atomic unit of length'][0]
 femtosec2au = 1e-15 / physical_constants['atomic unit of time'][0]
 # hartrees to electronvolts
 h2ev = physical_constants['Hartree energy in eV'][0]
-r2meV = 13605.698  # conversion from rydberg to meV
-fs_to_cm = 33356.40952  # conversion from fs to cm-1
-fs_to_nm = 299.79246  # conversion from fs to nm
+# conversion from rydberg to meV
+r2meV = 1e3 * physical_constants['Rydberg constant times hc in eV'][0]
+# conversion from fs to cm-1
+fs_to_cm = 1e13 * physical_constants['hertz-inverse meter relationship'][0]
+# conversion from fs to nm
+fs_to_nm = 299.79246
 # planck constant in eV * fs
 hbar = 1e15 * physical_constants['Planck constant over 2 pi in eV s'][0]
 
@@ -66,26 +71,14 @@ Matrix = np.ndarray
 Tensor3D = np.ndarray
 
 
-def getmass(s: str):
-    d = {'h': 1, 'he': 2, 'li': 3, 'be': 4, 'b': 5, 'c': 6, 'n': 7, 'o': 8,
-         'f': 9, 'ne': 10, 'na': 11, 'mg': 12, 'al': 13, 'si': 14, 'p': 15,
-         's': 16, 'cl': 17, 'ar': 18, 'k': 19, 'ca': 20, 'sc': 21, 'ti': 22,
-         'v': 23, 'cr': 24, 'mn': 25, 'fe': 26, 'co': 27, 'ni': 28, 'cu': 29,
-         'zn': 30, 'ga': 31, 'ge': 32, 'as': 33, 'se': 34, 'br': 35, 'kr': 36,
-         'rb': 37, 'sr': 38, 'y': 39, 'zr': 40, 'nb': 41, 'mo': 42, 'tc': 43,
-         'ru': 44, 'rh': 45, 'pd': 46, 'ag': 47, 'cd': 48, 'in': 49, 'sn': 50,
-         'sb': 51, 'te': 52, 'i': 53, 'xe': 54, 'cs': 55, 'ba': 56, 'la': 57,
-         'ce': 58, 'pr': 59, 'nd': 60, 'pm': 61, 'sm': 62, 'eu': 63, 'gd': 64,
-         'tb': 65, 'dy': 66, 'ho': 67, 'er': 68, 'tm': 69, 'yb': 70, 'lu': 71,
-         'hf': 72, 'ta': 73, 'w': 74, 're': 75, 'os': 76, 'ir': 77, 'pt': 78,
-         'au': 79, 'hg': 80, 'tl': 81, 'pb': 82, 'bi': 83, 'po': 84, 'at': 85,
-         'rn': 86, 'fr': 87, 'ra': 88, 'ac': 89, 'th': 90, 'pa': 91, 'u': 92,
-         'np': 93, 'pu': 94, 'am': 95, 'cm': 96, 'bk': 97, 'cf': 98, 'es': 99,
-         'fm': 100, 'md': 101, 'no': 102, 'lr': 103, 'rf': 104, 'db': 105}
-    return d[s]
+def getmass(s: str) -> int:
+    """Get the atomic mass for a given element s."""
+    element = mendeleev.element(s.capitalize())
+    return element.mass_number
 
 
 def hardness(s: str):
+    """Get the element hardness."""
     d = {
         'h': 6.4299, 'he': 12.5449, 'li': 2.3746, 'be': 3.4968, 'b': 4.619, 'c': 5.7410,
         'n': 6.8624, 'o': 7.9854, 'f': 9.1065, 'ne': 10.2303, 'na': 2.4441, 'mg': 3.0146,
@@ -109,6 +102,7 @@ def hardness(s: str):
 
 
 def xc(s: str) -> dict:
+    """Return the exchange functional composition."""
     d = {
         'pbe': {
             'type': 'pure', 'alpha1': 1.42, 'alpha2': 0.48, 'ax': 0, 'beta1': 0.2, 'beta2': 1.83},
@@ -125,7 +119,7 @@ def xc(s: str) -> dict:
         'cam-b3lyp': {
             'type': 'rhs', 'alpha1': 1.86, 'alpha2': 0.00, 'ax': 0.38, 'beta1': 0.90, 'beta2': 0},
         'lc-blyp': {
-            'type': 'rhs',  'alpha1': 8.0, 'alpha2': 0.00, 'ax': 0.53, 'beta1': 4.50, 'beta2': 0},
+            'type': 'rhs', 'alpha1': 8.0, 'alpha2': 0.00, 'ax': 0.53, 'beta1': 4.50, 'beta2': 0},
         'wb97': {
             'type': 'rhs', 'alpha1': 8.0, 'alpha2': 0.00, 'ax': 0.61, 'beta1': 4.41, 'beta2': 0.0}}
     return d[s]
@@ -136,7 +130,6 @@ def retrieve_hdf5_data(path_hdf5: str, paths_to_prop: Union[str, list]):
 
     :params path_hdf5: Path to the hdf5 file
     :returns: numerical array
-
     """
     try:
         with h5py.File(path_hdf5, 'r') as f5:
@@ -152,10 +145,10 @@ def retrieve_hdf5_data(path_hdf5: str, paths_to_prop: Union[str, list]):
         raise RuntimeError(msg)
 
 
-def is_data_in_hdf5(path_hdf5, xs):
+def is_data_in_hdf5(path_hdf5: str, xs: str) -> bool:
     """Search if the node exists in the HDF5 file."""
     if os.path.exists(path_hdf5):
-        with h5py.File(path_hdf5, 'r') as f5:
+        with h5py.File(path_hdf5, 'r+') as f5:
             if isinstance(xs, list):
                 return all(path in f5 for path in xs)
             else:
@@ -165,21 +158,28 @@ def is_data_in_hdf5(path_hdf5, xs):
 
 
 def store_arrays_in_hdf5(
-        path_hdf5: str, paths, tensor: np.array, dtype=np.float32, attribute=None) -> None:
-    """Store the corrected overlaps in the HDF5 file."""
+    path_hdf5: str, paths: Union[list, str], tensor: Union[np.array, list],
+        dtype: float = np.float32, attribute: Union[namedtuple, None] = None) -> None:
+    """Store a tensor in the HDF5."""
+    def add_attribute(data_set, k: int = 0):
+        if attribute is not None:
+            dset.attrs[attribute.name] = attribute.value[k]
+
     with h5py.File(path_hdf5, 'r+') as f5:
         if isinstance(paths, list):
             for k, path in enumerate(paths):
                 data = tensor[k]
-                f5.require_dataset(path, shape=np.shape(data),
-                                   data=data, dtype=dtype)
+                dset = f5.require_dataset(path, shape=np.shape(data),
+                                          data=data, dtype=dtype)
+                add_attribute(dset, k)
         else:
-            f5.require_dataset(paths, shape=np.shape(tensor),
-                               data=tensor, dtype=dtype)
+            dset = f5.require_dataset(paths, shape=np.shape(
+                tensor), data=tensor, dtype=dtype)
+            add_attribute(dset)
 
 
-def change_mol_units(mol, factor=angs2au):
-    """hange the units of the molecular coordinates.
+def change_mol_units(mol: list, factor: float = angs2au) -> list:
+    """Change the units of the molecular coordinates.
 
     :returns: New XYZ namedtuple
     """
@@ -191,7 +191,7 @@ def change_mol_units(mol, factor=angs2au):
 
 
 def tuplesXYZ_to_plams(xs):
-    """ Transform a list of namedTuples to a Plams molecule """
+    """Transform a list of namedTuples to a Plams molecule."""
     plams_mol = Molecule()
     for at in xs:
         symb = at.symbol
@@ -202,7 +202,7 @@ def tuplesXYZ_to_plams(xs):
 
 
 def number_spherical_functions_per_atom(
-        mol: list, package_name: str, basis_name: str, path_hdf5: str):
+        mol: list, package_name: str, basis_name: str, path_hdf5: str) -> np.array:
     """Compute the number of spherical shells per atom."""
     with h5py.File(path_hdf5, 'r') as f5:
         xs = [f5[f'{package_name}/basis/{atom[0]}/{basis_name}/coefficients']
@@ -215,7 +215,8 @@ def number_spherical_functions_per_atom(
 
 
 def calc_orbital_Slabels(name, fss):
-    """
+    """Calculate the number of spherical basisset.
+
     Most quantum packages use standard basis set which contraction is
     presented usually by a format like:
     c def2-SV(P)

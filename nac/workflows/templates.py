@@ -22,9 +22,9 @@ with open(path_valence_electrons, 'r') as f1, open(path_aux_fit, 'r') as f2:
 
 
 def generate_auxiliar_basis(sett: Settings, auxiliar_basis: str, quality: str) -> Settings:
-    """
-    Generate the `auxiliar_basis` for all the atoms in the `sett` using the
-    `quality` of the auxiliar basis provided by the user.
+    """Generate the `auxiliar_basis` for all the atoms in the `sett`.
+
+    Use the`quality` of the auxiliar basis provided by the user.
     """
     quality_to_number = {"low": 0, "medium": 1,
                          "good": 2, "verygood": 3, "excellent": 4}
