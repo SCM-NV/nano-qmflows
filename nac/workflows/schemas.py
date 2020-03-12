@@ -87,7 +87,7 @@ schema_cp2k_general_settings = Schema({
         any_lambda(("low", "medium", "good", "verygood", "excellent")),
 
     # executable name
-    Optional("cp2k_executable", default="cp2k.popt"): any_lambda(
+    Optional("executable", default="cp2k.popt"): any_lambda(
         [f"cp2k.{ext}" for ext in (
             # Serial single core testing and debugging
             "sdbg",
