@@ -18,6 +18,18 @@ import pkg_resources as pkg
 from schema import And, Optional, Or, Schema, Use
 
 
+def equal_lambda(name: str):
+    """Create an schema checking that the keyword matches the expected value."""
+    return And(
+        str, Use(str.lower), lambda s: s == name)
+
+
+def any_lambda(array: iter):
+    """Create an schema checking that the keyword matches one of the expected values."""
+    return And(
+        str, Use(str.lower), lambda s: s in array)
+
+
 def merge(d1, d2):
     """Merge two dictionaries using without modifying the original."""
     x = d1.copy()
@@ -48,9 +60,7 @@ schema_cp2k_general_settings = Schema({
         lambda xs: len(xs) == 3 and all(len(r) == 3 for r in xs)),
 
     # Type of periodicity
-    "periodic": And(
-        str, Use(str.lower), lambda s: s in (
-            "none", "x", "y", "z", "xy", "xy", "yz", "xyz")),
+    "periodic": any_lambda(("none", "x", "y", "z", "xy", "xy", "yz", "xyz")),
 
     # Specify the angles between the vectors defining the unit cell
     Optional("cell_angles"): list,
@@ -73,9 +83,25 @@ schema_cp2k_general_settings = Schema({
     Optional("file_cell_parameters", default=None): Or(str, None),
 
     # Quality of the auxiliar basis cFIT
-    Optional("aux_fit", default="verygood"): And(
-        str, Use(str.lower), lambda s: s in
-        ("low", "medium", "good", "verygood", "excellent"))
+    Optional("aux_fit", default="verygood"):
+        any_lambda(("low", "medium", "good", "verygood", "excellent")),
+
+    # executable name
+    Optional("cp2k_executable", default="cp2k.popt"): any_lambda(
+        [f"cp2k.{ext}" for ext in (
+            # Serial single core testing and debugging
+            "sdbg",
+            # Serial general single core usage
+            "sopt",
+            # Parallel (only OpenMP), single node, multi core
+            "ssmp",
+            # Parallel (only MPI) multi-node testing and debugging
+            "pdbg",
+            # Parallel (only MPI) general usage, no threads
+            "popt",
+            # parallel (MPI + OpenMP) general usage, threading might improve scalability and memory usage
+            "psmp"
+        )])
 })
 
 dict_general_options = {
@@ -114,12 +140,11 @@ dict_general_options = {
     # Calculate the guess wave function in either the first point of the
     # trajectory or in all
     Optional("calculate_guesses", default="first"):
-    And(str, Use(str.lower), lambda s: s in ("first", "all")),
+    any_lambda(("first", "all")),
 
     # Units of the molecular geometry on the MD file
     Optional("geometry_units", default="angstrom"):
-    And(str, Use(str.lower), lambda s: s in (
-        "angstrom", "au")),
+    any_lambda(("angstrom", "au")),
 
     # Integration time step used for the MD (femtoseconds)
     Optional("dt", default=1): Real,
@@ -133,12 +158,11 @@ dict_general_options = {
 
 dict_derivative_couplings = {
     # Name of the workflow to run
-    "workflow": And(
-        str, Use(str.lower), lambda s: s == "derivative_couplings"),
+    "workflow": equal_lambda("derivative_couplings"),
 
     # Algorithm used to compute the derivative couplings
     Optional("algorithm", default="levine"):
-    And(str, Use(str.lower), lambda s: ("levine", "3points")),
+    any_lambda(("levine", "3points")),
 
     # Use MPI to compute the couplings
     Optional("mpi", default=False): bool,
@@ -160,8 +184,8 @@ schema_derivative_couplings = Schema(
     dict_merged_derivative_couplings)
 
 schema_job_scheduler = Schema({
-    Optional("scheduler", default="SLURM"):
-    And(str, Use(str.upper), lambda s: ("SLURM", "PBS")),
+    Optional("scheduler", default="slurm"):
+    any_lambda(("slurm", "pbs")),
     Optional("nodes", default=1): int,
     Optional("tasks", default=1): int,
     Optional("wall_time", default="01:00:00"): str,
@@ -189,8 +213,7 @@ dict_distribute = {
 dict_distribute_derivative_couplings = {
 
     # Name of the workflow to run
-    "workflow": And(
-        str, Use(str.lower), lambda s: s == "distribute_derivative_couplings")
+    "workflow": equal_lambda("distribute_derivative_couplings")
 }
 
 
@@ -204,8 +227,7 @@ schema_distribute_derivative_couplings = Schema(
 dict_absorption_spectrum = {
 
     # Name of the workflow to run
-    "workflow": And(
-        str, Use(str.lower), lambda s: s == "absorption_spectrum"),
+    "workflow": equal_lambda("absorption_spectrum"),
 
     # Type of TDDFT calculations. Available: sing_orb, stda, stddft
     Optional("tddft", default="stda"): And(
@@ -229,8 +251,7 @@ schema_absorption_spectrum = Schema(dict_merged_absorption_spectrum)
 dict_distribute_absorption_spectrum = {
 
     # Name of the workflow to run
-    "workflow": And(
-        str, Use(str.lower), lambda s: s == "distribute_absorption_spectrum")
+    "workflow": equal_lambda("distribute_absorption_spectrum")
 }
 
 schema_distribute_absorption_spectrum = Schema(
@@ -240,8 +261,7 @@ schema_distribute_absorption_spectrum = Schema(
 
 dict_single_points = {
     # Name of the workflow to run
-    "workflow": And(
-        str, Use(str.lower), lambda s: any(s == x for x in ("single_points", "ipr_calculation", "coop_calculation"))),
+    "workflow": any_lambda(("single_points", "ipr_calculation", "coop_calculation")),
 
     # General settings
     "cp2k_general_settings": schema_cp2k_general_settings
@@ -250,8 +270,7 @@ dict_single_points = {
 dict_distribute_single_points = {
 
     # Name of the workflow to run
-    "workflow": And(
-        str, Use(str.lower), lambda s: s == "distribute_single_points")
+    "workflow": equal_lambda("distribute_single_points")
 }
 
 dict_coop = {

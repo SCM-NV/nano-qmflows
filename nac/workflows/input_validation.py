@@ -61,6 +61,7 @@ def process_input(input_file: str, workflow_name: str) -> Dict:
     except SchemaError as e:
         msg = f"There was an error in the input yaml provided:\n{e}"
         print(msg)
+        raise
 
 
 def create_settings(d: Dict) -> Dict:
