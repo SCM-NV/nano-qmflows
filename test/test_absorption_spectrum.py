@@ -42,6 +42,7 @@ def calculate_oscillators(path_test_hdf5, scratch_path):
         root, 'test/test_files/input_test_absorption_spectrum.yml')
     config = process_input(input_file, 'absorption_spectrum')
     config['path_hdf5'] = path_test_hdf5
+    config['scratch_path'] = scratch_path
     config['workdir'] = scratch_path
     config['path_traj_xyz'] = join(
         root, config.path_traj_xyz)
