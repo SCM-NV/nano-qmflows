@@ -101,7 +101,7 @@ ext_pybind = Extension(
         get_pybind_include(user=True),
         '/usr/include/eigen3'
     ],
-    libraries=['hdf5', 'int2', 'omp'],
+    libraries=['hdf5', 'int2'],
     library_dirs=[conda_lib],
     language='c++')
 
