@@ -24,19 +24,19 @@ def test_compute_oscillators(tmp_path):
 
     # create scratch path
     shutil.copy(path_original_hdf5, tmp_path)
-    path_test_hdf5 = join(tmp_path, "Cd.hdf5")
-    try:
-        # Run the actual test
-        copy_basis_and_orbitals(path_original_hdf5, path_test_hdf5,
-                                project_name)
-        calculate_oscillators(path_test_hdf5, tmp_path)
-        check_properties(path_test_hdf5)
+    for approx in ("sing_orb", "stda"):
+        try:
+            # Run the actual test
+            path_test_hdf5 = join(tmp_path, f"Cd_{approx}.hdf5")
+            copy_basis_and_orbitals(path_original_hdf5, path_test_hdf5,
+                                    project_name)
+            calculate_oscillators(path_test_hdf5, tmp_path, approx)
+            check_properties(path_test_hdf5)
+        finally:
+            remove_files()
 
-    finally:
-        remove_files()
 
-
-def calculate_oscillators(path_test_hdf5, scratch_path):
+def calculate_oscillators(path_test_hdf5: str, scratch_path: str, approx: str):
     """Compute a couple of couplings with the Levine algorithm using precalculated MOs."""
     input_file = join(
         root, 'test/test_files/input_test_absorption_spectrum.yml')
@@ -44,6 +44,7 @@ def calculate_oscillators(path_test_hdf5, scratch_path):
     config['path_hdf5'] = path_test_hdf5
     config['scratch_path'] = scratch_path
     config['workdir'] = scratch_path
+    config['tddft'] = approx
     config['path_traj_xyz'] = join(
         root, config.path_traj_xyz)
 

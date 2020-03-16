@@ -1,30 +1,31 @@
+"""Compute the excited states energies and MO coefficients using the STDDFT approach."""
 __all__ = ['workflow_stddft']
 
-from .tools import number_spherical_functions_per_atom
-from nac.common import (
-    DictConfig, angs2au,  change_mol_units,
-    is_data_in_hdf5, h2ev,
-    hardness, retrieve_hdf5_data,
-    store_arrays_in_hdf5, xc)
+import logging
+from os.path import join
+
+import numpy as np
+from noodles import gather, schedule, unpack
+from qmflows import run
+from qmflows.parsers import parse_string_xyz
+from scipy.linalg import sqrtm
+from scipy.spatial.distance import cdist
+
+from nac.common import (DictConfig, angs2au, change_mol_units, h2ev, hardness,
+                        is_data_in_hdf5, retrieve_hdf5_data,
+                        store_arrays_in_hdf5, xc)
 from nac.integrals.multipole_matrices import get_multipole_matrix
 from nac.schedule.components import calculate_mos
 from nac.workflows.initialization import initialize
-from os.path import join
-from qmflows.parsers import parse_string_xyz
-from qmflows import run
-from noodles import (gather, schedule, unpack)
-from scipy.linalg import sqrtm
-from scipy.spatial.distance import cdist
-import logging
-import numpy as np
+
+from .tools import number_spherical_functions_per_atom
 
 # Starting logger
 logger = logging.getLogger(__name__)
 
 
 def workflow_stddft(config: dict) -> None:
-    """
-    Compute the excited states using simplified TDDFT
+    """Compute the excited states using simplified TDDFT.
 
     :param workflow_settings: Arguments to compute the oscillators see:
     `data/schemas/absorption_spectrum.json
@@ -53,9 +54,9 @@ def workflow_stddft(config: dict) -> None:
 
 
 def compute_excited_states_tddft(config: dict, path_MOs: list, dict_input: dict):
-    """
-    Compute the excited states properties (energy and coefficients) for a given
-    `mo_index_range` using the `tddft` method and `xc_dft` exchange functional.
+    """Compute the excited states properties (energy and coefficients).
+
+    Take a given `mo_index_range`, the `tddft` method and `xc_dft` exchange functional.
     """
     logger.info("Reading energies and mo coefficients")
     # type of calculation
@@ -88,9 +89,9 @@ def compute_excited_states_tddft(config: dict, path_MOs: list, dict_input: dict)
         config, dict_input)
 
 
-def get_omega_xia(config: dict, dict_input: dict):
-    """
-    Search for the multipole_matrices, Omega and xia values in the HDF5,
+def get_omega_xia(config: dict, dict_input: dict) -> tuple:
+    """Search for the multipole_matrices, Omega and xia values in the HDF5.
+
     if they are not available compute and store them.
     """
     tddft = config.tddft.lower()
@@ -118,23 +119,19 @@ def get_omega_xia(config: dict, dict_input: dict):
         return omega, xia
 
 
-def compute_sing_orb(inp: dict):
-    """
-    Single Orbital approximation.
-    """
+def compute_sing_orb(inp: dict) -> tuple:
+    """Single Orbital approximation."""
     energy, nocc, nvirt = [getattr(inp, x)
                            for x in ("energy", "nocc", "nvirt")]
     omega = -np.subtract(
         energy[:nocc].reshape(nocc, 1), energy[nocc:].reshape(nvirt, 1).T).reshape(nocc*nvirt)
-    xia = np.eye(nocc*nvirt)
+    xia = np.eye(nocc * nvirt)
 
     return omega, xia
 
 
 def compute_std_aproximation(config: dict, dict_input: dict):
-    """
-    Compute the oscillator strenght using either the stda or stddft approximations.
-    """
+    """Compute the oscillator strenght using either the stda or stddft approximations."""
     logger.info("Reading or computing the dipole matrices")
 
     # Make a function tha returns in transition density charges
@@ -175,46 +172,35 @@ def compute_std_aproximation(config: dict, dict_input: dict):
             "This is a TDA calculation ! \n Solving the eigenvalue problem")
         omega, xia = np.linalg.eig(a_mat)
     else:
-        msg = "Only the stda method is available"
-        raise RuntimeError(msg)
+        msg = f"The {config.tddft} method has not been implemented"
+        raise NotImplementedError(msg)
 
     return omega, xia
 
 
-def compute_oscillator_strengths(config: dict, inp: dict):
-    """
-    Compute oscillator strengths
+def compute_oscillator_strengths(config: dict, inp: dict) -> np.array:
+    """Compute oscillator strengths.
+
     The formula can be rearranged like this:
     f_I = 2/3 * np.sqrt(2 * omega_I) * sum_ia ( np.sqrt(e_diff_ia) * xia * tdm_x) ** 2 + y^2 + z^2
-
-    :param i: index
-    :param mol: molecular geometry
-    :param tddft: type of calculation
-    :param config: Setting for the current calculation
-    :param energy: energy of the orbitals
-    :param c_ao: coefficients of the molecular orbitals
-    :param nocc: number of occupied orbitals
-    :param nvirt: number of virtual orbitals
-    :param omega: Omega parameter
-    :param multipoles: 3D Tensor with the x,y,z components
     """
     tddft = config.tddft.lower()
     # 1) Get the inp.energy matrix i->a. Size: Inp.Nocc * Inp.Nvirt
     delta_ia = -np.subtract(
         inp.energy[:inp.nocc].reshape(inp.nocc, 1),
-        inp.energy[inp.nocc:].reshape(inp.nvirt, 1).T).reshape(inp.nocc*inp.nvirt)
+        inp.energy[inp.nocc:].reshape(inp.nvirt, 1).T).reshape(inp.nocc * inp.nvirt)
 
     def compute_transition_matrix(matrix):
         if tddft == 'sing_orb':
             tm = np.stack(
                 [np.sum(
                  delta_ia / inp.omega[i] * inp.xia[:, i] * matrix)
-                 for i in range(inp.nocc*inp.nvirt)])
+                 for i in range(inp.nocc * inp.nvirt)])
         else:
             tm = np.stack(
                 [np.sum(
                  np.sqrt(2 * delta_ia / inp.omega[i]) * inp.xia[:, i] * matrix)
-                 for i in range(inp.nocc*inp.nvirt)])
+                 for i in range(inp.nocc * inp.nvirt)])
         return tm
 
     # 2) Compute the transition dipole matrix TDM(i->a)
@@ -241,9 +227,7 @@ def compute_oscillator_strengths(config: dict, inp: dict):
 
 
 def write_output(config: dict, inp: dict):
-    """
-    Write the results using numpy functionality
-    """
+    """Write the results using numpy functionality."""
     output = write_output_tddft(inp)
 
     path_output = join(config.workdir,
@@ -262,7 +246,7 @@ def ex_descriptor(omega, f, xia, n_lowest, c_ao, s, tdm, tqm, nocc, nvirt, mol, 
     ADD DOCUMENTATION
     """
     # Reshape xia
-    xia_I = xia.reshape(nocc, nvirt, nocc*nvirt)
+    xia_I = xia.reshape(nocc, nvirt, nocc * nvirt)
 
     # Transform the transition density matrix into AO basis
     d0I_ao = np.stack(
@@ -322,9 +306,7 @@ def ex_descriptor(omega, f, xia, n_lowest, c_ao, s, tdm, tqm, nocc, nvirt, mol, 
 
 def write_output_descriptors(
         d_exc, d_exc_apprx, d_he, sigma_h, sigma_e, r_eh, binding_ex_apprx, n_lowest, omega, f):
-    """
-    ADD Documentation
-    """
+    """TODO: add Documentation."""
     au2ang = 0.529177249
     ex_output = np.empty((n_lowest, 10))
     ex_output[:, 0] = np.arange(n_lowest) + 1
@@ -342,9 +324,7 @@ def write_output_descriptors(
 
 
 def get_omega(d0I_ao, s, n_lowest):
-    """
-    ADD Documentation
-    """
+    """TODO: add Documentation."""
     return np.stack(
         np.trace(
             np.linalg.multi_dot([d0I_ao[i, :, :].T, s, d0I_ao[i, :, :], s]))
@@ -352,9 +332,7 @@ def get_omega(d0I_ao, s, n_lowest):
 
 
 def get_r_ab(mol):
-    """
-    ADD Documentation
-    """
+    """TODO: add Documentation."""
     coords = np.asarray([atom[1] for atom in mol])
     # Distance matrix between atoms A and B
     r_ab = cdist(coords, coords)
@@ -362,9 +340,7 @@ def get_r_ab(mol):
 
 
 def get_omega_ab(d0I_ao, s, n_lowest, mol, config):
-    """
-    ADD Documentation
-    """
+    """TODO: add Documentation."""
     # Lowdin transformation of the transition density matrix
     n_atoms = len(mol)
     s_sqrt = sqrtm(s)
@@ -392,9 +368,7 @@ def get_omega_ab(d0I_ao, s, n_lowest, mol, config):
 
 
 def get_exciton_positions(d0I_ao, s, moment, n_lowest, carrier):
-    """
-    ADD Documentation
-    """
+    """TODO: add Documentation."""
     def compute_component_hole(k):
         return np.stack(
             np.trace(
@@ -424,9 +398,8 @@ def get_exciton_positions(d0I_ao, s, moment, n_lowest, carrier):
         raise RuntimeError(f"unkown option: {carrier}")
 
 
-# def write_output_tddft(nocc, nvirt, omega, f, d_x, d_y, d_z, xia, e):
 def write_output_tddft(inp: dict):
-    """ Write out as a table in plane text"""
+    """Write out as a table in plane text."""
 
     energy = inp.energy
 
@@ -476,9 +449,7 @@ def write_output_tddft(inp: dict):
 
 
 def transition_density_charges(mol, config, s, c_ao):
-    """
-    ADD Documentation
-    """
+    """TODO: add Documentation."""
     n_atoms = len(mol)
     sqrt_s = sqrtm(s)
     c_mo = np.dot(sqrt_s, c_ao)
@@ -497,9 +468,7 @@ def transition_density_charges(mol, config, s, c_ao):
 
 
 def compute_MNOK_integrals(mol, xc_dft):
-    """
-    ADD Documentation
-    """
+    """TODO: add Documentation."""
     n_atoms = len(mol)
     r_ab = get_r_ab(mol)
     hardness_vec = np.stack([hardness(m[0]) for m in mol]).reshape(n_atoms, 1)
@@ -519,12 +488,11 @@ def compute_MNOK_integrals(mol, xc_dft):
 
 
 def construct_A_matrix_tddft(pqrs_J, pqrs_K, nocc, nvirt, xc_dft, e):
-    """
-    ADD Documentation
-    """
+    """TODO: add Documentation."""
     # This is the exchange integral entering the A matrix.
     #  It is in the format (nocc, nvirt, nocc, nvirt)
-    k_iajb = pqrs_K[:nocc, nocc:, :nocc, nocc:].reshape(nocc*nvirt, nocc*nvirt)
+    k_iajb = pqrs_K[:nocc, nocc:, :nocc, nocc:].reshape(
+        nocc * nvirt, nocc * nvirt)
 
     # This is the Coulomb integral entering in the A matrix.
     # It is in the format: (nocc, nocc, nvirt, nvirt)
@@ -533,14 +501,14 @@ def construct_A_matrix_tddft(pqrs_J, pqrs_K, nocc, nvirt, xc_dft, e):
     # To get the correct order in the A matrix, i.e. (nocc, nvirt, nocc, nvirt),
     # we have to swap axes
     k_ijab = np.swapaxes(k_ijab_tmp, axis1=1, axis2=2).reshape(
-        nocc*nvirt, nocc*nvirt)
+        nocc * nvirt, nocc * nvirt)
 
     # They are in the m x m format where m is the number of excitations = nocc * nvirt
     a_mat = 2 * k_iajb - k_ijab
 
     # Generate a vector with all possible ea - ei energy differences
     e_diff = -np.subtract(
-        e[:nocc].reshape(nocc, 1), e[nocc:].reshape(nvirt, 1).T).reshape(nocc*nvirt)
+        e[:nocc].reshape(nocc, 1), e[nocc:].reshape(nvirt, 1).T).reshape(nocc * nvirt)
     np.fill_diagonal(a_mat, np.diag(a_mat) + e_diff)
 
     return a_mat
