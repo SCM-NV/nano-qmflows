@@ -1,20 +1,19 @@
-# ================> Python Standard  and third-party <==========
-from noodles import schedule  # Workflow Engine
-from os.path import join
+"""Module to configure and run CP2K jobs."""
 
 import fnmatch
 import os
+from os.path import join
 
-# ==================> Internal modules <==========
+from noodles import schedule  # Workflow Engine
 from qmflows import templates
 from qmflows.packages import cp2k
 from qmflows.parsers.xyzParser import string_to_plams_Molecule
 
 
 def try_to_read_wf(path_dir: str) -> str:
-    """
-    Try to get a wave function file from `path_dir`. Raise an error if
-    there is not a wave function file.
+    """Try to get a wave function file from `path_dir`.
+
+    Raise an error if there is not a wave function file.
     """
     xs = os.listdir(path_dir)
     files = list(filter(lambda x: fnmatch.fnmatch(x, '*wfn'), xs))
@@ -26,8 +25,7 @@ def try_to_read_wf(path_dir: str) -> str:
 
 
 def prepare_cp2k_settings(settings: object, dict_input: dict, guess_job: object) -> object:
-    """
-    Fills in the parameters for running a single job in CP2K.
+    """Fill in the parameters for running a single job in CP2K.
 
     :param files: Tuple containing the IO files to run the calculations
     :parameter dict_input: Dictionary contaning the data to
@@ -35,7 +33,7 @@ def prepare_cp2k_settings(settings: object, dict_input: dict, guess_job: object)
     :param k: nth Job
     :param guess_job: Path to *.wfn cp2k file use as restart file.
     :param cp2k_config:  Parameters required by cp2k.
-   :returns: ~qmflows.Settings
+    :returns: ~qmflows.Settings
     """
     dft = settings.specific.cp2k.force_eval.dft
     dft['print']['mo']['filename'] = dict_input["job_files"].get_MO
@@ -58,8 +56,7 @@ def prepare_cp2k_settings(settings: object, dict_input: dict, guess_job: object)
 
 @schedule
 def prepare_job_cp2k(settings: object, dict_input: dict, guess_job: object) -> object:
-    """
-    Fills in the parameters for running a single job in CP2K.
+    """Generate a CP2K job.
 
     :param settings: Settings to run cp2k
     :parameter dict_input: Dictionary contaning the data to complete the settings
@@ -74,6 +71,11 @@ def prepare_job_cp2k(settings: object, dict_input: dict, guess_job: object) -> o
     :returns: ~qmflows.CP2K
     """
     job_settings = prepare_cp2k_settings(settings, dict_input, guess_job)
+
+    # remove keywords not use on the next translation phase
+    for x in ('basis', 'potential'):
+        if x in job_settings:
+            del job_settings[x]
 
     return cp2k(
         job_settings, string_to_plams_Molecule(dict_input["geometry"]),

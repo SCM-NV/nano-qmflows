@@ -1,53 +1,50 @@
-from nac.common import retrieve_hdf5_data
-from nac.workflows.input_validation import process_input
-from nac.workflows import workflow_stddft
+"""Test he absorption spectrum workflows."""
+import os
+import shutil
 from os.path import join
-from .utilsTest import remove_files, copy_basis_and_orbitals
 
 import numpy as np
 import pkg_resources as pkg
-import os
-import tempfile
 
+from nac.common import retrieve_hdf5_data
+from nac.workflows import workflow_stddft
+from nac.workflows.input_validation import process_input
+
+from .utilsTest import copy_basis_and_orbitals, remove_files
 
 # Environment data
 file_path = pkg.resource_filename('nac', '')
 root = os.path.split(file_path)[0]
 
-path_traj_xyz = join(root, 'test/test_files/Cd.xyz')
-path_original_hdf5 = join(root, 'test/test_files/Cd.hdf5')
-project_name = 'Cd'
-input_file = join(root, 'test/test_files/input_test_absorption_spectrum.yml')
-
 
 def test_compute_oscillators(tmp_path):
-    """
-    Compute the oscillator strenght and check the results.
-    """
-    scratch_path = join(tempfile.gettempdir(), 'namd')
-    path_test_hdf5 = tempfile.mktemp(
-        prefix='absorption_spectrum_', suffix='.hdf5', dir=scratch_path)
-    if not os.path.exists(scratch_path):
-        os.makedirs(scratch_path, exist_ok=True)
-    try:
-        # Run the actual test
-        copy_basis_and_orbitals(path_original_hdf5, path_test_hdf5,
-                                project_name)
-        calculate_oscillators(path_test_hdf5, scratch_path)
-        check_properties(path_test_hdf5)
+    """Compute the oscillator strenght and check the results."""
+    project_name = 'Cd'
+    path_original_hdf5 = join(root, 'test/test_files/Cd.hdf5')
 
-    finally:
-        remove_files()
+    # create scratch path
+    shutil.copy(path_original_hdf5, tmp_path)
+    for approx in ("sing_orb", "stda"):
+        try:
+            # Run the actual test
+            path_test_hdf5 = join(tmp_path, f"Cd_{approx}.hdf5")
+            copy_basis_and_orbitals(path_original_hdf5, path_test_hdf5,
+                                    project_name)
+            calculate_oscillators(path_test_hdf5, tmp_path, approx)
+            check_properties(path_test_hdf5)
+        finally:
+            remove_files()
 
 
-def calculate_oscillators(path_test_hdf5, scratch_path):
-    """
-    Compute a couple of couplings with the Levine algorithm
-    using precalculated MOs.
-    """
+def calculate_oscillators(path_test_hdf5: str, scratch_path: str, approx: str):
+    """Compute a couple of couplings with the Levine algorithm using precalculated MOs."""
+    input_file = join(
+        root, 'test/test_files/input_test_absorption_spectrum.yml')
     config = process_input(input_file, 'absorption_spectrum')
     config['path_hdf5'] = path_test_hdf5
+    config['scratch_path'] = scratch_path
     config['workdir'] = scratch_path
+    config['tddft'] = approx
     config['path_traj_xyz'] = join(
         root, config.path_traj_xyz)
 
@@ -55,9 +52,7 @@ def calculate_oscillators(path_test_hdf5, scratch_path):
 
 
 def check_properties(path_test_hdf5):
-    """
-    Check that the tensor stored in the HDF5 are correct.
-    """
+    """Check that the tensor stored in the HDF5 are correct."""
     dipole_matrices = retrieve_hdf5_data(
         path_test_hdf5, 'Cd/multipole/point_0/dipole')
 

@@ -12,11 +12,11 @@ from os.path import join
 
 from more_itertools import chunked
 from noodles import gather, schedule
+from qmflows.warnings_qmflows import SCF_Convergence_Warning
 
 from nac.common import (Matrix, is_data_in_hdf5, read_cell_parameters_as_array,
                         store_arrays_in_hdf5)
 from nac.schedule.scheduleCp2k import prepare_job_cp2k
-from qmflows.warnings_qmflows import SCF_Convergence_Warning
 
 # Tuple contanining file paths
 JobFiles = namedtuple("JobFiles", ("get_xyz", "get_inp", "get_out", "get_MO"))
@@ -251,7 +251,7 @@ def create_point_folder(work_dir, n, enumerate_from):
 
 
 def split_file_geometries(pathXYZ: str) -> list:
-    """Reads a set of molecular geometries in xyz format.
+    """Read a set of molecular geometries in xyz format.
 
     :returns: String list containing the molecular geometries.
     """

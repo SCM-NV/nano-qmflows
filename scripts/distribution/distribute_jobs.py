@@ -15,9 +15,7 @@ import yaml
 
 
 def read_cmd_line():
-    """
-    Read the input file and the workflow name from the command line
-    """
+    """Read the input file and the workflow name from the command line."""
     msg = "distribute_jobs.py -i input.yml"
 
     parser = argparse.ArgumentParser(description=msg)
@@ -29,7 +27,8 @@ def read_cmd_line():
 
 
 def main():
-    """
+    """Distribute the user specified by the user.
+
     THE USER MUST CHANGES THESE VARIABLES ACCORDING TO HER/HIS NEEDS:
       * project_name
       * path to the basis and Cp2k Potential
@@ -45,7 +44,6 @@ def main():
        * tasks        24
        * time   48:00:00
        * name       namd
-
     """
     # command line argument
     input_file = read_cmd_line()
@@ -57,7 +55,6 @@ def main():
     workflow_type = args['workflow'].lower()
     print("calling process_input: ", workflow_type)
     dict_input = process_input(input_file, workflow_type)
-
     # Write scripts to run calculations
     if workflow_type == "distribute_derivative_couplings":
         distribute_computations(dict_input, hamiltonians=True)
@@ -66,9 +63,7 @@ def main():
 
 
 def distribute_computations(config: dict, hamiltonians=False) -> None:
-    """
-    Prepare the computation and write the scripts
-    """
+    """Prepare the computation and write the scripts."""
     # Check if workdir exits otherwise create it
     os.makedirs(config.workdir, exist_ok=True)
 

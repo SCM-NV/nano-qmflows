@@ -19,10 +19,12 @@ def readme():
 
 
 class get_pybind_include:
-    """Helper class to determine the pybind11 include path
+    """Helper class to determine the pybind11 include path.
+
     The purpose of this class is to postpone importing pybind11
     until it is actually installed, so that the ``get_include()``
-    method can be invoked. """
+    method can be invoked.
+    """
 
     def __init__(self, user=False):
         self.user = user
@@ -30,31 +32,6 @@ class get_pybind_include:
     def __str__(self):
         import pybind11
         return pybind11.get_include(self.user)
-
-
-# Set path to the conda libraries
-conda_prefix = os.environ["CONDA_PREFIX"]
-if conda_prefix is None:
-    raise RuntimeError(
-        "No conda module found. A Conda environment is required")
-
-conda_include = join(conda_prefix, 'include')
-conda_lib = join(conda_prefix, 'lib')
-ext_pybind = Extension(
-    'compute_integrals',
-    sources=['libint/compute_integrals.cc'],
-    include_dirs=[
-        # Path to pybind11 headers
-        'libint/include',
-        conda_include,
-        join(conda_include, 'eigen3'),
-        get_pybind_include(),
-        get_pybind_include(user=True),
-        '/usr/include/eigen3'
-    ],
-    libraries=['hdf5', 'int2'],
-    library_dirs=[conda_lib],
-    language='c++')
 
 
 def has_flag(compiler, flagname):
@@ -104,6 +81,30 @@ class BuildExt(build_ext):
         build_ext.build_extensions(self)
 
 
+# Set path to the conda libraries
+conda_prefix = os.environ["CONDA_PREFIX"]
+if conda_prefix is None:
+    raise RuntimeError(
+        "No conda module found. A Conda environment is required")
+
+conda_include = join(conda_prefix, 'include')
+conda_lib = join(conda_prefix, 'lib')
+ext_pybind = Extension(
+    'compute_integrals',
+    sources=['libint/compute_integrals.cc'],
+    include_dirs=[
+        # Path to pybind11 headers
+        'libint/include',
+        conda_include,
+        join(conda_include, 'eigen3'),
+        get_pybind_include(),
+        get_pybind_include(user=True),
+        '/usr/include/eigen3'
+    ],
+    libraries=['hdf5', 'int2'],
+    library_dirs=[conda_lib],
+    language='c++')
+
 setup(
     name='qmflows-namd',
     version=version['__version__'],
@@ -117,7 +118,7 @@ setup(
     long_description_content_type='text/markdown',
     packages=find_packages(),
     classifiers=[
-        'License :: OSI Approved :: MIT License',
+        'License :: OSI Approved :: Apache-2.0',
         'Intended Audience :: Science/Research',
         'programming language :: python :: 3.7',
         'development status :: 4 - Beta',
