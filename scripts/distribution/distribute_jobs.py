@@ -1,17 +1,18 @@
 #!/usr/bin/env python
 
-from nac.common import (DictConfig, read_cell_parameters_as_array)
-from nac.workflows.input_validation import process_input
-from nac.workflows.initialization import split_trajectory
-from os.path import join
-from qmflows.utils import settings2Dict
-
 import argparse
-import numpy as np
 import os
 import shutil
 import subprocess
+from os.path import join
+
+import numpy as np
 import yaml
+
+from nac.common import DictConfig, read_cell_parameters_as_array
+from nac.workflows.initialization import split_trajectory
+from nac.workflows.input_validation import process_input
+from qmflows import Settings
 
 
 def read_cmd_line():
@@ -53,7 +54,6 @@ def main():
 
     # Read and process input
     workflow_type = args['workflow'].lower()
-    print("calling process_input: ", workflow_type)
     dict_input = process_input(input_file, workflow_type)
     # Write scripts to run calculations
     if workflow_type == "distribute_derivative_couplings":
@@ -120,15 +120,11 @@ def distribute_computations(config: dict, hamiltonians=False) -> None:
 
 
 def write_input(folder_path: str, config: dict) -> None:
-    """ Write the python script to compute the PYXAID hamiltonians"""
+    """Write the python script to compute the PYXAID hamiltonians."""
     file_path = join(folder_path, "input.yml")
 
     # transform settings to standard dictionary
-    config = settings2Dict(config)
-    config["cp2k_general_settings"]["cp2k_settings_main"] = settings2Dict(
-        config["cp2k_general_settings"]["cp2k_settings_main"])
-    config["cp2k_general_settings"]["cp2k_settings_guess"] = settings2Dict(
-        config["cp2k_general_settings"]["cp2k_settings_guess"])
+    config = Settings(config).as_dict()
 
     # basis and potential
     config["cp2k_general_settings"]["path_basis"] = os.path.abspath(

@@ -10,7 +10,6 @@ def test_distribute(tmp_path):
     cmd1 = "distribute_jobs.py -i test/test_files/input_test_distribute_derivative_couplings.yml"
     cmd2 = "distribute_jobs.py -i test/test_files/input_test_distribute_absorption_spectrum.yml"
     for cmd in [cmd1, cmd2]:
-        print("testing: ", cmd)
         call_distribute(tmp_path, cmd)
 
 

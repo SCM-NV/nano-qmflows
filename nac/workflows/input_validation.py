@@ -8,7 +8,6 @@ from typing import Dict
 
 import yaml
 from qmflows.settings import Settings
-from qmflows.utils import settings2Dict
 from schema import SchemaError
 from scm.plams import Molecule
 
@@ -267,7 +266,7 @@ def recursive_traverse(val):
     """Check if the value of a key is a Settings instance a transform it to plain dict."""
     if isinstance(val, dict):
         if isinstance(val, Settings):
-            return settings2Dict(val)
+            return val.as_dict()
         else:
             return {k: recursive_traverse(v) for k, v in val.items()}
     else:
