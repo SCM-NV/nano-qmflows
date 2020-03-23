@@ -23,7 +23,7 @@ jobs:
     - run: conda --version
     - run: python --version
     - run: |
-        conda install -c libint==2.4.2 highfive h5py eigen cython rdkit pybind11
+        conda install -c conda-forge libint==2.4.2 highfive h5py eigen cython rdkit pybind11
 
     - name: Install the package
       run: pip install -e .[test]
