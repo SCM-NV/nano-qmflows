@@ -3,6 +3,7 @@ from distutils.spawn import find_executable
 from os.path import join
 import h5py
 from pathlib import Path
+from qmflows.type_hints import PathLike
 import fnmatch
 import shutil
 import os
@@ -33,7 +34,7 @@ def cp2k_available() -> None:
     return path is not None
 
 
-def copy_basis_and_orbitals(source: str, dest, project_name: str) -> None:
+def copy_basis_and_orbitals(source: PathLike, dest, project_name: PathLike) -> None:
     """Copy the Orbitals and the basis set from one the HDF5 to another."""
     keys = [project_name, 'cp2k']
     excluded = ['multipole', 'coupling', 'dipole_matrices',

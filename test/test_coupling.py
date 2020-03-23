@@ -7,7 +7,6 @@ import numpy as np
 from nac.common import is_data_in_hdf5, retrieve_hdf5_data
 from nac.workflows.input_validation import process_input
 from nac.workflows.workflow_coupling import workflow_derivative_couplings
-from qmflows.test_utils import delete_output
 
 from .utilsTest import PATH_TEST, remove_files
 

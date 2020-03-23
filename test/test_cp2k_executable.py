@@ -1,5 +1,4 @@
 """Test the handling of the CP2K executable."""
-import os
 from pathlib import Path
 
 import pytest
@@ -18,8 +17,8 @@ def test_cp2k_executable(tmp_path: PathLike) -> None:
     file_path = PATH_TEST / 'input_test_single_points.yml'
     config = process_input(file_path, 'single_points')
     # tmp files
-    tmp_hdf5 = os.path.join(tmp_path, 'cp2k_executable.hdf5')
-    Path(tmp_hdf5).touch()
+    tmp_hdf5 = Path(tmp_path) / 'cp2k_executable.hdf5'
+    tmp_hdf5.touch()
     config.path_hdf5 = tmp_hdf5
     config.scratch_path = tmp_path
     config.workdir = tmp_path
