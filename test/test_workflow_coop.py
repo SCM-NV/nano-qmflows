@@ -4,20 +4,17 @@ import shutil
 import sys
 from os.path import join
 
-import pkg_resources as pkg
-
 from nac.workflows.input_validation import process_input
 from nac.workflows.workflow_coop import \
     workflow_crystal_orbital_overlap_population
+from qmflows.type_hints import PathLike
 
-# Environment data
-file_path = pkg.resource_filename('nac', '')
-root = os.path.split(file_path)[0]
+from .utilsTest import PATH_TEST
 
 
-def test_workflow_coop(tmp_path):
+def test_workflow_coop(tmp_path: PathLike) -> None:
     """Test the Crystal Orbital Overlap Population workflow."""
-    file_path = join(root, 'test/test_files/input_test_coop.yml')
+    file_path = PATH_TEST / 'input_test_coop.yml'
     config = process_input(file_path, 'coop_calculation')
 
     # create scratch path

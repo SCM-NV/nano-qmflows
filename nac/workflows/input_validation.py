@@ -7,11 +7,12 @@ from pathlib import Path
 from typing import Dict
 
 import yaml
-from qmflows.settings import Settings
 from schema import SchemaError
 from scm.plams import Molecule
 
 from nac.common import DictConfig
+from qmflows.settings import Settings
+from qmflows.type_hints import PathLike
 
 from .schemas import (schema_absorption_spectrum, schema_coop,
                       schema_cp2k_general_settings,
@@ -38,15 +39,21 @@ schema_workflows = {
 }
 
 
-def process_input(input_file: str, workflow_name: str) -> Dict:
+def process_input(input_file: PathLike, workflow_name: str) -> Dict:
     """Read the `input_file` in YAML format and validate it.
 
     Use the corresponding `workflow_name` schema and return a nested
     dictionary with the input.
 
-    :param str input_file: path to the input
-    :return: Input as dictionary
-    :raise SchemaError: If the input is not valid
+    Parameters
+    ----------
+    input_file
+        path to the input
+
+    Raises
+    ------
+    SchemaError
+        If the input is not valid
     """
     schema = schema_workflows[workflow_name]
 
@@ -140,7 +147,7 @@ def add_missing_keywords(d: Dict) -> Dict:
     return d
 
 
-def add_basis(general: dict) -> None:
+def add_basis(general: Dict) -> None:
     """Add path to the basis and potential."""
     setts = [general[p] for p in ['cp2k_settings_main', 'cp2k_settings_guess']]
 
@@ -157,7 +164,7 @@ def add_basis(general: dict) -> None:
             select_basis_file(x, general)
 
 
-def select_basis_file(sett: Settings, general: dict) -> str:
+def select_basis_file(sett: Settings, general: Dict) -> str:
     """Choose the right basis set based on the potential and basis name."""
     dft = sett.specific.cp2k.force_eval.dft
 
@@ -174,7 +181,7 @@ def select_basis_file(sett: Settings, general: dict) -> str:
             join(general['path_basis'], "BASIS_ADMM"))
 
 
-def add_cell_parameters(general: dict) -> None:
+def add_cell_parameters(general: Dict) -> None:
     """Add the Unit cell information to both the main and the guess settings."""
     # Search for a file containing the cell parameters
     file_cell_parameters = general["file_cell_parameters"]
@@ -190,7 +197,7 @@ def add_cell_parameters(general: dict) -> None:
             s.cell_angles = None
 
 
-def add_periodic(general: dict) -> None:
+def add_periodic(general: Dict) -> None:
     """Add the keyword for the periodicity of the system."""
     for s in (
         general[p] for p in [
@@ -199,7 +206,7 @@ def add_periodic(general: dict) -> None:
         s.specific.cp2k.force_eval.subsys.cell.periodic = general['periodic']
 
 
-def add_charge(general: dict) -> None:
+def add_charge(general: Dict) -> None:
     """Add the keyword for the charge of the system."""
     for s in (
         general[p] for p in [
@@ -208,7 +215,7 @@ def add_charge(general: dict) -> None:
         s.specific.cp2k.force_eval.dft.charge = general['charge']
 
 
-def add_multiplicity(general: dict) -> None:
+def add_multiplicity(general: Dict) -> None:
     """Add the keyword for the multiplicity of the system only if greater than 1."""
     if general['multiplicity'] > 1:
         for s in (
@@ -219,7 +226,7 @@ def add_multiplicity(general: dict) -> None:
             s.specific.cp2k.force_eval.dft.uks = ""
 
 
-def add_restart_point(general: dict) -> None:
+def add_restart_point(general: Dict) -> None:
     """Add a restart file if the user provided it."""
     guess = general['cp2k_settings_guess']
     wfn = general['wfn_restart_file_name']
@@ -228,7 +235,7 @@ def add_restart_point(general: dict) -> None:
         dft.wfn_restart_file_name = Path(wfn).absolute().as_posix()
 
 
-def add_mo_index_range(dict_input: dict) -> None:
+def add_mo_index_range(dict_input: Dict) -> None:
     """Compute the MO range to print."""
     active_space = dict_input['active_space']
     nHOMO = dict_input["nHOMO"]
@@ -273,7 +280,7 @@ def recursive_traverse(val):
         return val
 
 
-def print_final_input(d: dict) -> None:
+def print_final_input(d: Dict) -> None:
     """Print the input after post-processing."""
     xs = d.copy()
 

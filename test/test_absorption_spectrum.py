@@ -1,26 +1,21 @@
 """Test he absorption spectrum workflows."""
-import os
 import shutil
 from os.path import join
+from pathlib import Path
 
 import numpy as np
-import pkg_resources as pkg
 
 from nac.common import retrieve_hdf5_data
 from nac.workflows import workflow_stddft
 from nac.workflows.input_validation import process_input
 
-from .utilsTest import copy_basis_and_orbitals, remove_files
-
-# Environment data
-file_path = pkg.resource_filename('nac', '')
-root = os.path.split(file_path)[0]
+from .utilsTest import PATH_TEST, copy_basis_and_orbitals, remove_files
 
 
 def test_compute_oscillators(tmp_path):
     """Compute the oscillator strenght and check the results."""
     project_name = 'Cd'
-    path_original_hdf5 = join(root, 'test/test_files/Cd.hdf5')
+    path_original_hdf5 = PATH_TEST / 'Cd.hdf5'
 
     # create scratch path
     shutil.copy(path_original_hdf5, tmp_path)
@@ -38,15 +33,13 @@ def test_compute_oscillators(tmp_path):
 
 def calculate_oscillators(path_test_hdf5: str, scratch_path: str, approx: str):
     """Compute a couple of couplings with the Levine algorithm using precalculated MOs."""
-    input_file = join(
-        root, 'test/test_files/input_test_absorption_spectrum.yml')
+    input_file = PATH_TEST / 'input_test_absorption_spectrum.yml'
     config = process_input(input_file, 'absorption_spectrum')
     config['path_hdf5'] = path_test_hdf5
     config['scratch_path'] = scratch_path
     config['workdir'] = scratch_path
     config['tddft'] = approx
-    config['path_traj_xyz'] = join(
-        root, config.path_traj_xyz)
+    config['path_traj_xyz'] = Path(config.path_traj_xyz).absolute()
 
     workflow_stddft(config)
 

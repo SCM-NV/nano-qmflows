@@ -5,9 +5,10 @@ import h5py
 import pkg_resources
 
 from nac.workflows.initialization import store_cp2k_basis
+from qmflows.type_hints import PathLike
 
 
-def test_read_cp2k_basis(tmp_path):
+def test_read_cp2k_basis(tmp_path: PathLike) -> None:
     """Read Basis set in CP2K format."""
     tmp_hdf5 = Path(tmp_path) / 'cp2k_basis.hdf5'
     tmp_hdf5.touch()

@@ -1,3 +1,4 @@
+"""Installation recipe."""
 from Cython.Distutils import build_ext
 from os.path import join
 from setuptools import (Extension, find_packages, setup)
@@ -134,7 +135,8 @@ setup(
     cmdclass={'build_ext': BuildExt},
     ext_modules=[ext_pybind],
     extras_require={
-        'test': ['coverage', 'pytest>=3.9', 'pytest-cov', 'codacy-coverage'],
+        'test': ['assertionlib', 'codacy-coverage', 'pytest', 'pytest-cov',
+                 'pytest-mock', 'pytest-pycodestyle', 'pytest-pydocstyle'],
         'doc': ['sphinx>=2.1', 'sphinx-autodoc-typehints', 'sphinx_rtd_theme', 'nbsphinx']
     },
     include_package_data=True,
