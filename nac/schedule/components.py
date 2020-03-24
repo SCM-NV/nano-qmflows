@@ -1,4 +1,15 @@
-"""Molecular orbitals calculation."""
+"""Molecular orbitals calculation using CP2K and `QMFlows <https://github.com/SCM-NV/qmflows>.
+
+Index
+-----
+.. currentmodule:: nac.schedule.scheduleCoupling
+.. autosummary::
+    calculate_mos
+
+API
+---
+.. autofunction:: calculate_mos
+"""
 
 __all__ = ["calculate_mos", "create_point_folder",
            "split_file_geometries"]
@@ -7,25 +18,34 @@ import fnmatch
 import logging
 import os
 import shutil
-from collections import defaultdict, namedtuple
+from collections import defaultdict
 from os.path import join
+from typing import Dict, List, NamedTuple, Tuple
 
 from more_itertools import chunked
 from noodles import gather, schedule
+
+from qmflows.type_hints import PathLike, PromisedObject
 from qmflows.warnings_qmflows import SCF_Convergence_Warning
 
-from nac.common import (Matrix, is_data_in_hdf5, read_cell_parameters_as_array,
-                        store_arrays_in_hdf5)
-from nac.schedule.scheduleCp2k import prepare_job_cp2k
-
-# Tuple contanining file paths
-JobFiles = namedtuple("JobFiles", ("get_xyz", "get_inp", "get_out", "get_MO"))
+from ..common import (DictConfig, Matrix, MolXYZ, Vector, is_data_in_hdf5,
+                      read_cell_parameters_as_array, store_arrays_in_hdf5)
+from .scheduleCp2k import prepare_job_cp2k
 
 # Starting logger
 logger = logging.getLogger(__name__)
 
 
-def calculate_mos(config: dict) -> list:
+class JobFiles(NamedTuple):
+    """Contains the data to compute the molecular orbitals for a given geometry."""
+
+    get_xyz: PathLike
+    get_inp: PathLike
+    get_out: PathLike
+    get_MO: PathLike
+
+
+def calculate_mos(config: DictConfig) -> List[str]:
     """Look for the MO in the HDF5 file and compute them if they are not present.
 
     The orbitals are computed  by splitting the jobs in batches given by
@@ -34,22 +54,24 @@ def calculate_mos(config: dict) -> list:
     inthe batch.
 
     The config dict contains:
+        * geometries: list of molecular geometries
+        * project_name: Name of the project used as root path for storing
+        data in HDF5.
+        * path_hdf5: Path to the HDF5 file that contains the
+        numerical results.
+        * folders: path to the directories containing the MO outputs
+        * settings_main: Settings for the job to run.
+        * calc_new_wf_guess_on_points: Calculate a new Wave function guess in
+        each of the geometries indicated. By Default only an initial guess is
+        computed.
+        * enumerate_from: Number from where to start enumerating the folders
+        create for each point in the MD
 
-    :param geometries: list of molecular geometries
-    :param project_name: Name of the project used as root path for storing
-    data in HDF5.
-    :param path_hdf5: Path to the HDF5 file that contains the
-    numerical results.
-    :param folders: path to the directories containing the MO outputs
-    :param settings_main: Settings for the job to run.
-    :param calc_new_wf_guess_on_points: Calculate a new Wave function guess in
-    each of the geometries indicated. By Default only an initial guess is
-    computed.
-    :param enumerate_from: Number from where to start enumerating the folders
-    create for each point in the MD
+    Returns
+    -------
+    list
+        path to nodes in the HDF5 file to MO energies and MO coefficients.
 
-    :returns: path to nodes in the HDF5 file to MO energies
-              and MO coefficients.
     """
     # Read Cell parameters file
     general = config['cp2k_general_settings']
@@ -122,8 +144,16 @@ def calculate_mos(config: dict) -> list:
 
 
 @schedule
-def store_MOs(config: dict, dict_input: dict, promise_qm: object) -> str:
-    """Store the MOs in the HDF5."""
+def store_MOs(
+        config: DictConfig, dict_input: Dict, promise_qm: PromisedObject) -> str:
+    """Store the MOs in the HDF5.
+
+    Returns
+    -------
+    str
+        Node path in the HDF5
+
+    """
     # Molecular Orbitals
     mos = promise_qm.orbitals
 
@@ -140,25 +170,42 @@ def store_MOs(config: dict, dict_input: dict, promise_qm: object) -> str:
     return dict_input["node_MOs"]
 
 
-def dump_orbitals_to_hdf5(data: tuple, file_h5: str, project_name: str, job_name: str):
+def dump_orbitals_to_hdf5(
+        data: Tuple[Vector, Matrix], path_hdf5: str, project_name: str, job_name: str) -> None:
     """Store the result in HDF5 format.
 
-    :param file_h5: Path to the HDF5 file that contains the
-    numerical results.
-    :returns: None
+    Parameters
+    ----------
+    data
+        Tuple of energies and coefficients of the molecular orbitals
+    path_hdf5
+        Path to the HDF5 where the MOs are stored
+    project_name
+        Name of the current project
+    job_name
+        Name of the current job
+
     """
     es = "cp2k/mo/eigenvalues"
     css = "cp2k/mo/coefficients"
     path_eigenvalues = join(project_name, job_name, es)
     path_coefficients = join(project_name, job_name, css)
 
-    store_arrays_in_hdf5(file_h5, path_eigenvalues, data.eigenVals)
-    store_arrays_in_hdf5(file_h5, path_coefficients, data.coeffs)
+    store_arrays_in_hdf5(path_hdf5, path_eigenvalues, data.eigenVals)
+    store_arrays_in_hdf5(path_hdf5, path_coefficients, data.coeffs)
 
 
 @schedule
-def store_enery(config: dict, dict_input: dict, promise_qm: object) -> str:
-    """Store the total energy in the HDF5 file."""
+def store_enery(
+        config: DictConfig, dict_input: Dict, promise_qm: PromisedObject) -> str:
+    """Store the total energy in the HDF5 file.
+
+    Returns
+    -------
+    str
+        Node path to the energy in the HDF5
+
+    """
     store_arrays_in_hdf5(
         config.path_hdf5, dict_input['node_energy'], promise_qm.energy)
 
@@ -168,10 +215,10 @@ def store_enery(config: dict, dict_input: dict, promise_qm: object) -> str:
     return dict_input["node_energy"]
 
 
-def compute_orbitals(config: dict, dict_input: dict, guess_job) -> list:
+def compute_orbitals(
+        config: DictConfig, dict_input: Dict, guess_job: PromisedObject) -> PromisedObject:
     """Call a Quantum chemisty package to compute the MOs.
 
-    The MO's are required to calculate the nonadiabatic coupling.
     When finish store the MOs in the HdF5 and returns a new guess.
     """
 
@@ -202,7 +249,7 @@ def compute_orbitals(config: dict, dict_input: dict, guess_job) -> list:
 
 @schedule
 def schedule_check(
-        promise_qm: object, config: dict, dict_input: dict) -> object:
+        promise_qm: PromisedObject, config: dict, dict_input: dict) -> PromisedObject:
     """Check wether a calculation finishes succesfully otherwise run a new guess."""
     job_name = dict_input["job_name"]
     point_dir = dict_input["point_dir"]
@@ -234,11 +281,8 @@ def schedule_check(
         return promise_qm
 
 
-def create_point_folder(work_dir, n, enumerate_from):
-    """Create a new folder for each point in the MD trajectory.
-
-    :returns: Paths lists.
-    """
+def create_point_folder(work_dir: str, n: int, enumerate_from: int) -> List[PathLike]:
+    """Create a new folder for each point in the MD trajectory."""
     folders = []
     for k in range(enumerate_from, n + enumerate_from):
         new_dir = join(work_dir, f'point_{k}')
@@ -250,11 +294,8 @@ def create_point_folder(work_dir, n, enumerate_from):
     return folders
 
 
-def split_file_geometries(pathXYZ: str) -> list:
-    """Read a set of molecular geometries in xyz format.
-
-    :returns: String list containing the molecular geometries.
-    """
+def split_file_geometries(pathXYZ: PathLike) -> List[MolXYZ]:
+    """Read a set of molecular geometries in xyz format."""
     # Read Cartesian Coordinates
     with open(pathXYZ) as f:
         xss = f.readlines()
@@ -263,11 +304,8 @@ def split_file_geometries(pathXYZ: str) -> list:
     return list(map(''.join, chunked(xss, numat + 2)))
 
 
-def create_file_names(work_dir: str, i: int):
-    """Create a namedTuple with the name of the 4 files used for each point in the trajectory.
-
-    :returns: Namedtuple containing the IO files
-    """
+def create_file_names(work_dir: PathLike, i: int) -> JobFiles:
+    """Create a namedTuple with the name of the 4 files used for each point in the trajectory."""
     file_xyz = join(work_dir, f'coordinates_{i}.xyz')
     file_inp = join(work_dir, f'point_{i}.inp')
     file_out = join(work_dir, f'point_{i}.out')
@@ -277,13 +315,13 @@ def create_file_names(work_dir: str, i: int):
 
 
 def adjust_cell_parameters(
-        general: dict,
+        general: DictConfig,
         array_cell_parameters: Matrix,
         j: int) -> None:
-    """On the fly cell parameters adjustment.
+    """Adjust the cell parameters on the fly.
 
     If the cell parameters change during the MD simulations, adjust them
-    for the molecular orbitals computation
+    for the molecular orbitals computation.
     """
     for s in (
         general[p] for p in (

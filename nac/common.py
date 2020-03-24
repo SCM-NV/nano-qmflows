@@ -157,8 +157,23 @@ def retrieve_hdf5_data(
         paths_to_prop: Union[str, List[str]]) -> Union[np.ndarray, List[np.ndarray]]:
     """Read Numerical properties from ``paths_hdf5``.
 
-    :params path_hdf5: Path to the hdf5 file
-    :returns: numerical array
+    Parameters
+    ----------
+    path_hdf5
+        path to the HDF5
+    path_to_prop
+        str or list of str to data
+
+    Returns
+    -------
+    np.ndarray
+        array or list of array
+
+    Raises
+    ------
+    RuntimeError
+        The property has not been found
+
     """
     path_hdf5 = path_to_posix(path_hdf5)
     try:
@@ -175,8 +190,22 @@ def retrieve_hdf5_data(
         raise RuntimeError(msg)
 
 
-def is_data_in_hdf5(path_hdf5: PathLike, xs: str) -> bool:
-    """Search if the node exists in the HDF5 file."""
+def is_data_in_hdf5(path_hdf5: PathLike, xs: Union[str, List[str]]) -> bool:
+    """Search if the node exists in the HDF5 file.
+
+    Parameters
+    ----------
+    path_hdf5
+        path to the HDF5
+    xs
+        either Node path or a list of paths to the stored data
+
+    Returns
+    -------
+    bool
+        Whether the data is stored
+
+    """
     path_hdf5 = path_to_posix(path_hdf5)
     if os.path.exists(path_hdf5):
         with h5py.File(path_hdf5, 'r+') as f5:
@@ -191,7 +220,22 @@ def is_data_in_hdf5(path_hdf5: PathLike, xs: str) -> bool:
 def store_arrays_in_hdf5(
     path_hdf5: PathLike, paths: Union[List[str], str], tensor: Union[np.ndarray, List[float]],
         dtype: float = np.float32, attribute: Union[namedtuple, None] = None) -> None:
-    """Store a tensor in the HDF5."""
+    """Store a tensor in the HDF5.
+
+    Parameters
+    ----------
+    path_hdf5
+        path to the HDF5
+    paths
+        str or list of nodes where the data is going to be stored
+    tensor
+        Numpy array or list of array to store
+    dtype
+        Data type use to store the numerical array
+    attribute
+        Attribute associated with the tensor
+
+    """
     path_hdf5 = path_to_posix(path_hdf5)
 
     def add_attribute(data_set, k: int = 0):
