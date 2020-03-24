@@ -1,17 +1,15 @@
 sudo: required
 language: generic
+dist: bionic
 
 matrix:
   include:
     - os: linux
       env: PYTHON_VERSION=3.6 MINICONDA=Linux-x86_64.sh
-      dist: bionic
     - os: linux
       env: PYTHON_VERSION=3.7 MINICONDA=Linux-x86_64.sh
-      dist: bionic
     - os: linux
       env: PYTHON_VERSION=3.8 MINICONDA=Linux-x86_64.sh
-      dist: bionic
     - os: osx
       env: PYTHON_VERSION=3.8 MINICONDA=MacOSX-x86_64.sh
 
