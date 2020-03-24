@@ -1,3 +1,4 @@
+"""Nonadiabatic coupling implementation."""
 from .nonAdiabaticCoupling import (
     calculate_couplings_levine, calculate_couplings_3points,
     compute_overlaps_for_coupling, correct_phases)

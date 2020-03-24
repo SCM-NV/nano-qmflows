@@ -1,39 +1,58 @@
-__author__ = "Felipe Zapata"
+"""Compute couplings and molecular orbitals.
 
-# ================> Python Standard  and third-party <==========
+Use the `Noodles schedule method <http://nlesc.github.io/noodles>` to generate
+a dependency graph for running the jobs.
 
+Index
+-----
+.. currentmodule:: nac.schedule.scheduleCoupling
+.. autosummary::
+    calculate_overlap
+    lazy_couplings
+    write_hamiltonians
+
+API
+---
+.. autofunction:: calculate_overlap
+.. autofunction:: lazy_couplings
+.. autofunction:: write_hamiltonians
+
+"""
+import logging
+import os
 from os.path import join
+# Types hint
+from typing import List, Tuple
+
+import numpy as np
+from noodles import schedule
 from scipy.optimize import linear_sum_assignment
 
-import logging
-import numpy as np
-import os
-
-from nac.integrals import (
-    calculate_couplings_levine, calculate_couplings_3points,
-    compute_overlaps_for_coupling, correct_phases)
-from nac.integrals.nonAdiabaticCoupling import (
-    compute_range_orbitals, read_overlap_data)
-from nac.common import (
-    Matrix, Vector, Tensor3D,
-    femtosec2au, retrieve_hdf5_data,
-    is_data_in_hdf5, store_arrays_in_hdf5)
-from noodles import schedule
 from qmflows.parsers import parse_string_xyz
+from qmflows.type_hints import PathLike
 
-# Types hint
-from typing import (List, Tuple)
+from ..common import (DictConfig, Matrix, MolXYZ, Tensor3D, Vector,
+                      femtosec2au, is_data_in_hdf5, retrieve_hdf5_data,
+                      store_arrays_in_hdf5)
+from ..integrals import (calculate_couplings_3points,
+                         calculate_couplings_levine,
+                         compute_overlaps_for_coupling, correct_phases)
+from ..integrals.nonAdiabaticCoupling import (compute_range_orbitals,
+                                              read_overlap_data)
 
 # Starting logger
 logger = logging.getLogger(__name__)
 
-# ==============================> Schedule Tasks <=============================
+__all__ = ["calculate_overlap", "lazy_couplings", "write_hamiltonians"]
 
 
 @schedule
-def lazy_couplings(config: dict, paths_overlaps: list) -> list:
-    """
-    Compute the Nonadibatic coupling using a 3 point approximation. See:
+def lazy_couplings(
+        config: DictConfig,
+        paths_overlaps: List[str]) -> Tuple[np.ndarray, List[np.ndarray]]:
+    """Compute the Nonadibatic coupling.
+
+    The coupling is computed sing a either 3-point approximation. See:
     The Journal of Chemical Physics 137, 22A514 (2012); doi: 10.1063/1.4738960
 
     or a 2Point approximation using an smoothing function:
@@ -42,6 +61,19 @@ def lazy_couplings(config: dict, paths_overlaps: list) -> list:
     Notice that the states can cross frequently due to unavoided crossing and
     such crossing must be track. see:
     J. Chem. Phys. 137, 014512 (2012); doi: 10.1063/1.4732536
+
+    Parameters
+    ----------
+    config:
+        Configuration of the current task
+    paths_overlaps:
+        path to the HDF5 node where the overlaps are stored.
+
+    Returns
+    -------
+    Tuple
+        with the swaps and couplings in each point.
+
     """
     if config.tracking:
         fixed_phase_overlaps, swaps = compute_the_fixed_phase_overlaps(
@@ -79,9 +111,10 @@ def lazy_couplings(config: dict, paths_overlaps: list) -> list:
 
 
 def compute_the_fixed_phase_overlaps(
-        paths_overlaps: List, path_hdf5: str, project_name: str,
-        enumerate_from: int, nHOMO: int) -> Tuple:
-    """
+        paths_overlaps: List[str], path_hdf5: PathLike, project_name: str,
+        enumerate_from: int, nHOMO: int) -> Tuple[List[np.ndarray], np.ndarray]:
+    """Fix the phase of the overlaps.
+
     First track the unavoided crossings between Molecular orbitals and
     finally correct the phase for the whole trajectory.
     """
@@ -137,10 +170,17 @@ def compute_the_fixed_phase_overlaps(
     return fixed_phase_overlaps, swaps
 
 
-def calculate_couplings(config: dict, i: int, fixed_phase_overlaps: Tensor3D) -> str:
-    """
+def calculate_couplings(config: DictConfig, i: int, fixed_phase_overlaps: Tensor3D) -> str:
+    """Compute couplings for the i-th geometry.
+
     Search for the ith Coupling in the HDF5, if it is not available compute it
-    using the 3 points approximation and store it in the HDF5
+    using the 3 points approximation and store it in the HDF5.
+
+    Returns
+    -------
+    str
+        Path to the couplings store in the HDF5 file.
+
     """
     # time in atomic units
     dt_au = config.dt * femtosec2au
@@ -174,10 +214,11 @@ def calculate_couplings(config: dict, i: int, fixed_phase_overlaps: Tensor3D) ->
 
 def compute_phases(overlaps: Tensor3D, nCouplings: int,
                    dim: int) -> Matrix:
-    """
-    Compute the phase of the state_i at time t + dt, using the following
-    equation:
-    phase_i(t+dt) = Sii(t) * phase_i(t)
+    """Compute the phase of the state_i at time t + dt.
+
+    It uses the following equation:
+    .. python::
+        phase_i(t+dt) = Sii(t) * phase_i(t)
     """
     # initial references
     references = np.ones(dim)
@@ -196,16 +237,23 @@ def compute_phases(overlaps: Tensor3D, nCouplings: int,
         references = phases
 
     # Print phases (debug)
-    np.savetxt('mtx_phases', mtx_phases)
+    logger.info(f"mtx_phases are stored in HDF5 node: {mtx_phases}")
 
     return mtx_phases
 
 
-def track_unavoided_crossings(overlaps: Tensor3D, nHOMO: int) -> Tuple:
-    """
-    Track the index of the states if there is a crossing using the
-    algorithm  described at:
+def track_unavoided_crossings(
+        overlaps: Tensor3D, nHOMO: int) -> Tuple[List[Matrix], np.ndarray]:
+    """Track the index of the states if there is a crossing.
+
+    It uses the algorithm  described at:
     J. Chem. Phys. 137, 014512 (2012); doi: 10.1063/1.4732536.
+
+    Returns
+    -------
+    tuple
+        containing the corrected overlaps and the crossings
+
     """
     # 3D array containing the costs
     # Notice that the cost is compute on half of the overlap matrices
@@ -252,7 +300,7 @@ def track_unavoided_crossings(overlaps: Tensor3D, nHOMO: int) -> Tuple:
     return overlaps, arr
 
 
-def swap_forward(overlaps: Tensor3D, swaps: np.array) -> Tensor3D:
+def swap_forward(overlaps: Tensor3D, swaps: np.ndarray) -> List[Matrix]:
     """Track all the crossings that happend previous to the current time.
 
     Swap the index i corresponding to the ith Molecular orbital
@@ -269,12 +317,21 @@ def swap_forward(overlaps: Tensor3D, swaps: np.array) -> Tensor3D:
 
 
 @schedule
-def calculate_overlap(config: dict, mo_paths_hdf5: list) -> list:
-    """
-    Calculate the Overlap matrices before computing the non-adiabatic
-    coupling using 3 consecutive set of MOs in a molecular dynamic.
+def calculate_overlap(config: DictConfig, mo_paths_hdf5: List[str]) -> List[str]:
+    """Calculate the Overlap matrices.
 
-    :returns: paths to the Overlap matrices inside the HDF5.
+    Parameters
+    ----------
+    config
+        Configuration of the current job
+    mo_paths_hdf5
+        Node paths to the molecular orbitals in the HDF5
+
+    Returns
+    -------
+    list
+        Node paths to the overlaps stored in the HDF5
+
     """
     # Number of couplings to compute
     nPoints = len(config.geometries) - 1
@@ -295,9 +352,15 @@ def calculate_overlap(config: dict, mo_paths_hdf5: list) -> list:
     return paths
 
 
-def single_machine_overlaps(config: dict, mo_paths_hdf5: list, i: int):
-    """
-    Compute the overlaps in the CPUs avaialable on the local machine
+def single_machine_overlaps(
+        config: DictConfig, mo_paths_hdf5: List[str], i: int) -> List[str]:
+    """Compute the overlaps in the CPUs avaialable on the local machine.
+
+    Returns
+    -------
+    list
+        Node paths to the overlaps store in the HDF5
+
     """
     # Data to compute the overlaps
     pair_molecules = select_molecules(config, i)
@@ -315,27 +378,21 @@ def single_machine_overlaps(config: dict, mo_paths_hdf5: list, i: int):
     return overlaps_paths_hdf5
 
 
-def create_overlap_path(config: dict, i: int) -> str:
-    """
-    Create the path inside the HDF5 where the overlap is going to be store.
-    """
+def create_overlap_path(config: DictConfig, i: int) -> str:
+    """Create the path inside the HDF5 where the overlap is going to be store."""
     root = join(config.project_name, 'overlaps_{}'.format(
         i + config.enumerate_from))
     return join(root, 'mtx_sji_t0')
 
 
-def select_molecules(config: dict, i: int) -> tuple:
-    """
-    Select the pairs of molecules to compute the couplings.
-    """
+def select_molecules(config: dict, i: int) -> Tuple[MolXYZ, MolXYZ]:
+    """Select the pairs of molecules to compute the couplings."""
     k = 0 if config.overlaps_deph else i
     return tuple(parse_string_xyz(config.geometries[idx]) for idx in (k, i + 1))
 
 
-def check_if_overlap_is_done(config: dict, overlaps_paths_hdf5: str) -> bool:
-    """
-    Search for a given Overlap inside the HDF5.
-    """
+def check_if_overlap_is_done(config: DictConfig, overlaps_paths_hdf5: str) -> bool:
+    """Search for a given Overlap inside the HDF5."""
     if is_data_in_hdf5(config.path_hdf5, overlaps_paths_hdf5):
         logger.info(f"{overlaps_paths_hdf5} Overlaps are already in the HDF5")
         return True
@@ -344,12 +401,31 @@ def check_if_overlap_is_done(config: dict, overlaps_paths_hdf5: str) -> bool:
         return False
 
 
-def write_hamiltonians(config: dict, crossing_and_couplings: Tuple, mo_paths_hdf5: list) -> list:
-    """
-    Write the real and imaginary components of the hamiltonian using both
-    the orbitals energies and the derivative coupling accoring to:
+def write_hamiltonians(
+        config: DictConfig,
+        crossing_and_couplings: Tuple[np.ndarray, List[Matrix]],
+        mo_paths_hdf5: List[str]) -> List[Tuple[str, str]]:
+    """Write the real and imaginary components of the hamiltonian.
+
+    It uses both the orbitals energies and the derivative coupling accoring to:
     http://pubs.acs.org/doi/abs/10.1021/ct400641n
-    **Units are: Rydbergs**.
+    .. Note::
+        **Units are: Rydbergs**.
+
+    Parameters
+    ----------
+    config
+        Configuration of the current task
+    crossing_and-couplings
+        Tuple of the states' crossings and couplings
+    mo_path_hdf5
+        Node path to the molecular orbitals in the HDF5
+
+    Returns
+    -------
+    tuple
+        Files containing the Hamiltonian Real and imaginary components
+
     """
     swaps, path_couplings = crossing_and_couplings
     nHOMO = config.nHOMO
@@ -401,16 +477,12 @@ def write_hamiltonians(config: dict, crossing_and_couplings: Tuple, mo_paths_hdf
 
 
 def swap_columns(arr: Matrix, swaps_t: Vector) -> Matrix:
-    """
-    Swap only columns at t+dt to reconstruct the original overlap matrix
-    """
+    """Swap only columns at t + dt to reconstruct the original overlap matrix."""
     return np.transpose(np.transpose(arr)[swaps_t])
 
 
 def write_overlaps_in_ascii(overlaps: Tensor3D) -> None:
-    """
-    Write the corrected overlaps in text files.
-    """
+    """Write the corrected overlaps in text files."""
     if not os.path.isdir('overlaps'):
         os.mkdir('overlaps')
 

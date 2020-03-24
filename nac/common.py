@@ -1,7 +1,27 @@
-"""Miscellaneous funcionality."""
+"""Module containing physical constants and `NamedTuple`s to store molecular orbitals, shell, etc.
 
-__all__ = ['AtomBasisData', 'AtomBasisKey', 'AtomData', 'AtomXYZ',
-           'CGF', 'DictConfig', 'InfoMO', 'Matrix', 'MO', 'Tensor3D', 'Vector',
+Index
+-----
+.. currentmodule:: nac.common
+.. autosummary::
+    DictConfig
+    change_mol_units
+    getmass
+    number_spherical_functions_per_atom
+    retrieve_hdf5_data
+    is_data_in_hdf5
+    store_arrays_in_hdf5
+
+API
+---
+.. autoclass:: DictConfig
+.. autofunction:: retrieve_hdf5_data
+.. autofunction:: is_data_in_hdf5
+.. autofunction:: store_arrays_in_hdf5
+
+"""
+
+__all__ = ['CGF', 'DictConfig', 'Matrix', 'Tensor3D', 'Vector',
            'change_mol_units', 'getmass', 'h2ev', 'hardness',
            'number_spherical_functions_per_atom', 'retrieve_hdf5_data',
            'is_data_in_hdf5', 'store_arrays_in_hdf5']
@@ -10,13 +30,17 @@ __all__ = ['AtomBasisData', 'AtomBasisKey', 'AtomData', 'AtomXYZ',
 import os
 from collections import namedtuple
 from itertools import chain
-from typing import Union
+from pathlib import Path
+from typing import Any, Dict, Iterable, List, Mapping, Tuple, Union
 
 import h5py
 import mendeleev
 import numpy as np
 from scipy.constants import physical_constants
 from scm.plams import Atom, Molecule
+
+from qmflows.common import AtomXYZ
+from qmflows.type_hints import PathLike
 
 
 class DictConfig(dict):
@@ -35,40 +59,43 @@ class DictConfig(dict):
         return DictConfig(self.copy())
 
 
-def concat(xss: iter):
+def concat(xss: Iterable) -> List[Any]:
     """Concatenate of all the elements of a list."""
     return list(chain(*xss))
 
 
-# Named Tuples
-AtomData = namedtuple("AtomData", ("label", "coordinates", "cgfs"))
-AtomBasisKey = namedtuple("AtomBasisKey", ("atom", "basis", "basisFormat"))
-AtomBasisData = namedtuple("AtomBasisData", ("exponents", "coefficients"))
-AtomXYZ = namedtuple("AtomXYZ", ("symbol", "xyz"))
+# NamedTuples
 CGF = namedtuple("CGF", ("primitives", "orbType"))
-InfoMO = namedtuple("InfoMO", ("eigenVals", "coeffs"))
-MO = namedtuple("MO", ("coordinates", "cgfs", "coefficients"))
 
 # ================> Constants <================
-# Angstrom to a.u
+#: Angstrom to a.u
 angs2au = 1e-10 / physical_constants['atomic unit of length'][0]
-# from femtoseconds to au
+#: from femtoseconds to au
 femtosec2au = 1e-15 / physical_constants['atomic unit of time'][0]
-# hartrees to electronvolts
+#: hartrees to electronvolts
 h2ev = physical_constants['Hartree energy in eV'][0]
-# conversion from rydberg to meV
+#: conversion from rydberg to meV
 r2meV = 1e3 * physical_constants['Rydberg constant times hc in eV'][0]
-# conversion from fs to cm-1
+#: conversion from fs to cm-1
 fs_to_cm = 1e13 * physical_constants['hertz-inverse meter relationship'][0]
-# conversion from fs to nm
+#: conversion from fs to nm
 fs_to_nm = 299.79246
-# planck constant in eV * fs
+#: planck constant in eV * fs
 hbar = 1e15 * physical_constants['Planck constant over 2 pi in eV s'][0]
 
-# Numpy type hints
+# type hints
+MolXYZ = List[AtomXYZ]
 Vector = np.ndarray
 Matrix = np.ndarray
 Tensor3D = np.ndarray
+
+
+def path_to_posix(path: PathLike) -> str:
+    """Convert a Path to posix string."""
+    if isinstance(path, Path):
+        return path.absolute().absolute()
+    else:
+        return path
 
 
 def getmass(s: str) -> int:
@@ -77,7 +104,7 @@ def getmass(s: str) -> int:
     return element.mass_number
 
 
-def hardness(s: str):
+def hardness(s: str) -> float:
     """Get the element hardness."""
     d = {
         'h': 6.4299, 'he': 12.5449, 'li': 2.3746, 'be': 3.4968, 'b': 4.619, 'c': 5.7410,
@@ -101,14 +128,14 @@ def hardness(s: str):
     return d[s] / 27.211
 
 
-def xc(s: str) -> dict:
+def xc(s: str) -> Dict[str, Any]:
     """Return the exchange functional composition."""
     d = {
         'pbe': {
             'type': 'pure', 'alpha1': 1.42, 'alpha2': 0.48, 'ax': 0, 'beta1': 0.2, 'beta2': 1.83},
         'blyp': {
             'type': 'pure', 'alpha1': 1.42, 'alpha2': 0.48, 'ax': 0, 'beta1': 0.2, 'beta2': 1.83},
-        'bp':   {
+        'bp': {
             'type': 'pure', 'alpha1': 1.42, 'alpha2': 0.48, 'ax': 0, 'beta1': 0.2, 'beta2': 1.83},
         'pbe0': {
             'type': 'hybrid', 'alpha1': 1.42, 'alpha2': 0.48, 'ax': 0.25, 'beta1': 0.2, 'beta2': 1.83},
@@ -125,12 +152,30 @@ def xc(s: str) -> dict:
     return d[s]
 
 
-def retrieve_hdf5_data(path_hdf5: str, paths_to_prop: Union[str, list]):
+def retrieve_hdf5_data(
+        path_hdf5: PathLike,
+        paths_to_prop: Union[str, List[str]]) -> Union[np.ndarray, List[np.ndarray]]:
     """Read Numerical properties from ``paths_hdf5``.
 
-    :params path_hdf5: Path to the hdf5 file
-    :returns: numerical array
+    Parameters
+    ----------
+    path_hdf5
+        path to the HDF5
+    path_to_prop
+        str or list of str to data
+
+    Returns
+    -------
+    np.ndarray
+        array or list of array
+
+    Raises
+    ------
+    RuntimeError
+        The property has not been found
+
     """
+    path_hdf5 = path_to_posix(path_hdf5)
     try:
         with h5py.File(path_hdf5, 'r') as f5:
             if isinstance(paths_to_prop, list):
@@ -145,8 +190,23 @@ def retrieve_hdf5_data(path_hdf5: str, paths_to_prop: Union[str, list]):
         raise RuntimeError(msg)
 
 
-def is_data_in_hdf5(path_hdf5: str, xs: str) -> bool:
-    """Search if the node exists in the HDF5 file."""
+def is_data_in_hdf5(path_hdf5: PathLike, xs: Union[str, List[str]]) -> bool:
+    """Search if the node exists in the HDF5 file.
+
+    Parameters
+    ----------
+    path_hdf5
+        path to the HDF5
+    xs
+        either Node path or a list of paths to the stored data
+
+    Returns
+    -------
+    bool
+        Whether the data is stored
+
+    """
+    path_hdf5 = path_to_posix(path_hdf5)
     if os.path.exists(path_hdf5):
         with h5py.File(path_hdf5, 'r+') as f5:
             if isinstance(xs, list):
@@ -158,9 +218,26 @@ def is_data_in_hdf5(path_hdf5: str, xs: str) -> bool:
 
 
 def store_arrays_in_hdf5(
-    path_hdf5: str, paths: Union[list, str], tensor: Union[np.array, list],
+    path_hdf5: PathLike, paths: Union[List[str], str], tensor: Union[np.ndarray, List[float]],
         dtype: float = np.float32, attribute: Union[namedtuple, None] = None) -> None:
-    """Store a tensor in the HDF5."""
+    """Store a tensor in the HDF5.
+
+    Parameters
+    ----------
+    path_hdf5
+        path to the HDF5
+    paths
+        str or list of nodes where the data is going to be stored
+    tensor
+        Numpy array or list of array to store
+    dtype
+        Data type use to store the numerical array
+    attribute
+        Attribute associated with the tensor
+
+    """
+    path_hdf5 = path_to_posix(path_hdf5)
+
     def add_attribute(data_set, k: int = 0):
         if attribute is not None:
             dset.attrs[attribute.name] = attribute.value[k]
@@ -178,11 +255,8 @@ def store_arrays_in_hdf5(
             add_attribute(dset)
 
 
-def change_mol_units(mol: list, factor: float = angs2au) -> list:
-    """Change the units of the molecular coordinates.
-
-    :returns: New XYZ namedtuple
-    """
+def change_mol_units(mol: List[AtomXYZ], factor: float = angs2au) -> List[AtomXYZ]:
+    """Change the units of the molecular coordinates."""
     newMol = []
     for atom in mol:
         coord = list(map(lambda x: x * factor, atom.xyz))
@@ -190,7 +264,7 @@ def change_mol_units(mol: list, factor: float = angs2au) -> list:
     return newMol
 
 
-def tuplesXYZ_to_plams(xs):
+def tuplesXYZ_to_plams(xs: List[AtomXYZ]) -> Molecule:
     """Transform a list of namedTuples to a Plams molecule."""
     plams_mol = Molecule()
     for at in xs:
@@ -202,7 +276,7 @@ def tuplesXYZ_to_plams(xs):
 
 
 def number_spherical_functions_per_atom(
-        mol: list, package_name: str, basis_name: str, path_hdf5: str) -> np.array:
+        mol: List[AtomXYZ], package_name: str, basis_name: str, path_hdf5: PathLike) -> np.ndarray:
     """Compute the number of spherical shells per atom."""
     with h5py.File(path_hdf5, 'r') as f5:
         xs = [f5[f'{package_name}/basis/{atom[0]}/{basis_name}/coefficients']
@@ -214,7 +288,7 @@ def number_spherical_functions_per_atom(
         return np.stack([sum(len(x) for x in ys[i]) for i in range(len(mol))])
 
 
-def calc_orbital_Slabels(name, fss):
+def calc_orbital_Slabels(name: str, fss: Union[List[int], List[List[int]]]) -> List[Tuple[str, ...]]:
     """Calculate the number of spherical basisset.
 
     Most quantum packages use standard basis set which contraction is
@@ -230,12 +304,15 @@ def calc_orbital_Slabels(name, fss):
     format explanation can be found at: `C2pk
     <https://github.com/cp2k/cp2k/blob/e392d1509d7623f3ebb6b451dab00d1dceb9a248/cp2k/data/BASIS_MOLOPT>`_.
 
-    :parameter name: Quantum package name
-    :type name: string
-    :parameter fss: Format basis set
-    :type fss: [Int] | [[Int]]
+    parameters
+    ----------
+    name
+        Quantum package name
+    fss
+        Format basis set
     """
-    def funSlabels(d, l, fs):
+    def funSlabels(d: Dict[str, Tuple[str, ...]], l: str, fs: Union[int, List[int]]) -> List[Tuple[str, ...]]:
+        """Search for the spherical functions for each orbital type `l`."""
         if isinstance(fs, list):
             fs = sum(fs)
         labels = [d[l]] * fs
@@ -251,28 +328,27 @@ def calc_orbital_Slabels(name, fss):
                    for l, fs in zip(angularM, fss)])
 
 
-def read_basis_format(name, basisFormat):
+def read_basis_format(name: str, basisFormat: str) -> List[int]:
+    """Read the basis set format specificitation."""
     if name == 'cp2k':
         s = basisFormat.replace('[', '').split(']')[0]
         fss = list(map(int, s.split(',')))
         fss = fss[4:]  # cp2k coefficient formats start in column 5
         return fss
-    elif name == 'turbomole':
-        strs = s.replace('[', '').split('],')
-        return [list(map(int, s.replace(']', '').split(','))) for s in strs]
     else:
-        raise NotImplementedError()
+        raise NotImplementedError(f"Unkown {name}")
 
 
-dict_cp2kOrder_spherical = {
-    's': ['s'],
-    'p': ['py', 'pz', 'px'],
-    'd': ['d-2', 'd-1', 'd0', 'd+1', 'd+2'],
-    'f': ['f-3', 'f-2', 'f-1', 'f0', 'f+1', 'f+2', 'f+3']
+#: Ordering of the Spherical shells
+dict_cp2kOrder_spherical: Mapping[str, Tuple[str, ...]] = {
+    's': ('s',),
+    'p': ('py', 'pz', 'px'),
+    'd': ('d-2', 'd-1', 'd0', 'd+1', 'd+2'),
+    'f': ('f-3', 'f-2', 'f-1', 'f0', 'f+1', 'f+2', 'f+3')
 }
 
 
-def read_cell_parameters_as_array(file_cell_parameters: str) -> tuple:
+def read_cell_parameters_as_array(file_cell_parameters: PathLike) -> Tuple[str, np.ndarray]:
     """Read the cell parameters as a numpy array."""
     arr = np.loadtxt(file_cell_parameters, skiprows=1)
 

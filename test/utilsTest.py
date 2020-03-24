@@ -1,14 +1,24 @@
+"""Functions use for testing."""
 from distutils.spawn import find_executable
 from os.path import join
 import h5py
-
+from pathlib import Path
+from qmflows.type_hints import PathLike
 import fnmatch
 import shutil
 import os
+import pkg_resources as pkg
+
+__all__ = ["PATH_TEST", "copy_basis_and_orbitals", "cp2k_available", "remove_files"]
+
+# Environment data
+PATH_NAC = Path(pkg.resource_filename('nac', ''))
+ROOT = PATH_NAC.parent
+PATH_TEST = ROOT / "test" / "test_files"
 
 
-def remove_files():
-    """ Remove tmp files in cwd """
+def remove_files() -> None:
+    """Remove tmp files in cwd."""
     for path in fnmatch.filter(os.listdir('.'), "plams_workdir*"):
         shutil.rmtree(path)
     for ext in ("hdf5", "db", "lock"):
@@ -17,19 +27,15 @@ def remove_files():
             os.remove(name)
 
 
-def cp2k_available():
-    """
-    Check if cp2k is installed
-    """
+def cp2k_available() -> None:
+    """Check if cp2k is installed."""
     path = find_executable("cp2k.popt")
 
     return path is not None
 
 
-def copy_basis_and_orbitals(source, dest, project_name):
-    """
-    Copy the Orbitals and the basis set from one the HDF5 to another
-    """
+def copy_basis_and_orbitals(source: PathLike, dest, project_name: PathLike) -> None:
+    """Copy the Orbitals and the basis set from one the HDF5 to another."""
     keys = [project_name, 'cp2k']
     excluded = ['multipole', 'coupling', 'dipole_matrices',
                 'overlaps', 'swaps', 'omega_xia']

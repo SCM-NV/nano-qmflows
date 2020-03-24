@@ -1,22 +1,16 @@
 """Test the workflows tools."""
-import os
-from pathlib import Path
-
 import numpy as np
-import pkg_resources as pkg
-from qmflows.parsers import parse_string_xyz
 
 from nac.workflows.tools import number_spherical_functions_per_atom
-
-file_path = pkg.resource_filename('nac', '')
-root = Path(os.path.split(file_path)[0])
+from qmflows.parsers import parse_string_xyz
+from .utilsTest import PATH_TEST
 
 
 def test_calc_sphericals():
     """Test the calculation of spherical functions."""
-    with open(root / 'test/test_files/Cd33Se33.xyz', 'r') as f:
+    with open(PATH_TEST / 'Cd33Se33.xyz', 'r') as f:
         mol = parse_string_xyz(f.read())
-    path_hdf5 = root / "test/test_files/Cd33Se33.hdf5"
+    path_hdf5 = PATH_TEST / "Cd33Se33.hdf5"
     xs = number_spherical_functions_per_atom(
         mol, "cp2k", "DZVP-MOLOPT-SR-GTH", path_hdf5)
 
