@@ -2,7 +2,7 @@
 
 The available methods are:
 
-    * `3-point numerical differentiation <https://aip.scitation.org/doi/10.1063/1.467455>`
+    * `3-point numerical differentiation <https://doi.org/10.1063/1.4738960>`
     * `levine <dx.doi.org/10.1021/jz5009449>`
 
 Phase correction is also available.

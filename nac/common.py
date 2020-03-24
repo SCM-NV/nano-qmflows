@@ -1,5 +1,5 @@
-"""
-Module containing physical constants and `NamedTuple`s to store molecular orbitals, shell, etc.
+"""Module containing physical constants and `NamedTuple`s to store molecular orbitals, shell, etc.
+
 Index
 -----
 .. currentmodule:: nac.common
@@ -11,6 +11,14 @@ Index
     retrieve_hdf5_data
     is_data_in_hdf5
     store_arrays_in_hdf5
+
+API
+---
+.. autoclass:: DictConfig
+.. autofunction:: retrieve_hdf5_data
+.. autofunction:: is_data_in_hdf5
+.. autofunction:: store_arrays_in_hdf5
+
 """
 
 __all__ = ['CGF', 'DictConfig', 'Matrix', 'Tensor3D', 'Vector',
@@ -22,6 +30,7 @@ __all__ = ['CGF', 'DictConfig', 'Matrix', 'Tensor3D', 'Vector',
 import os
 from collections import namedtuple
 from itertools import chain
+from pathlib import Path
 from typing import Any, Dict, Iterable, List, Mapping, Tuple, Union
 
 import h5py
@@ -79,6 +88,14 @@ MolXYZ = List[AtomXYZ]
 Vector = np.ndarray
 Matrix = np.ndarray
 Tensor3D = np.ndarray
+
+
+def path_to_posix(path: PathLike) -> str:
+    """Convert a Path to posix string."""
+    if isinstance(path, Path):
+        return path.absolute().absolute()
+    else:
+        return path
 
 
 def getmass(s: str) -> int:
@@ -143,6 +160,7 @@ def retrieve_hdf5_data(
     :params path_hdf5: Path to the hdf5 file
     :returns: numerical array
     """
+    path_hdf5 = path_to_posix(path_hdf5)
     try:
         with h5py.File(path_hdf5, 'r') as f5:
             if isinstance(paths_to_prop, list):
@@ -159,6 +177,7 @@ def retrieve_hdf5_data(
 
 def is_data_in_hdf5(path_hdf5: PathLike, xs: str) -> bool:
     """Search if the node exists in the HDF5 file."""
+    path_hdf5 = path_to_posix(path_hdf5)
     if os.path.exists(path_hdf5):
         with h5py.File(path_hdf5, 'r+') as f5:
             if isinstance(xs, list):
@@ -173,6 +192,8 @@ def store_arrays_in_hdf5(
     path_hdf5: PathLike, paths: Union[List[str], str], tensor: Union[np.ndarray, List[float]],
         dtype: float = np.float32, attribute: Union[namedtuple, None] = None) -> None:
     """Store a tensor in the HDF5."""
+    path_hdf5 = path_to_posix(path_hdf5)
+
     def add_attribute(data_set, k: int = 0):
         if attribute is not None:
             dset.attrs[attribute.name] = attribute.value[k]
