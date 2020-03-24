@@ -20,17 +20,16 @@ env:
     - COMMIT_AUTHOR_EMAIL: "f.zapata@esciencecenter.nl"
 
 before_install:
-  - |
-  if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
+  - if [ "$TRAVIS_OS_NAME" == "linux" ]; then
     sudo apt-get -y install cp2k
+    fi
 
 install:
-  - |
-    if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
+  - if [ "$TRAVIS_OS_NAME" == "linux" ]; then
       export MCONDA_OS=$MCONDA_LINUX
       export CC=gcc-7
       export CXX=g++-7
-    elif [[ "$TRAVIS_OS_NAME" == "osx" ]]; then
+    elif [ "$TRAVIS_OS_NAME" == "osx" ]; then
       export MCONDA_OS=$MCONDA_OSX
     fi
   - wget https://repo.continuum.io/miniconda/Miniconda3-latest-${MINICONDA} -O miniconda.sh
@@ -61,4 +60,3 @@ after_success:
 branches:
   only:
    - master
-   - dev
