@@ -1,22 +1,69 @@
+"""Compute the nonadiabatic coupling using different methods.
+
+The available methods are:
+
+    * `3-point numerical differentiation <https://aip.scitation.org/doi/10.1063/1.467455>`
+    * `levine <dx.doi.org/10.1021/jz5009449>`
+
+Phase correction is also available.
+
+Index
+-----
+.. currentmodule:: nac.integrals.nonAdiabaticCoupling
+.. autosummary::
+    {autosummary}
+
+API
+---
+.. autofunction:: calculate_couplings_3points
+.. autofunction:: calculate_couplings_levine
+.. autofunction:: compute_overlaps_for_coupling
+.. autofunction:: correct_phases
+
+"""
 __all__ = ['calculate_couplings_3points', 'calculate_couplings_levine',
            'compute_overlaps_for_coupling', 'correct_phases']
 
-from compute_integrals import compute_integrals_couplings
-from nac.common import (
-    Matrix, Tensor3D, retrieve_hdf5_data, tuplesXYZ_to_plams)
-from os.path import join
-import numpy as np
 import os
 import uuid
+from os.path import join
+from typing import List, Tuple
+
+import numpy as np
+
+from compute_integrals import compute_integrals_couplings
+
+from ..common import (DictConfig, Matrix, MolXYZ, Tensor3D, retrieve_hdf5_data,
+                      tuplesXYZ_to_plams)
 
 
 def calculate_couplings_3points(
         dt: float, mtx_sji_t0: Matrix, mtx_sij_t0: Matrix,
-        mtx_sji_t1: Matrix, mtx_sij_t1: Matrix) -> None:
-    """
-    Calculate the non-adiabatic interaction matrix using 3 geometries,
-    the CGFs for the atoms and molecular orbitals coefficients read
-    from a HDF5 File.
+        mtx_sji_t1: Matrix, mtx_sij_t1: Matrix) -> Matrix:
+    """Calculate the non-adiabatic interaction matrix using 3 geometries.
+
+    see: https://aip.scitation.org/doi/10.1063/1.467455
+    the contracted Gaussian functions for the atoms and molecular orbitals coefficients
+    are read from a HDF5 File.
+
+    Parameters
+    ----------
+    dt
+        Integration step (atomic units)
+    mtx_sji_t0
+        Sji Overlap matrix at time t0
+    mtx_sij_t0
+        SiJ Overlap matrix at time t0
+    mtx_sji_t1
+        Sji Overlap matrix at time t1
+    mtx_sij_t1
+        SiJ Overlap matrix at time t1
+
+    Returns
+    ------
+    np.ndarray
+        Coupling matrix
+
     """
     cte = 1.0 / (4.0 * dt)
     return cte * (3 * (mtx_sji_t1 - mtx_sij_t1) + (mtx_sij_t0 - mtx_sji_t0))
@@ -24,15 +71,32 @@ def calculate_couplings_3points(
 
 def calculate_couplings_levine(dt: float, w_jk: Matrix,
                                w_kj: Matrix) -> Matrix:
-    """
+    """Compute coupling using the Levine approximation.
+
     Compute the non-adiabatic coupling according to:
     `Evaluation of the Time-Derivative Coupling for Accurate Electronic
     State Transition Probabilities from Numerical Simulations`.
     Garrett A. Meek and Benjamin G. Levine.
     dx.doi.org/10.1021/jz5009449 | J. Phys. Chem. Lett. 2014, 5, 2351−2356
 
-    NOTE:
-     In numpy sinc is defined as sin(pi * x) / (pi * x)
+    .. NOTE::
+        In numpy sinc is defined as sin(pi * x) / (pi * x)
+
+
+    Parameters
+    ----------
+    dt
+        Integration step (atomic units)
+    w_jk
+        Overlap matrix
+    mtx_sij_t0
+        Overlap matrix
+
+    Returns
+    -------
+    np.ndarray
+        Coupling matrix
+
     """
 
     # Diagonal matrix
@@ -85,10 +149,8 @@ def calculate_couplings_levine(dt: float, w_jk: Matrix,
     return cte * (np.arccos(w_jj) * (A + B) + np.arcsin(w_kj) * (C + D) + E)
 
 
-def correct_phases(overlaps: Tensor3D, mtx_phases: Matrix) -> list:
-    """
-    Correct the phases for all the overlaps
-    """
+def correct_phases(overlaps: Tensor3D, mtx_phases: Matrix) -> List[Matrix]:
+    """Correct the phases for all the overlaps."""
     nOverlaps = overlaps.shape[0]  # total number of overlap matrices
     dim = overlaps.shape[1]  # Size of the square matrix
 
@@ -106,10 +168,25 @@ def correct_phases(overlaps: Tensor3D, mtx_phases: Matrix) -> list:
 
 
 def compute_overlaps_for_coupling(
-        config: dict, pair_molecules: tuple, coefficients: tuple) -> tuple:
-    """
-    Compute the Overlap matrices used to compute the couplings
-    :returns: [Matrix] containing the overlaps at different times
+        config: DictConfig,
+        pair_molecules: Tuple[MolXYZ, MolXYZ],
+        coefficients: Tuple[Matrix, Matrix]) -> Matrix:
+    """Compute the Overlap matrices used to compute the couplings.
+
+    Parameters
+    ---------
+    config
+        Configuration of the current task
+    pair_molecule
+        Molecule to compute the overlap
+    coefficients
+        Molecular orbital coefficients for each molecule
+
+    Returns
+    -------
+    Matrix
+        containing the overlaps at different times
+
     """
     # Atomic orbitals overlap
     suv = calcOverlapMtx(config,  pair_molecules)
@@ -120,10 +197,8 @@ def compute_overlaps_for_coupling(
     return np.dot(css0.T, np.dot(suv, css1))
 
 
-def read_overlap_data(config: dict, mo_paths: list) -> tuple:
-    """
-    Read the Molecular orbital coefficients and the transformation matrix
-    """
+def read_overlap_data(config: DictConfig, mo_paths: List[str]) -> Tuple[Matrix, Matrix]:
+    """Read the Molecular orbital coefficients."""
     mos = retrieve_hdf5_data(config.path_hdf5, mo_paths)
 
     # Extract a subset of molecular orbitals to compute the coupling
@@ -133,20 +208,18 @@ def read_overlap_data(config: dict, mo_paths: list) -> tuple:
     return css0, css1
 
 
-def compute_range_orbitals(config: dict) -> tuple:
-    """
-    Compute the lowest and highest index used to extract
-    a subset of Columns from the MOs
-    """
+def compute_range_orbitals(config: DictConfig) -> Tuple[int, int]:
+    """Compute the lowest and highest index used to extract a subset of Columns from the MOs."""
     lowest = config.nHOMO - (config.mo_index_range[0] + config.active_space[0])
     highest = config.nHOMO + config.active_space[1] - config.mo_index_range[0]
 
     return lowest, highest
 
 
-def calcOverlapMtx(config: dict, molecules: tuple) -> Matrix:
-    """
-    Parallel calculation of the overlap matrix using the libint2 library
+def calcOverlapMtx(config: DictConfig, molecules: Tuple[MolXYZ, MolXYZ]) -> Matrix:
+    """Compute the overlap matrix between two geometries.
+
+    The calculation of the overlap matrix uses the libint2 library
     at two different geometries: R0 and R1.
     """
     mol_i, mol_j = tuple(tuplesXYZ_to_plams(x) for x in molecules)

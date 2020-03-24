@@ -2,12 +2,14 @@
 
 The interface to the C++ Libint2 library is located at the parent folder,
 in the `libint` folder.
+
 Index
 -----
 .. currentmodule:: nac.integrals.multipole_matrices
 .. autosummary::
     get_multipole_matrix
     compute_matrix_multipole
+
 API
 ---
 .. autofunction:: get_multipole_matrix
@@ -17,7 +19,6 @@ import logging
 import os
 import uuid
 from os.path import join
-from pathlib import Path
 from typing import List, Optional
 import numpy as np
 

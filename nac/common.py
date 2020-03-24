@@ -74,7 +74,8 @@ fs_to_nm = 299.79246
 #: planck constant in eV * fs
 hbar = 1e15 * physical_constants['Planck constant over 2 pi in eV s'][0]
 
-# Numpy type hints
+# type hints
+MolXYZ = List[AtomXYZ]
 Vector = np.ndarray
 Matrix = np.ndarray
 Tensor3D = np.ndarray
