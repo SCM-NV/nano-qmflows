@@ -1,11 +1,11 @@
 """Installation recipe."""
-from Cython.Distutils import build_ext
-from os.path import join
-from setuptools import (Extension, find_packages, setup)
-
 import os
-import setuptools
+import sys
+from os.path import join
 
+import setuptools
+from Cython.Distutils import build_ext
+from setuptools import Extension, find_packages, setup
 
 here = os.path.abspath(os.path.dirname(__file__))
 version = {}
@@ -54,31 +54,52 @@ def has_flag(compiler, flagname):
 def cpp_flag(compiler):
     """Return the -std=c++[11/14] compiler flag.
 
-    The c++14 is prefered over c++11 (when it is available).
+    The newer version is prefered over c++11 (when it is available).
     """
-    if has_flag(compiler, '-std=c++14'):
-        return '-std=c++14'
-    elif has_flag(compiler, '-std=c++11'):
-        return '-std=c++11'
-    else:
-        raise RuntimeError('Unsupported compiler -- at least C++11 support '
-                           'is needed!')
+    flags = ['-std=c++14', '-std=c++11']
+
+    for flag in flags:
+        if has_flag(compiler, flag):
+            return flag
+
+    raise RuntimeError('Unsupported compiler -- at least C++11 support '
+                       'is needed!')
 
 
 class BuildExt(build_ext):
     """A custom build extension for adding compiler-specific options."""
 
-    def build_extensions(self):
-        """Call the funcionality to compile the extension."""
-        opts = []
-        opts.append('-DVERSION_INFO="%s"' %
-                    self.distribution.get_version())
-        opts.append(cpp_flag(self.compiler))
-        if has_flag(self.compiler, '-fopenmp'):
-            opts.append('-fopenmp')
+    c_opts = {
+        'msvc': ['/EHsc'],
+        'unix': [],
+    }
+    l_opts = {
+        'msvc': [],
+        'unix': [],
+    }
 
+    if sys.platform == 'darwin':
+        darwin_opts = ['-stdlib=libc++', '-mmacosx-version-min=10.7']
+        c_opts['unix'] += darwin_opts
+        l_opts['unix'] += darwin_opts
+
+    def build_extensions(self):
+        """Actual compilation."""
+        ct = self.compiler.compiler_type
+        opts = self.c_opts.get(ct, [])
+        link_opts = self.l_opts.get(ct, [])
+        if ct == 'unix':
+            opts.append('-DVERSION_INFO="%s"' %
+                        self.distribution.get_version())
+            opts.append(cpp_flag(self.compiler))
+            if has_flag(self.compiler, '-fvisibility=hidden'):
+                opts.append('-fvisibility=hidden')
+        elif ct == 'msvc':
+            opts.append('/DVERSION_INFO=\\"%s\\"' %
+                        self.distribution.get_version())
         for ext in self.extensions:
             ext.extra_compile_args = opts
+            ext.extra_link_args = link_opts
         build_ext.build_extensions(self)
 
 
