@@ -1,19 +1,43 @@
-"""Module to configure and run CP2K jobs."""
+"""Module to configure and run CP2K jobs.
+
+Index
+-----
+.. currentmodule:: nac.schedule.scheduleCp2k
+.. autosummary::
+    prepare_job_cp2k
+
+API
+---
+.. autofunction:: prepare_job_cp2k
+
+"""
 
 import fnmatch
 import os
 from os.path import join
 
 from noodles import schedule  # Workflow Engine
-from qmflows import templates
-from qmflows.packages import cp2k
+
+from qmflows import Settings, cp2k, templates
+from qmflows.packages.cp2k_package import CP2K, CP2K_Result
 from qmflows.parsers.xyzParser import string_to_plams_Molecule
+from qmflows.type_hints import PathLike, PromisedObject
+from typing import Any, Dict
 
 
-def try_to_read_wf(path_dir: str) -> str:
-    """Try to get a wave function file from `path_dir`.
+def try_to_read_wf(path_dir: PathLike) -> PathLike:
+    """Try to get a wave function file from ``path_dir``.
 
-    Raise an error if there is not a wave function file.
+    Returns
+    -------
+    str
+        Path to the wave function file.
+
+    Raises
+    ------
+    RuntimeError
+        If there is not a wave function file.
+
     """
     xs = os.listdir(path_dir)
     files = list(filter(lambda x: fnmatch.fnmatch(x, '*wfn'), xs))
@@ -24,16 +48,24 @@ def try_to_read_wf(path_dir: str) -> str:
             "There are no wave function file in path:{path_dir}")
 
 
-def prepare_cp2k_settings(settings: object, dict_input: dict, guess_job: object) -> object:
+def prepare_cp2k_settings(
+        settings: Settings, dict_input: Dict[str, Any], guess_job: CP2K_Result) -> CP2K:
     """Fill in the parameters for running a single job in CP2K.
 
-    :param files: Tuple containing the IO files to run the calculations
-    :parameter dict_input: Dictionary contaning the data to
-    fill in the template
-    :param k: nth Job
-    :param guess_job: Path to *.wfn cp2k file use as restart file.
-    :param cp2k_config:  Parameters required by cp2k.
-    :returns: ~qmflows.Settings
+    Parameters
+    ----------
+    settings
+        Input for CP2K
+    dict_input
+        Input for the current molecular geometry
+    guess_job
+        Previous job to read the guess wave function
+
+    Returns
+    .......
+    CP2K
+        job to run
+
     """
     dft = settings.specific.cp2k.force_eval.dft
     dft['print']['mo']['filename'] = dict_input["job_files"].get_MO
@@ -55,20 +87,23 @@ def prepare_cp2k_settings(settings: object, dict_input: dict, guess_job: object)
 
 
 @schedule
-def prepare_job_cp2k(settings: object, dict_input: dict, guess_job: object) -> object:
-    """Generate a CP2K job.
+def prepare_job_cp2k(
+        settings: Settings, dict_input: Dict[str, Any], guess_job: PromisedObject) -> CP2K:
+    """Generate a :class:`qmflows.packages.cp2k_packages.CP2K` job.
 
-    :param settings: Settings to run cp2k
-    :parameter dict_input: Dictionary contaning the data to complete the settings
+    Parameters
+    ----------
+    settings
+        Input for CP2K
+    dict_input
+        Input for the current molecular geometry
+    guess_job
+        Previous job to read the guess wave function
 
-    The `dict_input` contains:
-
-    :param geometry: Molecular geometry stored as String
-    :param files: Tuple containing the IO files to run the calculations
-    :param k: nth Job
-    :parameter workdir: Name of the Working folder
-    :param guess_job: Path to *.wfn cp2k file use as restart file.
-    :returns: ~qmflows.CP2K
+    Returns
+    .......
+    CP2K
+        job to run
     """
     job_settings = prepare_cp2k_settings(settings, dict_input, guess_job)
 
