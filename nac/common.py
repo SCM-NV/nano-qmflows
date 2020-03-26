@@ -15,8 +15,9 @@ Index
 API
 ---
 .. autoclass:: DictConfig
-.. autofunction:: retrieve_hdf5_data
 .. autofunction:: is_data_in_hdf5
+.. autofunction:: retrieve_hdf5_data
+.. autofunction:: number_spherical_functions_per_atom
 .. autofunction:: store_arrays_in_hdf5
 
 """

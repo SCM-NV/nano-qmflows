@@ -1,15 +1,26 @@
-"""Miscellaneous functions to analyze the simulation results."""
+"""Miscellaneous functions to analyze the simulation results.
 
-__author__ = "Ivan Infante and Felipe Zapata"
+Index
+-----
+.. currentmodule:: nac.analysis.tools
+.. autosummary::
+
+API
+---
+
+"""
+
+import os
+from typing import Tuple
 
 import numpy as np
-import os
 import pyparsing as pa
-from nac.common import (hbar, h2ev, r2meV, fs_to_cm)
 from scipy.optimize import curve_fit
 
+from ..common import fs_to_cm, h2ev, hbar, r2meV
 
-def autocorrelate(f: callable):
+
+def autocorrelate(f: np.ndarray) -> Tuple[float, float]:
     """Compute the un-normalized and normalized autocorrelation of a function."""
     d_f = f - f.mean()
     # Compute the autocorrelation function
@@ -19,17 +30,17 @@ def autocorrelate(f: callable):
     return uacf, nacf
 
 
-def gauss_function(x: float, sigma: float):
+def gauss_function(x: float, sigma: float) -> np.ndarray:
     """Compute a Gaussian function used to fit the dephasing time."""
     return np.exp(-0.5 * (-x / sigma) ** 2)
 
 
-def func_conv(x_real: float, x_grid: float, delta: float):
+def func_conv(x_real: np.ndarray, x_grid: np.ndarray, delta: float) -> np.ndarray:
     """Compute a convolution on a grid using a Gaussian function."""
     return np.exp(-2 * (x_grid - x_real) ** 2 / delta ** 2)
 
 
-def convolute(x, y, x_points, sigma):
+def convolute(x: np.ndarray, y: np.ndarray, x_points: np.ndarray, sigma: float) -> np.ndarray:
     """Convolute a spectrum on a grid of x_points.
 
     You need as input x, y and the grid where to convolute.
@@ -42,7 +53,7 @@ def convolute(x, y, x_points, sigma):
     return y_points
 
 
-def dephasing(f: callable, dt: float):
+def dephasing(f: np.ndarray, dt: float):
     """Compute the dephasing time of a given function.
 
     Use the optical response formalisms:

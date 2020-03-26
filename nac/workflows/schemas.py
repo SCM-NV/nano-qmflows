@@ -1,4 +1,16 @@
-"""Schemas to valid user input."""
+"""Schemas to valid user input.
+
+Index
+-----
+.. currentmodule:: nac.workflows.schemas
+.. autosummary::
+    {autosummary}
+
+API
+---
+{autodata}
+
+"""
 __all__ = [
     'schema_cp2k_general_settings',
     'schema_derivative_couplings',
@@ -10,27 +22,27 @@ __all__ = [
     'schema_ipr',
     'schema_coop']
 
-
 import os
 from numbers import Real
 
 import pkg_resources as pkg
 from schema import And, Optional, Or, Schema, Use
+from typing import Any, Dict, Iterable
 
 
-def equal_lambda(name: str):
+def equal_lambda(name: str) -> And:
     """Create an schema checking that the keyword matches the expected value."""
     return And(
         str, Use(str.lower), lambda s: s == name)
 
 
-def any_lambda(array: iter):
+def any_lambda(array: Iterable[str]) -> And:
     """Create an schema checking that the keyword matches one of the expected values."""
     return And(
         str, Use(str.lower), lambda s: s in array)
 
 
-def merge(d1, d2):
+def merge(d1: Dict[str, Any], d2: Dict[str, Any]) -> Dict[str, Any]:
     """Merge two dictionaries using without modifying the original."""
     x = d1.copy()
 
@@ -39,6 +51,7 @@ def merge(d1, d2):
     return x
 
 
+#: Schema to validate the CP2K general settings
 schema_cp2k_general_settings = Schema({
 
     # "Basis set to carry out the quantum chemistry simulation"
@@ -104,6 +117,8 @@ schema_cp2k_general_settings = Schema({
         )])
 })
 
+
+#: Dictionary with the options common to all workflows
 dict_general_options = {
 
     # Number of occupied/virtual orbitals to use
@@ -156,6 +171,7 @@ dict_general_options = {
     "cp2k_general_settings": schema_cp2k_general_settings
 }
 
+#: Dict with input options to run a derivate coupling workflow
 dict_derivative_couplings = {
     # Name of the workflow to run
     "workflow": equal_lambda("derivative_couplings"),
@@ -180,9 +196,11 @@ dict_derivative_couplings = {
 dict_merged_derivative_couplings = merge(
     dict_general_options, dict_derivative_couplings)
 
+#: Schema to validate the input for a derivative coupling calculation
 schema_derivative_couplings = Schema(
     dict_merged_derivative_couplings)
 
+#: Schema to validate the input for a job scheduler
 schema_job_scheduler = Schema({
     Optional("scheduler", default="slurm"):
     any_lambda(("slurm", "pbs")),
@@ -194,6 +212,7 @@ schema_job_scheduler = Schema({
     Optional("load_modules", default=""): str
 })
 
+#: Input options to distribute a job
 dict_distribute = {
 
     Optional("workdir", default=os.getcwd()): str,
@@ -210,6 +229,7 @@ dict_distribute = {
 
 }
 
+#: input to distribute a derivative coupling job
 dict_distribute_derivative_couplings = {
 
     # Name of the workflow to run
@@ -217,6 +237,7 @@ dict_distribute_derivative_couplings = {
 }
 
 
+#: Schema to validate the input to distribute a derivate coupling calculation
 schema_distribute_derivative_couplings = Schema(
     merge(
         dict_distribute,
@@ -224,6 +245,7 @@ schema_distribute_derivative_couplings = Schema(
             dict_merged_derivative_couplings,
             dict_distribute_derivative_couplings)))
 
+#: Input for an absorption spectrum calculation
 dict_absorption_spectrum = {
 
     # Name of the workflow to run
@@ -245,6 +267,7 @@ dict_absorption_spectrum = {
 dict_merged_absorption_spectrum = merge(
     dict_general_options, dict_absorption_spectrum)
 
+#: Schema to validate the input for an absorption spectrum calculation
 schema_absorption_spectrum = Schema(dict_merged_absorption_spectrum)
 
 
@@ -258,7 +281,6 @@ schema_distribute_absorption_spectrum = Schema(
     merge(dict_distribute, merge(
         dict_merged_absorption_spectrum, dict_distribute_absorption_spectrum)))
 
-
 dict_single_points = {
     # Name of the workflow to run
     "workflow": any_lambda(("single_points", "ipr_calculation", "coop_calculation")),
@@ -267,25 +289,34 @@ dict_single_points = {
     "cp2k_general_settings": schema_cp2k_general_settings
 }
 
+#: input to distribute single point calculations
 dict_distribute_single_points = {
 
     # Name of the workflow to run
     "workflow": equal_lambda("distribute_single_points")
 }
 
+#: Input for a Crystal Orbital Overlap Population calculation
 dict_coop = {
     # List of the two elements to calculate the COOP for
     "coop_elements": list}
 
+
 dict_merged_single_points = merge(dict_general_options, dict_single_points)
 
+#: Schema to validate the input of a single pointe calculation
 schema_single_points = Schema(dict_merged_single_points)
 
+#: Schema to validate the input for a Inverse Participation Ratio calculation
 schema_ipr = schema_single_points
 
+#: Input for a Crystal Orbital Overlap Population calculation
 dict_merged_coop = merge(dict_merged_single_points, dict_coop)
+
+#: Schema to validate the input for a Crystal Orbital Overlap Population calculation
 schema_coop = Schema(dict_merged_coop)
 
+#: Schema to validate the input to distribute a single point calculation
 schema_distribute_single_points = Schema(
     merge(dict_distribute, merge(
         dict_merged_single_points, dict_distribute_single_points)))

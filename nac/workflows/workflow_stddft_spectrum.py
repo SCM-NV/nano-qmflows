@@ -1,4 +1,12 @@
-"""Compute the excited states energies and MO coefficients using the STDDFT approach."""
+"""Compute the excited states energies and MO coefficients using the STDDFT approach.
+
+Index
+-----
+.. currentmodule:: nac.workflows.workflow_stddft_spectrum
+.. autosummary::
+    workflow_stddft
+
+"""
 __all__ = ['workflow_stddft']
 
 import logging
@@ -6,31 +14,27 @@ from os.path import join
 
 import numpy as np
 from noodles import gather, schedule, unpack
-from qmflows import run
-from qmflows.parsers import parse_string_xyz
 from scipy.linalg import sqrtm
 from scipy.spatial.distance import cdist
 
-from nac.common import (DictConfig, angs2au, change_mol_units, h2ev, hardness,
-                        is_data_in_hdf5, retrieve_hdf5_data,
-                        store_arrays_in_hdf5, xc)
-from nac.integrals.multipole_matrices import get_multipole_matrix
-from nac.schedule.components import calculate_mos
-from nac.workflows.initialization import initialize
+from qmflows import run
+from qmflows.parsers import parse_string_xyz
+from qmflows.type_hints import PathLike
 
-from .tools import number_spherical_functions_per_atom
+from ..common import (DictConfig, angs2au, change_mol_units, h2ev, hardness,
+                      is_data_in_hdf5, number_spherical_functions_per_atom,
+                      retrieve_hdf5_data, store_arrays_in_hdf5, xc)
+from ..integrals.multipole_matrices import get_multipole_matrix
+from ..schedule.components import calculate_mos
+from .initialization import initialize
+from typing import Any, Dict, Tuple
 
 # Starting logger
 logger = logging.getLogger(__name__)
 
 
-def workflow_stddft(config: dict) -> None:
-    """Compute the excited states using simplified TDDFT.
-
-    :param workflow_settings: Arguments to compute the oscillators see:
-    `data/schemas/absorption_spectrum.json
-    :returns: None
-    """
+def workflow_stddft(config: DictConfig) -> None:
+    """Compute the excited states using simplified TDDFT."""
     # Dictionary containing the general configuration
     config.update(initialize(config))
 
@@ -50,10 +54,11 @@ def workflow_stddft(config: dict) -> None:
             {'i': i * config.stride, 'mol': mol}))
           for i, mol in enumerate(molecules_au)])
 
-    return run(gather(results, energy_paths_hdf5), folder=config['workdir'])
+    run(gather(results, energy_paths_hdf5), folder=config['workdir'])
 
 
-def compute_excited_states_tddft(config: dict, path_MOs: list, dict_input: dict):
+def compute_excited_states_tddft(
+        config: DictConfig, path_MOs: PathLike, dict_input: Dict[str, Any]) -> None:
     """Compute the excited states properties (energy and coefficients).
 
     Take a given `mo_index_range`, the `tddft` method and `xc_dft` exchange functional.
@@ -85,11 +90,10 @@ def compute_excited_states_tddft(config: dict, path_MOs: list, dict_input: dict)
     dict_input.update(
         {"multipoles": multipoles[1:], "omega": omega, "xia": xia})
 
-    return compute_oscillator_strengths(
-        config, dict_input)
+    compute_oscillator_strengths(config, dict_input)
 
 
-def get_omega_xia(config: dict, dict_input: dict) -> tuple:
+def get_omega_xia(config: DictConfig, dict_input: Dict) -> Tuple[np.ndarray, np.ndarray]:
     """Search for the multipole_matrices, Omega and xia values in the HDF5.
 
     if they are not available compute and store them.
@@ -119,18 +123,18 @@ def get_omega_xia(config: dict, dict_input: dict) -> tuple:
         return omega, xia
 
 
-def compute_sing_orb(inp: dict) -> tuple:
-    """Single Orbital approximation."""
-    energy, nocc, nvirt = [getattr(inp, x)
-                           for x in ("energy", "nocc", "nvirt")]
+def compute_sing_orb(inp: Dict[str, Any]) -> Tuple[np.ndarray, np.ndarray]:
+    """Compute the Single Orbital approximation."""
+    energy, nocc, nvirt = tuple(inp[x]for x in ("energy", "nocc", "nvirt"))
     omega = -np.subtract(
-        energy[:nocc].reshape(nocc, 1), energy[nocc:].reshape(nvirt, 1).T).reshape(nocc*nvirt)
+        energy[:nocc].reshape(nocc, 1), energy[nocc:].reshape(nvirt, 1).T).reshape(nocc * nvirt)
     xia = np.eye(nocc * nvirt)
 
     return omega, xia
 
 
-def compute_std_aproximation(config: dict, dict_input: dict):
+def compute_std_aproximation(
+        config: DictConfig, dict_input: Dict[str, Any]) -> Tuple[np.ndarray, np.ndarray]:
     """Compute the oscillator strenght using either the stda or stddft approximations."""
     logger.info("Reading or computing the dipole matrices")
 
@@ -178,7 +182,7 @@ def compute_std_aproximation(config: dict, dict_input: dict):
     return omega, xia
 
 
-def compute_oscillator_strengths(config: dict, inp: dict) -> np.array:
+def compute_oscillator_strengths(config: DictConfig, inp: Dict[str, Any]) -> None:
     """Compute oscillator strengths.
 
     The formula can be rearranged like this:
@@ -226,7 +230,7 @@ def compute_oscillator_strengths(config: dict, inp: dict) -> np.array:
     write_output(config, inp)
 
 
-def write_output(config: dict, inp: dict):
+def write_output(config: DictConfig, inp: Dict[str, Any]) -> None:
     """Write the results using numpy functionality."""
     output = write_output_tddft(inp)
 

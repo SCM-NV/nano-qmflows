@@ -143,8 +143,12 @@ setup(
     package_data={
         'nac': ['basis/*.json', 'basis/BASIS*', 'basis/GTH_POTENTIALS']
     },
+    entry_points={
+        'console_scripts': [
+            'run_workflow.py=nac.workflows.run_workflow:main'
+        ]
+    },
     scripts=[
-        'scripts/cli/run_workflow.py',
         'scripts/distribution/distribute_jobs.py',
         'scripts/hamiltonians/plot_mos_energies.py',
         'scripts/hamiltonians/plot_spectra.py',

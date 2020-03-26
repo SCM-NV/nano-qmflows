@@ -1,31 +1,41 @@
+"""Workflow to compute the derivate coupling between states.
 
+The ``workflow_derivative_couplings`` expected a file with a trajectory-like
+file with the molecular geometries to compute the couplings.
+
+Index
+----
+.. currentmodule:: nac.workflows.workflow_coupling
+.. autosummary::
+
+"""
 __all__ = ['workflow_derivative_couplings']
 
-
-from nac.schedule.components import calculate_mos
-from nac.schedule.scheduleCoupling import (
-    calculate_overlap, lazy_couplings, write_hamiltonians)
-from nac.workflows.initialization import initialize
-from noodles import (gather, schedule, unpack)
-from os.path import join
-from qmflows import run
 
 import logging
 import os
 import shutil
+from os.path import join
+from pathlib import Path
+from typing import List, Tuple
+
+from noodles import gather, schedule, unpack
+
+from qmflows import run
+from qmflows.type_hints import PathLike
+
+from ..common import DictConfig
+from ..schedule.components import calculate_mos
+from ..schedule.scheduleCoupling import (calculate_overlap, lazy_couplings,
+                                         write_hamiltonians)
+from .initialization import initialize
 
 # Starting logger
 logger = logging.getLogger(__name__)
 
 
-def workflow_derivative_couplings(config: dict) -> list:
-    """
-    Compute the derivative couplings from an MD trajectory.
-
-    :param workflow_settings: Arguments to compute the oscillators see:
-    `nac/workflows/schemas.py
-    :returns: None
-    """
+def workflow_derivative_couplings(config: DictConfig) -> Tuple[List[PathLike], List[PathLike]]:
+    """Compute the derivative couplings for a molecular dynamic trajectory."""
     # Dictionary containing the general configuration
     config.update(initialize(config))
 
@@ -64,8 +74,8 @@ def workflow_derivative_couplings(config: dict) -> list:
     return results
 
 
-def create_path_hamiltonians(workdir: str) -> str:
-    """ Path to store the resulting hamiltonians """
+def create_path_hamiltonians(workdir: PathLike) -> PathLike:
+    """Create the Paths to store the resulting hamiltonians."""
     path_hamiltonians = join(workdir, 'hamiltonians')
     if not os.path.exists(path_hamiltonians):
         os.makedirs(path_hamiltonians)
@@ -73,10 +83,8 @@ def create_path_hamiltonians(workdir: str) -> str:
     return path_hamiltonians
 
 
-def remove_folders(folders):
-    """
-    Remove unused folders
-    """
+def remove_folders(folders: List[PathLike]):
+    """Remove unused folders."""
     for f in folders:
-        if os.path.exists(f):
+        if Path(f).exists():
             shutil.rmtree(f)
