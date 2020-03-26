@@ -35,12 +35,12 @@ def gauss_function(x: float, sigma: float) -> np.ndarray:
     return np.exp(-0.5 * (-x / sigma) ** 2)
 
 
-def func_conv(x_real: float, x_grid: float, delta: float) -> np.ndarray:
+def func_conv(x_real: np.ndarray, x_grid: np.ndarray, delta: float) -> np.ndarray:
     """Compute a convolution on a grid using a Gaussian function."""
     return np.exp(-2 * (x_grid - x_real) ** 2 / delta ** 2)
 
 
-def convolute(x, y, x_points, sigma):
+def convolute(x: np.ndarray, y: np.ndarray, x_points: np.ndarray, sigma: float) -> np.ndarray:
     """Convolute a spectrum on a grid of x_points.
 
     You need as input x, y and the grid where to convolute.

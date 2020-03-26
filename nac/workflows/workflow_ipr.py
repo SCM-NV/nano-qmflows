@@ -2,17 +2,18 @@
 __all__ = ['workflow_ipr']
 
 import logging
+
 import numpy as np
-from qmflows.parsers.xyzParser import readXYZ
 from scipy.constants import physical_constants
 from scipy.linalg import sqrtm
 
-from nac.workflows import workflow_single_points
-from nac.common import (
-    number_spherical_functions_per_atom,
-    retrieve_hdf5_data, is_data_in_hdf5)
-from nac.integrals.multipole_matrices import compute_matrix_multipole
-from nac.workflows.initialization import initialize
+from qmflows.parsers.xyzParser import readXYZ
+
+from ..common import (is_data_in_hdf5, number_spherical_functions_per_atom,
+                      retrieve_hdf5_data)
+from ..integrals.multipole_matrices import compute_matrix_multipole
+from .initialization import initialize
+from .workflow_single_points import workflow_single_points
 
 # Starting logger
 LOGGER = logging.getLogger(__name__)

@@ -1,3 +1,4 @@
+"""Simulation workflows."""
 from .initialization import initialize
 from .workflow_coop import workflow_crystal_orbital_overlap_population
 from .workflow_coupling import workflow_derivative_couplings

@@ -6,19 +6,18 @@ from os.path import join
 
 import numpy as np
 from noodles import gather, schedule, unpack
-from qmflows import run
-from qmflows.parsers import parse_string_xyz
 from scipy.linalg import sqrtm
 from scipy.spatial.distance import cdist
 
-from nac.common import (DictConfig, angs2au, change_mol_units, h2ev, hardness,
-                        is_data_in_hdf5, retrieve_hdf5_data,
-                        store_arrays_in_hdf5, xc)
-from nac.integrals.multipole_matrices import get_multipole_matrix
-from nac.schedule.components import calculate_mos
-from nac.workflows.initialization import initialize
+from qmflows import run
+from qmflows.parsers import parse_string_xyz
 
-from .tools import number_spherical_functions_per_atom
+from ..common import (DictConfig, angs2au, change_mol_units, h2ev, hardness,
+                      is_data_in_hdf5, number_spherical_functions_per_atom,
+                      retrieve_hdf5_data, store_arrays_in_hdf5, xc)
+from ..integrals.multipole_matrices import get_multipole_matrix
+from ..schedule.components import calculate_mos
+from .initialization import initialize
 
 # Starting logger
 logger = logging.getLogger(__name__)
