@@ -1,6 +1,7 @@
 """Comman line interface to run the workflows."""
 
 import argparse
+import logging
 import os
 
 import yaml
@@ -10,6 +11,8 @@ from nac.workflows import (workflow_crystal_orbital_overlap_population,
                            workflow_single_points, workflow_stddft)
 from nac.workflows.input_validation import process_input
 from nac.workflows.workflow_ipr import workflow_ipr
+
+logger = logging.getLogger(__name__)
 
 msg = "namd.py -i input"
 
@@ -44,8 +47,7 @@ def main():
     # run workflow
     function = dict_workflows[workflow_name]
 
-    # if comm is None or comm.Get_rank() == 0:
-    print("Running worflow: ", os.path.abspath(input_file))
+    logger.info(f"Running worflow using: {os.path.abspath(input_file)}")
     function(inp)
 
 
