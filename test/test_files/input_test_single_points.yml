@@ -1,6 +1,6 @@
 workflow:
   single_points
-project_name: pbe_C
+project_name: ethylene
 compute_orbitals: True
 active_space: [2, 2]
 path_hdf5: "test/test_files/ethylene.hdf5"
