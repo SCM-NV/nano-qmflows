@@ -189,7 +189,7 @@ def compute_overlaps_for_coupling(
 
     """
     # Atomic orbitals overlap
-    suv = calcOverlapMtx(config,  pair_molecules)
+    suv = calcOverlapMtx(config, pair_molecules)
 
     # Read Orbitals Coefficients
     css0, css1 = coefficients

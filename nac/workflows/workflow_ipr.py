@@ -1,57 +1,51 @@
-"""Inverse Participation Ratio calculation."""
+"""Inverse Participation Ratio calculation.
+
+Index
+-----
+.. currentmodule:: nac.workflows.workflow_ipr
+.. autosummary::
+    workflow_ipr
+
+"""
 __all__ = ['workflow_ipr']
 
 import logging
 
 import numpy as np
-from scipy.constants import physical_constants
 from scipy.linalg import sqrtm
 
 from qmflows.parsers.xyzParser import readXYZ
 
-from ..common import (is_data_in_hdf5, number_spherical_functions_per_atom,
+from ..common import (DictConfig, h2ev, number_spherical_functions_per_atom,
                       retrieve_hdf5_data)
 from ..integrals.multipole_matrices import compute_matrix_multipole
 from .initialization import initialize
-from .workflow_single_points import workflow_single_points
+from .tools import compute_single_point_eigenvalues_coefficients
 
 # Starting logger
 LOGGER = logging.getLogger(__name__)
 
 
-def workflow_ipr(config: dict) -> list:
-    """Inverse Participation Ratio main function."""
+def workflow_ipr(config: DictConfig) -> np.ndarray:
+    """Compute the Inverse Participation Ratio main function."""
     # Dictionary containing the general information
     config.update(initialize(config))
 
-    # Checking if hdf5 contains the required eigenvalues and coefficients
-    path_coefficients = '{}/point_0/cp2k/mo/coefficients'.format(
-        config["project_name"])
-    path_eigenvalues = '{}/point_0/cp2k/mo/eigenvalues'.format(
-        config["project_name"])
-
-    predicate_1 = is_data_in_hdf5(config["path_hdf5"], path_coefficients)
-    predicate_2 = is_data_in_hdf5(config["path_hdf5"], path_eigenvalues)
-    if all((predicate_1, predicate_2)):
-        LOGGER.info("Coefficients and eigenvalues already in hdf5.")
-    else:
-        # Call the single point workflow to calculate the eigenvalues and
-        # coefficients
-        LOGGER.info("Starting single point calculation.")
-        workflow_single_points(config)
+    # Checking if hdf5 contains the required eigenvalues and coefficientsa
+    compute_single_point_eigenvalues_coefficients(config)
 
     # Logger info
     LOGGER.info("Starting IPR calculation.")
 
     # Get eigenvalues and coefficients from hdf5
-    atomic_orbitals = retrieve_hdf5_data(config["path_hdf5"], path_coefficients)
-    energies = retrieve_hdf5_data(config["path_hdf5"], path_eigenvalues)
-
-    h2ev = physical_constants['Hartree energy in eV'][0]
-    energies = energies * h2ev  # To get them from Hartree to eV
+    node_path_coefficients = f'{config.project_name}/point_0/cp2k/mo/coefficients'
+    node_path_eigenvalues = f'{config.project_name}/point_0/cp2k/mo/eigenvalues'
+    atomic_orbitals = retrieve_hdf5_data(config.path_hdf5, node_path_coefficients)
+    energies = retrieve_hdf5_data(config.path_hdf5, node_path_eigenvalues)
+    energies *= h2ev  # To get them from Hartree to eV
 
     # Converting the xyz-file to a mol-file
-    mol = readXYZ(config["path_traj_xyz"])
+    mol = readXYZ(config.path_traj_xyz)
 
     # Computing the overlap-matrix S and its square root
     overlap = compute_matrix_multipole(mol, config, 'overlap')
@@ -64,8 +58,8 @@ def workflow_ipr(config: dict) -> list:
     sphericals = number_spherical_functions_per_atom(
         mol,
         'cp2k',
-        config["cp2k_general_settings"]["basis"],
-        config["path_hdf5"])  # Array with number of spherical orbitals per atom
+        config.cp2k_general_settings["basis"],
+        config.path_hdf5)  # Array with number of spherical orbitals per atom
 
     # New matrix with the atoms on the rows and the MOs on the columns
     indices = np.zeros(len(mol), dtype='int')
@@ -81,7 +75,7 @@ def workflow_ipr(config: dict) -> list:
 
     # Lastly, we save the output as a txt-file
     result = np.zeros((accumulated_transf_orbitals.shape[1], 2))
-    result[:, 0], result[:, 1] = energies, 1 / ipr
-
+    result[:, 0] = energies
+    result[:, 1] = 1.0 / ipr
     np.savetxt('IPR.txt', result)
     return result
