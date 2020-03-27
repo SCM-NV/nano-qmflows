@@ -1,16 +1,26 @@
-"""Tooling use in the workflows."""
-import h5py
-import numpy as np
-from nac.common import calc_orbital_Slabels, read_basis_format
+"""Common utilities use by the workflows."""
+
+from ..common import DictConfig, is_data_in_hdf5
+from .workflow_single_points import workflow_single_points
+import logging
+
+# Starting logger
+LOGGER = logging.getLogger(__name__)
 
 
-def number_spherical_functions_per_atom(mol, package_name, basis_name, path_hdf5):
-    """Compute the number of spherical shells per atom."""
-    with h5py.File(path_hdf5, 'r') as f5:
-        xs = [f5[f'{package_name}/basis/{atom[0]}/{basis_name}/coefficients']
-              for atom in mol]
-        ys = [calc_orbital_Slabels(
-            package_name, read_basis_format(
-                package_name, path.attrs['basisFormat'])) for path in xs]
+def compute_single_point_eigenvalues_coefficients(config: DictConfig):
+    """Check if hdf5 contains the required eigenvalues and coefficients.
 
-        return np.stack([sum(len(x) for x in ys[i]) for i in range(len(mol))])
+    If not, it runs the single point calculation.
+    """
+    node_path_coefficients = f'{config.project_name}/point_0/cp2k/mo/coefficients'
+    node_path_eigenvalues = f'{config.project_name}/point_0/cp2k/mo/eigenvalues'
+
+    node_paths = (node_path_coefficients, node_path_eigenvalues)
+    if all(is_data_in_hdf5(config.path_hdf5, x) for x in node_paths):
+        LOGGER.info("Coefficients and eigenvalues already in hdf5.")
+    else:
+        # Call the single point workflow to calculate the eigenvalues and
+        # coefficients
+        LOGGER.info("Starting single point calculation.")
+        workflow_single_points(config)

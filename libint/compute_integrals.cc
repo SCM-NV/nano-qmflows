@@ -278,10 +278,10 @@ std::vector<Matrix> compute_multipoles(
   return result;
 }
 
-std::vector<int> read_basisFormat(const string &basisFormat) {
+libint2::svector<int> read_basisFormat(const string &basisFormat) {
   // Transform the string containing the basis format for CP2K, into a vector of
   // strings
-  std::vector<int> rs;
+  libint2::svector<int> rs;
   for (auto x : basisFormat) {
     if (std::isdigit(x))
       // convert char to int
@@ -323,7 +323,20 @@ CP2K_Basis_Atom read_basis_from_hdf5(const string &path_file,
     // catch and print any HDF5 error
     std::cerr << err.what() << std::endl;
   }
-  return CP2K_Basis_Atom{symbol, coefficients, exponents,
+
+  // Move data to small vector
+  libint2::svector<double> small_exponents;
+  std::move(exponents.begin(), exponents.end(),
+            std::back_inserter(small_exponents));
+
+  libint2::svector<libint2::svector<double>> small_coefficients;
+  for (const auto &v : coefficients) {
+    libint2::svector<double> small;
+    std::move(v.begin(), v.end(), std::back_inserter(small));
+    small_coefficients.push_back(small);
+  }
+
+  return CP2K_Basis_Atom{symbol, small_coefficients, small_exponents,
                          read_basisFormat(format)};
 }
 
@@ -363,8 +376,8 @@ create_map_symbols_basis(const string &path_hdf5,
 /**
  * \brief Create the shell specification for a given atom.
  */
-std::vector<Shell> create_shells_for_atom(const CP2K_Basis_Atom &data,
-                                          const Atom &atom) {
+libint2::svector<Shell> create_shells_for_atom(const CP2K_Basis_Atom &data,
+                                               const Atom &atom) {
   // The CP2K basis format is defined by a vector of integers, for each atom.
   // For example For the C atom and the Basis DZVP-MOLOPT-GTH the basis format
   // is:
@@ -379,8 +392,8 @@ std::vector<Shell> create_shells_for_atom(const CP2K_Basis_Atom &data,
   //   * 1 Contraction of D Gaussian Orbital
   // Note: From element 4 onwards are define the number of contracted for each
   // quantum number.
-  std::vector<int> basis_format = data.basis_format;
-  std::vector<Shell> shells;
+  libint2::svector<int> basis_format = data.basis_format;
+  libint2::svector<Shell> shells;
 
   int acc = 0;
   for (int i = 0; i + 4 < static_cast<int>(basis_format.size()); i++) {

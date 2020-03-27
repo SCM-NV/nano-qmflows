@@ -1,4 +1,17 @@
-"""Initial configuration setup."""
+"""Initial configuration setup.
+
+Index
+-----
+.. currentmodule:: nac.workflows.initialization
+.. autosummary::
+    initialize
+    split_trajectory
+API
+---
+.. autofunction:: initialize
+.. autofunction:: split_trajectory
+
+"""
 __all__ = ['initialize', 'read_swaps', 'split_trajectory']
 
 import fnmatch
@@ -11,24 +24,33 @@ from collections import namedtuple
 from os.path import join
 from pathlib import Path
 from subprocess import PIPE, Popen
-from typing import Union
+from typing import Any, Dict, List, Union
 
 import numpy as np
 import pkg_resources
-from qmflows.parsers import parse_string_xyz
-from qmflows.parsers.cp2KParser import readCp2KBasis
 
 import nac
-from nac.common import (Matrix, change_mol_units, is_data_in_hdf5,
-                        retrieve_hdf5_data, store_arrays_in_hdf5)
-from nac.schedule.components import create_point_folder, split_file_geometries
+from qmflows.parsers import parse_string_xyz
+from qmflows.parsers.cp2KParser import readCp2KBasis
+from qmflows.type_hints import PathLike
+
+from ..common import (DictConfig, Matrix, change_mol_units, is_data_in_hdf5,
+                      retrieve_hdf5_data, store_arrays_in_hdf5)
+from ..schedule.components import create_point_folder, split_file_geometries
 
 # Starting logger
 logger = logging.getLogger(__name__)
 
 
-def initialize(config: dict) -> dict:
-    """Initialize all the data required to schedule the workflows."""
+def initialize(config: Dict[str, Any]) -> DictConfig:
+    """Initialize all the data required to schedule the workflows.
+
+    Returns
+    -------
+    DictConfig
+        Input to run the workflow.
+
+    """
     log_config(config)
 
     # Scratch folder
@@ -69,34 +91,34 @@ def initialize(config: dict) -> dict:
     return config
 
 
-def save_basis_to_hdf5(config: dict, package_name: str = "cp2k") -> None:
+def save_basis_to_hdf5(config: DictConfig, package_name: str = "cp2k") -> None:
     """Store the specification of the basis set in the HDF5 to compute the integrals."""
     path_basis = pkg_resources.resource_filename("nac", "basis/BASIS_MOLOPT")
     if not is_data_in_hdf5(config.path_hdf5, path_basis):
         store_cp2k_basis(config.path_hdf5, path_basis)
 
 
-def store_cp2k_basis(path_hdf5: str, path_basis: str):
+def store_cp2k_basis(path_hdf5: PathLike, path_basis: PathLike) -> None:
     """Read the CP2K basis set into an HDF5 file."""
     # Tuple that contains the name/value for the basis formats
     BasisFormats = namedtuple("BasisFormats", "name value")
 
     keys, vals = readCp2KBasis(path_basis)
-    paths_exponents = [join("cp2k/basis", xs.atom, xs.basis, "exponents")
-                       for xs in keys]
-    paths_coefficients = [
+    node_paths_exponents = [join("cp2k/basis", xs.atom, xs.basis, "exponents")
+                            for xs in keys]
+    node_paths_coefficients = [
         join("cp2k/basis", xs.atom, xs.basis, "coefficients") for xs in keys]
 
     exponents = [xs.exponents for xs in vals]
     coefficients = [xs.coefficients for xs in vals]
     formats = [str(xs.basisFormat) for xs in keys]
 
-    store_arrays_in_hdf5(path_hdf5, paths_exponents, exponents)
-    store_arrays_in_hdf5(path_hdf5, paths_coefficients, coefficients,
+    store_arrays_in_hdf5(path_hdf5, node_paths_exponents, exponents)
+    store_arrays_in_hdf5(path_hdf5, node_paths_coefficients, coefficients,
                          attribute=BasisFormats(name="basisFormat", value=formats))
 
 
-def guesses_to_compute(calculate_guesses: str, enumerate_from: int, len_geometries) -> list:
+def guesses_to_compute(calculate_guesses: str, enumerate_from: int, len_geometries: int) -> List[int]:
     """Guess for the wave function."""
     if calculate_guesses is None:
         points_guess = []
@@ -114,7 +136,7 @@ def guesses_to_compute(calculate_guesses: str, enumerate_from: int, len_geometri
     return points_guess
 
 
-def read_swaps(path_hdf5: str, project_name: str) -> Matrix:
+def read_swaps(path_hdf5: PathLike, project_name: str) -> Matrix:
     """Read the crossing tracking for the Molecular orbital."""
     path_swaps = join(project_name, 'swaps')
     if is_data_in_hdf5(path_hdf5, path_swaps):
@@ -126,13 +148,23 @@ def read_swaps(path_hdf5: str, project_name: str) -> Matrix:
         raise RuntimeError(msg)
 
 
-def split_trajectory(path: str, nBlocks: int, pathOut: str) -> list:
+def split_trajectory(path: PathLike, nBlocks: int, pathOut: PathLike) -> List[PathLike]:
     """Split an XYZ trajectory in n Block and write them in a given path.
 
-    :Param path: Path to the XYZ file.
-    :param nBlocks: number of Block into which the xyz file is split.
-    :param pathOut: Path were the block are written.
-    :returns: path to block list
+    Parameters
+    ----------
+    path
+        Path to the XYZ file.
+    nBlocks
+        number of Block into which the xyz file is split.
+    pathOut
+        Path were the block are written.
+
+    Returns
+    -------
+    list
+        list of paths to the xyz geometries
+
     """
     with open(path, 'r') as f:
         # Read First line
@@ -164,7 +196,7 @@ def split_trajectory(path: str, nBlocks: int, pathOut: str) -> list:
         return fnmatch.filter(os.listdir(), "chunk_xyz_?")
 
 
-def log_config(config):
+def log_config(config: DictConfig) -> None:
     """Print initial configuration."""
     workdir = os.path.abspath('.')
     file_log = f'{config.project_name}.log'
