@@ -51,9 +51,9 @@ using Matrix =
 struct CP2K_Basis_Atom {
   // Contains the basis specificationf for a given atom
   std::string symbol;
-  std::vector<std::vector<double>> coefficients;
-  std::vector<double> exponents;
-  std::vector<int> basis_format;
+  libint2::svector<libint2::svector<double>> coefficients;
+  libint2::svector<double> exponents;
+  libint2::svector<int> basis_format;
 };
 
 // Map from atomic_number to symbol
