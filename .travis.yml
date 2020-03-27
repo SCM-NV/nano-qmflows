@@ -26,8 +26,7 @@ install:
   # Install python env
   - conda create --name namd python=${PYTHON_VERSION}
   - source activate namd
-  - conda install -c conda-forge/label/gcc7 highfive h5py eigen cython rdkit pybind11
-  - conda install -c conda-forge libint==2.4.2
+  - conda install -c conda-forge libint==2.6.0 highfive h5py eigen cython rdkit pybind11
   - pip install .[test] -v
   
 
