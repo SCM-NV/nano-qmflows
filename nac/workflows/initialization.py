@@ -20,11 +20,10 @@ import logging
 import os
 import subprocess
 import tempfile
-from collections import namedtuple
 from os.path import join
 from pathlib import Path
 from subprocess import PIPE, Popen
-from typing import Any, Dict, List, Union
+from typing import List, Union
 
 import numpy as np
 import pkg_resources
@@ -34,15 +33,16 @@ from qmflows.parsers import parse_string_xyz
 from qmflows.parsers.cp2KParser import readCp2KBasis
 from qmflows.type_hints import PathLike
 
-from ..common import (DictConfig, Matrix, change_mol_units, is_data_in_hdf5,
-                      retrieve_hdf5_data, store_arrays_in_hdf5)
+from ..common import (BasisFormats, DictConfig, Matrix, change_mol_units,
+                      is_data_in_hdf5, retrieve_hdf5_data,
+                      store_arrays_in_hdf5)
 from ..schedule.components import create_point_folder, split_file_geometries
 
 # Starting logger
 logger = logging.getLogger(__name__)
 
 
-def initialize(config: Dict[str, Any]) -> DictConfig:
+def initialize(config: DictConfig) -> DictConfig:
     """Initialize all the data required to schedule the workflows.
 
     Returns
@@ -100,9 +100,6 @@ def save_basis_to_hdf5(config: DictConfig, package_name: str = "cp2k") -> None:
 
 def store_cp2k_basis(path_hdf5: PathLike, path_basis: PathLike) -> None:
     """Read the CP2K basis set into an HDF5 file."""
-    # Tuple that contains the name/value for the basis formats
-    BasisFormats = namedtuple("BasisFormats", "name value")
-
     keys, vals = readCp2KBasis(path_basis)
     node_paths_exponents = [join("cp2k/basis", xs.atom, xs.basis, "exponents")
                             for xs in keys]
@@ -208,7 +205,7 @@ def log_config(config: DictConfig) -> None:
     handler.terminator = ""
 
     version = pkg_resources.get_distribution('qmflows-namd').version
-    path = nac.__path__
+    path = pkg_resources.resource_filename('nac', '')
 
     logger.info(f"Using qmflows-namd version: {version} ")
     logger.info(f"qmflows-namd path is: {path}")

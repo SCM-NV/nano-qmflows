@@ -58,7 +58,7 @@ def workflow_stddft(config: DictConfig) -> None:
 
 
 def compute_excited_states_tddft(
-        config: DictConfig, path_MOs: PathLike, dict_input: Dict[str, Any]) -> None:
+        config: DictConfig, path_MOs: PathLike, dict_input: DictConfig) -> None:
     """Compute the excited states properties (energy and coefficients).
 
     Take a given `mo_index_range`, the `tddft` method and `xc_dft` exchange functional.
@@ -93,10 +93,17 @@ def compute_excited_states_tddft(
     compute_oscillator_strengths(config, dict_input)
 
 
-def get_omega_xia(config: DictConfig, dict_input: Dict) -> Tuple[np.ndarray, np.ndarray]:
+def get_omega_xia(
+        config: DictConfig, dict_input: DictConfig) -> Tuple[str, str]:
     """Search for the multipole_matrices, Omega and xia values in the HDF5.
 
     if they are not available compute and store them.
+
+    Returns
+    -------
+    tuple
+        Pair of Node paths to omega and xia in the HDF5.
+
     """
     tddft = config.tddft.lower()
 
@@ -123,7 +130,7 @@ def get_omega_xia(config: DictConfig, dict_input: Dict) -> Tuple[np.ndarray, np.
         return omega, xia
 
 
-def compute_sing_orb(inp: Dict[str, Any]) -> Tuple[np.ndarray, np.ndarray]:
+def compute_sing_orb(inp: DictConfig) -> Tuple[np.ndarray, np.ndarray]:
     """Compute the Single Orbital approximation."""
     energy, nocc, nvirt = tuple(inp[x]for x in ("energy", "nocc", "nvirt"))
     omega = -np.subtract(
@@ -134,7 +141,7 @@ def compute_sing_orb(inp: Dict[str, Any]) -> Tuple[np.ndarray, np.ndarray]:
 
 
 def compute_std_aproximation(
-        config: DictConfig, dict_input: Dict[str, Any]) -> Tuple[np.ndarray, np.ndarray]:
+        config: DictConfig, dict_input: DictConfig) -> Tuple[np.ndarray, np.ndarray]:
     """Compute the oscillator strenght using either the stda or stddft approximations."""
     logger.info("Reading or computing the dipole matrices")
 
@@ -182,7 +189,7 @@ def compute_std_aproximation(
     return omega, xia
 
 
-def compute_oscillator_strengths(config: DictConfig, inp: Dict[str, Any]) -> None:
+def compute_oscillator_strengths(config: DictConfig, inp: DictConfig) -> None:
     """Compute oscillator strengths.
 
     The formula can be rearranged like this:
@@ -230,7 +237,7 @@ def compute_oscillator_strengths(config: DictConfig, inp: Dict[str, Any]) -> Non
     write_output(config, inp)
 
 
-def write_output(config: DictConfig, inp: Dict[str, Any]) -> None:
+def write_output(config: DictConfig, inp: DictConfig) -> None:
     """Write the results using numpy functionality."""
     output = write_output_tddft(inp)
 
@@ -402,9 +409,8 @@ def get_exciton_positions(d0I_ao, s, moment, n_lowest, carrier):
         raise RuntimeError(f"unkown option: {carrier}")
 
 
-def write_output_tddft(inp: dict):
+def write_output_tddft(inp: DictConfig) -> np.ndarray:
     """Write out as a table in plane text."""
-
     energy = inp.energy
 
     excs = [(i, a) for i in range(inp.nocc)
@@ -421,23 +427,23 @@ def write_output_tddft(inp: dict):
     output[:, 5] = d_z  # Transition dipole moment in the z direction
     # Weight of the most important excitation
     output[:, 6] = np.hstack([np.max(inp.xia[:, i] ** 2)
-                              for i in range(inp.nocc*inp.nvirt)])
+                              for i in range(inp.nocc * inp.nvirt)])
 
     # Find the index of this transition
     index_weight = np.hstack([
         np.where(
             inp.xia[:, i] ** 2 == np.max(
                 inp.xia[:, i] ** 2))
-        for i in range(inp.nocc * inp.nvirt)]).reshape(inp.nocc*inp.nvirt)
+        for i in range(inp.nocc * inp.nvirt)]).reshape(inp.nocc * inp.nvirt)
 
     # Index of the hole for the most important excitation
     output[:, 7] = np.stack([excs[index_weight[i]][0]
-                             for i in range(inp.nocc*inp.nvirt)]) + 1
+                             for i in range(inp.nocc * inp.nvirt)]) + 1
     # These are the energies of the hole for the transition with the larger weight
     output[:, 8] = energy[output[:, 7].astype(int) - 1] * h2ev
     # Index of the electron for the most important excitation
     output[:, 9] = np.stack([excs[index_weight[i]][1]
-                             for i in range(inp.nocc*inp.nvirt)]) + 1
+                             for i in range(inp.nocc * inp.nvirt)]) + 1
     # These are the energies of the electron for the transition with the larger weight
     output[:, 10] = energy[output[:, 9].astype(int) - 1] * h2ev
     # This is the energy for the transition with the larger weight

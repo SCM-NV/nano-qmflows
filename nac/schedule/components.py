@@ -20,15 +20,16 @@ import os
 import shutil
 from collections import defaultdict
 from os.path import join
-from typing import Dict, List, NamedTuple, Tuple
+from typing import Any, DefaultDict, Dict, List, NamedTuple
 
 from more_itertools import chunked
 from noodles import gather, schedule
 
+from qmflows.common import InfoMO
 from qmflows.type_hints import PathLike, PromisedObject
 from qmflows.warnings_qmflows import SCF_Convergence_Warning
 
-from ..common import (DictConfig, Matrix, MolXYZ, Vector, is_data_in_hdf5,
+from ..common import (DictConfig, Matrix, MolXYZ, is_data_in_hdf5,
                       read_cell_parameters_as_array, store_arrays_in_hdf5)
 from .scheduleCp2k import prepare_job_cp2k
 
@@ -91,7 +92,7 @@ def calculate_mos(config: DictConfig) -> List[str]:
         k = j + config.enumerate_from
 
         # dictionary containing the information of the j-th job
-        dict_input = defaultdict(lambda: None)
+        dict_input = defaultdict(lambda _: None)
         dict_input["geometry"] = gs
         dict_input["k"] = k
 
@@ -145,7 +146,7 @@ def calculate_mos(config: DictConfig) -> List[str]:
 
 @schedule
 def store_MOs(
-        config: DictConfig, dict_input: Dict, promise_qm: PromisedObject) -> str:
+        config: DictConfig, dict_input: DefaultDict[str, Any], promise_qm: PromisedObject) -> str:
     """Store the MOs in the HDF5.
 
     Returns
@@ -171,7 +172,7 @@ def store_MOs(
 
 
 def dump_orbitals_to_hdf5(
-        data: Tuple[Vector, Matrix], path_hdf5: str, project_name: str, job_name: str) -> None:
+        data: InfoMO, path_hdf5: str, project_name: str, job_name: str) -> None:
     """Store the result in HDF5 format.
 
     Parameters
@@ -249,7 +250,7 @@ def compute_orbitals(
 
 @schedule
 def schedule_check(
-        promise_qm: PromisedObject, config: dict, dict_input: dict) -> PromisedObject:
+        promise_qm: PromisedObject, config: DictConfig, dict_input: DictConfig) -> PromisedObject:
     """Check wether a calculation finishes succesfully otherwise run a new guess."""
     job_name = dict_input["job_name"]
     point_dir = dict_input["point_dir"]
@@ -281,7 +282,8 @@ def schedule_check(
         return promise_qm
 
 
-def create_point_folder(work_dir: str, n: int, enumerate_from: int) -> List[PathLike]:
+def create_point_folder(
+        work_dir: PathLike, n: int, enumerate_from: int) -> List[PathLike]:
     """Create a new folder for each point in the MD trajectory."""
     folders = []
     for k in range(enumerate_from, n + enumerate_from):

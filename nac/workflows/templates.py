@@ -20,7 +20,7 @@ from scm.plams import Molecule
 
 from qmflows.settings import Settings
 from qmflows.type_hints import PathLike
-from typing import Any, Dict, List, Set
+from typing import Any, Dict, Iterable, Set
 
 path_valence_electrons = pkg.resource_filename(
     "nac", "basis/valence_electrons.json")
@@ -278,7 +278,7 @@ cp2k:
 """, Loader=yaml.FullLoader))
 
 
-def generate_kinds(elements: List[str], basis: str, potential: str) -> Settings:
+def generate_kinds(elements: Iterable[str], basis: str, potential: str) -> Settings:
     """Generate the kind section for cp2k basis."""
     s = Settings()
     subsys = s.cp2k.force_eval.subsys
@@ -316,7 +316,7 @@ def create_settings_from_template(
         return setts + kinds
 
 
-def read_unique_atomic_labels(path_traj_xyz: PathLike) -> Set:
+def read_unique_atomic_labels(path_traj_xyz: PathLike) -> Set[str]:
     """Return the unique atomic labels."""
     mol = Molecule(path_traj_xyz, 'xyz')
 

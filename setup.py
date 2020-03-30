@@ -142,7 +142,7 @@ setup(
     classifiers=[
         'License :: OSI Approved :: Apache-2.0',
         'Intended Audience :: Science/Research',
-        'programming language :: python :: 3.7',
+        'programming language :: python :: 3.8',
         'development status :: 4 - Beta',
         'intended audience :: science/research',
         'topic :: scientific/engineering :: chemistry'

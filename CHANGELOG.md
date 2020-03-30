@@ -4,6 +4,7 @@
 ## Added
 * [Support for Mac](https://github.com/SCM-NV/qmflows-namd/issues/231)
 * [Allow to specify the CP2K executable](https://github.com/SCM-NV/qmflows-namd/issues/226)
+* [MyPy static checking](https://github.com/SCM-NV/qmflows-namd/issues/237)
 
 ## Changed
 * [Use New QMFlows API](https://github.com/SCM-NV/qmflows-namd/issues/227)

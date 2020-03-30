@@ -22,17 +22,17 @@ API
 
 """
 
-__all__ = ['CGF', 'DictConfig', 'Matrix', 'Tensor3D', 'Vector',
+__all__ = ['DictConfig', 'Matrix', 'Tensor3D', 'Vector',
            'change_mol_units', 'getmass', 'h2ev', 'hardness',
            'number_spherical_functions_per_atom', 'retrieve_hdf5_data',
            'is_data_in_hdf5', 'store_arrays_in_hdf5']
 
 
 import os
-from collections import namedtuple
 from itertools import chain
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Mapping, Tuple, Union
+from typing import (Any, Dict, Iterable, List, Mapping, NamedTuple, Tuple,
+                    Union, overload)
 
 import h5py
 import mendeleev
@@ -60,13 +60,17 @@ class DictConfig(dict):
         return DictConfig(self.copy())
 
 
+class BasisFormats(NamedTuple):
+    """NamedTuple that contains the name/value for the basis formats."""
+
+    name: str
+    value: List[str]
+
+
 def concat(xss: Iterable) -> List[Any]:
     """Concatenate of all the elements of a list."""
     return list(chain(*xss))
 
-
-# NamedTuples
-CGF = namedtuple("CGF", ("primitives", "orbType"))
 
 # ================> Constants <================
 #: Angstrom to a.u
@@ -91,7 +95,7 @@ Matrix = np.ndarray
 Tensor3D = np.ndarray
 
 
-def path_to_posix(path: PathLike) -> str:
+def path_to_posix(path: PathLike) -> PathLike:
     """Convert a Path to posix string."""
     if isinstance(path, Path):
         return path.absolute().absolute()
@@ -153,9 +157,17 @@ def xc(s: str) -> Dict[str, Any]:
     return d[s]
 
 
-def retrieve_hdf5_data(
-        path_hdf5: PathLike,
-        paths_to_prop: Union[str, List[str]]) -> Union[np.ndarray, List[np.ndarray]]:
+@overload
+def retrieve_hdf5_data(path_hdf5: Path, paths_to_prop: str) -> np.ndarray:
+    ...
+
+
+@overload
+def retrieve_hdf5_data(path_hdf5: Path, paths_to_prop: List[str]) -> List[np.ndarray]:
+    ...
+
+
+def retrieve_hdf5_data(path_hdf5, paths_to_prop):
     """Read Numerical properties from ``paths_hdf5``.
 
     Parameters
@@ -220,7 +232,7 @@ def is_data_in_hdf5(path_hdf5: PathLike, xs: Union[str, List[str]]) -> bool:
 
 def store_arrays_in_hdf5(
     path_hdf5: PathLike, paths: Union[List[str], str], tensor: Union[np.ndarray, List[float]],
-        dtype: float = np.float32, attribute: Union[namedtuple, None] = None) -> None:
+        dtype: float = np.float32, attribute: Union[BasisFormats, None] = None) -> None:
     """Store a tensor in the HDF5.
 
     Parameters
@@ -312,7 +324,7 @@ def calc_orbital_Slabels(name: str, fss: Union[List[int], List[List[int]]]) -> L
     fss
         Format basis set
     """
-    def funSlabels(d: Dict[str, Tuple[str, ...]], l: str, fs: Union[int, List[int]]) -> List[Tuple[str, ...]]:
+    def funSlabels(d: Mapping[str, Tuple[str, ...]], l: str, fs: Union[int, List[int]]) -> List[Tuple[str, ...]]:
         """Search for the spherical functions for each orbital type `l`."""
         if isinstance(fs, list):
             fs = sum(fs)

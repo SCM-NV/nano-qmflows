@@ -353,13 +353,13 @@ def calculate_overlap(config: DictConfig, mo_paths_hdf5: List[str]) -> List[str]
 
 
 def single_machine_overlaps(
-        config: DictConfig, mo_paths_hdf5: List[str], i: int) -> List[str]:
+        config: DictConfig, mo_paths_hdf5: List[str], i: int) -> str:
     """Compute the overlaps in the CPUs avaialable on the local machine.
 
     Returns
     -------
-    list
-        Node paths to the overlaps store in the HDF5
+    str
+        Node path to the overlaps store in the HDF5
 
     """
     # Data to compute the overlaps
@@ -385,7 +385,7 @@ def create_overlap_path(config: DictConfig, i: int) -> str:
     return join(root, 'mtx_sji_t0')
 
 
-def select_molecules(config: dict, i: int) -> Tuple[MolXYZ, MolXYZ]:
+def select_molecules(config: DictConfig, i: int) -> Tuple[MolXYZ, MolXYZ]:
     """Select the pairs of molecules to compute the couplings."""
     k = 0 if config.overlaps_deph else i
     return tuple(parse_string_xyz(config.geometries[idx]) for idx in (k, i + 1))
