@@ -89,3 +89,9 @@ libint/main
 
 # Input parameters
 input_parameters.yml
+
+# Mypy
+.mypy_cache/
+
+# temporal files
+tmp
