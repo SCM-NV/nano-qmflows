@@ -19,7 +19,13 @@ Contents:
    derivative_couplings
    absorption_spectrum
    distribute_absorption_spectrum
-    
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Library Documentation
+
+   documentation
+
 
 
 Indices and tables

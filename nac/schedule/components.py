@@ -1,14 +1,9 @@
-"""Molecular orbitals calculation using CP2K and `QMFlows <https://github.com/SCM-NV/qmflows>.
-
-Index
------
-.. currentmodule:: nac.schedule.scheduleCoupling
-.. autosummary::
-    calculate_mos
+"""Molecular orbitals calculation using CP2K and `QMFlows <https://github.com/SCM-NV/qmflows>`.
 
 API
 ---
 .. autofunction:: calculate_mos
+
 """
 
 __all__ = ["calculate_mos", "create_point_folder",
@@ -31,7 +26,7 @@ from qmflows.warnings_qmflows import SCF_Convergence_Warning
 
 from ..common import (DictConfig, Matrix, MolXYZ, is_data_in_hdf5,
                       read_cell_parameters_as_array, store_arrays_in_hdf5)
-from .scheduleCp2k import prepare_job_cp2k
+from .scheduleCP2K import prepare_job_cp2k
 
 # Starting logger
 logger = logging.getLogger(__name__)
@@ -56,17 +51,12 @@ def calculate_mos(config: DictConfig) -> List[str]:
 
     The config dict contains:
         * geometries: list of molecular geometries
-        * project_name: Name of the project used as root path for storing
-        data in HDF5.
-        * path_hdf5: Path to the HDF5 file that contains the
-        numerical results.
+        * project_name: Name of the project used as root path for storing data in HDF5.
+        * path_hdf5: Path to the HDF5 file that contains the numerical results.
         * folders: path to the directories containing the MO outputs
         * settings_main: Settings for the job to run.
-        * calc_new_wf_guess_on_points: Calculate a new Wave function guess in
-        each of the geometries indicated. By Default only an initial guess is
-        computed.
-        * enumerate_from: Number from where to start enumerating the folders
-        create for each point in the MD
+        * calc_new_wf_guess_on_points: Calculate a new Wave function guess in each of the geometries indicated. By Default only an initial guess is computed.
+        * enumerate_from: Number from where to start enumerating the folders create for each point in the MD
 
     Returns
     -------

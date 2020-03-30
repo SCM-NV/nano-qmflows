@@ -11,7 +11,11 @@ Index
 -----
 .. currentmodule:: nac.integrals.nonAdiabaticCoupling
 .. autosummary::
-    {autosummary}
+    calculate_couplings_3points
+    calculate_couplings_levine
+    compute_overlaps_for_coupling
+    correct_phases
+
 
 API
 ---

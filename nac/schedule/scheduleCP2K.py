@@ -2,7 +2,7 @@
 
 Index
 -----
-.. currentmodule:: nac.schedule.scheduleCp2k
+.. currentmodule:: nac.schedule.scheduleCP2K
 .. autosummary::
     prepare_job_cp2k
 
@@ -101,9 +101,10 @@ def prepare_job_cp2k(
         Previous job to read the guess wave function
 
     Returns
-    .......
-    CP2K
+    -------
+    :class:`qmflows.packages.cp2k_package.CP2K`
         job to run
+
     """
     job_settings = prepare_cp2k_settings(settings, dict_input, guess_job)
 
