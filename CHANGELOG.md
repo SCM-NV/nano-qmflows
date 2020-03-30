@@ -1,5 +1,14 @@
 # Change Log
 
+# 0.9.0
+## Added
+* [Support for Mac](https://github.com/SCM-NV/qmflows-namd/issues/231)
+* [Allow to specify the CP2K executable](https://github.com/SCM-NV/qmflows-namd/issues/226)
+
+## Changed
+* [Use New QMFlows API](https://github.com/SCM-NV/qmflows-namd/issues/227)
+* [Use Libint==2.6.0](https://github.com/SCM-NV/qmflows-namd/issues/234)
+
 # 0.8.3
 
 ## Changed
