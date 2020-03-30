@@ -27,7 +27,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 def workflow_crystal_orbital_overlap_population(config: DictConfig):
-    """Crystal Orbital Overlap Population  main function."""
+    """Compute the Crystal Orbital Overlap Population."""
     # Dictionary containing the general information
     config.update(initialize(config))
 

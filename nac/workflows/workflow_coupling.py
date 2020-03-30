@@ -4,7 +4,7 @@ The ``workflow_derivative_couplings`` expected a file with a trajectory-like
 file with the molecular geometries to compute the couplings.
 
 Index
-----
+-----
 .. currentmodule:: nac.workflows.workflow_coupling
 .. autosummary::
 
