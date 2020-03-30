@@ -1,18 +1,46 @@
 #!/usr/bin/env python
+"""Command line interface to split a given workflow into several chunks.
+
+Usage:
+    distribute_jobs.py -i input.yml
+
+THE USER MUST CHANGES THESE VARIABLES ACCORDING TO HER/HIS NEEDS:
+      * project_name
+      * path to the basis and Cp2k Potential
+      * CP2K:
+          - Range of Molecular oribtals printed by CP2K
+          - Cell parameter
+      * Settings to Run Cp2k simulations
+      * Path to the trajectory in XYZ
+
+The slurm configuration is optional but the user can edit it:
+    property  default
+       * nodes         2
+       * tasks        24
+       * time   48:00:00
+       * name       namd
+
+Otherwise the user can fill the the ``free_format`` property with her
+own configuration in the yaml input file.
+
+"""
 
 import argparse
 import os
 import shutil
 import subprocess
 from os.path import join
+from typing import Dict, Tuple
 
 import numpy as np
 import yaml
 
-from nac.common import DictConfig, read_cell_parameters_as_array
-from nac.workflows.initialization import split_trajectory
-from nac.workflows.input_validation import process_input
 from qmflows import Settings
+from qmflows.type_hints import PathLike
+
+from ..common import DictConfig, read_cell_parameters_as_array
+from .initialization import split_trajectory
+from .input_validation import process_input
 
 
 def read_cmd_line():
@@ -28,24 +56,7 @@ def read_cmd_line():
 
 
 def main():
-    """Distribute the user specified by the user.
-
-    THE USER MUST CHANGES THESE VARIABLES ACCORDING TO HER/HIS NEEDS:
-      * project_name
-      * path to the basis and Cp2k Potential
-      * CP2K:
-          - Range of Molecular oribtals printed by CP2K
-          - Cell parameter
-      * Settings to Run Cp2k simulations
-      * Path to the trajectory in XYZ
-
-    The slurm configuration is optional but the user can edit it:
-        property  default
-       * nodes         2
-       * tasks        24
-       * time   48:00:00
-       * name       namd
-    """
+    """Distribute the user specified by the user."""
     # command line argument
     input_file = read_cmd_line()
 
@@ -62,7 +73,7 @@ def main():
         distribute_computations(dict_input)
 
 
-def distribute_computations(config: dict, hamiltonians=False) -> None:
+def distribute_computations(config: DictConfig, hamiltonians: bool = False) -> None:
     """Prepare the computation and write the scripts."""
     # Check if workdir exits otherwise create it
     os.makedirs(config.workdir, exist_ok=True)
@@ -109,17 +120,18 @@ def distribute_computations(config: dict, hamiltonians=False) -> None:
         write_input(folder_path, config)
 
         # Slurm executable
-        if config.job_scheduler["scheduler"].upper() == "SLURM":
+        scheduler = config.job_scheduler["scheduler"].upper()
+        if scheduler == "SLURM":
             write_slurm_script(config, dict_input)
         else:
-            msg = "The request job_scheduler: {} It is not implemented".formant()
+            msg = f"The request job_scheduler: {scheduler} it is not implemented"
             raise RuntimeError(msg)
 
         # change the window of molecules to compute
         config['enumerate_from'] += dict_input.dim_batch
 
 
-def write_input(folder_path: str, config: dict) -> None:
+def write_input(folder_path: PathLike, config: DictConfig) -> None:
     """Write the python script to compute the PYXAID hamiltonians."""
     file_path = join(folder_path, "input.yml")
 
@@ -146,7 +158,7 @@ def write_input(folder_path: str, config: dict) -> None:
         yaml.dump(config, f, default_flow_style=False, allow_unicode=True)
 
 
-def create_folders(config: dict, dict_input: dict):
+def create_folders(config: DictConfig, dict_input: DictConfig) -> None:
     """Create folder for each batch and copy the xyz."""
     # Move xyz to temporal file
     os.makedirs(dict_input.folder_path, exist_ok=True)
@@ -157,8 +169,8 @@ def create_folders(config: dict, dict_input: dict):
     os.makedirs(batch_dir, exist_ok=True)
 
 
-def write_slurm_script(config: dict, dict_input: dict):
-    """write an Slurm launch script."""
+def write_slurm_script(config: DictConfig, dict_input: DictConfig) -> None:
+    """Write an Slurm launch script."""
     index = dict_input.index
     python = "\n\nrun_workflow.py -i input.yml\n"
     results_dir = "results_chunk_" + str(index)
@@ -183,7 +195,7 @@ def write_slurm_script(config: dict, dict_input: dict):
         f.write(content)
 
 
-def format_slurm_parameters(slurm):
+def format_slurm_parameters(slurm: Dict[str, str]) -> str:
     """Format as a string some SLURM parameters."""
     sbatch = "#SBATCH -{} {}\n".format
 
@@ -191,17 +203,19 @@ def format_slurm_parameters(slurm):
     time = sbatch('t', slurm["wall_time"])
     nodes = sbatch('N', slurm["nodes"])
     tasks = sbatch('n', slurm["tasks"])
-    name = sbatch('J',  slurm["job_name"])
+    name = sbatch('J', slurm["job_name"])
     queue = sbatch('p', slurm["queue_name"])
 
     modules = slurm["load_modules"]
 
-    return ''.join([header, time, nodes, tasks, name, queue, modules])
+    if "free_format" in slurm:
+        return slurm["free_format"]
+    else:
+        return ''.join((header, time, nodes, tasks, name, queue, modules))
 
 
-def compute_number_of_geometries(file_name):
+def compute_number_of_geometries(file_name: PathLike) -> int:
     """Count the number of geometries in XYZ formant in a given file."""
-
     with open(file_name, 'r') as f:
         numat = int(f.readline())
 
@@ -214,7 +228,8 @@ def compute_number_of_geometries(file_name):
 
 
 def add_chunk_cell_parameters(
-        header_array_cell_parameters: tuple, config: dict, dict_input: dict) -> None:
+        header_array_cell_parameters: Tuple[str, np.ndarray],
+        config: DictConfig, dict_input: DictConfig) -> None:
     """Add the corresponding set of cell parameters for a given chunk."""
     path_file_cell_parameters = join(
         dict_input.folder_path, "cell_parameters.txt")

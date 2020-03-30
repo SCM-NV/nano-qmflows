@@ -9,6 +9,7 @@
 ## Changed
 * [Use New QMFlows API](https://github.com/SCM-NV/qmflows-namd/issues/227)
 * [Use Libint==2.6.0](https://github.com/SCM-NV/qmflows-namd/issues/234)
+* [Allow the user to enter her own slurm script](https://github.com/SCM-NV/qmflows-namd/issues/225)
 
 # 0.8.3
 
