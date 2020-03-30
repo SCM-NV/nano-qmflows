@@ -142,7 +142,7 @@ setup(
     classifiers=[
         'License :: OSI Approved :: Apache-2.0',
         'Intended Audience :: Science/Research',
-        'programming language :: python :: 3.7',
+        'programming language :: python :: 3.8',
         'development status :: 4 - Beta',
         'intended audience :: science/research',
         'topic :: scientific/engineering :: chemistry'
@@ -156,7 +156,7 @@ setup(
     cmdclass={'build_ext': BuildExt},
     ext_modules=[ext_pybind],
     extras_require={
-        'test': ['assertionlib', 'codacy-coverage', 'pytest', 'pytest-cov',
+        'test': ['assertionlib', 'codacy-coverage', 'mypy', 'pytest', 'pytest-cov',
                  'pytest-mock', 'pytest-pycodestyle', 'pytest-pydocstyle'],
         'doc': ['sphinx>=2.1', 'sphinx-autodoc-typehints', 'sphinx_rtd_theme', 'nbsphinx']
     },

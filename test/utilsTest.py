@@ -9,7 +9,7 @@ import shutil
 import os
 import pkg_resources as pkg
 
-__all__ = ["PATH_TEST", "copy_basis_and_orbitals", "cp2k_available", "remove_files"]
+__all__ = ["PATH_NAC", "PATH_TEST", "copy_basis_and_orbitals", "cp2k_available", "remove_files"]
 
 # Environment data
 PATH_NAC = Path(pkg.resource_filename('nac', ''))

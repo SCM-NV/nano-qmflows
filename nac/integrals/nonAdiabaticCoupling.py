@@ -149,7 +149,7 @@ def calculate_couplings_levine(dt: float, w_jk: Matrix,
     return cte * (np.arccos(w_jj) * (A + B) + np.arcsin(w_kj) * (C + D) + E)
 
 
-def correct_phases(overlaps: Tensor3D, mtx_phases: Matrix) -> List[Matrix]:
+def correct_phases(overlaps: Tensor3D, mtx_phases: Matrix) -> np.ndarray:
     """Correct the phases for all the overlaps."""
     nOverlaps = overlaps.shape[0]  # total number of overlap matrices
     dim = overlaps.shape[1]  # Size of the square matrix

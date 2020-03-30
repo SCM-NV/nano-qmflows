@@ -32,7 +32,7 @@ from ..common import (DictConfig, Matrix, is_data_in_hdf5, retrieve_hdf5_data,
 logger = logging.getLogger(__name__)
 
 
-def get_multipole_matrix(config: DictConfig, inp: dict, multipole: str) -> Matrix:
+def get_multipole_matrix(config: DictConfig, inp: DictConfig, multipole: str) -> Matrix:
     """Retrieve the `multipole` number `i` from the trajectory. Otherwise compute it.
 
     Parameters
