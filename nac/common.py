@@ -29,7 +29,7 @@ __all__ = ['DictConfig', 'Matrix', 'Tensor3D', 'Vector',
 
 
 import os
-from itertools import chain
+from itertools import chain, repeat
 from pathlib import Path
 from typing import (Any, Dict, Iterable, List, Mapping, NamedTuple, Tuple,
                     Union, overload)
@@ -230,9 +230,22 @@ def is_data_in_hdf5(path_hdf5: PathLike, xs: Union[str, List[str]]) -> bool:
         return False
 
 
+@overload
 def store_arrays_in_hdf5(
-    path_hdf5: PathLike, paths: Union[List[str], str], tensor: Union[np.ndarray, List[float]],
+        path_hdf5: PathLike, paths: str, tensor: np.ndarray,
         dtype: float = np.float32, attribute: Union[BasisFormats, None] = None) -> None:
+    ...
+
+
+@overload
+def store_arrays_in_hdf5(
+    path_hdf5: PathLike, paths: List[str], tensor: np.ndarray,
+        dtype: float = np.float32, attribute: Union[BasisFormats, None] = None) -> None:
+    ...
+
+
+def store_arrays_in_hdf5(
+        path_hdf5, paths, tensor, dtype=np.float32, attribute=None):
     """Store a tensor in the HDF5.
 
     Parameters
@@ -301,8 +314,18 @@ def number_spherical_functions_per_atom(
         return np.stack([sum(len(x) for x in ys[i]) for i in range(len(mol))])
 
 
-def calc_orbital_Slabels(name: str, fss: Union[List[int], List[List[int]]]) -> List[Tuple[str, ...]]:
-    """Calculate the number of spherical basisset.
+@overload
+def calc_orbital_Slabels(name: str, fss: List[int]) -> List[Tuple[str, ...]]:
+    ...
+
+
+@overload
+def calc_orbital_Slabels(name: str, fss: List[List[int]]) -> List[Tuple[str, ...]]:
+    ...
+
+
+def calc_orbital_Slabels(name, fss):
+    """Compute the spherical CGFs for a given basis set.
 
     Most quantum packages use standard basis set which contraction is
     presented usually by a format like:
@@ -317,20 +340,19 @@ def calc_orbital_Slabels(name: str, fss: Union[List[int], List[List[int]]]) -> L
     format explanation can be found at: `C2pk
     <https://github.com/cp2k/cp2k/blob/e392d1509d7623f3ebb6b451dab00d1dceb9a248/cp2k/data/BASIS_MOLOPT>`_.
 
-    parameters
+    Parameters
     ----------
     name
         Quantum package name
     fss
         Format basis set
-    """
-    def funSlabels(d: Mapping[str, Tuple[str, ...]], l: str, fs: Union[int, List[int]]) -> List[Tuple[str, ...]]:
-        """Search for the spherical functions for each orbital type `l`."""
-        if isinstance(fs, list):
-            fs = sum(fs)
-        labels = [d[l]] * fs
-        return labels
 
+    Returns
+    -------
+    list
+        containing tuples with the spherical CGFs
+
+    """
     angularM = ['s', 'p', 'd', 'f', 'g']
     if name == 'cp2k':
         dict_Ord_Labels = dict_cp2kOrder_spherical
@@ -339,6 +361,24 @@ def calc_orbital_Slabels(name: str, fss: Union[List[int], List[List[int]]]) -> L
 
     return concat([funSlabels(dict_Ord_Labels, l, fs)
                    for l, fs in zip(angularM, fss)])
+
+
+@overload
+def funSlabels(d: Mapping[str, Tuple[str, ...]], l: str, fs: int) -> List[Tuple[str, ...]]:
+    ...
+
+
+@overload
+def funSlabels(d: Mapping[str, Tuple[str, ...]], l: str, fs: List[int]) -> List[Tuple[str, ...]]:
+    ...
+
+
+def funSlabels(d, l, fs):
+    """Search for the spherical functions for each orbital type `l`."""
+    if isinstance(fs, list):
+        fs = sum(fs)
+    labels = repeat(d[l], fs)
+    return labels
 
 
 def read_basis_format(name: str, basisFormat: str) -> List[int]:

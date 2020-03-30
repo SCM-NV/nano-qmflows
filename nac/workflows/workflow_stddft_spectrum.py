@@ -94,7 +94,7 @@ def compute_excited_states_tddft(
 
 
 def get_omega_xia(
-        config: DictConfig, dict_input: DictConfig) -> Tuple[str, str]:
+        config: DictConfig, dict_input: DictConfig) -> Tuple[np.ndarray, np.ndarray]:
     """Search for the multipole_matrices, Omega and xia values in the HDF5.
 
     if they are not available compute and store them.
@@ -102,7 +102,7 @@ def get_omega_xia(
     Returns
     -------
     tuple
-        Pair of Node paths to omega and xia in the HDF5.
+        omega and xia numpy arrays.
 
     """
     tddft = config.tddft.lower()
