@@ -1,4 +1,16 @@
-"""Comman line interface to run the workflows."""
+"""Comman line interface to run the workflows.
+
+Usage:
+    run_workflow.py -i input.yml
+
+Available workflow:
+    * absorption_spectrum
+    * derivative_couplings
+    * single_points
+    * ipr_calculation
+    * coop_calculation
+
+"""
 
 import argparse
 import logging
@@ -14,7 +26,7 @@ from nac.workflows.workflow_ipr import workflow_ipr
 
 logger = logging.getLogger(__name__)
 
-msg = "namd.py -i input"
+msg = "run_workflow.py -i input.yml"
 
 parser = argparse.ArgumentParser(description=msg)
 parser.add_argument('-i', required=True,

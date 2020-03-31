@@ -166,11 +166,11 @@ setup(
     },
     entry_points={
         'console_scripts': [
-            'run_workflow.py=nac.workflows.run_workflow:main'
+            'run_workflow.py=nac.workflows.run_workflow:main',
+            'distribute_jobs.py=nac.workflows.distribute_jobs:main'
         ]
     },
     scripts=[
-        'scripts/distribution/distribute_jobs.py',
         'scripts/hamiltonians/plot_mos_energies.py',
         'scripts/hamiltonians/plot_spectra.py',
         'scripts/pyxaid/plot_average_energy.py',
