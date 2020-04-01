@@ -22,8 +22,7 @@ For further information on the theory behind nano-qmflows and how to use the pro
 Installation
 ------------
 
-In order to install the **nano-qmflows*
-   ````* library you need to install first the **QMFlows** package and its environment using *Miniconda* as detailed here_.
+In order to install the **nano-qmflows** library you need to install *Miniconda* as detailed here_.
 
 .. _here: https://docs.conda.io/en/latest/miniconda.html
 

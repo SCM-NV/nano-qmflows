@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """Comman line interface to run the workflows.
 
 Usage:

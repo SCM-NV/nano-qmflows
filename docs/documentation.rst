@@ -2,9 +2,9 @@
 For a more detailed description of **nano-qmflows** read the documentation
 
 .. toctree::
-   command_line
-   cp2k_interface
-   derivative_coupling
-   molecular_orbitals
-   integrals
-   workflows
+   docs_command_line
+   docs_cp2k_interface
+   docs_derivative_coupling
+   docs_molecular_orbitals
+   docs_integrals
+   docs_workflows
