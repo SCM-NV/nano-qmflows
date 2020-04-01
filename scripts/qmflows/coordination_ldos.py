@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 """Performs a molecular optimization using CP2K and prints local PDOS
 projected on subsets of atoms based on the atom type and coordination number."""
-
 import argparse
 import itertools
 import logging
