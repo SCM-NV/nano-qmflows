@@ -2,7 +2,7 @@
 # Metadata for citation of this software according to the CFF format (https://citation-file-format.github.io/)
 cff-version: 1.0.3
 message: If you use this software, please cite it as below.
-title: qmflows-namd
+title: nano-qmflows
 authors:
 - given-names: Felipe
   family-names: Zapata
@@ -15,5 +15,5 @@ keywords:
  - Workflows
 version: '0.8.2'
 date-released: 2020-02-10
-repository-code: https://github.com/SCM-NV/qmflows-namd
+repository-code: https://github.com/SCM-NV/nano-qmflows
 license: "Apache-2.0"

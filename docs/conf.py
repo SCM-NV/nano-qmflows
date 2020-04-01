@@ -18,7 +18,7 @@ import sys
 
 # -- Project information -----------------------------------------------------
 
-project = 'qmflows-namd'
+project = 'nano-qmflows'
 copyright = '2020, Felipe Zapata and Ivan Infante'
 author = 'Felipe Zapata and Ivan Infante'
 
@@ -117,7 +117,7 @@ html_static_path = ['_static']
 # -- Options for HTMLHelp output ---------------------------------------------
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'qmflows-namd'
+htmlhelp_basename = 'nano-qmflows'
 
 
 # -- Options for LaTeX output ------------------------------------------------
@@ -144,7 +144,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'qmflows-namd.tex', 'qmflows-namd Documentation',
+    (master_doc, 'nano-qmflows.tex', 'nano-qmflows Documentation',
      'Felipe Zapata and Ivan Infante', 'manual'),
 ]
 
@@ -154,7 +154,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'qmflows-namd', 'qmflows-namd Documentation',
+    (master_doc, 'nano-qmflows', 'nano-qmflows Documentation',
      [author], 1)
 ]
 
@@ -165,8 +165,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'qmflows-namd', 'qmflows-namd Documentation',
-     author, 'qmflows-namd', 'One line description of project.',
+    (master_doc, 'nano-qmflows', 'nano-qmflows Documentation',
+     author, 'nano-qmflows', 'One line description of project.',
      'Miscellaneous'),
 ]
 

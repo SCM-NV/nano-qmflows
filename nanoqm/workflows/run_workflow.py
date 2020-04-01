@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 """Comman line interface to run the workflows.
 
 Usage:
@@ -18,11 +19,12 @@ import os
 
 import yaml
 
-from nac.workflows import (workflow_crystal_orbital_overlap_population,
-                           workflow_derivative_couplings,
-                           workflow_single_points, workflow_stddft)
-from nac.workflows.input_validation import process_input
-from nac.workflows.workflow_ipr import workflow_ipr
+from .input_validation import process_input
+from .workflow_coop import workflow_crystal_orbital_overlap_population
+from .workflow_coupling import workflow_derivative_couplings
+from .workflow_ipr import workflow_ipr
+from .workflow_single_points import workflow_single_points
+from .workflow_stddft_spectrum import workflow_stddft
 
 logger = logging.getLogger(__name__)
 

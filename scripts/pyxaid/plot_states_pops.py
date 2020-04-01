@@ -1,7 +1,6 @@
 #! /usr/bin/env python
-"""
-This program reads the ouput files, out and me_pop,
-from a NAMD simulation run with pyxaid.
+"""This program reads the ouput files, out and me_pop,from a NAMD simulation run with pyxaid.
+
 It average the populations of each state upon several initial conditions and
 also allows to define macrostates.
 A macrostate is formed by a group of (micro)states indexed according to pyxaid numbering.
@@ -25,13 +24,11 @@ import numpy as np
 import os
 import matplotlib.pyplot as plt
 import argparse
-from nac.analysis import parse_list_of_lists
+from nanqm.analysis import parse_list_of_lists
 
 
 def plot_stuff(outs, pops):
-    """
-    energies - a vector of energy values that can be plotted
-    """
+    """energies - a vector of energy values that can be plotted."""
     dim_x = np.arange(outs.shape[0])
 
     ax1 = plt.subplot(121)

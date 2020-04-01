@@ -36,17 +36,13 @@ def read_cmd_line():
 
 
 def mergeHDF5(inp, out):
-    """
-    Merge Recursively two hdf5 Files
-    """
+    """Merge Recursively two hdf5 Files."""
     with h5py.File(inp, 'r') as f5, h5py.File(out, 'r+') as g5:
         merge_recursively(f5, g5)
 
 
 def merge_recursively(f, g):
-    """
-    Traverse all the groups tree and copy the different datasets.
-    """
+    """Traverse all the groups tree and copy the different datasets."""
     for k in f.keys():
         if k not in g:
             if isinstance(f[k], h5py.Dataset):
@@ -67,7 +63,7 @@ def main():
 
 
 def touch(fname, times=None):
-    """ Equivalent to unix touch command"""
+    """Equivalent to unix touch command"""
     with open(fname, 'a'):
         os.utime(fname, times)
 

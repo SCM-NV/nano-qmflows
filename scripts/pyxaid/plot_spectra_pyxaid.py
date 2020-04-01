@@ -1,6 +1,6 @@
 #! /usr/bin/env python
-"""
-This program plots several properties related to the interaction of a pair of states s1 and s2.
+"""This program plots several properties related to the interaction of a pair of states s1 and s2.
+
 1. The energies of the two states along the MD trajectory
 2. The non-adiabatic coupling between the two states (in meV)
 3. The normalized autocorrelation function (NAUF) of a pair of entangled states
@@ -22,13 +22,15 @@ Note that you have to provide the location of the folder where the NAMD
  hamiltonian elements are stored using the -p flag.
 """
 
-import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib import interactive
 import argparse
 import os
-from nac.common import fs_to_nm
-from nac.analysis import (autocorrelate, dephasing, spectral_density)
+
+import matplotlib.pyplot as plt
+import numpy as np
+from matplotlib import interactive
+
+from nanoqm.analysis import autocorrelate, dephasing, spectral_density
+from nanoqm.common import fs_to_nm
 
 
 def plot_stuff(ens, acf, sd, deph, rate, s1, s2, dt, wsd, wdeph):

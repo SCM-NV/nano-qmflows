@@ -2,7 +2,7 @@
 
 Index
 -----
-.. currentmodule:: nac.workflows.workflow_coop
+.. currentmodule:: nanoqm.workflows.workflow_coop
 .. autosummary::
     workflow_crystal_orbital_overlap_population
 

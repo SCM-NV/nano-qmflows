@@ -128,11 +128,11 @@ ext_pybind = Extension(
     language='c++')
 
 setup(
-    name='qmflows-namd',
+    name='nano-qmflows',
     version=version['__version__'],
     description='Derivative coupling calculation',
     license='Apache-2.0',
-    url='https://github.com/SCM-NV/qmflows-namd',
+    url='https://github.com/SCM-NV/nano-qmflows',
     author=['Felipe Zapata', 'Ivan Infante'],
     author_email='f.zapata@esciencecenter.nl',
     keywords='chemistry Photochemistry Simulation',
@@ -162,12 +162,12 @@ setup(
     },
     include_package_data=True,
     package_data={
-        'nac': ['basis/*.json', 'basis/BASIS*', 'basis/GTH_POTENTIALS']
+        'nanoqm': ['basis/*.json', 'basis/BASIS*', 'basis/GTH_POTENTIALS']
     },
     entry_points={
         'console_scripts': [
-            'run_workflow.py=nac.workflows.run_workflow:main',
-            'distribute_jobs.py=nac.workflows.distribute_jobs:main'
+            'run_workflow.py=nanoqm.workflows.run_workflow:main',
+            'distribute_jobs.py=nanoqm.workflows.distribute_jobs:main'
         ]
     },
     scripts=[

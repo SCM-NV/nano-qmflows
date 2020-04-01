@@ -13,11 +13,12 @@ emin and emax indicates the energy window to make the plot.
 """
 
 
-import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib import interactive
-import glob
 import argparse
+import glob
+
+import matplotlib.pyplot as plt
+import numpy as np
+from matplotlib import interactive
 
 
 def readatom(filename):

@@ -1,7 +1,6 @@
 #!/usr/bin/env python
-"""
-This program plots the average electronic energy during a NAMD simulatons
-averaged over several initial conditions.
+"""This program plots the average electronic energy during a NAMD simulation averaged over several initial conditions.
+
 It plots both the SH and SE population based energies.
 
 Example:
@@ -12,11 +11,14 @@ Note that the number of states is the same as given in the pyxaid output.
  It must include the ground state as well.
 """
 
-import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib import interactive
 import argparse
-from nac.analysis import (read_energies_pyxaid, read_pops_pyxaid, convolute, autocorrelate, spectral_density)
+
+import matplotlib.pyplot as plt
+import numpy as np
+from matplotlib import interactive
+
+from nanoqm.analysis import (autocorrelate, convolute, read_energies_pyxaid,
+                             read_pops_pyxaid, spectral_density)
 
 
 def func(x, a, b, c, d, e):

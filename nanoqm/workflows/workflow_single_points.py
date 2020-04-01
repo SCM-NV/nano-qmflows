@@ -2,7 +2,7 @@
 
 Index
 -----
-.. currentmodule:: nac.workflows.workflow_single_points
+.. currentmodule:: nanoqm.workflows.workflow_single_points
 .. autosummary::
     workflow_single_points
 
@@ -12,6 +12,7 @@ __all__ = ['workflow_single_points']
 
 
 import logging
+from typing import List
 
 from qmflows import run
 from qmflows.type_hints import PathLike
@@ -19,7 +20,6 @@ from qmflows.type_hints import PathLike
 from ..common import DictConfig
 from ..schedule.components import calculate_mos
 from .initialization import initialize
-from typing import List
 
 # Starting logger
 logger = logging.getLogger(__name__)

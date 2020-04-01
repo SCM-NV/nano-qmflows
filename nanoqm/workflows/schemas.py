@@ -2,7 +2,7 @@
 
 Index
 -----
-.. currentmodule:: nac.workflows.schemas
+.. currentmodule:: nanoqm.workflows.schemas
 .. autosummary::
     {autosummary}
 
@@ -79,7 +79,7 @@ schema_cp2k_general_settings = Schema({
     Optional("cell_angles"): list,
 
     # Path to the folder containing the basis set specifications
-    Optional("path_basis", default=pkg.resource_filename("nac", "basis")): os.path.isdir,
+    Optional("path_basis", default=pkg.resource_filename("nanoqm", "basis")): os.path.isdir,
 
     # Settings describing the input of the quantum package
     "cp2k_settings_main": object,

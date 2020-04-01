@@ -5,7 +5,7 @@ a dependency graph for running the jobs.
 
 Index
 -----
-.. currentmodule:: nac.schedule.scheduleCoupling
+.. currentmodule:: nanoqm.schedule.scheduleCoupling
 .. autosummary::
     calculate_overlap
     lazy_couplings

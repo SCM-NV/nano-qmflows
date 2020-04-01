@@ -1,25 +1,27 @@
 #!/usr/bin/env python
-import numpy as np
-import matplotlib.pyplot as plt 
 import argparse
-from nac.analysis import rdf 
+
+import matplotlib.pyplot as plt
+
+from nanoqm.analysis import rdf
+
 
 def main(fn, atoms_i, atoms_j, dr, rmax):
-    x, y = rdf(fn, atoms_i, atoms_j, dr, rmax)  
-    plt.xlabel('radius R (Angstrom)') 
-    plt.ylabel('Pair distributon function (arb. un.)') 
+    x, y = rdf(fn, atoms_i, atoms_j, dr, rmax)
+    plt.xlabel('radius R (Angstrom)')
+    plt.ylabel('Pair distributon function (arb. un.)')
     plt.plot(x, y)
     plt.show()
 
+
 def read_cmd_line(parser):
-    """
-    Parse Command line options.
-    """
+    """Parse Command line options."""
     args = parser.parse_args()
 
     attributes = ['file', 'atom1', 'atom2', 'bin', 'rmax']
 
     return [getattr(args, p) for p in attributes]
+
 
 if __name__ == "__main__":
     msg = "rdf -file <path/to/filename> -atom1 <atom typer> -atom2 <atom type> -bin <size of the histogram bin> -rmax <cutoff>"
@@ -36,5 +38,3 @@ if __name__ == "__main__":
     parser.add_argument(
         '-rmax', required=False, type=float, default=12.0, help='cutoff in Angstrom for computing the rdf')
     main(*read_cmd_line(parser))
-
-

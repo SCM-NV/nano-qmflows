@@ -5,19 +5,19 @@ import logging
 import os
 from collections import namedtuple
 from pathlib import Path
-from copy import deepcopy
 
 import numpy as np
 import pandas as pd
 import pkg_resources
+from qmflows import Settings, cp2k, run, templates
 from qmflows.parsers.xyzParser import string_to_plams_Molecule
 from rdkit import Chem
 from rdkit.Chem import AllChem
 from scm.plams import Molecule, finish, from_rdmol, from_smiles, init, load
-from scm.plams.recipes.adf_crs import add_solvation_block, run_adfjob, run_crsjob
+from scm.plams.recipes.adf_crs import (add_solvation_block, run_adfjob,
+                                       run_crsjob)
 
-from nac.workflows.templates import generate_kinds
-from qmflows import Settings, cp2k, run, templates
+from nanoqm.workflows.templates import generate_kinds
 
 # Starting logger
 logger = logging.getLogger(__name__)
@@ -243,9 +243,9 @@ def compute_properties(smile: str, adf_solvents: dict, workdir: str, path_optimi
 def create_job_cp2k(smile: str, job_name: str, workdir: str) -> object:
     """Create a CP2K job object."""
     # Set path for basis set
-    path_basis = pkg_resources.resource_filename("nac", "basis/BASIS_MOLOPT")
+    path_basis = pkg_resources.resource_filename("nanoqm", "basis/BASIS_MOLOPT")
     path_potential = pkg_resources.resource_filename(
-        "nac", "basis/GTH_POTENTIALS")
+        "nanoqm", "basis/GTH_POTENTIALS")
 
     # Settings specifics
     s = Settings()

@@ -2,7 +2,7 @@
 
 Index
 -----
-.. currentmodule:: nac.workflows.input_validation
+.. currentmodule:: nanoqm.workflows.input_validation
 .. autosummary:: process_input
 
 API

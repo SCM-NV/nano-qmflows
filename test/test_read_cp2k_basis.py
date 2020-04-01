@@ -3,9 +3,9 @@ from pathlib import Path
 
 import h5py
 import pkg_resources
-
-from nac.workflows.initialization import store_cp2k_basis
 from qmflows.type_hints import PathLike
+
+from nanoqm.workflows.initialization import store_cp2k_basis
 
 
 def test_read_cp2k_basis(tmp_path: PathLike) -> None:
@@ -14,7 +14,7 @@ def test_read_cp2k_basis(tmp_path: PathLike) -> None:
     tmp_hdf5.touch()
 
     path_basis = pkg_resources.resource_filename(
-        "nac", "basis/BASIS_MOLOPT")
+        "nanoqm", "basis/BASIS_MOLOPT")
 
     coefficients_format_carbon_DZVP_MOLOPT_GTH = '[2, 0, 2, 7, 2, 2, 1]'
     store_cp2k_basis(tmp_hdf5, path_basis)

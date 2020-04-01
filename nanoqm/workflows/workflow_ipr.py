@@ -2,7 +2,7 @@
 
 Index
 -----
-.. currentmodule:: nac.workflows.workflow_ipr
+.. currentmodule:: nanoqm.workflows.workflow_ipr
 .. autosummary::
     workflow_ipr
 

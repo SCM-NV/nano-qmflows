@@ -2,7 +2,7 @@
 
 Index
 -----
-.. currentmodule:: nac.workflows.initialization
+.. currentmodule:: nanoqm.workflows.initialization
 .. autosummary::
     initialize
     split_trajectory
@@ -28,7 +28,6 @@ from typing import List, Union
 import numpy as np
 import pkg_resources
 
-import nac
 from qmflows.parsers import parse_string_xyz
 from qmflows.parsers.cp2KParser import readCp2KBasis
 from qmflows.type_hints import PathLike
@@ -93,7 +92,7 @@ def initialize(config: DictConfig) -> DictConfig:
 
 def save_basis_to_hdf5(config: DictConfig, package_name: str = "cp2k") -> None:
     """Store the specification of the basis set in the HDF5 to compute the integrals."""
-    path_basis = pkg_resources.resource_filename("nac", "basis/BASIS_MOLOPT")
+    path_basis = pkg_resources.resource_filename("nanoqm", "basis/BASIS_MOLOPT")
     if not is_data_in_hdf5(config.path_hdf5, path_basis):
         store_cp2k_basis(config.path_hdf5, path_basis)
 
@@ -204,11 +203,11 @@ def log_config(config: DictConfig) -> None:
     handler = logging.StreamHandler()
     handler.terminator = ""
 
-    version = pkg_resources.get_distribution('qmflows-namd').version
-    path = pkg_resources.resource_filename('nac', '')
+    version = pkg_resources.get_distribution('nano-qmflows').version
+    path = pkg_resources.resource_filename('nanoqm', '')
 
-    logger.info(f"Using qmflows-namd version: {version} ")
-    logger.info(f"qmflows-namd path is: {path}")
+    logger.info(f"Using nano-qmflows version: {version} ")
+    logger.info(f"nano-qmflows path is: {path}")
     logger.info(f"Working directory is: {workdir}")
     logger.info(f"Data will be stored in HDF5 file: {config.path_hdf5}")
 

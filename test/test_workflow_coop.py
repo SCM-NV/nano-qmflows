@@ -4,10 +4,11 @@ import shutil
 import sys
 from os.path import join
 
-from nac.workflows.input_validation import process_input
-from nac.workflows.workflow_coop import \
-    workflow_crystal_orbital_overlap_population
 from qmflows.type_hints import PathLike
+
+from nanoqm.workflows.input_validation import process_input
+from nanoqm.workflows.workflow_coop import \
+    workflow_crystal_orbital_overlap_population
 
 from .utilsTest import PATH_TEST
 

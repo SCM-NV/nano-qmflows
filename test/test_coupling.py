@@ -4,9 +4,9 @@ import shutil
 
 import numpy as np
 
-from nac.common import is_data_in_hdf5, retrieve_hdf5_data
-from nac.workflows.input_validation import process_input
-from nac.workflows.workflow_coupling import workflow_derivative_couplings
+from nanoqm.common import is_data_in_hdf5, retrieve_hdf5_data
+from nanoqm.workflows.input_validation import process_input
+from nanoqm.workflows.workflow_coupling import workflow_derivative_couplings
 
 from .utilsTest import PATH_TEST, remove_files
 

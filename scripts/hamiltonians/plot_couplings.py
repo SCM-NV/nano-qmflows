@@ -1,6 +1,6 @@
 #! /usr/bin/env python
-"""
-  This programs plots the electronic coupling between two states.
+"""This programs plots the electronic coupling between two states.
+
   It reads all Ham_*_im files and cache them in a tensor saved on disk.
   Usage:
   plot_couplings.py -p . -s1 XX -s2 YY -dt 1.0

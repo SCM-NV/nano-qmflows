@@ -1,19 +1,20 @@
 """Functions use for testing."""
+import fnmatch
+import os
+import shutil
 from distutils.spawn import find_executable
 from os.path import join
-import h5py
 from pathlib import Path
-from qmflows.type_hints import PathLike
-import fnmatch
-import shutil
-import os
-import pkg_resources as pkg
 
-__all__ = ["PATH_NAC", "PATH_TEST", "copy_basis_and_orbitals", "cp2k_available", "remove_files"]
+import h5py
+import pkg_resources as pkg
+from qmflows.type_hints import PathLike
+
+__all__ = ["PATH_NANOQM", "PATH_TEST", "copy_basis_and_orbitals", "cp2k_available", "remove_files"]
 
 # Environment data
-PATH_NAC = Path(pkg.resource_filename('nac', ''))
-ROOT = PATH_NAC.parent
+PATH_NANOQM = Path(pkg.resource_filename('nanoqm', ''))
+ROOT = PATH_NANOQM.parent
 PATH_TEST = ROOT / "test" / "test_files"
 
 
