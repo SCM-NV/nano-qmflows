@@ -1,3 +1,3 @@
 Molecular Orbitals
 ------------------
-.. automodule:: nac.schedule.components
+.. automodule:: nanoqm.schedule.components

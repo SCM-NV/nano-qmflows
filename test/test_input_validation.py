@@ -1,11 +1,11 @@
 """Test input validation functionality."""
 import pytest
-from scm import plams
-
-from nac.common import read_cell_parameters_as_array
-from nac.workflows.input_validation import process_input
 from qmflows import cp2k, run
 from qmflows.type_hints import PathLike
+from scm import plams
+
+from nanoqm.common import read_cell_parameters_as_array
+from nanoqm.workflows.input_validation import process_input
 
 from .utilsTest import PATH_TEST, cp2k_available, remove_files
 

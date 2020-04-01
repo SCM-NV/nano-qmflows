@@ -2,7 +2,7 @@ Derivative coupling calculation
 ===============================
 
 These tutorials focus on how to compute non-adiabatic coupling vectors between molecular orbitals belonging at two different time steps, t and t+dt, of a pre-computed molecular dynamics trajectory. What this program does is to compute at each point of the trajectory, the electronic structure using DFT, and then the overlap integrals :math:`\langle \psi_{i}(t) \mid \psi_{j}(t+dt)>`. These integrals are stored and finally used to compute numerically the non-adiabatic couplings. These and the orbital energies are written in a format readable by PYXAID to perform surface hopping dynamics. 
-When using this tutorial, ensure you have the latest version of QMFlows and QMFlows-NAMD installed.
+When using this tutorial, ensure you have the latest version of QMFlows and nano-qmflows installed.
 
 Preparing the input
 --------------------
@@ -68,7 +68,7 @@ The **job_scheduler** can be found below these parameters. Customize these setti
 In the **cp2k_general_settings**, you can customize the settings used to generate the cp2k input. You can use the cp2k manual_ to create your custom input requirements. Remember to provide a path to the folder with the cp2k basis set anc potential files.
 
 .. _manual: https://manual.cp2k.org/
-.. _input_test_distribute_derivative_couplings.yml: https://github.com/SCM-NV/qmflows-namd/blob/master/test/test_files/input_test_distribute_derivative_couplings.yml
+.. _input_test_distribute_derivative_couplings.yml: https://github.com/SCM-NV/nano-qmflows/blob/master/test/test_files/input_test_distribute_derivative_couplings.yml
 
 Setting up the calculation 
 ---------------------------
@@ -150,7 +150,7 @@ Reporting a bug or requesting a feature
 To report an issue or request a new feature you can use the github issues_ tracker.
 
 .. _HDF5: http://www.h5py.org/
-.. _issues: https://github.com/SCM-NV/qmflows-namd/issues
+.. _issues: https://github.com/SCM-NV/nano-qmflows/issues
 .. _QMflows: https://github.com/SCM-NV/qmflows
 .. _PYXAID: https://www.acsu.buffalo.edu/~alexeyak/pyxaid/overview.html
 .. _YAML: https://pyyaml.org/wiki/PyYAML

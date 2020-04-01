@@ -1,5 +1,5 @@
 
-For a more detailed description of **QMFlows-nac** read the documentation
+For a more detailed description of **nano-qmflows** read the documentation
 
 .. toctree::
    command_line

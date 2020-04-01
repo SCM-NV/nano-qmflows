@@ -3,13 +3,13 @@
 import subprocess
 import warnings
 
-from typing_extensions import Literal
-
 from qmflows.test_utils import Assertion_Warning
 
-from .utilsTest import PATH_NAC, PATH_TEST
+from typing_extensions import Literal
 
-PACKAGE = PATH_NAC.absolute().as_posix()
+from .utilsTest import PATH_NANOQM, PATH_TEST
+
+PACKAGE = PATH_NANOQM.absolute().as_posix()
 INI = (PATH_TEST / 'mypy.ini').absolute().as_posix()
 
 Action = Literal['raise', 'warn', 'ignore']  #: Type annotation for the 'action' keyword.

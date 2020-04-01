@@ -74,7 +74,6 @@ target/
 .pytest*
 
 # results
-nac/integrals/multipoleObaraSaika.c
 cache.db
 plams_workdir
 cross_section_cm.txt

@@ -1,7 +1,7 @@
 Introduction to the Tutorials
 =============================
 
-The *qmflows-namd* packages offers the following set of workflows to compute different properties:
+The *nano-qmflows* packages offers the following set of workflows to compute different properties:
 
  * derivative_coupling
  * absorption_spectrum
@@ -21,7 +21,7 @@ Reporting a bug or requesting a feature
 To report an issue or request a new feature you can use the github issues_ tracker.
 
 .. _HDF5: http://www.h5py.org/
-.. _issues: https://github.com/SCM-NV/qmflows-namd/issues
+.. _issues: https://github.com/SCM-NV/nano-qmflows/issues
 .. _QMflows: https://github.com/SCM-NV/qmflows
 .. _PYXAID: https://www.acsu.buffalo.edu/~alexeyak/pyxaid/overview.html
 .. _YAML: https://pyyaml.org/wiki/PyYAML

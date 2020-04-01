@@ -1,12 +1,15 @@
 """Test the IPR workflow."""
 import os
+import shutil
 import sys
 from os.path import join
-from nac.workflows.input_validation import process_input
-from nac.workflows.workflow_ipr import workflow_ipr
+
 from qmflows.type_hints import PathLike
+
+from nanoqm.workflows.input_validation import process_input
+from nanoqm.workflows.workflow_ipr import workflow_ipr
+
 from .utilsTest import PATH_TEST
-import shutil
 
 
 def test_workflow_IPR(tmp_path: PathLike) -> None:

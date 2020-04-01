@@ -1,8 +1,9 @@
 """Test the workflows tools."""
 import numpy as np
-
-from nac.common import number_spherical_functions_per_atom
 from qmflows.parsers import parse_string_xyz
+
+from nanoqm.common import number_spherical_functions_per_atom
+
 from .utilsTest import PATH_TEST
 
 

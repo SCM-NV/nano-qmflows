@@ -2,7 +2,7 @@
 
 Index
 -----
-.. currentmodule:: nac.schedule.scheduleCP2K
+.. currentmodule:: nanoqm.schedule.scheduleCP2K
 .. autosummary::
     prepare_job_cp2k
 

@@ -5,7 +5,7 @@ in the `libint` folder.
 
 Index
 -----
-.. currentmodule:: nac.integrals.multipole_matrices
+.. currentmodule:: nanoqm.integrals.multipole_matrices
 .. autosummary::
     get_multipole_matrix
     compute_matrix_multipole

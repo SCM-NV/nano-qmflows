@@ -9,7 +9,7 @@ Phase correction is also available.
 
 Index
 -----
-.. currentmodule:: nac.integrals.nonAdiabaticCoupling
+.. currentmodule:: nanoqm.integrals.nonAdiabaticCoupling
 .. autosummary::
     calculate_couplings_3points
     calculate_couplings_levine

@@ -20,9 +20,7 @@ import os
 
 
 def main(file_xyz, cell, restart, basis, basis_folder):
-    """
-    Define which systems need to be calculated
-    """
+    """Define which systems need to be calculated."""
     system = Molecule(file_xyz)
 
     # Set path for basis set

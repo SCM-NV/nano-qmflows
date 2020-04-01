@@ -2,7 +2,7 @@
 
 Index
 -----
-.. currentmodule:: nac.workflows.templates
+.. currentmodule:: nanoqm.workflows.templates
 .. autosummary::
   create_settings_from_template
 
@@ -23,8 +23,8 @@ from qmflows.type_hints import PathLike
 from typing import Any, Dict, Iterable, Set
 
 path_valence_electrons = pkg.resource_filename(
-    "nac", "basis/valence_electrons.json")
-path_aux_fit = pkg.resource_filename("nac", "basis/aux_fit.json")
+    "nanoqm", "basis/valence_electrons.json")
+path_aux_fit = pkg.resource_filename("nanoqm", "basis/aux_fit.json")
 
 with open(path_valence_electrons, 'r') as f1, open(path_aux_fit, 'r') as f2:
     valence_electrons = json.load(f1)

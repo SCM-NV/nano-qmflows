@@ -5,7 +5,7 @@ file with the molecular geometries to compute the couplings.
 
 Index
 -----
-.. currentmodule:: nac.workflows.workflow_coupling
+.. currentmodule:: nanoqm.workflows.workflow_coupling
 .. autosummary::
 
 """

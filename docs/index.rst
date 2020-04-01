@@ -1,5 +1,5 @@
 
-Welcome to qmflows-namd's documentation!
+Welcome to nano-qmflows's documentation!
 ========================================
 
 Contents:

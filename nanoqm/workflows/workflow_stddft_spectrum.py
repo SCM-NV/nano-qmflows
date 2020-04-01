@@ -2,7 +2,7 @@
 
 Index
 -----
-.. currentmodule:: nac.workflows.workflow_stddft_spectrum
+.. currentmodule:: nanoqm.workflows.workflow_stddft_spectrum
 .. autosummary::
     workflow_stddft
 

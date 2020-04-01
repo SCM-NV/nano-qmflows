@@ -1,3 +1,3 @@
 Integrals
 ---------
-.. automodule:: nac.integrals.multipole_matrices
+.. automodule:: nanoqm.integrals.multipole_matrices

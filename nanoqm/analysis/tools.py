@@ -2,7 +2,7 @@
 
 Index
 -----
-.. currentmodule:: nac.analysis.tools
+.. currentmodule:: nanoqm.analysis.tools
 .. autosummary::
 
 API

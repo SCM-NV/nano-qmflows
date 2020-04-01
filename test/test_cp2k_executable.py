@@ -3,8 +3,8 @@ from pathlib import Path
 
 import pytest
 
-from nac.workflows.input_validation import process_input
-from nac.workflows.workflow_single_points import workflow_single_points
+from nanoqm.workflows.input_validation import process_input
+from nanoqm.workflows.workflow_single_points import workflow_single_points
 from qmflows.type_hints import PathLike
 
 from .utilsTest import PATH_TEST, cp2k_available, remove_files

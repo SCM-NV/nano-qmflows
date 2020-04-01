@@ -1,6 +1,8 @@
 """Check the schemas."""
 from assertionlib import assertion
-from nac.workflows.input_validation import process_input
+
+from nanoqm.workflows.input_validation import process_input
+
 from .utilsTest import PATH_TEST
 
 

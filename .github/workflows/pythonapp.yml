@@ -37,7 +37,7 @@ jobs:
         CONDA_PREFIX: /usr/share/miniconda
       run: |
         pip install pytest pytest-cov
-        pytest --cov=nac test
+        pytest test
 
     - uses: codecov/codecov-action@v1
       with:

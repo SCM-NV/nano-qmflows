@@ -1,7 +1,6 @@
 #! /usr/bin/env python
-"""
-This script convolutes the calculated oscillator strengts for different
-snapshots in a MD trajectory and plot the average spectrum.
+""" This script convolutes the calculated oscillator strengts for different snapshots in a MD trajectory and plot the average spectrum.
+
 Usage:
 convolution.py -sigma 0.05 -n 2 -nm True -write True
 Use the sigma flag to change the sigma parameter of the gaussian functions
@@ -12,11 +11,13 @@ Use the nm to obtain a plot in nm scale.
 You can choose to write the coordinates obtained from the convolution with the write flag.
 """
 
-import numpy as np
-from nac.analysis import convolute
-import matplotlib.pyplot as plt
-import glob
 import argparse
+import glob
+
+import matplotlib.pyplot as plt
+import numpy as np
+
+from nanoqm.analysis import convolute
 
 
 def main(sigma, n, nm, write):

@@ -12,16 +12,16 @@ It assumes a DZVP by default, which can be also changed
 It is always advised to submit the script using a JOB Manager like Slurm
 """
 
-from qmflows import (cp2k, run, templates)
-from scm.plams import Molecule
 import argparse
-from os.path import join
 import os
+from os.path import join
+
+from qmflows import cp2k, run, templates
+from scm.plams import Molecule
 
 
 def main(file_xyz, cell, restart, basis, basis_folder):
-
-    # Define which systems need to be calculated
+    """Define which systems need to be calculated."""
     system = Molecule(file_xyz)
 
     # Set path for basis set

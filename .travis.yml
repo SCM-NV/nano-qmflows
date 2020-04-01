@@ -50,7 +50,7 @@ before_script:
   - conda list
 
 script:
-  - pytest --cov=nac test
+  - pytest test
 
 after_success:
   - python-codacy-coverage -r coverage.xml

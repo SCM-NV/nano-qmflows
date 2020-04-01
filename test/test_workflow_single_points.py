@@ -5,9 +5,9 @@ from pathlib import Path
 import pytest
 from assertionlib import assertion
 
-from nac.common import is_data_in_hdf5
-from nac.workflows.input_validation import process_input
-from nac.workflows.workflow_single_points import workflow_single_points
+from nanoqm.common import is_data_in_hdf5
+from nanoqm.workflows.input_validation import process_input
+from nanoqm.workflows.workflow_single_points import workflow_single_points
 
 from .utilsTest import PATH_TEST, cp2k_available, remove_files
 

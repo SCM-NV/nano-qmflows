@@ -2,7 +2,7 @@
 
 Index
 -----
-.. currentmodule:: nac.common
+.. currentmodule:: nanoqm.common
 .. autosummary::
     DictConfig
     change_mol_units

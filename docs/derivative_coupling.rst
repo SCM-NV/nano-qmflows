@@ -1,3 +1,3 @@
 Derivative Couplings
 --------------------
-.. automodule:: nac.integrals.nonAdiabaticCoupling
+.. automodule:: nanoqm.integrals.nonAdiabaticCoupling

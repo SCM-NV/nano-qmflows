@@ -3,11 +3,11 @@ import shutil
 from pathlib import Path
 
 import numpy as np
-
-from nac.common import retrieve_hdf5_data
-from nac.workflows import workflow_stddft
-from nac.workflows.input_validation import process_input
 from qmflows.type_hints import PathLike
+
+from nanoqm.common import retrieve_hdf5_data
+from nanoqm.workflows import workflow_stddft
+from nanoqm.workflows.input_validation import process_input
 
 from .utilsTest import PATH_TEST, copy_basis_and_orbitals, remove_files
 

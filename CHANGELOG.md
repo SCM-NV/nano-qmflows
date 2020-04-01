@@ -1,15 +1,19 @@
 # Change Log
 
+# 0.10.0
+## Changed
+* Rename package to **nano-qmflows**
+
 # 0.9.0
 ## Added
-* [Support for Mac](https://github.com/SCM-NV/qmflows-namd/issues/231)
-* [Allow to specify the CP2K executable](https://github.com/SCM-NV/qmflows-namd/issues/226)
-* [MyPy static checking](https://github.com/SCM-NV/qmflows-namd/issues/237)
+* [Support for Mac](https://github.com/SCM-NV/nano-qmflows/issues/231)
+* [Allow to specify the CP2K executable](https://github.com/SCM-NV/nano-qmflows/issues/226)
+* [MyPy static checking](https://github.com/SCM-NV/nano-qmflows/issues/237)
 
 ## Changed
-* [Use New QMFlows API](https://github.com/SCM-NV/qmflows-namd/issues/227)
-* [Use Libint==2.6.0](https://github.com/SCM-NV/qmflows-namd/issues/234)
-* [Allow the user to enter her own slurm script](https://github.com/SCM-NV/qmflows-namd/issues/225)
+* [Use New QMFlows API](https://github.com/SCM-NV/nano-qmflows/issues/227)
+* [Use Libint==2.6.0](https://github.com/SCM-NV/nano-qmflows/issues/234)
+* [Allow the user to enter her own slurm script](https://github.com/SCM-NV/nano-qmflows/issues/225)
 
 # 0.8.3
 
@@ -23,16 +27,16 @@
 * Replace `qmflows.utils` with [more-itertools](https://more-itertools.readthedocs.io/en/stable/index.html)
 
 ## Added
-* [smiles_calculator](https://github.com/SCM-NV/qmflows-namd/blob/master/scripts/qmflows/smiles_calculator.py) script to compute molecular properties from smiles.
+* [smiles_calculator](https://github.com/SCM-NV/nano-qmflows/blob/master/scripts/qmflows/smiles_calculator.py) script to compute molecular properties from smiles.
 
 # 0.8.1 [17/10/19]
 
 ## Changed
 * Use [f-strings](https://docs.python.org/3/reference/lexical_analysis.html#f-strings)
-* Clean [C++ interface](https://cgithub.com/SCM-NV/qmflows-namd/blob/master/libint/compute_integrals.cc) to [libint](https://github.com/evaleev/libint)
+* Clean [C++ interface](https://cgithub.com/SCM-NV/nano-qmflows/blob/master/libint/compute_integrals.cc) to [libint](https://github.com/evaleev/libint)
 
 ## Removed
-* Unused code to compile the [C++ interface](https://cgithub.com/SCM-NV/qmflows-namd/blob/master/libint/compute_integrals.cc) to [libint](https://github.com/evaleev/libint)
+* Unused code to compile the [C++ interface](https://cgithub.com/SCM-NV/nano-qmflows/blob/master/libint/compute_integrals.cc) to [libint](https://github.com/evaleev/libint)
 
 # 0.8.0
 
@@ -80,7 +84,7 @@
 
 * The user only need to provide an **active_space** and both the `mo_index_range` and `nHOMO`  keywords are computed automatically.
 
-* Added fast test to [compute the couplings](https://github.com/SCM-NV/qmflows-namd/blob/master/test/test_coupling.py)
+* Added fast test to [compute the couplings](https://github.com/SCM-NV/nano-qmflows/blob/master/test/test_coupling.py)
 
 ### Deleted
 
@@ -90,7 +94,7 @@
 
 ### Changed
 
-* The `nHOMO` and the `kinds` for the *CP2K* input are computed using the [valence_electrons](https://github.com/SCM-NV/qmflows-namd/blob/master/nac/basisSet/valence_electrons.json) from the basis/pseudpotential combination.
+* The `nHOMO` and the `kinds` for the *CP2K* input are computed using the [valence_electrons](https://github.com/SCM-NV/nano-qmflows/blob/master/nac/basisSet/valence_electrons.json) from the basis/pseudpotential combination.
 
 * Use a configuration dictionary to around the initial input instead of many arguments functions.
 
@@ -105,7 +109,7 @@
 
 ### Changed
 
-* Refactor the [distribute_jobs.py](https://github.com/SCM-NV/qmflows-namd/blob/master/scripts/distribution/distribute_jobs.py) script to split the derivative coupling calculations.
+* Refactor the [distribute_jobs.py](https://github.com/SCM-NV/nano-qmflows/blob/master/scripts/distribution/distribute_jobs.py) script to split the derivative coupling calculations.
 
 # 0.4.0
 

@@ -4,10 +4,10 @@ from pathlib import Path
 
 import numpy as np
 from assertionlib import assertion
-
-from nac.integrals.multipole_matrices import compute_matrix_multipole
-from nac.workflows.input_validation import process_input
 from qmflows.parsers.xyzParser import readXYZ
+
+from nanoqm.integrals.multipole_matrices import compute_matrix_multipole
+from nanoqm.workflows.input_validation import process_input
 
 from .utilsTest import PATH_TEST, copy_basis_and_orbitals
 

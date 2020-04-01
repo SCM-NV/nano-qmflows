@@ -1,7 +1,7 @@
 ### All Submissions:
 
 * [ ] Have you followed the guidelines in our Contributing document?
-* [ ] Have you checked to ensure there aren't other open [Pull Requests](https://github.com/SCM-NV/qmflows-namd/pulls) for the same update/change?
+* [ ] Have you checked to ensure there aren't other open [Pull Requests](https://github.com/SCM-NV/nano-qmflows/pulls) for the same update/change?
 
 
 ### New Feature Submissions:
