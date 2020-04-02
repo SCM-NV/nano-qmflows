@@ -139,8 +139,8 @@ def store_coordination(coord: NestedDict, name: str, path_results: str):
                        for innerKey, values in innerDict.items())
 
     t = 'Atom  #Coord  List      Indices\n'
-    for i, v in enumerate(tuple_generator):
-        t += f'{v[0]}      {v[1]}      "list{i}"     {v[2]}\n'
+    for i, v in enumerate(tuple_generator, start=1):
+        t += f'{v[0]}     {v[1]}      "list{i}"     {v[2]}\n'
 
     path_ldos = f"{path_results}/{name}"
     with open(f"{path_ldos}/coord_lists.out", 'w') as f:
