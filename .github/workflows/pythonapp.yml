@@ -5,11 +5,12 @@ on: [push]
 jobs:
   build:
 
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
 
     strategy:
       matrix:
         version: [3.7, 3.8]
+        os: [macos-latest, ubuntu-latest]
 
 
     steps:
@@ -39,7 +40,9 @@ jobs:
         pip install pytest pytest-cov
         pytest test
 
-    - uses: codecov/codecov-action@v1
+    - name: coverage
+      if: matrix.os == 'ubuntu-latest'
+      uses: codecov/codecov-action@v1
       with:
         file: ./coverage.xml
         name: codecov-umbrella
