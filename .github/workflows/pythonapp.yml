@@ -15,7 +15,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@master
-    - name: Install cp2k
+    - name: Optionally Install cp2k
+      if: matrix.os == 'ubuntu-latest'
       run: sudo apt install cp2k
     - name: Setup conda
       uses: s-weigand/setup-conda@master
