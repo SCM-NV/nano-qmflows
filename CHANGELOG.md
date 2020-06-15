@@ -5,7 +5,8 @@
 * Keywords to print eigenvalues and eigenvectors (#248)
 
 ## Fixed
-* Fixed SLURM free-format specification (#245)
+* SLURM free-format specification (#245)
+* Touch HDF5 file if it doesn't exist (#246)
 
 # 0.10.0
 ## Changed
