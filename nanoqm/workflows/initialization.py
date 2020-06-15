@@ -61,6 +61,10 @@ def initialize(config: DictConfig) -> DictConfig:
             f"path to scratch was not defined, using: {scratch_path}")
     config['workdir'] = scratch_path
 
+    # Touch HDF5 if it doesn't exists
+    if not os.path.exists(config.path_hdf5):
+        Path(scratch_path).touch()
+
     # If the directory does not exist create it
     if not scratch_path.exists():
         scratch_path.mkdir()
