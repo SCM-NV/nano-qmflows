@@ -90,59 +90,65 @@ def distribute_computations(config: DictConfig, hamiltonians: bool = False) -> N
         header_array_cell_parameters = read_cell_parameters_as_array(
             file_cell_parameters)
 
+    # Scratch for all the chunks
+    parent_scratch = config.scratch_path
+
     for index, file_xyz in enumerate(chunks_trajectory):
-        folder_path = os.path.abspath(join(config.workdir, f'chunk_{index}'))
+        copy_config = DictConfig(config.copy())
+        copy_config["scratch_path"] = os.path.join(parent_scratch, f"scratch_chunk_{index}")
+
+        folder_path = os.path.abspath(join(copy_config.workdir, f'chunk_{index}'))
 
         dict_input = DictConfig({
             'folder_path': folder_path, "file_xyz": file_xyz, 'index': index})
 
-        create_folders(config, dict_input)
+        create_folders(copy_config, dict_input)
         # HDF5 file where both the Molecular orbitals and coupling are stored
-        config.path_hdf5 = join(config.scratch_path, f'chunk_{index}.hdf5')
+        copy_config.path_hdf5 = join(copy_config.scratch_path, f'chunk_{index}.hdf5')
 
         # Change hdf5 and trajectory path of each batch
-        config["path_traj_xyz"] = file_xyz
+        copy_config["path_traj_xyz"] = file_xyz
 
         if file_cell_parameters is not None:
             add_chunk_cell_parameters(
-                header_array_cell_parameters, config, dict_input)
+                header_array_cell_parameters, copy_config, dict_input)
 
         # files with PYXAID
         if hamiltonians:
             dict_input.hamiltonians_dir = join(
-                config.scratch_path, 'hamiltonians')
+                copy_config.scratch_path, 'hamiltonians')
 
         # number of geometries per batch
         dict_input.dim_batch = compute_number_of_geometries(
             join(folder_path, file_xyz))
 
         # Write input file
-        write_input(folder_path, config)
+        write_input(folder_path, copy_config)
 
         # Slurm executable
-        scheduler = config.job_scheduler["scheduler"].upper()
+        scheduler = copy_config.job_scheduler["scheduler"].upper()
         if scheduler == "SLURM":
-            write_slurm_script(config, dict_input)
+            write_slurm_script(copy_config, dict_input)
         else:
             msg = f"The request job_scheduler: {scheduler} it is not implemented"
             raise RuntimeError(msg)
 
         # change the window of molecules to compute
-        config['enumerate_from'] += dict_input.dim_batch
+        copy_config['enumerate_from'] += dict_input.dim_batch
 
 
-def write_input(folder_path: PathLike, config: DictConfig) -> None:
+def write_input(folder_path: PathLike, original_config: DictConfig) -> None:
     """Write the python script to compute the PYXAID hamiltonians."""
     file_path = join(folder_path, "input.yml")
 
     # transform settings to standard dictionary
-    config = Settings(config).as_dict()
+    config = Settings(original_config).as_dict()
 
     # basis and potential
     config["cp2k_general_settings"]["path_basis"] = os.path.abspath(
         config["cp2k_general_settings"]["path_basis"])
 
-    # remove keys from input
+    # remove unused keys from input
     for k in ['blocks', 'job_scheduler', 'mo_index_range',
               'workdir']:
         del config[k]

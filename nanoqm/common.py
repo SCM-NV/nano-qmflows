@@ -37,11 +37,10 @@ from typing import (Any, Dict, Iterable, List, Mapping, NamedTuple, Tuple,
 import h5py
 import mendeleev
 import numpy as np
-from scipy.constants import physical_constants
-from scm.plams import Atom, Molecule
-
 from qmflows.common import AtomXYZ
 from qmflows.type_hints import PathLike
+from scipy.constants import physical_constants
+from scm.plams import Atom, Molecule
 
 
 class DictConfig(dict):
@@ -158,12 +157,12 @@ def xc(s: str) -> Dict[str, Any]:
 
 
 @overload
-def retrieve_hdf5_data(path_hdf5: Path, paths_to_prop: str) -> np.ndarray:
+def retrieve_hdf5_data(path_hdf5: PathLike, paths_to_prop: str) -> np.ndarray:
     ...
 
 
 @overload
-def retrieve_hdf5_data(path_hdf5: Path, paths_to_prop: List[str]) -> List[np.ndarray]:
+def retrieve_hdf5_data(path_hdf5: PathLike, paths_to_prop: List[str]) -> List[np.ndarray]:
     ...
 
 
