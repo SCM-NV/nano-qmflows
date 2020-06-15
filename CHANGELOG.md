@@ -7,6 +7,7 @@
 ## Fixed
 * SLURM free-format specification (#245)
 * Touch HDF5 file if it doesn't exist (#246)
+* Create a separate folder for each distributed chunk (#247)
 
 # 0.10.0
 ## Changed
