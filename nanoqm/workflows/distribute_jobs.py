@@ -209,7 +209,9 @@ def format_slurm_parameters(slurm: Dict[str, str]) -> str:
     modules = slurm["load_modules"]
 
     if "free_format" in slurm:
-        return slurm["free_format"]
+        # Remove empty spaces
+        lines = slurm["free_format"].splitlines()
+        return '\n'.join(' '.join(x.split()) for x in lines if x)
     else:
         return ''.join((header, time, nodes, tasks, name, queue, modules))
 
