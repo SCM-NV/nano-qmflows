@@ -44,7 +44,7 @@ def copy_basis_and_orbitals(source: PathLike, dest, project_name: PathLike) -> N
         for k in keys:
             if k not in g5:
                 g5.create_group(k)
-            for l in f5[k].keys():
-                if not any(x in l for x in excluded):
-                    path = join(k, l)
+            for label in f5[k].keys():
+                if not any(x in label for x in excluded):
+                    path = join(k, label)
                     f5.copy(path, g5[k])

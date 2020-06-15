@@ -264,6 +264,14 @@ class InputSanitizer:
         # added_mos
         cp2k_main.specific.cp2k.force_eval.dft.scf.added_mos = mo_index_range[1] - nHOMO
 
+        # Add section to Print the orbitals
+        mo = cp2k_main.specific.cp2k.force_eval.dft.print.mo
+        mo.add_last = "numeric"
+        mo.each.qs_scf = 0
+        mo.eigenvalues = ""
+        mo.eigenvectors = ""
+        mo.ndigits = 36
+
     def print_final_input(self) -> None:
         """Print the input after post-processing."""
         xs = self.user_input.copy()
