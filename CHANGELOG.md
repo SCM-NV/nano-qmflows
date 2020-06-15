@@ -1,5 +1,12 @@
 # Change Log
 
+# 0.10.1
+## Added
+* Keywords to print eigenvalues and eigenvectors (#248)
+
+## Fixed
+* Fixed SLURM free-format specification (#245)
+
 # 0.10.0
 ## Changed
 * Rename package to **nano-qmflows**
