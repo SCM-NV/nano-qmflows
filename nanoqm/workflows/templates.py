@@ -88,6 +88,7 @@ cp2k:
       scf:
         eps_scf: 5e-4
         max_scf: 200
+        scf_guess: "restart"
 """, Loader=yaml.FullLoader))
 
 #: Settings for a PBE0 calculation to compute a guess wave function
@@ -172,6 +173,7 @@ cp2k:
        scf:
           eps_scf: 5e-4
           max_scf: 200
+          scf_guess: "restart"
 """, Loader=yaml.FullLoader))
 
 #: Settings for a HSE06 calculation to compute a guess wave function
@@ -264,6 +266,7 @@ cp2k:
        scf:
           eps_scf: 1e-6
           max_scf: 200
+          scf_guess: "restart"
 """, Loader=yaml.FullLoader))
 
 #: Settings to add the CP2K kinds for each atom
