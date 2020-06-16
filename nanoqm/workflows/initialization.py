@@ -67,7 +67,7 @@ def initialize(config: DictConfig) -> DictConfig:
 
     # If the directory does not exist create it
     if not scratch_path.exists():
-        scratch_path.mkdir()
+        scratch_path.mkdir(parents=True)
 
     # all_geometries type :: [String]
     geometries = split_file_geometries(config["path_traj_xyz"])
