@@ -63,7 +63,7 @@ def initialize(config: DictConfig) -> DictConfig:
 
     # Touch HDF5 if it doesn't exists
     if not os.path.exists(config.path_hdf5):
-        Path(scratch_path).touch()
+        Path(config.path_hdf5).touch()
 
     # If the directory does not exist create it
     if not scratch_path.exists():
