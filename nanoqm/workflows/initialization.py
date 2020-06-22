@@ -61,13 +61,13 @@ def initialize(config: DictConfig) -> DictConfig:
             f"path to scratch was not defined, using: {scratch_path}")
     config['workdir'] = scratch_path
 
-    # Touch HDF5 if it doesn't exists
-    if not os.path.exists(config.path_hdf5):
-        Path(config.path_hdf5).touch()
-
     # If the directory does not exist create it
     if not scratch_path.exists():
         scratch_path.mkdir(parents=True)
+
+    # Touch HDF5 if it doesn't exists
+    if not os.path.exists(config.path_hdf5):
+        Path(config.path_hdf5).touch()
 
     # all_geometries type :: [String]
     geometries = split_file_geometries(config["path_traj_xyz"])
