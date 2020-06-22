@@ -137,7 +137,7 @@ dict_general_options = {
     Optional("project_name", default="namd"): str,
 
     # Working directory
-    Optional("scratch_path", default=None): str,
+    Optional("scratch_path", default=None): Or(None, str),
 
     # path to the HDF5 to store the results
     Optional("path_hdf5", default="quantum.hdf5"): str,
