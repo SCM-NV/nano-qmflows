@@ -180,7 +180,7 @@ def write_slurm_script(config: DictConfig, dict_input: DictConfig) -> None:
     index = dict_input.index
     python = "\n\nrun_workflow.py -i input.yml\n"
     results_dir = "results_chunk_" + str(index)
-    mkdir = "\nmkdir {results_dir}\n"
+    mkdir = f"\nmkdir {results_dir}\n"
     slurm_config = config.job_scheduler
 
     # Copy a subset of Hamiltonians
