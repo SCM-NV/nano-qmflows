@@ -1,5 +1,9 @@
 # Change Log
 
+# 0.10.2
+## fixed
+* multivalue settings issue (#260)
+
 # 0.10.1
 ## Added
 * Keywords to print eigenvalues and eigenvectors (#248)

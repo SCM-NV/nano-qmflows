@@ -191,17 +191,15 @@ class InputSanitizer:
         """Choose the right basis set based on the potential and basis name."""
         dft = sett.specific.cp2k.force_eval.dft
 
-        dft["basis_set_file_name"] = os.path.abspath(
-            join(self.general['path_basis'], "BASIS_MOLOPT"))
+        dft["basis_set_file_name"] = [os.path.abspath(
+            join(self.general['path_basis'], "BASIS_MOLOPT"))]
 
         if dft.xc.get("xc_functional pbe") is None:
             # USE ADMM
-            # We need to write one lowercase and the other uppercase otherwise Settings will
-            # Overwrite the value
-            dft["Basis_Set_File_Name"] = os.path.abspath(
-                join(self.general['path_basis'], "BASIS_ADMM_MOLOPT"))
-            dft["BASIS_SET_FILE_NAME"] = os.path.abspath(
-                join(self.general['path_basis'], "BASIS_ADMM"))
+            dft["basis_set_file_name"].append(os.path.abspath(
+                join(self.general['path_basis'], "BASIS_ADMM_MOLOPT")))
+            dft["basis_set_file_name"].append(os.path.abspath(
+                join(self.general['path_basis'], "BASIS_ADMM")))
 
     def add_cell_parameters(self) -> None:
         """Add the Unit cell information to both the main and the guess settings."""
