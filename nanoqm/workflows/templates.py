@@ -20,7 +20,7 @@ from scm.plams import Molecule
 
 from qmflows.settings import Settings
 from qmflows.type_hints import PathLike
-from typing import Any, Dict, Iterable, Set
+from typing import Any, Dict, Iterable, FrozenSet
 
 path_valence_electrons = pkg.resource_filename(
     "nanoqm", "basis/valence_electrons.json")
@@ -43,7 +43,7 @@ def generate_auxiliar_basis(
     for atom in kind.keys():
         index = quality_to_number[quality.lower()]
         cfit = aux_fit[atom][index]
-        kind[atom]["BASIS_SET"] = "AUX_FIT " + f"CFIT{cfit}"
+        kind[atom]["basis_set"].append(f"AUX_FIT CFIT{cfit}")
 
     return sett
 
@@ -287,7 +287,7 @@ def generate_kinds(elements: Iterable[str], basis: str, potential: str) -> Setti
     subsys = s.cp2k.force_eval.subsys
     for e in elements:
         q = valence_electrons['-'.join((e, basis))]
-        subsys.kind[e]['basis_set'] = f"{basis}-q{q}"
+        subsys.kind[e]['basis_set'] = [f"{basis}-q{q}"]
         subsys.kind[e]['potential'] = f"{potential}-q{q}"
 
     return s
@@ -319,8 +319,8 @@ def create_settings_from_template(
         return setts + kinds
 
 
-def read_unique_atomic_labels(path_traj_xyz: PathLike) -> Set[str]:
+def read_unique_atomic_labels(path_traj_xyz: PathLike) -> FrozenSet[str]:
     """Return the unique atomic labels."""
     mol = Molecule(path_traj_xyz, 'xyz')
 
-    return set(at.symbol for at in mol.atoms)
+    return frozenset(at.symbol for at in mol.atoms)

@@ -113,6 +113,7 @@ def prepare_job_cp2k(
         if x in job_settings:
             del job_settings[x]
 
+    print(f"job_settings:\n{job_settings.specific.cp2k}")
     return cp2k(
         job_settings, string_to_plams_Molecule(dict_input["geometry"]),
         work_dir=dict_input['point_dir'])
