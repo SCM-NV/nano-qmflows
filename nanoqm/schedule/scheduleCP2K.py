@@ -79,10 +79,6 @@ def prepare_cp2k_settings(
 
     input_args = templates.singlepoint.overlay(settings)
 
-    # Do not print the MOs if is an OT computation
-    if settings.specific.cp2k.force_eval.dft.scf.ot:
-        del input_args.specific.cp2k.force_eval.dft['print']['mo']
-
     return input_args
 
 
