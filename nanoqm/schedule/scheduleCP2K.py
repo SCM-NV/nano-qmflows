@@ -45,7 +45,7 @@ def try_to_read_wf(path_dir: PathLike) -> PathLike:
         return join(path_dir, files[0])
     else:
         raise RuntimeError(
-            "There are no wave function file in path:{path_dir}")
+            f"There are no wave function file in path:{path_dir}")
 
 
 def prepare_cp2k_settings(

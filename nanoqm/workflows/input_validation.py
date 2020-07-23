@@ -135,7 +135,7 @@ class InputSanitizer:
         else:
             logger.info("Orbitals are neither print nor store!")
 
-        # Add restart point
+        # Add restart point provided by the user
         self.add_restart_point()
 
         # Add basis sets
