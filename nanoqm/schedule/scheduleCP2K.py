@@ -79,10 +79,6 @@ def prepare_cp2k_settings(
 
     input_args = templates.singlepoint.overlay(settings)
 
-    # Do not print the MOs if is an OT computation
-    if settings.specific.cp2k.force_eval.dft.scf.ot:
-        del input_args.specific.cp2k.force_eval.dft['print']['mo']
-
     return input_args
 
 
@@ -113,7 +109,6 @@ def prepare_job_cp2k(
         if x in job_settings:
             del job_settings[x]
 
-    print(f"job_settings:\n{job_settings.specific.cp2k}")
     return cp2k(
         job_settings, string_to_plams_Molecule(dict_input["geometry"]),
         work_dir=dict_input['point_dir'])
