@@ -14,6 +14,7 @@ cp2k_general_settings:
   cell_parameters: 5.0
   periodic: none
   file_cell_parameters: "test/test_files/file_cell_parameters.txt"
+  executable: cp2k.popt
 
   cp2k_settings_main:
     specific:

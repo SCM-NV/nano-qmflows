@@ -28,9 +28,9 @@ def remove_files() -> None:
             os.remove(name)
 
 
-def cp2k_available() -> None:
+def cp2k_available(executable: str = "cp2k.popt") -> bool:
     """Check if cp2k is installed."""
-    path = find_executable("cp2k.popt")
+    path = find_executable(executable)
 
     return path is not None
 

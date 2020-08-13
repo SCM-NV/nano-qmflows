@@ -23,8 +23,6 @@ def test_cp2k_executable(tmp_path: PathLike) -> None:
     config.scratch_path = tmp_path
     config.workdir = tmp_path
 
-    # executable to test
-    config.executable = "cp2k.popt"
     try:
         workflow_single_points(config)
     finally:
