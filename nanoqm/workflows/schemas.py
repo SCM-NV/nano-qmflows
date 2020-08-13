@@ -23,11 +23,12 @@ __all__ = [
     'schema_coop']
 
 import os
+import re
 from numbers import Real
+from typing import Any, Dict, Iterable
 
 import pkg_resources as pkg
-from schema import And, Optional, Or, Schema, Use
-from typing import Any, Dict, Iterable
+from schema import And, Optional, Or, Regex, Schema, Use
 
 
 def equal_lambda(name: str) -> And:
@@ -100,21 +101,16 @@ schema_cp2k_general_settings = Schema({
         any_lambda(("low", "medium", "good", "verygood", "excellent")),
 
     # executable name
-    Optional("executable", default="cp2k.psmp"): any_lambda(
-        [f"cp2k.{ext}" for ext in (
-            # Serial single core testing and debugging
-            "sdbg",
-            # Serial general single core usage
-            "sopt",
-            # Parallel (only OpenMP), single node, multi core
-            "ssmp",
-            # Parallel (only MPI) multi-node testing and debugging
-            "pdbg",
-            # Parallel (only MPI) general usage, no threads
-            "popt",
-            # parallel (MPI + OpenMP) general usage, threading might improve scalability and memory usage
-            "psmp"
-        )])
+    # "sdbg" Serial single core testing and debugging
+    # "sopt" Serial general single core usage
+    # "ssmp" Parallel (only OpenMP), single node, multi core
+    # "pdbg" Parallel (only MPI) multi-node testing and debugging
+    # "popt" Parallel (only MPI) general usage, no threads
+    # "psmp" parallel (MPI + OpenMP) general usage, threading might improve scalability and memory usage
+
+    Optional("executable", default="cp2k.psmp"):
+        Regex(r'.* cp2k\.(?:popt|psmp|sdbg|sopt|ssmp|pdbg)', flags=re.I)
+
 })
 
 
