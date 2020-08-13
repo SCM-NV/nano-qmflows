@@ -49,7 +49,7 @@ def try_to_read_wf(path_dir: PathLike) -> PathLike:
 
 
 def prepare_cp2k_settings(
-        settings: Settings, dict_input: Dict[str, Any], guess_job: CP2K_Result) -> CP2K:
+        settings: Settings, dict_input: Dict[str, Any], guess_job: CP2K_Result) -> Settings:
     """Fill in the parameters for running a single job in CP2K.
 
     Parameters

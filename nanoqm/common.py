@@ -284,7 +284,7 @@ def change_mol_units(mol: List[AtomXYZ], factor: float = angs2au) -> List[AtomXY
     """Change the units of the molecular coordinates."""
     newMol = []
     for atom in mol:
-        coord = list(map(lambda x: x * factor, atom.xyz))
+        coord = tuple(map(lambda x: x * factor, atom.xyz))
         newMol.append(AtomXYZ(atom.symbol, coord))
     return newMol
 
@@ -307,23 +307,22 @@ def number_spherical_functions_per_atom(
         xs = [f5[f'{package_name}/basis/{atom[0]}/{basis_name}/coefficients']
               for atom in mol]
         ys = [calc_orbital_Slabels(
-            package_name, read_basis_format(
-                package_name, path.attrs['basisFormat'])) for path in xs]
+            read_basis_format(path.attrs['basisFormat'])) for path in xs]
 
         return np.stack([sum(len(x) for x in ys[i]) for i in range(len(mol))])
 
 
 @overload
-def calc_orbital_Slabels(name: str, fss: List[int]) -> List[Tuple[str, ...]]:
+def calc_orbital_Slabels(fss: List[int]) -> List[Tuple[str, ...]]:
     ...
 
 
 @overload
-def calc_orbital_Slabels(name: str, fss: List[List[int]]) -> List[Tuple[str, ...]]:
+def calc_orbital_Slabels(fss: List[List[int]]) -> List[Tuple[str, ...]]:
     ...
 
 
-def calc_orbital_Slabels(name, fss):
+def calc_orbital_Slabels(fss):
     """Compute the spherical CGFs for a given basis set.
 
     Most quantum packages use standard basis set which contraction is
@@ -352,14 +351,9 @@ def calc_orbital_Slabels(name, fss):
         containing tuples with the spherical CGFs
 
     """
-    angularM = ['s', 'p', 'd', 'f', 'g']
-    if name == 'cp2k':
-        dict_Ord_Labels = dict_cp2kOrder_spherical
-    else:
-        raise NotImplementedError
-
-    return concat([funSlabels(dict_Ord_Labels, l, fs)
-                   for l, fs in zip(angularM, fss)])
+    angular_momentum = ['s', 'p', 'd', 'f', 'g']
+    return concat([funSlabels(dict_cp2k_order_sphericals, label, fs)
+                   for label, fs in zip(angular_momentum, fss)])
 
 
 @overload
@@ -372,27 +366,24 @@ def funSlabels(d: Mapping[str, Tuple[str, ...]], l: str, fs: List[int]) -> List[
     ...
 
 
-def funSlabels(d, l, fs):
+def funSlabels(data, label, fs):
     """Search for the spherical functions for each orbital type `l`."""
     if isinstance(fs, list):
         fs = sum(fs)
-    labels = repeat(d[l], fs)
+    labels = repeat(data[label], fs)
     return labels
 
 
-def read_basis_format(name: str, basisFormat: str) -> List[int]:
-    """Read the basis set format specificitation."""
-    if name == 'cp2k':
-        s = basisFormat.replace('[', '').split(']')[0]
-        fss = list(map(int, s.split(',')))
-        fss = fss[4:]  # cp2k coefficient formats start in column 5
-        return fss
-    else:
-        raise NotImplementedError(f"Unkown {name}")
+def read_basis_format(basis_format: str) -> List[int]:
+    """Read the basis set using the specified format."""
+    s = basis_format.replace('[', '').split(']')[0]
+    fss = list(map(int, s.split(',')))
+    fss = fss[4:]  # cp2k coefficient formats start in column 5
+    return fss
 
 
 #: Ordering of the Spherical shells
-dict_cp2kOrder_spherical: Mapping[str, Tuple[str, ...]] = {
+dict_cp2k_order_sphericals: Mapping[str, Tuple[str, ...]] = {
     's': ('s',),
     'p': ('py', 'pz', 'px'),
     'd': ('d-2', 'd-1', 'd0', 'd+1', 'd+2'),

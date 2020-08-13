@@ -83,7 +83,7 @@ def create_path_hamiltonians(workdir: PathLike) -> PathLike:
     return path_hamiltonians
 
 
-def remove_folders(folders: List[PathLike]):
+def remove_folders(folders: List[PathLike]) -> None:
     """Remove unused folders."""
     for f in folders:
         if Path(f).exists():

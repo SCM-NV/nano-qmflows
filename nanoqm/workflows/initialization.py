@@ -23,11 +23,10 @@ import tempfile
 from os.path import join
 from pathlib import Path
 from subprocess import PIPE, Popen
-from typing import List, Union
+from typing import List, Sequence, Union
 
 import numpy as np
 import pkg_resources
-
 from qmflows.parsers import parse_string_xyz
 from qmflows.parsers.cp2KParser import readCp2KBasis
 from qmflows.type_hints import PathLike
@@ -94,7 +93,7 @@ def initialize(config: DictConfig) -> DictConfig:
     return config
 
 
-def save_basis_to_hdf5(config: DictConfig, package_name: str = "cp2k") -> None:
+def save_basis_to_hdf5(config: DictConfig) -> None:
     """Store the specification of the basis set in the HDF5 to compute the integrals."""
     path_basis = pkg_resources.resource_filename("nanoqm", "basis/BASIS_MOLOPT")
     if not is_data_in_hdf5(config.path_hdf5, path_basis):
@@ -148,7 +147,7 @@ def read_swaps(path_hdf5: PathLike, project_name: str) -> Matrix:
         raise RuntimeError(msg)
 
 
-def split_trajectory(path: PathLike, nBlocks: int, pathOut: PathLike) -> List[PathLike]:
+def split_trajectory(path: PathLike, nBlocks: int, pathOut: PathLike) -> Sequence[PathLike]:
     """Split an XYZ trajectory in n Block and write them in a given path.
 
     Parameters
@@ -179,19 +178,19 @@ def split_trajectory(path: PathLike, nBlocks: int, pathOut: PathLike) -> List[Pa
         lines += 1
 
     # Number of points in the xyz file
-    nPoints = lines // (numat + 2)
+    npoints = lines // (numat + 2)
     # Number of points for each chunk
-    nChunks = int(np.ceil(nPoints / nBlocks))
+    nchunks = int(np.ceil(npoints / nBlocks))
     # Number of lines per block
-    lines_per_block = nChunks * (numat + 2)
+    lines_per_block = nchunks * (numat + 2)
     # Path where the splitted xyz files are written
     prefix = join(pathOut, 'chunk_xyz_')
     cmd = f'split -a 1 -l {lines_per_block} {path} {prefix}'
-    p = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, shell=True)
-    rs = p.communicate()
+    output = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, shell=True)
+    rs = output.communicate()
     err = rs[1]
     if err:
-        raise RuntimeError(f"Submission Errors: {err}")
+        raise RuntimeError(f"Submission Errors: {err.decode()}")
     else:
         return fnmatch.filter(os.listdir(), "chunk_xyz_?")
 
