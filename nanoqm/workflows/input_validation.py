@@ -99,6 +99,7 @@ class InputSanitizer:
         self.create_settings()
         self.apply_templates()
         self.add_missing_keywords()
+        self.add_executable()
         self.print_final_input()
 
         return self.user_input
@@ -122,6 +123,12 @@ class InputSanitizer:
 
                 # Add other keywords
                 s['specific'] = cp2k_template.overlay(s['specific'])
+
+    def add_executable(self) -> None:
+        """Add executable to the job settings."""
+        self.general['cp2k_settings_main']['executable'] = self.general['executable']
+        self.general['cp2k_settings_guess']['executable'] = self.general['executable']
+
 
     def add_missing_keywords(self) -> None:
         """Add missing input data using the defaults."""
