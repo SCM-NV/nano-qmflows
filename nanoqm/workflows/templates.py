@@ -269,6 +269,51 @@ cp2k:
           scf_guess: "restart"
 """, Loader=yaml.FullLoader))
 
+#: Settings for a B3LYP calculation to compute a guess wave function
+cp2k_b3lyp_guess = Settings(yaml.load("""
+cp2k:
+   global:
+      run_type:
+         energy
+
+   force_eval:
+      subsys:
+         cell:
+           periodic: "None"
+      dft:
+         xc:
+           xc_functional b3lyp: {}
+         scf:
+           eps_scf: 1e-6
+           added_mos: 0
+           scf_guess: "restart"
+           ot:
+             minimizer: "DIIS"
+             n_diis: 7
+             preconditioner: "FULL_SINGLE_INVERSE"
+""", Loader=yaml.FullLoader))
+
+#: Settings for a B3LYP calculation to compute the Molecular orbitals
+cp2k_b3lyp_main = Settings(yaml.load("""
+cp2k:
+  global:
+    run_type:
+      energy
+
+  force_eval:
+    subsys:
+      cell:
+        periodic: "None"
+    dft:
+      xc:
+        xc_functional b3lyp: {}
+      scf:
+        eps_scf: 5e-4
+        max_scf: 200
+        scf_guess: "restart"
+""", Loader=yaml.FullLoader))
+
+
 #: Settings to add the CP2K kinds for each atom
 kinds_template = Settings(yaml.load("""
 cp2k:
@@ -297,7 +342,9 @@ def generate_kinds(elements: Iterable[str], basis: str, potential: str) -> Setti
 templates_dict = {
     "pbe_guess": cp2k_pbe_guess, "pbe_main": cp2k_pbe_main,
     "pbe0_guess": cp2k_pbe0_guess, "pbe0_main": cp2k_pbe0_main,
-    "hse06_guess": cp2k_hse06_guess, "hse06_main": cp2k_hse06_main}
+    "hse06_guess": cp2k_hse06_guess, "hse06_main": cp2k_hse06_main,
+    "b3lyp_guess": cp2k_b3lyp_guess, "b3lyp_main": cp2k_b3lyp_main}
+
 
 
 def create_settings_from_template(

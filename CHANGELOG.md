@@ -1,5 +1,9 @@
 # Change Log
 
+# 0.10.3
+## New
+* Template to create B3LYP computations (#269)
+
 # 0.10.2
 ## fixed
 * multivalue settings issue (#260)
