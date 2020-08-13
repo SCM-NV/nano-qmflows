@@ -15,7 +15,7 @@ import os
 import shutil
 from collections import defaultdict
 from os.path import join
-from typing import Any, DefaultDict, Dict, List, NamedTuple
+from typing import Any, DefaultDict, Dict, List, NamedTuple, Sequence
 
 from more_itertools import chunked
 from noodles import gather, schedule
@@ -286,10 +286,10 @@ def create_point_folder(
     return folders
 
 
-def split_file_geometries(pathXYZ: PathLike) -> List[MolXYZ]:
+def split_file_geometries(path_xyz: PathLike) -> Sequence[MolXYZ]:
     """Read a set of molecular geometries in xyz format."""
     # Read Cartesian Coordinates
-    with open(pathXYZ) as f:
+    with open(path_xyz) as f:
         xss = f.readlines()
 
     numat = int(xss[0].split()[0])
