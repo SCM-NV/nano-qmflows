@@ -3,6 +3,7 @@
 # 0.10.2
 ## fixed
 * multivalue settings issue (#260)
+* CP2K executable (#264)
 
 # 0.10.1
 ## Added
