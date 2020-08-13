@@ -109,7 +109,7 @@ schema_cp2k_general_settings = Schema({
     # "psmp" parallel (MPI + OpenMP) general usage, threading might improve scalability and memory usage
 
     Optional("executable", default="cp2k.psmp"):
-        Regex(r'.* cp2k\.(?:popt|psmp|sdbg|sopt|ssmp|pdbg)', flags=re.I)
+        Regex(r'.*cp2k\.(?:popt|psmp|sdbg|sopt|ssmp|pdbg)', flags=re.I)
 
 })
 
