@@ -357,17 +357,17 @@ def calc_orbital_Slabels(fss):
 
 
 @overload
-def funSlabels(d: Mapping[str, Tuple[str, ...]], l: str, fs: int) -> List[Tuple[str, ...]]:
+def funSlabels(d: Mapping[str, Tuple[str, ...]], label: str, fs: int) -> List[Tuple[str, ...]]:
     ...
 
 
 @overload
-def funSlabels(d: Mapping[str, Tuple[str, ...]], l: str, fs: List[int]) -> List[Tuple[str, ...]]:
+def funSlabels(d: Mapping[str, Tuple[str, ...]], label: str, fs: List[int]) -> List[Tuple[str, ...]]:
     ...
 
 
 def funSlabels(data, label, fs):
-    """Search for the spherical functions for each orbital type `l`."""
+    """Search for the spherical functions for each orbital type `label`."""
     if isinstance(fs, list):
         fs = sum(fs)
     labels = repeat(data[label], fs)
