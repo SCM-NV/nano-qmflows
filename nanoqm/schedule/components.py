@@ -154,9 +154,10 @@ def store_MOs(
                               dict_input["job_name"])
     # Remove the ascii MO file
     finally:
-        work_dir = promise_qm.archive['work_dir']
-        path_MOs = fnmatch.filter(os.listdir(work_dir), 'mo_*MOLog')[0]
-        os.remove(join(work_dir, path_MOs))
+        if config.remove_log_file:
+            work_dir = promise_qm.archive['work_dir']
+            path_mos = fnmatch.filter(os.listdir(work_dir), 'mo_*MOLog')[0]
+            os.remove(join(work_dir, path_mos))
 
     return dict_input["node_MOs"]
 
