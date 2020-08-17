@@ -147,14 +147,14 @@ def read_swaps(path_hdf5: PathLike, project_name: str) -> Matrix:
         raise RuntimeError(msg)
 
 
-def split_trajectory(path: PathLike, nBlocks: int, pathOut: PathLike) -> Sequence[PathLike]:
+def split_trajectory(path: PathLike, nblocks: int, pathOut: PathLike) -> Sequence[PathLike]:
     """Split an XYZ trajectory in n Block and write them in a given path.
 
     Parameters
     ----------
     path
         Path to the XYZ file.
-    nBlocks
+    nblocks
         number of Block into which the xyz file is split.
     pathOut
         Path were the block are written.
@@ -180,7 +180,7 @@ def split_trajectory(path: PathLike, nBlocks: int, pathOut: PathLike) -> Sequenc
     # Number of points in the xyz file
     npoints = lines // (numat + 2)
     # Number of points for each chunk
-    nchunks = int(np.ceil(npoints / nBlocks))
+    nchunks = int(np.ceil(npoints / nblocks))
     # Number of lines per block
     lines_per_block = nchunks * (numat + 2)
     # Path where the splitted xyz files are written

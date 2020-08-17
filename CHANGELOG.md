@@ -1,11 +1,15 @@
 # Change Log
 
-# 0.10.3
+# 0.10.3 (Unreleased)
 ## New
 * Template to create B3LYP computations (#269)
 
+## Fixed
+* Fix distribution error (#272)
+
+
 # 0.10.2
-## fixed
+## Fixed
 * multivalue settings issue (#260)
 * CP2K executable (#264)
 
