@@ -371,6 +371,8 @@ def single_machine_overlaps(
     overlaps = compute_overlaps_for_coupling(
         config, pair_molecules, coefficients)
 
+    logger.info(f"overlap for point {i} was sucessfully computed!")
+
     # Store the array in the HDF5
     overlaps_paths_hdf5 = create_overlap_path(config, i)
     store_arrays_in_hdf5(config.path_hdf5, overlaps_paths_hdf5, overlaps)
