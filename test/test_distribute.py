@@ -19,7 +19,7 @@ def call_distribute(tmp_path: PathLike, cmd: str) -> None:
     """Execute the distribute script and check that if finish succesfully."""
     try:
         p = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, shell=True)
-        out, err = p.communicate()
+        _, err = p.communicate()
         if err:
             raise RuntimeError(err.decode())
         check_scripts()

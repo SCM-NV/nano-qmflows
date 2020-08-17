@@ -92,6 +92,7 @@ def distribute_computations(config: DictConfig, hamiltonians: bool = False) -> N
 
     # Scratch for all the chunks
     parent_scratch = config.scratch_path
+    accumulated_number_of_geometries = 0
 
     for index, file_xyz in enumerate(chunks_trajectory):
         copy_config = DictConfig(config.copy())
@@ -103,6 +104,14 @@ def distribute_computations(config: DictConfig, hamiltonians: bool = False) -> N
             'folder_path': folder_path, "file_xyz": file_xyz, 'index': index})
 
         create_folders(copy_config, dict_input)
+
+        # number of geometries per batch
+        dict_input.dim_batch = compute_number_of_geometries(join(folder_path, file_xyz))
+
+        # change the window of molecules to compute
+        copy_config['enumerate_from'] = accumulated_number_of_geometries
+        accumulated_number_of_geometries += dict_input.dim_batch
+
         # HDF5 file where both the Molecular orbitals and coupling are stored
         copy_config.path_hdf5 = join(copy_config.scratch_path, f'chunk_{index}.hdf5')
 
@@ -118,10 +127,6 @@ def distribute_computations(config: DictConfig, hamiltonians: bool = False) -> N
             dict_input.hamiltonians_dir = join(
                 copy_config.scratch_path, 'hamiltonians')
 
-        # number of geometries per batch
-        dict_input.dim_batch = compute_number_of_geometries(
-            join(folder_path, file_xyz))
-
         # Write input file
         write_input(folder_path, copy_config)
 
@@ -132,9 +137,6 @@ def distribute_computations(config: DictConfig, hamiltonians: bool = False) -> N
         else:
             msg = f"The request job_scheduler: {scheduler} it is not implemented"
             raise RuntimeError(msg)
-
-        # change the window of molecules to compute
-        copy_config['enumerate_from'] += dict_input.dim_batch
 
 
 def write_input(folder_path: PathLike, original_config: DictConfig) -> None:
