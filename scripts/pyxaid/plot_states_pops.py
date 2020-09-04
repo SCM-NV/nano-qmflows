@@ -24,7 +24,7 @@ import numpy as np
 import os
 import matplotlib.pyplot as plt
 import argparse
-from nanqm.analysis import parse_list_of_lists
+from nanoqm.analysis import parse_list_of_lists
 
 
 def plot_stuff(outs, pops):
