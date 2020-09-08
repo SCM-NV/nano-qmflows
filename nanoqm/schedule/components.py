@@ -15,11 +15,11 @@ import os
 import shutil
 from collections import defaultdict
 from os.path import join
-from typing import Any, DefaultDict, Dict, List, NamedTuple, Sequence
+from typing import (Any, DefaultDict, Dict, List, NamedTuple, Sequence, Tuple,
+                    Union)
 
 from more_itertools import chunked
 from noodles import gather, schedule
-
 from qmflows.common import InfoMO
 from qmflows.type_hints import PathLike, PromisedObject
 from qmflows.warnings_qmflows import SCF_Convergence_Warning
@@ -30,6 +30,9 @@ from .scheduleCP2K import prepare_job_cp2k
 
 # Starting logger
 logger = logging.getLogger(__name__)
+
+#: Molecular orbitals from both restricted and unrestricted calculations
+OrbitalType = Union[InfoMO, Tuple[InfoMO, InfoMO]]
 
 
 class JobFiles(NamedTuple):
@@ -150,8 +153,7 @@ def store_MOs(
 
     # Store in the HDF5
     try:
-        dump_orbitals_to_hdf5(mos, config.path_hdf5, config.project_name,
-                              dict_input["job_name"])
+        save_orbitals_in_hdf5(mos, config, dict_input["job_name"])
     # Remove the ascii MO file
     finally:
         if config.remove_log_file:
@@ -162,29 +164,38 @@ def store_MOs(
     return dict_input["node_MOs"]
 
 
+def save_orbitals_in_hdf5(mos: OrbitalType, config: DictConfig, job_name: str) -> None:
+    """Store the orbitals from restricted and unrestricted calculations."""
+    if not isinstance(mos, NamedTuple):
+        dump_orbitals_to_hdf5(mos, config, job_name)
+    else:
+        alphas, betas = mos  # type: Tuple[InfoMO, InfoMO]
+        dump_orbitals_to_hdf5(alphas, config, job_name, "alphas")
+        dump_orbitals_to_hdf5(betas, config, job_name, "betas")
+
+
 def dump_orbitals_to_hdf5(
-        data: InfoMO, path_hdf5: str, project_name: str, job_name: str) -> None:
+        data: InfoMO, config: DictConfig, job_name: str, orbital_type: str = "") -> None:
     """Store the result in HDF5 format.
 
     Parameters
     ----------
     data
         Tuple of energies and coefficients of the molecular orbitals
-    path_hdf5
-        Path to the HDF5 where the MOs are stored
-    project_name
-        Name of the current project
+    config
+        Dictionary with the job configuration
     job_name
         Name of the current job
-
+    orbital_type
+        Either an empty string for MO coming from a restricted job or alpha/beta
+        for unrestricted MO calculation
     """
-    es = "cp2k/mo/eigenvalues"
-    css = "cp2k/mo/coefficients"
-    path_eigenvalues = join(project_name, job_name, es)
-    path_coefficients = join(project_name, job_name, css)
+    es = join("cp2k", "mo", orbital_type, "eigenvalues")
+    css = join("cp2k", "mo", orbital_type, "coefficients")
 
-    store_arrays_in_hdf5(path_hdf5, path_eigenvalues, data.eigenVals)
-    store_arrays_in_hdf5(path_hdf5, path_coefficients, data.coeffs)
+    for path, array in zip((es, css), (data.eigenvalues, data.eigenvectors)):
+        path_property = join(config.project_name, job_name, path)
+        store_arrays_in_hdf5(config.path_hdf5, path_property, array)
 
 
 @schedule

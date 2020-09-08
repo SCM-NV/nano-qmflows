@@ -282,11 +282,11 @@ def store_arrays_in_hdf5(
 
 def change_mol_units(mol: List[AtomXYZ], factor: float = angs2au) -> List[AtomXYZ]:
     """Change the units of the molecular coordinates."""
-    newMol = []
+    new_molecule = []
     for atom in mol:
         coord = tuple(map(lambda x: x * factor, atom.xyz))
-        newMol.append(AtomXYZ(atom.symbol, coord))
-    return newMol
+        new_molecule.append(AtomXYZ(atom.symbol, coord))
+    return new_molecule
 
 
 def tuplesXYZ_to_plams(xs: List[AtomXYZ]) -> Molecule:

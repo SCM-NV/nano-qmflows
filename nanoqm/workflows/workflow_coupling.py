@@ -60,7 +60,7 @@ def workflow_derivative_couplings(config: DictConfig) -> Tuple[List[PathLike], L
     schedule_write_ham = schedule(write_hamiltonians)
 
     # Number of matrix computed
-    config["nPoints"] = len(config.geometries) - 2
+    config["npoints"] = len(config.geometries) - 2
 
     # Write Hamilotians in PYXAID format
     promise_files = schedule_write_ham(

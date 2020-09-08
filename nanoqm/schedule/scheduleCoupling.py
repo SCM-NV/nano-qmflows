@@ -334,15 +334,15 @@ def calculate_overlap(config: DictConfig, mo_paths_hdf5: List[str]) -> List[str]
 
     """
     # Number of couplings to compute
-    nPoints = len(config.geometries) - 1
+    npoints = len(config.geometries) - 1
     # Check what are the missing Couplings
     all_overlaps_paths = [create_overlap_path(
-        config, i) for i in range(nPoints)]
+        config, i) for i in range(npoints)]
     overlap_is_done = [check_if_overlap_is_done(
         config, p) for p in all_overlaps_paths]
 
     paths = []
-    for i in range(nPoints):
+    for i in range(npoints):
         if overlap_is_done[i]:
             p = all_overlaps_paths[i]
         else:
@@ -468,6 +468,9 @@ def write_hamiltonians(
         ham_im = 2.0 * css
         ham_re = np.diag(2.0 * energies)
 
+        # Set the diagonal of the imaginary matrix to 0
+        np.fill_diagonal(ham_im, 0)
+
         write_pyxaid_format(ham_im, file_ham_im)
         write_pyxaid_format(ham_re, file_ham_re)
 
@@ -475,7 +478,7 @@ def write_hamiltonians(
 
     # The couplings are compute at time t + dt therefore
     # we associate the energies at time t + dt with the corresponding coupling
-    return [write_data(i) for i in range(config.nPoints)]
+    return [write_data(i) for i in range(config.npoints)]
 
 
 def swap_columns(arr: Matrix, swaps_t: Vector) -> Matrix:
@@ -489,8 +492,8 @@ def write_overlaps_in_ascii(overlaps: Tensor3D) -> None:
         os.mkdir('overlaps')
 
     # write overlaps
-    nFrames = overlaps.shape[0]
-    for k in range(nFrames):
+    nframes = overlaps.shape[0]
+    for k in range(nframes):
         mtx_Sji = overlaps[k]
         path_Sji = f'overlaps/mtx_Sji_{k}'
 
