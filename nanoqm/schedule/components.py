@@ -171,7 +171,7 @@ def store_MOs(
 
 def save_orbitals_in_hdf5(mos: OrbitalType, config: DictConfig, job_name: str) -> None:
     """Store the orbitals from restricted and unrestricted calculations."""
-    if not isinstance(mos, NamedTuple):
+    if isinstance(mos, NamedTuple):
         dump_orbitals_to_hdf5(mos, config, job_name)
     else:
         alphas, betas = mos  # type: Tuple[InfoMO, InfoMO]

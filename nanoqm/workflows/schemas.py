@@ -193,10 +193,7 @@ dict_derivative_couplings = {
     Optional("write_overlaps", default=False): bool,
 
     # Compute the overlap between molecular geometries using a dephase"
-    Optional("overlaps_deph", default=False): bool,
-
-    # The orbitals are computing using an unrestricted method
-    Optional("is_unrestricted", default=False): bool
+    Optional("overlaps_deph", default=False): bool
 }
 
 dict_merged_derivative_couplings = merge(
