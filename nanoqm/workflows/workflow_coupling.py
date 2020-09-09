@@ -34,7 +34,7 @@ from .initialization import initialize
 logger = logging.getLogger(__name__)
 
 
-def workflow_derivative_couplings(config: DictConfig) -> Tuple[List[PathLike], List[PathLike]]:
+def workflow_derivative_couplings(config: DictConfig) -> Tuple[List[str], List[str]]:
     """Compute the derivative couplings for a molecular dynamic trajectory."""
     # Dictionary containing the general configuration
     config.update(initialize(config))

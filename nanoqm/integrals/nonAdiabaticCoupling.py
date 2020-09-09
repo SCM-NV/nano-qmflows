@@ -83,7 +83,8 @@ def calculate_couplings_levine(dt: float, w_jk: Matrix,
     Garrett A. Meek and Benjamin G. Levine.
     dx.doi.org/10.1021/jz5009449 | J. Phys. Chem. Lett. 2014, 5, 2351−2356
 
-    .. NOTE::
+    Notes
+    -----
         In numpy sinc is defined as sin(pi * x) / (pi * x)
 
 
@@ -155,10 +156,10 @@ def calculate_couplings_levine(dt: float, w_jk: Matrix,
 
 def correct_phases(overlaps: Tensor3D, mtx_phases: Matrix) -> np.ndarray:
     """Correct the phases for all the overlaps."""
-    nOverlaps = overlaps.shape[0]  # total number of overlap matrices
+    noverlaps = overlaps.shape[0]  # total number of overlap matrices
     dim = overlaps.shape[1]  # Size of the square matrix
 
-    for k in range(nOverlaps):
+    for k in range(noverlaps):
         # Extract phases
         phases_t0, phases_t1 = mtx_phases[k: k + 2]
         phases_t0 = phases_t0.reshape(dim, 1)

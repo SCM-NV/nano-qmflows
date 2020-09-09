@@ -91,8 +91,9 @@ def lazy_couplings(
         fixed_phase_overlaps = correct_phases(overlaps, mtx_phases)
 
     # Write the overlaps in text format
-    logger.debug("Writing down the overlaps in ascii format")
-    write_overlaps_in_ascii(fixed_phase_overlaps)
+    if config.write_overlaps:
+        logger.debug("Writing down the overlaps in ascii format")
+        write_overlaps_in_ascii(fixed_phase_overlaps)
 
     # Compute the couplings using either the levine method
     # or the 3Points approximation
@@ -112,7 +113,7 @@ def lazy_couplings(
 
 def compute_the_fixed_phase_overlaps(
         paths_overlaps: List[str], path_hdf5: PathLike, project_name: str,
-        enumerate_from: int, nHOMO: int) -> Tuple[List[np.ndarray], np.ndarray]:
+        enumerate_from: int, nHOMO: int) -> Tuple[np.ndarray, np.ndarray]:
     """Fix the phase of the overlaps.
 
     First track the unavoided crossings between Molecular orbitals and
@@ -187,7 +188,7 @@ def calculate_couplings(config: DictConfig, i: int, fixed_phase_overlaps: Tensor
 
     # Path were the couplinp is store
     k = i + config.enumerate_from
-    path = join(config.project_name, f'coupling_{k}')
+    path = join(config.project_name, config.orbitals_type, f'coupling_{k}')
 
     # Skip the computation if the coupling is already done
     if is_data_in_hdf5(config.path_hdf5, path):
@@ -380,7 +381,7 @@ def single_machine_overlaps(
 
 def create_overlap_path(config: DictConfig, i: int) -> str:
     """Create the path inside the HDF5 where the overlap is going to be store."""
-    root = join(config.project_name, 'overlaps_{}'.format(
+    root = join(config.project_name, config.orbitals_type, 'overlaps_{}'.format(
         i + config.enumerate_from))
     return join(root, 'mtx_sji_t0')
 
