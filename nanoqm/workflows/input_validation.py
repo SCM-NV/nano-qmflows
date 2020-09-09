@@ -129,12 +129,11 @@ class InputSanitizer:
         self.general['cp2k_settings_main']['executable'] = self.general['executable']
         self.general['cp2k_settings_guess']['executable'] = self.general['executable']
 
-
     def add_missing_keywords(self) -> None:
         """Add missing input data using the defaults."""
         # Add the `added_mos` and `mo_index_range` keywords
         if self.user_input.get('nHOMO') is None:
-            self.user_input["nHOMO"] = self.compute_HOMO_index()
+            self.user_input["nHOMO"] = self.compute_homo_index()
 
         # Added_mos keyword
         if self.user_input.get('compute_orbitals'):
@@ -160,7 +159,7 @@ class InputSanitizer:
         # Add multiplicity
         self.add_multiplicity()
 
-    def compute_HOMO_index(self) -> int:
+    def compute_homo_index(self) -> int:
         """Compute the HOMO index."""
         basis = self.general['basis']
         charge = self.general['charge']

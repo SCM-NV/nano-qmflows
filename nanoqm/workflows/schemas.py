@@ -189,7 +189,14 @@ dict_derivative_couplings = {
     Optional("write_overlaps", default=False): bool,
 
     # Compute the overlap between molecular geometries using a dephase"
-    Optional("overlaps_deph", default=False): bool
+    Optional("overlaps_deph", default=False): bool,
+
+    # The system is closed shell
+    Optional("is_closed_shell", default=True): bool,
+
+    # Use either the alpha or beta orbitals to compute the derivative
+    # coupling for open shell systems
+    Optional("orbital_type", default="alpha"): any_lambda(("alpha", "beta"))
 }
 
 dict_merged_derivative_couplings = merge(
