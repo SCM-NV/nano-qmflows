@@ -329,9 +329,7 @@ def calculate_overlap(config: DictConfig, mo_paths_hdf5: List[str]) -> List[str]
 
     Returns
     -------
-    list
         Node paths to the overlaps stored in the HDF5
-
     """
     # Number of couplings to compute
     npoints = len(config.geometries) - 1

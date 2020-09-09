@@ -167,7 +167,11 @@ dict_general_options = {
     Optional("remove_log_file", default=True): bool,
 
     # General settings
-    "cp2k_general_settings": schema_cp2k_general_settings
+    "cp2k_general_settings": schema_cp2k_general_settings,
+
+    # Empty string for restricted calculation or either alpha/beta
+    # for unrestricted calculation
+    Optional("orbital_type", default=""): any_lambda(("", "alpha", "beta"))
 }
 
 #: Dict with input options to run a derivate coupling workflow
@@ -191,12 +195,8 @@ dict_derivative_couplings = {
     # Compute the overlap between molecular geometries using a dephase"
     Optional("overlaps_deph", default=False): bool,
 
-    # The system is closed shell
-    Optional("is_closed_shell", default=True): bool,
-
-    # Use either the alpha or beta orbitals to compute the derivative
-    # coupling for open shell systems
-    Optional("orbital_type", default="alpha"): any_lambda(("alpha", "beta"))
+    # The orbitals are computing using an unrestricted method
+    Optional("is_unrestricted", default=False): bool
 }
 
 dict_merged_derivative_couplings = merge(

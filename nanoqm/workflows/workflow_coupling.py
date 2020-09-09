@@ -44,7 +44,6 @@ def workflow_derivative_couplings(config: DictConfig) -> Tuple[List[PathLike], L
     # compute the molecular orbitals
     mo_paths_hdf5, energy_paths_hdf5 = unpack(calculate_mos(config), 2)
 
-    # mo_paths_hdf5 = run(calculate_mos(config), folder=config.workdir)
 
     # Overlap matrix at two different times
     promised_overlaps = calculate_overlap(config, mo_paths_hdf5)

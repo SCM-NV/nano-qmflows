@@ -79,6 +79,11 @@ def calculate_mos(config: DictConfig) -> List[str]:
     orbitals = []  # list to the nodes in the HDF5 containing the MOs
     energies = []
     guess_job = None
+
+    # orbital type is either an empty string for restricted calculation
+    # or alpha/beta for unrestricted calculations
+    orbital_type = config.orbital_type
+
     for j, gs in enumerate(config.geometries):
 
         # number of the point with respect to all the trajectory
@@ -91,7 +96,7 @@ def calculate_mos(config: DictConfig) -> List[str]:
 
         # Path where the MOs will be store in the HDF5
         root = join(config.project_name, f'point_{k}',
-                    config.package_name, 'mo')
+                    config.package_name, 'mo', orbital_type)
         dict_input["node_MOs"] = [
             join(
                 root, 'eigenvalues'), join(
@@ -285,7 +290,7 @@ def schedule_check(
 
 
 def create_point_folder(
-        work_dir: PathLike, n: int, enumerate_from: int) -> List[PathLike]:
+        work_dir: PathLike, n: int, enumerate_from: int) -> List[str]:
     """Create a new folder for each point in the MD trajectory."""
     folders = []
     for k in range(enumerate_from, n + enumerate_from):
