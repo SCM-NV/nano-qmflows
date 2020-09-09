@@ -5,7 +5,7 @@ active_space: [2, 2]
 path_hdf5: "test/test_files/oxygen.hdf5"
 path_traj_xyz: "test/test_files/O2_coupling.xyz"
 scratch_path: "/tmp/namd"
-orbitals_type: betas
+orbitals_type: both
 
 cp2k_general_settings:
   basis:  "DZVP-MOLOPT-SR-GTH"
