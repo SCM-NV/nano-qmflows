@@ -24,7 +24,7 @@ from qmflows.common import InfoMO
 from qmflows.type_hints import PathLike, PromisedObject
 from qmflows.warnings_qmflows import SCF_Convergence_Warning
 
-from ..common import (DictConfig, Matrix, MolXYZ, is_data_in_hdf5,
+from ..common import (DictConfig, Matrix, is_data_in_hdf5,
                       read_cell_parameters_as_array, store_arrays_in_hdf5)
 from .scheduleCP2K import prepare_job_cp2k
 

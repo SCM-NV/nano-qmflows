@@ -1,14 +1,19 @@
 # Change Log
 
-# 0.10.3 (Unreleased)
+# 0.10.4 (Unrelease)
+## New
+* Allow to compute both alphas/betas derivative couplings simultaneusly (#275)
+
+
+# 0.10.3 (09/10/2020)
 ## New
 * Template to create B3LYP computations (#269)
 * Add support for derivative couplings for system with more than one spin state (#275)
 
 ## Fixed
-* Fix distribution error (#272)
-* Fix molecular orbital error [in qmflows](https://github.com/SCM-NV/qmflows/pull/213) (#270)
-* multivalue settings issue (#260)
+* Distribution error (#272)
+* Molecular orbital error [in qmflows](https://github.com/SCM-NV/qmflows/pull/213) (#270)
+* Multivalue settings issue (#260)
 * CP2K executable (#264)
 
 # 0.10.1
