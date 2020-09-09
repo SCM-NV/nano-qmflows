@@ -1,0 +1,26 @@
+workflow:
+  derivative_couplings
+project_name: oxygen
+active_space: [2, 2]
+path_hdf5: "oxygen.hdf5"
+path_traj_xyz: "test/test_files/O2_coupling.xyz"
+scratch_path: "/tmp/namd"
+remove_log_file: false
+orbitals_type: alphas
+
+cp2k_general_settings:
+  basis:  "DZVP-MOLOPT-SR-GTH"
+  potential: "GTH-PBE"
+  multiplicity: 3
+  cell_parameters: 4.0
+  periodic: none
+  executable: cp2k.popt
+
+  cp2k_settings_main:
+    specific:
+      template: pbe_main
+
+  cp2k_settings_guess:
+    specific:
+      template:
+        pbe_guess

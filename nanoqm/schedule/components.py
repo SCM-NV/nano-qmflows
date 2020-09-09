@@ -63,8 +63,7 @@ def calculate_mos(config: DictConfig) -> List[str]:
 
     Returns
     -------
-    list
-        path to nodes in the HDF5 file to MO energies and MO coefficients.
+        paths to the datasets in the HDF5 file containging both the MO energies and MO coefficients
 
     """
     # Read Cell parameters file
@@ -82,7 +81,7 @@ def calculate_mos(config: DictConfig) -> List[str]:
 
     # orbital type is either an empty string for restricted calculation
     # or alpha/beta for unrestricted calculations
-    orbital_type = config.orbital_type
+    orbitals_type = config.orbitals_type
 
     for j, gs in enumerate(config.geometries):
 
@@ -96,7 +95,7 @@ def calculate_mos(config: DictConfig) -> List[str]:
 
         # Path where the MOs will be store in the HDF5
         root = join(config.project_name, f'point_{k}',
-                    config.package_name, 'mo', orbital_type)
+                    config.package_name, 'mo', orbitals_type)
         dict_input["node_MOs"] = [
             join(
                 root, 'eigenvalues'), join(
@@ -132,7 +131,7 @@ def calculate_mos(config: DictConfig) -> List[str]:
 
             # Store the computation
             if config["compute_orbitals"]:
-                orbitals.append(store_MOs(config, dict_input, promise_qm))
+                orbitals.append(store_molecular_orbitals(config, dict_input, promise_qm))
             else:
                 orbitals.append(None)
             energies.append(store_enery(config, dict_input, promise_qm))
@@ -143,7 +142,7 @@ def calculate_mos(config: DictConfig) -> List[str]:
 
 
 @schedule
-def store_MOs(
+def store_molecular_orbitals(
         config: DictConfig, dict_input: DefaultDict[str, Any], promise_qm: PromisedObject) -> str:
     """Store the MOs in the HDF5.
 
@@ -180,7 +179,7 @@ def save_orbitals_in_hdf5(mos: OrbitalType, config: DictConfig, job_name: str) -
 
 
 def dump_orbitals_to_hdf5(
-        data: InfoMO, config: DictConfig, job_name: str, orbital_type: str = "") -> None:
+        data: InfoMO, config: DictConfig, job_name: str, orbitals_type: str = "") -> None:
     """Store the result in HDF5 format.
 
     Parameters
@@ -191,15 +190,14 @@ def dump_orbitals_to_hdf5(
         Dictionary with the job configuration
     job_name
         Name of the current job
-    orbital_type
+    orbitals_type
         Either an empty string for MO coming from a restricted job or alpha/beta
         for unrestricted MO calculation
     """
-    es = join("cp2k", "mo", orbital_type, "eigenvalues")
-    css = join("cp2k", "mo", orbital_type, "coefficients")
+    root = join("cp2k", "mo", orbitals_type)
 
-    for path, array in zip((es, css), (data.eigenvalues, data.eigenvectors)):
-        path_property = join(config.project_name, job_name, path)
+    for name, array in zip(("eigenvalues", "coefficients"), (data.eigenvalues, data.eigenvectors)):
+        path_property = join(config.project_name, job_name, root, name)
         store_arrays_in_hdf5(config.path_hdf5, path_property, array)
 
 
@@ -303,7 +301,7 @@ def create_point_folder(
     return folders
 
 
-def split_file_geometries(path_xyz: PathLike) -> Sequence[MolXYZ]:
+def split_file_geometries(path_xyz: PathLike) -> Sequence[str]:
     """Read a set of molecular geometries in xyz format."""
     # Read Cartesian Coordinates
     with open(path_xyz) as f:
@@ -318,9 +316,9 @@ def create_file_names(work_dir: PathLike, i: int) -> JobFiles:
     file_xyz = join(work_dir, f'coordinates_{i}.xyz')
     file_inp = join(work_dir, f'point_{i}.inp')
     file_out = join(work_dir, f'point_{i}.out')
-    file_MO = join(work_dir, f'mo_coeff_{i}.out')
+    file_mo = join(work_dir, f'mo_coeff_{i}.out')
 
-    return JobFiles(file_xyz, file_inp, file_out, file_MO)
+    return JobFiles(file_xyz, file_inp, file_out, file_mo)
 
 
 def adjust_cell_parameters(

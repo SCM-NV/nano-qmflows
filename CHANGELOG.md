@@ -3,18 +3,16 @@
 # 0.10.3 (Unreleased)
 ## New
 * Template to create B3LYP computations (#269)
+* Add support for derivative couplings for system with more than one spin state (#275)
 
 ## Fixed
 * Fix distribution error (#272)
-
-
-# 0.10.2
-## Fixed
+* Fix molecular orbital error [in qmflows](https://github.com/SCM-NV/qmflows/pull/213) (#270)
 * multivalue settings issue (#260)
 * CP2K executable (#264)
 
 # 0.10.1
-## Added
+## New
 * Keywords to print eigenvalues and eigenvectors (#248)
 
 ## Fixed
