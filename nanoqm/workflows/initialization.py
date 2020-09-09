@@ -23,7 +23,7 @@ import tempfile
 from os.path import join
 from pathlib import Path
 from subprocess import PIPE, Popen
-from typing import List, Sequence, Union
+from typing import List, Union
 
 import numpy as np
 import pkg_resources
@@ -147,7 +147,7 @@ def read_swaps(path_hdf5: PathLike, project_name: str) -> Matrix:
         raise RuntimeError(msg)
 
 
-def split_trajectory(path: PathLike, nblocks: int, pathOut: PathLike) -> Sequence[PathLike]:
+def split_trajectory(path: PathLike, nblocks: int, pathOut: PathLike) -> List[str]:
     """Split an XYZ trajectory in n Block and write them in a given path.
 
     Parameters
