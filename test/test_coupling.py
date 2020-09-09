@@ -19,15 +19,15 @@ def test_fast_couplings(tmp_path):
 
 def test_unrestricted_alphas(tmp_path):
     """Test the derivative coupling for the alphas spin orbitals."""
-    run_derivative_coupling(tmp_path, 'input_couplings_alphas.yml')
+    run_derivative_coupling(tmp_path, 'input_couplings_alphas.yml', "alphas")
 
 
 def test_unrestricted_betas(tmp_path):
     """Test the derivative coupling for the alphas spin orbitals."""
-    run_derivative_coupling(tmp_path, 'input_couplings_betas.yml')
+    run_derivative_coupling(tmp_path, 'input_couplings_both.yml', "both")
 
 
-def run_derivative_coupling(tmp_path: str, input_file: str) -> None:
+def run_derivative_coupling(tmp_path: str, input_file: str, orbitals_type: str = "") -> None:
     """Check that the couplings run."""
     path_input = PATH_TEST / input_file
     config = process_input(path_input, 'derivative_couplings')
@@ -36,17 +36,29 @@ def run_derivative_coupling(tmp_path: str, input_file: str) -> None:
     shutil.copy(config.path_hdf5, tmp_hdf5)
     config['path_hdf5'] = tmp_hdf5
     try:
-        hamiltonians, _ = workflow_derivative_couplings(config)
-        check_couplings(config, tmp_hdf5)
-        check_hamiltonians(hamiltonians)
+        check_results(config, tmp_hdf5, orbitals_type)
     finally:
         remove_files()
 
 
-def check_couplings(config: DictConfig, tmp_hdf5: str) -> None:
+def check_results(config: DictConfig, tmp_hdf5: str, orbitals_type: str) -> None:
+    """Check the computed results stored in the HDF5 file."""
+    if orbitals_type != "both":
+        hamiltonians, _ = workflow_derivative_couplings(config)
+        check_couplings(config, tmp_hdf5, orbitals_type)
+        check_hamiltonians(hamiltonians)
+    else:
+        result_alphas, result_betas = workflow_derivative_couplings(config)
+        check_couplings(config, tmp_hdf5, "alphas")
+        check_couplings(config, tmp_hdf5, "betas")
+        check_hamiltonians(result_alphas[0])
+        check_hamiltonians(result_betas[0])
+
+
+def check_couplings(config: DictConfig, tmp_hdf5: str, orbitals_type: str) -> None:
     """Check that the couplings have meaningful values."""
     def create_paths(keyword: str) -> list:
-        return [os.path.join(config.project_name, config.orbitals_type, f'{keyword}_{x}')
+        return [os.path.join(config.project_name, orbitals_type, f'{keyword}_{x}')
                 for x in range(len(config.geometries) - 1)]
     overlaps = create_paths('overlaps')
     couplings = create_paths('coupling')
