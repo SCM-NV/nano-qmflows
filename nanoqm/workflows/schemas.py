@@ -303,7 +303,10 @@ dict_distribute_single_points = {
 #: Input for a Crystal Orbital Overlap Population calculation
 dict_coop = {
     # List of the two elements to calculate the COOP for
-    "coop_elements": list}
+    "coop_elements": list,
+    # Coordination number to be considered for each of the two elements
+    Optional("elements_coordination", default=None): Or(None, list)
+}
 
 
 dict_merged_single_points = merge(dict_general_options, dict_single_points)
