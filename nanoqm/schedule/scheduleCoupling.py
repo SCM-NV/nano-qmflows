@@ -77,8 +77,7 @@ def lazy_couplings(
     """
     if config.tracking:
         fixed_phase_overlaps, swaps = compute_the_fixed_phase_overlaps(
-            paths_overlaps, config.path_hdf5, config.project_name,
-            config.enumerate_from, config.nHOMO)
+            paths_overlaps, config)
     else:
         # Do not track the crossings
         mtx_0 = retrieve_hdf5_data(config.path_hdf5, paths_overlaps[0])
@@ -91,8 +90,9 @@ def lazy_couplings(
         fixed_phase_overlaps = correct_phases(overlaps, mtx_phases)
 
     # Write the overlaps in text format
-    logger.debug("Writing down the overlaps in ascii format")
-    write_overlaps_in_ascii(fixed_phase_overlaps)
+    if config.write_overlaps:
+        logger.debug("Writing down the overlaps in ascii format")
+        write_overlaps_in_ascii(fixed_phase_overlaps)
 
     # Compute the couplings using either the levine method
     # or the 3Points approximation
@@ -111,8 +111,9 @@ def lazy_couplings(
 
 
 def compute_the_fixed_phase_overlaps(
-        paths_overlaps: List[str], path_hdf5: PathLike, project_name: str,
-        enumerate_from: int, nHOMO: int) -> Tuple[List[np.ndarray], np.ndarray]:
+        paths_overlaps: List[str], config: DictConfig) -> Tuple[np.ndarray, np.ndarray]:
+    #  path_hdf5: PathLike, project_name: str,
+    # enumerate_from: int, nHOMO: int)
     """Fix the phase of the overlaps.
 
     First track the unavoided crossings between Molecular orbitals and
@@ -121,22 +122,23 @@ def compute_the_fixed_phase_overlaps(
     number_of_frames = len(paths_overlaps)
     # Pasth to the overlap matrices after the tracking
     # and phase correction
-    roots = [join(project_name, f'overlaps_{i}')
-             for i in range(enumerate_from, number_of_frames + enumerate_from)]
+    roots = [join(config.project_name, config.orbitals_type, f'overlaps_{i}')
+             for i in range(config.enumerate_from, number_of_frames + config.enumerate_from)]
     paths_corrected_overlaps = [join(r, 'mtx_sji_t0_corrected') for r in roots]
     # Paths inside the HDF5 to the array containing the tracking of the
     # unavoided crossings
-    path_swaps = join(project_name, 'swaps')
+    path_swaps = join(config.project_name, config.orbitals_type, 'swaps')
 
     # Compute the corrected overlaps if not avaialable in the HDF5
-    if not is_data_in_hdf5(path_hdf5, paths_corrected_overlaps[0]):
-
+    all_data_in_hdf5 = all(is_data_in_hdf5(config.path_hdf5, path_data)
+                           for path_data in (paths_corrected_overlaps[0], path_swaps))
+    if not all_data_in_hdf5:
         # Compute the dimension of the coupling matrix
-        mtx_0 = retrieve_hdf5_data(path_hdf5, paths_overlaps[0])
+        mtx_0 = retrieve_hdf5_data(config.path_hdf5, paths_overlaps[0])
         _, dim = mtx_0.shape
 
         # Read all the Overlaps
-        overlaps = np.stack([retrieve_hdf5_data(path_hdf5, ps)
+        overlaps = np.stack([retrieve_hdf5_data(config.path_hdf5, ps)
                              for ps in paths_overlaps])
 
         # Number of couplings to compute
@@ -146,7 +148,7 @@ def compute_the_fixed_phase_overlaps(
         # and correct the swaps between Molecular Orbitals
         logger.debug("Computing the Unavoided crossings, "
                      "Tracking the crossings between MOs")
-        overlaps, swaps = track_unavoided_crossings(overlaps, nHOMO)
+        overlaps, swaps = track_unavoided_crossings(overlaps, config.nHOMO)
 
         # Compute all the phases taking into account the unavoided crossings
         logger.debug("Computing the phases of the MOs")
@@ -156,16 +158,16 @@ def compute_the_fixed_phase_overlaps(
         fixed_phase_overlaps = correct_phases(overlaps, mtx_phases)
 
         # Store corrected overlaps in the HDF5
-        store_arrays_in_hdf5(path_hdf5, paths_corrected_overlaps,
+        store_arrays_in_hdf5(config.path_hdf5, paths_corrected_overlaps,
                              fixed_phase_overlaps)
 
         # Store the Swaps tracking the crossing
-        store_arrays_in_hdf5(path_hdf5, path_swaps, swaps, dtype=np.int32)
+        store_arrays_in_hdf5(config.path_hdf5, path_swaps, swaps, dtype=np.int32)
     else:
         # Read the corrected overlaps and the swaps from the HDF5
         fixed_phase_overlaps = np.stack(
-            retrieve_hdf5_data(path_hdf5, paths_corrected_overlaps))
-        swaps = retrieve_hdf5_data(path_hdf5, path_swaps)
+            retrieve_hdf5_data(config.path_hdf5, paths_corrected_overlaps))
+        swaps = retrieve_hdf5_data(config.path_hdf5, path_swaps)
 
     return fixed_phase_overlaps, swaps
 
@@ -187,7 +189,7 @@ def calculate_couplings(config: DictConfig, i: int, fixed_phase_overlaps: Tensor
 
     # Path were the couplinp is store
     k = i + config.enumerate_from
-    path = join(config.project_name, f'coupling_{k}')
+    path = join(config.project_name, config.orbitals_type, f'coupling_{k}')
 
     # Skip the computation if the coupling is already done
     if is_data_in_hdf5(config.path_hdf5, path):
@@ -380,7 +382,7 @@ def single_machine_overlaps(
 
 def create_overlap_path(config: DictConfig, i: int) -> str:
     """Create the path inside the HDF5 where the overlap is going to be store."""
-    root = join(config.project_name, 'overlaps_{}'.format(
+    root = join(config.project_name, config.orbitals_type, 'overlaps_{}'.format(
         i + config.enumerate_from))
     return join(root, 'mtx_sji_t0')
 

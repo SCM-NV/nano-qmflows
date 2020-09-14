@@ -17,7 +17,7 @@ import os
 import shutil
 from os.path import join
 from pathlib import Path
-from typing import List, Tuple
+from typing import List, Tuple, Union
 
 from noodles import gather, schedule, unpack
 
@@ -33,17 +33,32 @@ from .initialization import initialize
 # Starting logger
 logger = logging.getLogger(__name__)
 
+#: Type defining the derivative couplings calculation
+ResultPaths = Tuple[List[str], List[str]]
 
-def workflow_derivative_couplings(config: DictConfig) -> Tuple[List[PathLike], List[PathLike]]:
+
+def workflow_derivative_couplings(config: DictConfig) -> Union[ResultPaths, Tuple[ResultPaths, ResultPaths]]:
     """Compute the derivative couplings for a molecular dynamic trajectory."""
     # Dictionary containing the general configuration
     config.update(initialize(config))
 
-    logger.info("starting couplings calculation!")
+    if config.orbitals_type != "both":
+        logger.info("starting couplings calculation!")
+        return run_workflow_couplings(config)
+    else:
+        config.orbitals_type = "alphas"
+        logger.info("starting couplings calculation for alphas!")
+        alphas = run_workflow_couplings(config)
+        config.orbitals_type = "betas"
+        logger.info("starting couplings calculation for betas!")
+        betas = run_workflow_couplings(config)
+        return alphas, betas
 
+
+def run_workflow_couplings(config: DictConfig) -> ResultPaths:
+    """Run the derivative coupling workflow using `config`."""
     # compute the molecular orbitals
     mo_paths_hdf5, energy_paths_hdf5 = unpack(calculate_mos(config), 2)
-
 
     # Overlap matrix at two different times
     promised_overlaps = calculate_overlap(config, mo_paths_hdf5)
@@ -52,7 +67,7 @@ def workflow_derivative_couplings(config: DictConfig) -> Tuple[List[PathLike], L
     promised_crossing_and_couplings = lazy_couplings(config, promised_overlaps)
 
     # Write the results in PYXAID format
-    config.path_hamiltonians = create_path_hamiltonians(config.workdir)
+    config.path_hamiltonians = create_path_hamiltonians(config.workdir, config.orbitals_type)
 
     # Inplace scheduling of write_hamiltonians function.
     # Equivalent to add @schedule on top of the function
@@ -73,9 +88,11 @@ def workflow_derivative_couplings(config: DictConfig) -> Tuple[List[PathLike], L
     return results
 
 
-def create_path_hamiltonians(workdir: PathLike) -> PathLike:
+def create_path_hamiltonians(workdir: PathLike, orbitals_type: str) -> PathLike:
     """Create the Paths to store the resulting hamiltonians."""
-    path_hamiltonians = join(workdir, 'hamiltonians')
+    prefix = "hamiltonias"
+    name = prefix if not orbitals_type else f"{orbitals_type}_{prefix}"
+    path_hamiltonians = join(workdir, name)
     if not os.path.exists(path_hamiltonians):
         os.makedirs(path_hamiltonians)
 

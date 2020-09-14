@@ -171,7 +171,7 @@ dict_general_options = {
 
     # Empty string for restricted calculation or either alpha/beta
     # for unrestricted calculation
-    Optional("orbital_type", default=""): any_lambda(("", "alpha", "beta"))
+    Optional("orbitals_type", default=""): any_lambda(("", "alphas", "betas", "both"))
 }
 
 #: Dict with input options to run a derivate coupling workflow
