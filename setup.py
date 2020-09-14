@@ -151,7 +151,8 @@ setup(
         'h5py', 'mendeleev', 'more-itertools', 'noodles==0.3.3', 'numpy', 'pybind11>=2.2.4',
         'scipy', 'schema', 'pyyaml>=5.1',
         'plams@git+https://github.com/SCM-NV/PLAMS@master',
-        'qmflows@git+https://github.com/SCM-NV/qmflows@master'
+        'qmflows@git+https://github.com/SCM-NV/qmflows@master',
+        'nano-CAT@git+https://github.com/nlesc-nano/nano-CAT@master'
     ],
     cmdclass={'build_ext': BuildExt},
     ext_modules=[ext_pybind],
