@@ -183,7 +183,6 @@ setup(
         'scripts/qmflows/rdf.py',
         'scripts/qmflows/removeHDF5folders.py',
         'scripts/qmflows/remove_mos_hdf5.py',
-        'scripts/qmflows/convolution.py',
-        'scripts/qmflows/smiles_calculator.py',
+        'scripts/qmflows/convolution.py'
     ]
 )
