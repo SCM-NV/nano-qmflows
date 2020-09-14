@@ -29,3 +29,21 @@ def test_workflow_coop(tmp_path: PathLike) -> None:
         print("scratch_path: ", tmp_path)
         print("Unexpected error:", sys.exc_info()[0])
         raise
+
+
+def test_workflow_coop_coordination(tmp_path: PathLike) -> None:
+    """Test the Crystal Orbital Overlap Population workflow."""
+    file_path = PATH_TEST / 'input_test_coop_coordination.yml'
+    config = process_input(file_path, 'coop_calculation')
+
+    # create scratch path
+    shutil.copy(config.path_hdf5, tmp_path)
+    config.path_hdf5 = join(tmp_path, "Cd33Se33.hdf5")
+    config.workdir = tmp_path
+    try:
+        workflow_crystal_orbital_overlap_population(config)
+        os.remove("COOP.txt")
+    except BaseException:
+        print("scratch_path: ", tmp_path)
+        print("Unexpected error:", sys.exc_info()[0])
+        raise
