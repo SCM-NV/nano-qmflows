@@ -53,6 +53,8 @@ def workflow_crystal_orbital_overlap_population(config: DictConfig):
 
     if config.elements_coordination is not None:
         geometry = Molecule(config.path_traj_xyz)
+    else:
+        geometry = None
 
     # Computing the indices of the atomic orbitals of the two selected
     # elements, and the overlap matrix that contains only elements related to
