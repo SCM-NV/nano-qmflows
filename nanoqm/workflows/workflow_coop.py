@@ -1,4 +1,7 @@
 """Crystal Orbital Overlap Population calculation.
+The COOP is calculated between two selected elements.
+For each element, a specific coordination number can optionally be selected 
+by using the "elements_coordination" key in the yaml input.
 
 Index
 -----
