@@ -1,6 +1,7 @@
 """Test the CLI to run a workflow."""
 
 import os
+import re
 import shutil
 from pathlib import Path
 from subprocess import PIPE, Popen
@@ -37,7 +38,8 @@ def test_run_workflow(tmp_path):
     try:
         p = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, shell=True)
         out, err = p.communicate()
-        if err:
+        error = re.search("error", err.decode(), re.IGNORECASE)
+        if error is not None:
             print("output: ", out)
             print("err: ", err)
             raise RuntimeError(err.decode())
