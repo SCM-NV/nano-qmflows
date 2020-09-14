@@ -1,0 +1,26 @@
+workflow:
+  coop_calculation
+project_name: Cd33Se33
+
+active_space: [50, 50]
+path_hdf5: "test/test_files/Cd33Se33.hdf5"
+path_traj_xyz: "test/test_files/Cd33Se33.xyz"
+scratch_path: "/tmp/COOP"
+
+coop_elements: ["Cd", "Se"]
+elements_coordination: ["4", "3"]
+
+cp2k_general_settings:
+  basis:  "DZVP-MOLOPT-SR-GTH"
+  potential: "GTH-PBE"
+  cell_parameters: 20.0
+  periodic: none
+
+  cp2k_settings_main:
+    specific:
+      template: pbe_main
+
+  cp2k_settings_guess:
+    specific:
+      template:
+        pbe_guess
