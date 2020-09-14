@@ -164,7 +164,7 @@ dict_general_options = {
     Optional("compute_orbitals", default=True): bool,
 
     # Flag to remove the log containing the orbitals for debugging purposes
-    Optional("remove_log_file", default=True): bool,
+    Optional("remove_log_file", default=False): bool,
 
     # General settings
     "cp2k_general_settings": schema_cp2k_general_settings,

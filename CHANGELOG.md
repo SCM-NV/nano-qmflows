@@ -4,6 +4,9 @@
 ## New
 * Allow to compute both alphas/betas derivative couplings simultaneusly (#275)
 
+## Changed
+* Do not remove the CP2K log files by default
+
 
 # 0.10.3 (09/10/2020)
 ## New
