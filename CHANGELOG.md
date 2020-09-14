@@ -3,6 +3,7 @@
 # 0.10.3 (Unreleased)
 ## New
 * Template to create B3LYP computations (#269)
+* Add nanoCAT dependency (#280)
 
 ## Fixed
 * Fix distribution error (#272)
