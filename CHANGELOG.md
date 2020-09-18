@@ -6,6 +6,7 @@
 
 ## Changed
 * Do not remove the CP2K log files by default
+* Do not remove the point folder wher ethe CP2K orbitals are stored
 
 
 # 0.10.3 (09/10/2020)
