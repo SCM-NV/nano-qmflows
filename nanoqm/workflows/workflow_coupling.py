@@ -20,7 +20,6 @@ from pathlib import Path
 from typing import List, Tuple, Union
 
 from noodles import gather, schedule, unpack
-
 from qmflows import run
 from qmflows.type_hints import PathLike
 
@@ -83,8 +82,6 @@ def run_workflow_couplings(config: DictConfig) -> ResultPaths:
     results = run(
         gather(promise_files, energy_paths_hdf5), folder=config.workdir, always_cache=False)
 
-    remove_folders(config.folders)
-
     return results
 
 
@@ -97,10 +94,3 @@ def create_path_hamiltonians(workdir: PathLike, orbitals_type: str) -> PathLike:
         os.makedirs(path_hamiltonians)
 
     return path_hamiltonians
-
-
-def remove_folders(folders: List[PathLike]) -> None:
-    """Remove unused folders."""
-    for f in folders:
-        if Path(f).exists():
-            shutil.rmtree(f)
