@@ -14,9 +14,7 @@ __all__ = ['workflow_derivative_couplings']
 
 import logging
 import os
-import shutil
 from os.path import join
-from pathlib import Path
 from typing import List, Tuple, Union
 
 from noodles import gather, schedule, unpack
