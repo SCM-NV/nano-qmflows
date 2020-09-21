@@ -12,7 +12,6 @@ __all__ = ["calculate_mos", "create_point_folder",
 import fnmatch
 import logging
 import os
-import shutil
 from collections import defaultdict
 from os.path import join
 from typing import (Any, DefaultDict, Dict, List, NamedTuple, Sequence, Tuple,
@@ -293,9 +292,7 @@ def create_point_folder(
     folders = []
     for k in range(enumerate_from, n + enumerate_from):
         new_dir = join(work_dir, f'point_{k}')
-        if os.path.exists(new_dir):
-            shutil.rmtree(new_dir)
-        os.makedirs(new_dir)
+        os.makedirs(new_dir, exist_ok=True)
         folders.append(new_dir)
 
     return folders
