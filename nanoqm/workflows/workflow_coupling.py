@@ -85,7 +85,7 @@ def run_workflow_couplings(config: DictConfig) -> ResultPaths:
 
 def create_path_hamiltonians(workdir: PathLike, orbitals_type: str) -> PathLike:
     """Create the Paths to store the resulting hamiltonians."""
-    prefix = "hamiltonias"
+    prefix = "hamiltonians"
     name = prefix if not orbitals_type else f"{orbitals_type}_{prefix}"
     path_hamiltonians = join(workdir, name)
     if not os.path.exists(path_hamiltonians):
