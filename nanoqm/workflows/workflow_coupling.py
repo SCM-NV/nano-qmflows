@@ -18,6 +18,7 @@ from os.path import join
 from typing import List, Tuple, Union
 
 from noodles import gather, schedule, unpack
+from noodles.interface import PromisedObject
 from qmflows import run
 from qmflows.type_hints import PathLike
 
@@ -41,20 +42,24 @@ def workflow_derivative_couplings(config: DictConfig) -> Union[ResultPaths, Tupl
 
     if config.orbitals_type != "both":
         logger.info("starting couplings calculation!")
-        return run_workflow_couplings(config)
+        promises = run_workflow_couplings(config)
+        return run(promises, folder=config.workdir, always_cache=False)
     else:
-        config.orbitals_type = "alphas"
-        logger.info("starting couplings calculation for alphas!")
-        alphas = run_workflow_couplings(config)
-        config.orbitals_type = "betas"
-        logger.info("starting couplings calculation for betas!")
-        betas = run_workflow_couplings(config)
+        config_alphas = DictConfig(config.copy())
+        config_betas = DictConfig(config.copy())
+        config_alphas.orbitals_type = "alphas"
+        promises_alphas = run_workflow_couplings(config_alphas)
+        config_betas.orbitals_type = "betas"
+        promises_betas = run_workflow_couplings(config_betas)
+        all_promises = gather(promises_alphas, promises_betas)
+        alphas, betas = run(all_promises, folder=config.workdir, always_cache=False)
         return alphas, betas
 
 
-def run_workflow_couplings(config: DictConfig) -> ResultPaths:
+def run_workflow_couplings(config: DictConfig) -> PromisedObject:
     """Run the derivative coupling workflow using `config`."""
     # compute the molecular orbitals
+    logger.info("starting couplings calculation!")
     mo_paths_hdf5, energy_paths_hdf5 = unpack(calculate_mos(config), 2)
 
     # Overlap matrix at two different times
@@ -77,10 +82,7 @@ def run_workflow_couplings(config: DictConfig) -> ResultPaths:
     promise_files = schedule_write_ham(
         config, promised_crossing_and_couplings, mo_paths_hdf5)
 
-    results = run(
-        gather(promise_files, energy_paths_hdf5), folder=config.workdir, always_cache=False)
-
-    return results
+    return gather(promise_files, energy_paths_hdf5)
 
 
 def create_path_hamiltonians(workdir: PathLike, orbitals_type: str) -> PathLike:
