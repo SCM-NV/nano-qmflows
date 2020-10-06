@@ -124,8 +124,9 @@ def distribute_computations(config: DictConfig, hamiltonians: bool = False) -> N
 
         # files with PYXAID
         if hamiltonians:
+            path_ham = "hamiltonians" if not config.orbitals_type else f"{orbitals_type}_hamiltonians"
             dict_input.hamiltonians_dir = join(
-                copy_config.scratch_path, 'hamiltonians')
+                copy_config.scratch_path, path_ham)
 
         # Write input file
         write_input(folder_path, copy_config)
