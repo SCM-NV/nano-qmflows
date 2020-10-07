@@ -19,22 +19,26 @@ from scipy.optimize import curve_fit
 
 from ..common import fs_to_cm, h2ev, hbar, r2meV
 
-""""" Functions to fit data """
+""" Functions to fit data """
+
 
 def gauss_function(x: float, sigma: float) -> np.ndarray:
-    """Compute a Gaussian function used for fitting data """
+    """Compute a Gaussian function used for fitting data."""
     return np.exp(-0.5 * (-x / sigma) ** 2)
 
-def lorentzian_function( x_L, sigma_L, amplitude_L ):
-    """Compute a Lorentzian function used for fitting data"""
-    return amplitude_L * sigma_L**2 / ( sigma_L**2 +  x_L **2 )
 
-def exp_function( x, x0, amplitude ):
-    """Compute an Exponential function used for fitting data"""
-    return amplitude * np.exp (-x / x0)
+def lorentzian_function(x_L, sigma_L, amplitude_L):
+    """Compute a Lorentzian function used for fitting data"""
+    return amplitude_L * sigma_L**2 / (sigma_L**2 + x_L ** 2)
+
+
+def exp_function(x, x0, amplitude):
+    """Compute an Exponential function used for fitting data."""
+    return amplitude * np.exp(-x / x0)
+
 
 def sine_function(t_phonon, amplitude, offset, phase, n_periods, dt):
-    """Compute a sinusoidal function used for fitting data"""
+    """Compute a sinusoidal function used for fitting data."""
     t = np.arange(0, n_periods * t_phonon, dt)
     # (gap) energy
     y = offset + amplitude * (np.sin(2 * np.pi * t / t_phonon + phase))
@@ -42,13 +46,16 @@ def sine_function(t_phonon, amplitude, offset, phase, n_periods, dt):
     y_dummy = y / h2ev    # to delete ...
     return y_dummy, y, y_mean, t
 
+
 def sqrt_func(x, a):
-    """Compute a square root function used for fitting data"""
+    """Compute a square root function used for fitting data."""
     return a * np.sqrt(x)
+
 
 def func_conv(x_real: np.ndarray, x_grid: np.ndarray, delta: float) -> np.ndarray:
     """Compute a convolution on a grid using a Gaussian function."""
     return np.exp(-2 * (x_grid - x_real) ** 2 / delta ** 2)
+
 
 def convolute(x: np.ndarray, y: np.ndarray, x_points: np.ndarray, sigma: float) -> np.ndarray:
     """Convolute a spectrum on a grid of x_points.
@@ -62,7 +69,9 @@ def convolute(x: np.ndarray, y: np.ndarray, x_points: np.ndarray, sigma: float) 
         np.sum(y * func_conv(x, x_point, sigma)) for x_point in x_points)
     return y_points
 
+
 """ Useful functions to compute autocorrelation, dephasing, etc. """
+
 
 def autocorrelate(f: np.ndarray) -> Tuple[float, float]:
     """Compute the un-normalized and normalized autocorrelation of a function."""
@@ -74,19 +83,21 @@ def autocorrelate(f: np.ndarray) -> Tuple[float, float]:
     nacf = uacf / uacf[0]
     return uacf, nacf
 
+
 def spectral_density(f, dt):
     """Fourier Transform of a given function f using a dense grid with 100000 points.
 
     In the case of a FFT of a normalized autocorrelation function,
     this corresponds to a spectral density
     """
-    n_pts = 100000 
+    n_pts = 100000
     f_fft = abs(1 / np.sqrt(2 * np.pi) * np.fft.rfft(f, n_pts) * dt) ** 2
     # Fourier Transform of the time axis
     freq = np.fft.rfftfreq(len(f_fft), dt)
     # Conversion of the x axis (given in cycles/fs) to cm-1
     freq = freq * fs_to_cm
     return f_fft, freq
+
 
 def dephasing(f: np.ndarray, dt: float):
     """Compute the dephasing time of a given function.
@@ -104,12 +115,13 @@ def dephasing(f: np.ndarray, dt: float):
     # Conversion of hbar to hartree * fs
     hbar_au = hbar / h2ev
     ts = np.arange(f.shape[0]) * dt
-    cumu_ii = np.asarray( [ np.trapz(f[0:i+1], dx=(dt / hbar), axis=0) for i in range(ts.size) ] ) 
-    cumu_i = np.asarray( [ np.trapz(cumu_ii[0:i+1], dx=(dt / hbar), axis = 0)
-                      for i in range(ts.size)] ) 
+    cumu_ii = np.asarray([np.trapz(f[0:i + 1], dx=(dt / hbar), axis=0) for i in range(ts.size)])
+    cumu_i = np.asarray([np.trapz(cumu_ii[0:i + 1], dx=(dt / hbar), axis=0)
+                         for i in range(ts.size)])
     deph = np.exp(-cumu_i)
 
-    return deph, ts 
+    return deph, ts
+
 
 def fit_dephasing(fit_func, deph, ts, res, t_deph_guess):
     """ 
@@ -131,19 +143,20 @@ def fit_dephasing(fit_func, deph, ts, res, t_deph_guess):
         e_fwhm = std_to_fwhm * hbar / deph_time                       # FWHM in eV
         perr = np.sqrt(np.diag(pcov))
         deph_time_err = perr[0]                                            # error (standard deviation) for the deph. time
-        e_fwhm_err = deph_time_err * std_to_fwhm * hbar / (deph_time ** 2) # error (standard deviation) for the FWHM
+        e_fwhm_err = deph_time_err * std_to_fwhm * hbar / (deph_time ** 2)  # error (standard deviation) for the FWHM
     elif fit_func == 1:
         # fit with exponential
-        popt, pcov = curve_fit(exp_function, ts, deph, p0=(t_deph_guess, deph[0]))      #[0]
+        popt, pcov = curve_fit(exp_function, ts, deph, p0=(t_deph_guess, deph[0]))  # [0]
         ts_fit = np.arange(res * deph.shape[0]) * dt / res
-        deph_fit = popt[1] * np.exp (-ts_fit / popt[0])
+        deph_fit = popt[1] * np.exp(-ts_fit / popt[0])
         deph_time = popt[0]                                           # in fs (defined as the exp. time constant)
-        e_fwhm = 2 * hbar / deph_time                                 # FWHM in eV   
+        e_fwhm = 2 * hbar / deph_time                                 # FWHM in eV
         perr = np.sqrt(np.diag(pcov))
         deph_time_err = perr[0]                                       # error (standard deviation) for the deph. time
         e_fwhm_err = deph_time_err * 2 * hbar / (deph_time ** 2)      # error (standard deviation) for the FWHM
 
     return ts_fit, deph_fit, deph_time, deph_time_err, e_fwhm, e_fwhm_err
+
 
 def read_couplings(path_hams, ts):
     """Read the non adiabatic coupling vectors from the files generated for the NAMD simulations."""
