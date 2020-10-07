@@ -78,7 +78,7 @@ def autocorrelate(f: np.ndarray) -> Tuple[float, float]:
     d_f = f - f.mean()
     d_f2 = np.append(d_f, d_f, axis=0)
     # Compute the autocorrelation function
-    uacf = np.correlate(d_f, d_f2, "valid")[d_f.size:] / d_f.size
+    uacf = np.correlate(d_f, d_f2, "valid")[:d_f.size] / d_f.size
     # Compute the normalized autocorrelation function
     nacf = uacf / uacf[0]
     return uacf, nacf
@@ -93,7 +93,7 @@ def spectral_density(f, dt):
     n_pts = 100000
     f_fft = abs(1 / np.sqrt(2 * np.pi) * np.fft.rfft(f, n_pts) * dt) ** 2
     # Fourier Transform of the time axis
-    freq = np.fft.rfftfreq(len(f_fft), dt)
+    freq = np.fft.rfftfreq(n_pts, dt)
     # Conversion of the x axis (given in cycles/fs) to cm-1
     freq = freq * fs_to_cm
     return f_fft, freq
