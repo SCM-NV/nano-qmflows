@@ -34,8 +34,7 @@ def exp_function( x, x0, amplitude ):
     return amplitude * np.exp (-x / x0)
 
 def sine_function(t_phonon, amplitude, offset, phase, n_periods, dt):
-   """Compute a sinusoidal function used for fitting data"""
-    # time (in fs)
+    """Compute a sinusoidal function used for fitting data"""
     t = np.arange(0, n_periods * t_phonon, dt)
     # (gap) energy
     y = offset + amplitude * (np.sin(2 * np.pi * t / t_phonon + phase))
