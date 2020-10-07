@@ -43,7 +43,7 @@ def sine_function(t_phonon, amplitude, offset, phase, n_periods, dt):
     return y_dummy, y, y_mean, t
 
 def sqrt_func(x, a):
-   """Compute a square root function used for fitting data"""
+    """Compute a square root function used for fitting data"""
     return a * np.sqrt(x)
 
 def func_conv(x_real: np.ndarray, x_grid: np.ndarray, delta: float) -> np.ndarray:
