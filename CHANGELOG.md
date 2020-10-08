@@ -8,6 +8,10 @@
 * Do not remove the CP2K log files by default
 * Do not remove the point folder wher ethe CP2K orbitals are stored
 
+## Fixed
+* Unrestricted Hamiltitonians name (#286)
+* Hamiltonian units (#290)
+
 
 # 0.10.3 (09/10/2020)
 ## New
