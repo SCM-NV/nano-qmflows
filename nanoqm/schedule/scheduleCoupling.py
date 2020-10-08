@@ -26,13 +26,12 @@ from typing import List, Tuple
 
 import numpy as np
 from noodles import schedule
-from scipy.optimize import linear_sum_assignment
-
 from qmflows.parsers import parse_string_xyz
 from qmflows.type_hints import PathLike
+from scipy.optimize import linear_sum_assignment
 
 from ..common import (DictConfig, Matrix, MolXYZ, Tensor3D, Vector,
-                      femtosec2au, is_data_in_hdf5, retrieve_hdf5_data,
+                      femtosec2au, h2ev, is_data_in_hdf5, retrieve_hdf5_data,
                       store_arrays_in_hdf5)
 from ..integrals import (calculate_couplings_3points,
                          calculate_couplings_levine,
@@ -464,9 +463,11 @@ def write_hamiltonians(
         file_ham_im = join(path_dir_results, f'Ham_{i}_im')
         file_ham_re = join(path_dir_results, f'Ham_{j}_re')
 
-        # convert to Rydbergs
-        ham_im = 2.0 * css
-        ham_re = np.diag(2.0 * energies)
+        # Units are fs^-1
+        ham_im = css
+
+        # Energies in eV
+        ham_re = np.diag(h2ev * energies)
 
         # Set the diagonal of the imaginary matrix to 0
         np.fill_diagonal(ham_im, 0)
