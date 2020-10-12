@@ -11,6 +11,7 @@
 ## Fixed
 * Unrestricted Hamiltitonians name (#286)
 * Hamiltonian units (#290)
+* Schema error (#292)
 
 
 # 0.10.3 (09/10/2020)
