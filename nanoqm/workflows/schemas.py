@@ -23,7 +23,6 @@ __all__ = [
     'schema_coop']
 
 import os
-import re
 from numbers import Real
 from typing import Any, Dict, Iterable
 
@@ -109,8 +108,7 @@ schema_cp2k_general_settings = Schema({
     # "psmp" parallel (MPI + OpenMP) general usage, threading might improve scalability and memory usage
 
     Optional("executable", default="cp2k.psmp"):
-        Regex(r'.*cp2k\.(?:popt|psmp|sdbg|sopt|ssmp|pdbg)', flags=re.I)
-
+        Regex(r'.*cp2k\.(?:popt|psmp|sdbg|sopt|ssmp|pdbg)', flags=2)  # flag 2 == IGNORECASE
 })
 
 
