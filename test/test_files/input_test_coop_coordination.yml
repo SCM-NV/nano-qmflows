@@ -8,7 +8,7 @@ path_traj_xyz: "test/test_files/Cd33Se33.xyz"
 scratch_path: "/tmp/COOP"
 
 coop_elements: ["Cd", "Se"]
-elements_coordination: ["4", "3"]
+elements_coordination: [4, 3]
 
 cp2k_general_settings:
   basis:  "DZVP-MOLOPT-SR-GTH"
