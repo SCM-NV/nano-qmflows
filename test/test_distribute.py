@@ -1,10 +1,12 @@
 """Test the distribution script."""
-from qmflows.type_hints import PathLike
-from pathlib import Path
-from subprocess import (PIPE, Popen)
 import fnmatch
-import shutil
 import os
+import re
+import shutil
+from pathlib import Path
+from subprocess import PIPE, Popen
+
+from qmflows.type_hints import PathLike
 
 
 def test_distribute(tmp_path: PathLike) -> None:
@@ -20,7 +22,8 @@ def call_distribute(tmp_path: PathLike, cmd: str) -> None:
     try:
         p = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, shell=True)
         _, err = p.communicate()
-        if err:
+        error = re.search("error", err.decode(), re.IGNORECASE)
+        if error is not None:
             raise RuntimeError(err.decode())
         check_scripts()
     finally:

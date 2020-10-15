@@ -2,7 +2,9 @@
 
 # 0.10.4 (Unrelease)
 ## New
+* Template to create B3LYP computations (#269)
 * Allow to compute both alphas/betas derivative couplings simultaneusly (#275)
+* Add nanoCAT dependency (#280)
 
 ## Changed
 * Do not remove the CP2K log files by default

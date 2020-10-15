@@ -1,4 +1,7 @@
 """Crystal Orbital Overlap Population calculation.
+The COOP is calculated between two selected elements.
+For each element, a specific coordination number can optionally be selected 
+by using the "elements_coordination" key in the yaml input.
 
 Index
 -----
@@ -10,11 +13,15 @@ Index
 __all__ = ['workflow_crystal_orbital_overlap_population']
 
 import logging
-from typing import List, Tuple
+from typing import List, Tuple, Union
 
 import numpy as np
 
+from scm.plams import Molecule
+
 from qmflows.parsers.xyzParser import readXYZ
+
+from nanoCAT.recipes import coordination_number
 
 from ..common import (DictConfig, MolXYZ, h2ev,
                       number_spherical_functions_per_atom, retrieve_hdf5_data)
@@ -44,11 +51,16 @@ def workflow_crystal_orbital_overlap_population(config: DictConfig):
     # Converting the xyz-file to a mol-file
     mol = readXYZ(config.path_traj_xyz)
 
+    if config.elements_coordination is not None:
+        geometry = Molecule(config.path_traj_xyz)
+    else:
+        geometry = None
+
     # Computing the indices of the atomic orbitals of the two selected
     # elements, and the overlap matrix that contains only elements related to
     # the two elements
     el_1_orbital_ind, el_2_orbital_ind, overlap_reduced = compute_overlap_and_atomic_orbitals(
-        mol, config)
+        mol, config, geometry)
 
     # Compute the crystal orbital overlap population between the two selected
     # elements
@@ -83,7 +95,8 @@ def get_eigenvalues_coefficients(config: DictConfig) -> Tuple[np.ndarray, np.nda
 
 
 def compute_overlap_and_atomic_orbitals(
-        mol: MolXYZ, config: DictConfig) -> Tuple[List[int], List[int], List[int]]:
+        mol: MolXYZ, config: DictConfig,
+        geometry: Union[Molecule, None]) -> Tuple[List[int], List[int], List[int]]:
     """Compute the indices of the atomic orbitals of the two selected elements.
 
     Computes the overlap matrix, containing only the elements related to those two elements.
@@ -102,8 +115,17 @@ def compute_overlap_and_atomic_orbitals(
     element_1 = config["coop_elements"][0]
     element_2 = config["coop_elements"][1]
 
-    element_1_index = [i for i, s in enumerate(mol) if element_1.lower() in s]
-    element_2_index = [i for i, s in enumerate(mol) if element_2.lower() in s]
+    if config["elements_coordination"] is None:
+        element_1_index = [i for i, s in enumerate(mol) if element_1.lower() in s]
+        element_2_index = [i for i, s in enumerate(mol) if element_2.lower() in s]
+
+    # For the two selected elements, only the indices corresponding to a given coordination number
+    else:
+        coord = coordination_number(geometry)
+        cn_1 = config["elements_coordination"][0]
+        cn_2 = config["elements_coordination"][1]
+        element_1_index = [i - 1 for i in coord[element_1][cn_1]]
+        element_2_index = [i - 1 for i in coord[element_2][cn_2]]
 
     # Making a list of the indices of the atomic orbitals for each of the two
     # elements
