@@ -106,11 +106,10 @@ def distribute_computations(config: DictConfig, hamiltonians: bool = False) -> N
         create_folders(copy_config, dict_input)
 
         # number of geometries per batch
-        dict_input.dim_batch = compute_number_of_geometries(join(folder_path, file_xyz))
+        dim_batch = compute_number_of_geometries(join(folder_path, file_xyz))
 
         # change the window of molecules to compute
         copy_config['enumerate_from'] = accumulated_number_of_geometries
-        accumulated_number_of_geometries += dict_input.dim_batch
 
         # HDF5 file where both the Molecular orbitals and coupling are stored
         copy_config.path_hdf5 = join(copy_config.scratch_path, f'chunk_{index}.hdf5')
@@ -134,10 +133,12 @@ def distribute_computations(config: DictConfig, hamiltonians: bool = False) -> N
         # Slurm executable
         scheduler = copy_config.job_scheduler["scheduler"].upper()
         if scheduler == "SLURM":
-            write_slurm_script(copy_config, dict_input)
+            write_slurm_script(copy_config, dict_input, dim_batch, accumulated_number_of_geometries)
         else:
             msg = f"The request job_scheduler: {scheduler} it is not implemented"
             raise RuntimeError(msg)
+
+        accumulated_number_of_geometries += dim_batch
 
 
 def write_input(folder_path: PathLike, original_config: DictConfig) -> None:
@@ -178,7 +179,8 @@ def create_folders(config: DictConfig, dict_input: DictConfig) -> None:
     os.makedirs(batch_dir, exist_ok=True)
 
 
-def write_slurm_script(config: DictConfig, dict_input: DictConfig) -> None:
+def write_slurm_script(config: DictConfig, dict_input: DictConfig,
+                       dim_batch: int, acc: int) -> None:
     """Write an Slurm launch script."""
     index = dict_input.index
     python = "\n\nrun_workflow.py -i input.yml\n"
@@ -190,10 +192,8 @@ def write_slurm_script(config: DictConfig, dict_input: DictConfig) -> None:
     if dict_input.get("hamiltonians_dir") is None:
         copy = ""
     else:
-        dim_batch = dict_input.dim_batch
-        range_batch = (dim_batch * index, dim_batch * (index + 1) - 3)
-        files_hams = '{}/Ham_{{{}..{}}}_*'.format(
-            dict_input.hamiltonians_dir, *range_batch)
+        range_batch = (acc, acc - dim_batch - 1)
+        files_hams = f"{dict_input.hamiltonians_dir}/Ham_{{{range_batch[0]}..{range_batch[1]}}}_*"
         copy = f'cp -r {config.path_hdf5} {files_hams} {results_dir}\n'
 
     # Script content
