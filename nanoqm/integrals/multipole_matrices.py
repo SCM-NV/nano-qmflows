@@ -19,12 +19,12 @@ import logging
 import os
 import uuid
 from os.path import join
-from typing import List, Optional
-import numpy as np
+from pathlib import Path
+from typing import List, Optional, Union
 
+import numpy as np
 from compute_integrals import compute_integrals_multipole
 from qmflows.common import AtomXYZ
-from qmflows.type_hints import PathLike
 
 from ..common import (DictConfig, Matrix, is_data_in_hdf5, retrieve_hdf5_data,
                       store_arrays_in_hdf5, tuplesXYZ_to_plams)
@@ -65,7 +65,7 @@ def get_multipole_matrix(config: DictConfig, inp: DictConfig, multipole: str) ->
 
 
 def search_multipole_in_hdf5(
-        path_hdf5: PathLike, path_multipole_hdf5: str, multipole: str) -> Optional[np.ndarray]:
+        path_hdf5: Union[str, Path], path_multipole_hdf5: str, multipole: str) -> Optional[np.ndarray]:
     """Search if the multipole is already store in the HDF5."""
     if is_data_in_hdf5(path_hdf5, path_multipole_hdf5):
         logger.info(f"retrieving multipole: {multipole} from the hdf5")

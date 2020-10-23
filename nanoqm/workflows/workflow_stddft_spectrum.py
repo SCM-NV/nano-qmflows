@@ -67,7 +67,7 @@ def run_workflow_stddft(config: DictConfig) -> PromisedObject:
 
 
 def compute_excited_states_tddft(
-        config: DictConfig, path_MOs: PathLike, dict_input: DictConfig) -> None:
+        config: DictConfig, path_MOs: str, dict_input: DictConfig) -> None:
     """Compute the excited states properties (energy and coefficients).
 
     Take a given `mo_index_range`, the `tddft` method and `xc_dft` exchange functional.
