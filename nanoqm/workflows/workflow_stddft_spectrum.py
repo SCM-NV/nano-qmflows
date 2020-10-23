@@ -11,15 +11,15 @@ __all__ = ['workflow_stddft']
 
 import logging
 from os.path import join
+from typing import Tuple
 
 import numpy as np
 from noodles import gather, schedule, unpack
-from scipy.linalg import sqrtm
-from scipy.spatial.distance import cdist
-
 from qmflows import run
 from qmflows.parsers import parse_string_xyz
 from qmflows.type_hints import PathLike
+from scipy.linalg import sqrtm
+from scipy.spatial.distance import cdist
 
 from ..common import (DictConfig, angs2au, change_mol_units, h2ev, hardness,
                       is_data_in_hdf5, number_spherical_functions_per_atom,
@@ -27,7 +27,6 @@ from ..common import (DictConfig, angs2au, change_mol_units, h2ev, hardness,
 from ..integrals.multipole_matrices import get_multipole_matrix
 from ..schedule.components import calculate_mos
 from .initialization import initialize
-from typing import Any, Dict, Tuple
 
 # Starting logger
 logger = logging.getLogger(__name__)
@@ -75,7 +74,7 @@ def compute_excited_states_tddft(
 
     # Pass the molecule in Angstrom to the libint calculator
     copy_dict = DictConfig(dict_input.copy())
-    copy_dict["mol"] = change_mol_units(dict_input["mol"], factor=1/angs2au)
+    copy_dict["mol"] = change_mol_units(dict_input["mol"], factor=1 / angs2au)
 
     # compute the multipoles if they are not stored
     multipoles = get_multipole_matrix(config, copy_dict, 'dipole')
