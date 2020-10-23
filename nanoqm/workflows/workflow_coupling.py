@@ -51,27 +51,6 @@ def workflow_derivative_couplings(
     return select_orbitals_type(config, run_workflow_couplings)
 
 
-# def workflow_derivative_couplings(config: DictConfig) -> Union[ResultPaths, Tuple[ResultPaths, ResultPaths]]:
-#     """Compute the derivative couplings for a molecular dynamic trajectory."""
-#     # Dictionary containing the general configuration
-#     config.update(initialize(config))
-
-#     if config.orbitals_type != "both":
-#         logger.info("starting couplings calculation!")
-#         promises = run_workflow_couplings(config)
-#         return run(promises, folder=config.workdir, always_cache=False)
-#     else:
-#         config_alphas = DictConfig(config.copy())
-#         config_betas = DictConfig(config.copy())
-#         config_alphas.orbitals_type = "alphas"
-#         promises_alphas = run_workflow_couplings(config_alphas)
-#         config_betas.orbitals_type = "betas"
-#         promises_betas = run_workflow_couplings(config_betas)
-#         all_promises = gather(promises_alphas, promises_betas)
-#         alphas, betas = run(all_promises, folder=config.workdir, always_cache=False)
-#         return alphas, betas
-
-
 def run_workflow_couplings(config: DictConfig) -> PromisedObject:
     """Run the derivative coupling workflow using `config`."""
     # compute the molecular orbitals

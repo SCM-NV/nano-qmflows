@@ -31,7 +31,7 @@ def test_compute_oscillators(tmp_path):
             remove_files()
 
 
-def calculate_oscillators(path_test_hdf5: PathLike, scratch_path: PathLike, approx: str):
+def calculate_oscillators(path_test_hdf5: Path, scratch_path: PathLike, approx: str):
     """Compute a couple of couplings with the Levine algorithm using precalculated MOs."""
     input_file = PATH_TEST / 'input_test_absorption_spectrum.yml'
     config = process_input(input_file, 'absorption_spectrum')

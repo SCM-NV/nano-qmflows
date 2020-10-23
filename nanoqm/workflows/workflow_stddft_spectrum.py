@@ -14,29 +14,39 @@ from os.path import join
 from typing import Tuple
 
 import numpy as np
-from noodles import gather, schedule, unpack
-from qmflows import run
-from qmflows.parsers import parse_string_xyz
-from qmflows.type_hints import PathLike
 from scipy.linalg import sqrtm
 from scipy.spatial.distance import cdist
+from noodles import gather, schedule, unpack
+from noodles.interface import PromisedObject
+from qmflows.parsers import parse_string_xyz
+from qmflows.type_hints import PathLike
 
 from ..common import (DictConfig, angs2au, change_mol_units, h2ev, hardness,
                       is_data_in_hdf5, number_spherical_functions_per_atom,
                       retrieve_hdf5_data, store_arrays_in_hdf5, xc)
 from ..integrals.multipole_matrices import get_multipole_matrix
 from ..schedule.components import calculate_mos
-from .initialization import initialize
+from .orbitals_type import select_orbitals_type
 
 # Starting logger
 logger = logging.getLogger(__name__)
 
 
 def workflow_stddft(config: DictConfig) -> None:
-    """Compute the excited states using simplified TDDFT."""
-    # Dictionary containing the general configuration
-    config.update(initialize(config))
+    """Compute the excited states using simplified TDDFT.
+    Both restricted and unrestricted orbitals calculations are available.
 
+    Parameters
+    ----------
+    config
+        Dictionary with the configuration to run the workflows
+
+    """
+    return select_orbitals_type(config, run_workflow_stddft)
+
+
+def run_workflow_stddft(config: DictConfig) -> PromisedObject:
+    """Compute the excited states using simplified TDDFT using `config`."""
     # Single Point calculations settings using CP2K
     mo_paths_hdf5, energy_paths_hdf5 = unpack(calculate_mos(config), 2)
 
@@ -53,7 +63,7 @@ def workflow_stddft(config: DictConfig) -> None:
             {'i': i * config.stride, 'mol': mol}))
           for i, mol in enumerate(molecules_au)])
 
-    run(gather(results, energy_paths_hdf5), folder=config['workdir'])
+    return gather(results, energy_paths_hdf5)
 
 
 def compute_excited_states_tddft(
@@ -119,6 +129,7 @@ def get_omega_xia(
 
     if is_data_in_hdf5(config.path_hdf5, paths_omega_xia):
         return tuple(retrieve_hdf5_data(config.path_hdf5, paths_omega_xia))
+    
     else:
         omega, xia = compute_omega_xia()
         store_arrays_in_hdf5(
@@ -220,7 +231,7 @@ def compute_oscillator_strengths(config: DictConfig, inp: DictConfig) -> None:
     def compute_tdmatrix(k):
         return np.linalg.multi_dot(
             [inp.c_ao[:, :inp.nocc].T, inp.multipoles[k, :, :],
-             inp.c_ao[:, inp.nocc:]]).reshape(inp.nocc*inp.nvirt)
+             inp.c_ao[:, inp.nocc:]]).reshape(inp.nocc * inp.nvirt)
 
     td_matrices = (compute_tdmatrix(k) for k in range(3))
 
@@ -388,7 +399,7 @@ def get_exciton_positions(d0I_ao, s, moment, n_lowest, carrier):
     def compute_component_electron(k):
         return np.stack(
             np.trace(
-                np.linalg.multi_dot([d0I_ao[i, :, :].T, s, d0I_ao[i, :, :],  moment[k, :, :]]))
+                np.linalg.multi_dot([d0I_ao[i, :, :].T, s, d0I_ao[i, :, :], moment[k, :, :]]))
             for i in range(n_lowest))
 
     def compute_component_he(k):
@@ -489,9 +500,9 @@ def compute_MNOK_integrals(mol, xc_dft):
         gamma_J = np.zeros((n_atoms, n_atoms))
     else:
         gamma_J = np.power(
-            1 / (np.power(r_ab, beta) + np.power((xc(xc_dft)['ax'] * hard), -beta)), 1/beta)
+            1 / (np.power(r_ab, beta) + np.power((xc(xc_dft)['ax'] * hard), -beta)), 1 / beta)
     gamma_K = np.power(1 / (np.power(r_ab, alpha) +
-                            np.power(hard, -alpha)), 1/alpha)
+                            np.power(hard, -alpha)), 1 / alpha)
 
     return gamma_J, gamma_K
 

@@ -20,7 +20,7 @@ def select_orbitals_type(
     config.update(initialize(config))
 
     if config.orbitals_type != "both":
-        logger.info("starting couplings calculation!")
+        logger.info("starting workflow calculation!")
         promises = workflow(config)
         return run(promises, folder=config.workdir, always_cache=False)
     else:
