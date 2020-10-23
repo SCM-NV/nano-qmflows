@@ -50,7 +50,7 @@ def get_multipole_matrix(config: DictConfig, inp: DictConfig, multipole: str) ->
         Tensor containing the multipole.
 
     """
-    root = join(config.project_name, 'multipole',
+    root = join(config.project_name, config.orbitals_type, 'multipole',
                 f'point_{inp.i + config.enumerate_from}')
     path_hdf5 = config.path_hdf5
     path_multipole_hdf5 = join(root, multipole)
@@ -70,9 +70,9 @@ def search_multipole_in_hdf5(
     if is_data_in_hdf5(path_hdf5, path_multipole_hdf5):
         logger.info(f"retrieving multipole: {multipole} from the hdf5")
         return retrieve_hdf5_data(path_hdf5, path_multipole_hdf5)
-    else:
-        logger.info(f"computing multipole: {multipole}")
-        return None
+
+    logger.info(f"computing multipole: {multipole}")
+    return None
 
 
 def compute_matrix_multipole(
