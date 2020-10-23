@@ -12,6 +12,7 @@
 * Unrestricted Hamiltitonians name (#286)
 * Hamiltonian units (#290)
 * Schema error (#292)
+* Distribute Slurm to retrieve Hamiltonians (#296)
 
 
 # 0.10.3 (09/10/2020)
