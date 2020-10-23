@@ -19,15 +19,13 @@ from typing import List, Tuple, Union
 
 from noodles import gather, schedule, unpack
 from noodles.interface import PromisedObject
-from qmflows import run
 from qmflows.type_hints import PathLike
 
 from ..common import DictConfig
-from .orbitals_type import select_orbitals_type
 from ..schedule.components import calculate_mos
 from ..schedule.scheduleCoupling import (calculate_overlap, lazy_couplings,
                                          write_hamiltonians)
-from .initialization import initialize
+from .orbitals_type import select_orbitals_type
 
 # Starting logger
 logger = logging.getLogger(__name__)
@@ -38,7 +36,18 @@ ResultPaths = Tuple[List[str], List[str]]
 
 def workflow_derivative_couplings(
         config: DictConfig) -> Union[ResultPaths, Tuple[ResultPaths, ResultPaths]]:
-    """Compute the derivative couplings for a molecular dynamic trajectory."""
+    """Compute the derivative couplings for a molecular dynamic trajectory.
+
+    Parameters
+    ----------
+    config
+        Dictionary with the configuration to run the workflows
+
+    Return
+    ------
+    Folders where the Hamiltonians are stored.
+
+    """
     return select_orbitals_type(config, run_workflow_couplings)
 
 
