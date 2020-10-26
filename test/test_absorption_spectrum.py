@@ -8,12 +8,11 @@ from nanoqm.common import retrieve_hdf5_data
 from nanoqm.workflows import workflow_stddft
 from nanoqm.workflows.input_validation import process_input
 
-from .utilsTest import PATH_TEST, copy_basis_and_orbitals, remove_files
+from .utilsTest import PATH_TEST, remove_files
 
 
 def test_compute_oscillators(tmp_path: Path):
     """Compute the oscillator strenght and check the results."""
-    project_name = 'Cd'
     path_original_hdf5 = PATH_TEST / 'Cd.hdf5'
     input_file = 'input_test_absorption_spectrum.yml'
 
@@ -23,8 +22,7 @@ def test_compute_oscillators(tmp_path: Path):
         try:
             # Run the actual test
             path_test_hdf5 = Path(tmp_path) / f"Cd_{approx}.hdf5"
-            copy_basis_and_orbitals(path_original_hdf5, path_test_hdf5,
-                                    project_name)
+            shutil.copyfile(path_original_hdf5, path_test_hdf5)
             calculate_oscillators(path_test_hdf5, tmp_path, approx, input_file)
             check_properties(path_test_hdf5)
         finally:
@@ -42,8 +40,7 @@ def test_compute_oscillators_unrestricted(tmp_path: Path):
         try:
             # Run the actual test
             path_test_hdf5 = Path(tmp_path) / f"{project}_{approx}.hdf5"
-            copy_basis_and_orbitals(path_original_hdf5, path_test_hdf5,
-                                    project)
+            shutil.copyfile(path_original_hdf5, path_test_hdf5)
             calculate_oscillators(path_test_hdf5, tmp_path, approx, input_file)
             # check_properties(path_test_hdf5)
         finally:
@@ -66,7 +63,7 @@ def calculate_oscillators(path_test_hdf5: Path, scratch_path: Path, approx: str,
 def check_properties(path_test_hdf5: Path):
     """Check that the tensor stored in the HDF5 are correct."""
     dipole_matrices = retrieve_hdf5_data(
-        path_test_hdf5, 'Cd/multipole/point_0/dipole')
+        path_test_hdf5, 'dipole/point_0')
 
     # The diagonals of each component of the matrix must be zero
     # for a single atom

@@ -5,6 +5,7 @@ import shutil
 from distutils.spawn import find_executable
 from os.path import join
 from pathlib import Path
+from typing import Union
 
 import h5py
 import pkg_resources as pkg
@@ -32,15 +33,3 @@ def cp2k_available(executable: str = "cp2k.popt") -> bool:
     path = find_executable(executable)
 
     return path is not None
-
-
-def copy_basis_and_orbitals(source: str, dest: str) -> None:
-    """Copy the Orbitals and the basis set from one the HDF5 to another."""
-    keys = ["coefficients", "eigenvalues", 'cp2k']
-    with h5py.File(source, 'r') as f5, h5py.File(dest, 'w') as g5:
-        for k in keys:
-            if k not in g5:
-                g5.create_group(k)
-            for label in f5[k].keys():
-                path = join(k, label)
-                f5.copy(path, g5[k])

@@ -119,13 +119,13 @@ def get_omega_xia(
     def compute_omega_xia():
         if tddft == 'sing_orb':
             return compute_sing_orb(dict_input)
-        else:
-            return compute_std_aproximation(config, dict_input)
+
+        return compute_std_aproximation(config, dict_input)
 
     # search data in HDF5
-    root = join(config.project_name, 'omega_xia', tddft,
-                'point_{}'.format(dict_input.i + config.enumerate_from))
-    paths_omega_xia = [join(root, x) for x in ("omega", "xia")]
+    point = f'point_{dict_input.i + config.enumerate_from}'
+                
+    paths_omega_xia = [join(x, point) for x in ("omega", "xia")]
 
     if is_data_in_hdf5(config.path_hdf5, paths_omega_xia):
         return tuple(retrieve_hdf5_data(config.path_hdf5, paths_omega_xia))

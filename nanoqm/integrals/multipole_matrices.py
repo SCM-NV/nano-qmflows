@@ -50,10 +50,9 @@ def get_multipole_matrix(config: DictConfig, inp: DictConfig, multipole: str) ->
         Tensor containing the multipole.
 
     """
-    root = join(config.project_name, config.orbitals_type, 'multipole',
-                f'point_{inp.i + config.enumerate_from}')
+    point = f'point_{inp.i + config.enumerate_from}'
     path_hdf5 = config.path_hdf5
-    path_multipole_hdf5 = join(root, multipole)
+    path_multipole_hdf5 = join(config.orbitals_type, multipole, point)
     matrix_multipole = search_multipole_in_hdf5(
         path_hdf5, path_multipole_hdf5, multipole)
 

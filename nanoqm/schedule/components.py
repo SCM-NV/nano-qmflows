@@ -105,6 +105,7 @@ def calculate_mos(config: DictConfig) -> List[str]:
             predicate = dict_input["node_MOs"]
         else:
             predicate = dict_input["node_energy"]
+        
         if is_data_in_hdf5(config.path_hdf5, predicate):
             logger.info(f"point_{k} has already been calculated")
             orbitals.append(dict_input["node_MOs"])
