@@ -37,14 +37,12 @@ def run_derivative_coupling(tmp_path: str, input_file: str, orbitals_type: str =
     shutil.copy(config.path_hdf5, tmp_hdf5)
     config['path_hdf5'] = tmp_hdf5
     config['write_overlaps'] = True
-    for algorithm in {"levine", "3points"}:
-        config["algorithm"] = algorithm
-        try:
-            check_results(config, tmp_hdf5, orbitals_type)
-            # Run the calculation again to test that the data is read from the hdf5
-            check_results(config, tmp_hdf5, orbitals_type)
-        finally:
-            remove_files()
+    try:
+        check_results(config, tmp_hdf5, orbitals_type)
+        # Run the calculation again to test that the data is read from the hdf5
+        check_results(config, tmp_hdf5, orbitals_type)
+    finally:
+        remove_files()
 
 
 def check_results(config: DictConfig, tmp_hdf5: str, orbitals_type: str) -> None:
