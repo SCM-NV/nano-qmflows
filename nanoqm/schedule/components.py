@@ -88,18 +88,16 @@ def calculate_mos(config: DictConfig) -> List[str]:
         k = j + config.enumerate_from
 
         # dictionary containing the information of the j-th job
-        dict_input = defaultdict(lambda _: None)
+        dict_input = defaultdict(lambda: None)  # type:  DefaultDict[str, Any]
         dict_input["geometry"] = gs
         dict_input["k"] = k
 
         # Path where the MOs will be store in the HDF5
-        root = join(config.project_name, f'point_{k}',
-                    config.package_name, 'mo', orbitals_type)
         dict_input["node_MOs"] = [
-            join(
-                root, 'eigenvalues'), join(
-                root, 'coefficients')]
-        dict_input["node_energy"] = join(root, 'energy')
+            join(orbitals_type, "eigenvalues", f"point_{k}"),
+            join(orbitals_type, "coefficients", f"point_{k}")]
+
+        dict_input["node_energy"] = join(orbitals_type, "energy", f"point_{k}")
 
         # If the MOs are already store in the HDF5 format return the path
         # to them and skip the calculation
@@ -193,10 +191,8 @@ def dump_orbitals_to_hdf5(
         Either an empty string for MO coming from a restricted job or alpha/beta
         for unrestricted MO calculation
     """
-    root = join("cp2k", "mo", orbitals_type)
-
     for name, array in zip(("eigenvalues", "coefficients"), (data.eigenvalues, data.eigenvectors)):
-        path_property = join(config.project_name, job_name, root, name)
+        path_property = join(orbitals_type, name, job_name)
         store_arrays_in_hdf5(config.path_hdf5, path_property, array)
 
 

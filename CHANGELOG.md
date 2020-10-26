@@ -1,6 +1,8 @@
 # Change Log
 
-# 0.10.5 (Unrelease)
+# 0.11.0 (Unrelease)
+## Changed
+* HDF5 storage layout (#300)
 
 
 # 0.10.4 (26/10/2020)
