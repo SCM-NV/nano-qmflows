@@ -1,0 +1,31 @@
+workflow:
+  absorption_spectrum
+project_name: oxygen
+xc_dft: pbe
+tddft:  stda
+active_space: [2, 2]
+orbitals_type: alphas
+
+path_hdf5:
+  "test/test_files/oxygen.hdf5"
+path_traj_xyz:
+  "test/test_files/O2_coupling.xyz"
+scratch_path:
+  "/tmp/namd/absorption_spectrum_unrestricted"
+
+cp2k_general_settings:
+    basis:  "DZVP-MOLOPT-SR-GTH"
+    potential: "GTH-PBE"
+    multiplicity: 3
+    cell_parameters: 4.0
+    periodic: none
+    executable: cp2k.popt
+  
+    cp2k_settings_main:
+      specific:
+        template: pbe_main
+  
+    cp2k_settings_guess:
+      specific:
+        template:
+          pbe_guess

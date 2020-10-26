@@ -37,9 +37,9 @@ from typing import (Any, Dict, Iterable, List, Mapping, NamedTuple, Tuple,
 import h5py
 import mendeleev
 import numpy as np
+from scipy.constants import physical_constants
 from qmflows.common import AtomXYZ
 from qmflows.type_hints import PathLike
-from scipy.constants import physical_constants
 from scm.plams import Atom, Molecule
 
 
@@ -94,10 +94,10 @@ Matrix = np.ndarray
 Tensor3D = np.ndarray
 
 
-def path_to_posix(path: PathLike) -> PathLike:
+def path_to_posix(path: Union[str, Path]) -> str:
     """Convert a Path to posix string."""
     if isinstance(path, Path):
-        return path.absolute().absolute()
+        return path.absolute().as_posix()
     else:
         return path
 
@@ -202,7 +202,7 @@ def retrieve_hdf5_data(path_hdf5, paths_to_prop):
         raise RuntimeError(msg)
 
 
-def is_data_in_hdf5(path_hdf5: PathLike, xs: Union[str, List[str]]) -> bool:
+def is_data_in_hdf5(path_hdf5: Union[str, Path], xs: Union[str, List[str]]) -> bool:
     """Search if the node exists in the HDF5 file.
 
     Parameters

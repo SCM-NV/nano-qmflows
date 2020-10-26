@@ -19,14 +19,13 @@ from typing import List, Tuple, Union
 
 from noodles import gather, schedule, unpack
 from noodles.interface import PromisedObject
-from qmflows import run
 from qmflows.type_hints import PathLike
 
 from ..common import DictConfig
 from ..schedule.components import calculate_mos
 from ..schedule.scheduleCoupling import (calculate_overlap, lazy_couplings,
                                          write_hamiltonians)
-from .initialization import initialize
+from .orbitals_type import select_orbitals_type
 
 # Starting logger
 logger = logging.getLogger(__name__)
@@ -35,25 +34,21 @@ logger = logging.getLogger(__name__)
 ResultPaths = Tuple[List[str], List[str]]
 
 
-def workflow_derivative_couplings(config: DictConfig) -> Union[ResultPaths, Tuple[ResultPaths, ResultPaths]]:
-    """Compute the derivative couplings for a molecular dynamic trajectory."""
-    # Dictionary containing the general configuration
-    config.update(initialize(config))
+def workflow_derivative_couplings(
+        config: DictConfig) -> Union[ResultPaths, Tuple[ResultPaths, ResultPaths]]:
+    """Compute the derivative couplings for a molecular dynamic trajectory.
 
-    if config.orbitals_type != "both":
-        logger.info("starting couplings calculation!")
-        promises = run_workflow_couplings(config)
-        return run(promises, folder=config.workdir, always_cache=False)
-    else:
-        config_alphas = DictConfig(config.copy())
-        config_betas = DictConfig(config.copy())
-        config_alphas.orbitals_type = "alphas"
-        promises_alphas = run_workflow_couplings(config_alphas)
-        config_betas.orbitals_type = "betas"
-        promises_betas = run_workflow_couplings(config_betas)
-        all_promises = gather(promises_alphas, promises_betas)
-        alphas, betas = run(all_promises, folder=config.workdir, always_cache=False)
-        return alphas, betas
+    Parameters
+    ----------
+    config
+        Dictionary with the configuration to run the workflows
+
+    Return
+    ------
+    Folders where the Hamiltonians are stored.
+
+    """
+    return select_orbitals_type(config, run_workflow_couplings)
 
 
 def run_workflow_couplings(config: DictConfig) -> PromisedObject:

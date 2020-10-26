@@ -88,7 +88,7 @@ def calculate_mos(config: DictConfig) -> List[str]:
         k = j + config.enumerate_from
 
         # dictionary containing the information of the j-th job
-        dict_input = defaultdict(lambda _: None)
+        dict_input = defaultdict(lambda: None)  # type: DefaultDict[str, Any]
         dict_input["geometry"] = gs
         dict_input["k"] = k
 
