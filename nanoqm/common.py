@@ -265,7 +265,7 @@ def store_arrays_in_hdf5(
 
     def add_attribute(data_set, k: int = 0):
         if attribute is not None:
-            dset.attrs[attribute.name] = attribute.value[k]
+            data_set.attrs[attribute.name] = attribute.value[k]
 
     with h5py.File(path_hdf5, 'r+') as f5:
         if isinstance(paths, list):

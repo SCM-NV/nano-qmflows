@@ -17,14 +17,14 @@ def test_fast_couplings(tmp_path):
     run_derivative_coupling(tmp_path, 'input_fast_test_derivative_couplings.yml')
 
 
-def test_unrestricted_alphas(tmp_path):
-    """Test the derivative coupling for the alphas spin orbitals."""
-    run_derivative_coupling(tmp_path, 'input_couplings_alphas.yml', "alphas")
+# def test_unrestricted_alphas(tmp_path):
+#     """Test the derivative coupling for the alphas spin orbitals."""
+#     run_derivative_coupling(tmp_path, 'input_couplings_alphas.yml', "alphas")
 
 
-def test_unrestricted_betas(tmp_path):
-    """Test the derivative coupling for the alphas spin orbitals."""
-    run_derivative_coupling(tmp_path, 'input_couplings_both.yml', "both")
+# def test_unrestricted_betas(tmp_path):
+#     """Test the derivative coupling for the alphas spin orbitals."""
+#     run_derivative_coupling(tmp_path, 'input_couplings_both.yml', "both")
 
 
 def run_derivative_coupling(tmp_path: str, input_file: str, orbitals_type: str = "") -> None:
@@ -58,7 +58,7 @@ def check_results(config: DictConfig, tmp_hdf5: str, orbitals_type: str) -> None
 def check_couplings(config: DictConfig, tmp_hdf5: str, orbitals_type: str) -> None:
     """Check that the couplings have meaningful values."""
     def create_paths(keyword: str) -> list:
-        return [os.path.join(config.project_name, orbitals_type, f'{keyword}_{x}')
+        return [os.path.join(orbitals_type, f'{keyword}_{x}')
                 for x in range(len(config.geometries) - 1)]
     overlaps = create_paths('overlaps')
     couplings = create_paths('coupling')
