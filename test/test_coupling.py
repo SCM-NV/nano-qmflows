@@ -5,6 +5,7 @@ from typing import Sequence
 
 import numpy as np
 
+from assertionlib import assertion
 from nanoqm.common import DictConfig, is_data_in_hdf5, retrieve_hdf5_data
 from nanoqm.workflows.input_validation import process_input
 from nanoqm.workflows.workflow_coupling import workflow_derivative_couplings
@@ -17,14 +18,14 @@ def test_fast_couplings(tmp_path):
     run_derivative_coupling(tmp_path, 'input_fast_test_derivative_couplings.yml')
 
 
-# def test_unrestricted_alphas(tmp_path):
-#     """Test the derivative coupling for the alphas spin orbitals."""
-#     run_derivative_coupling(tmp_path, 'input_couplings_alphas.yml', "alphas")
+def test_unrestricted_alphas(tmp_path):
+    """Test the derivative coupling for the alphas spin orbitals."""
+    run_derivative_coupling(tmp_path, 'input_couplings_alphas.yml', "alphas")
 
 
-# def test_unrestricted_betas(tmp_path):
-#     """Test the derivative coupling for the alphas spin orbitals."""
-#     run_derivative_coupling(tmp_path, 'input_couplings_both.yml', "both")
+def test_unrestricted_betas(tmp_path):
+    """Test the derivative coupling for the alphas spin orbitals."""
+    run_derivative_coupling(tmp_path, 'input_couplings_both.yml', "both")
 
 
 def run_derivative_coupling(tmp_path: str, input_file: str, orbitals_type: str = "") -> None:
@@ -64,19 +65,19 @@ def check_couplings(config: DictConfig, tmp_hdf5: str, orbitals_type: str) -> No
     couplings = create_paths('coupling')
 
     # Check that couplings and overlaps exists
-    assert is_data_in_hdf5(tmp_hdf5, overlaps)
-    assert is_data_in_hdf5(tmp_hdf5, couplings)
+    assertion.truth(is_data_in_hdf5(tmp_hdf5, overlaps))
+    assertion.truth(is_data_in_hdf5(tmp_hdf5, couplings))
 
     # All the elements are different of inifinity or nan
     tensor_couplings = np.stack(retrieve_hdf5_data(tmp_hdf5, couplings))
-    assert np.isfinite(tensor_couplings).all()
+    assertion.truth(np.isfinite(tensor_couplings).all())
 
     # Check that the couplings are anti-symetric
     for mtx in tensor_couplings[:]:
-        assert np.allclose(mtx, -mtx.T)
+        assertion(np.allclose(mtx, -mtx.T))
 
     # Check that there are not NaN
-    assert (not np.all(np.isnan(tensor_couplings)))
+    assertion.truth(not np.all(np.isnan(tensor_couplings)))
 
 
 def check_hamiltonians(hamiltonians: Sequence[str]) -> None:
@@ -85,8 +86,8 @@ def check_hamiltonians(hamiltonians: Sequence[str]) -> None:
     couplings = np.stack([np.loadtxt(ts[0]) for ts in hamiltonians])
 
     # check that energies and couplings are finite values
-    assert np.isfinite(energies).all()
-    assert np.isfinite(couplings).all()
+    assertion.truth(np.isfinite(energies).all())
+    assertion.truth(np.isfinite(couplings).all())
 
     # Check that the couplings diagonal is zero
-    assert abs(np.einsum('jii->', couplings)) < 1e-16
+    assertion.truth(abs(np.einsum('jii->', couplings)) < 1e-16)
