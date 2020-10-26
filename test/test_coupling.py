@@ -39,6 +39,8 @@ def run_derivative_coupling(tmp_path: str, input_file: str, orbitals_type: str =
     config['write_overlaps'] = True
     try:
         check_results(config, tmp_hdf5, orbitals_type)
+        # Run the calculation again to test that the data is read from the hdf5
+        check_results(config, tmp_hdf5, orbitals_type)
     finally:
         remove_files()
 
