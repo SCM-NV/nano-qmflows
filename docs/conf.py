@@ -26,7 +26,7 @@ here = os.path.dirname(__file__)
 sys.path.insert(0, os.path.abspath(os.path.join(here, '..')))
 
 vers = {}
-with open(os.path.join(here, '..', '__version__.py')) as f:
+with open(os.path.join(here, '..', 'nanoqm', '__version__.py')) as f:
     exec(f.read(), vers)
 
 

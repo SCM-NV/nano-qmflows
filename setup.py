@@ -2,14 +2,16 @@
 import os
 import sys
 from os.path import join
+from typing import Dict
 
 import setuptools
 from Cython.Distutils import build_ext
 from setuptools import Extension, find_packages, setup
 
 here = os.path.abspath(os.path.dirname(__file__))
-version = {}
-with open(os.path.join(here, '__version__.py')) as f:
+
+version = {}  # type: Dict[str, str]
+with open(os.path.join(here, 'nanoqm', '__version__.py')) as f:
     exec(f.read(), version)
 
 
