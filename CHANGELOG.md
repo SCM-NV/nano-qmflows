@@ -1,6 +1,9 @@
 # Change Log
 
-# 0.10.4 (Unrelease)
+# 0.10.5 (Unrelease)
+
+
+# 0.10.4 (26/10/2020)
 ## New
 * Allow to compute both alphas/betas derivative couplings simultaneusly (#275)
 * Allow to compute mutipole matrices for unrestricted calculation (#297, #299)
