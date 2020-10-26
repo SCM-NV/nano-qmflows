@@ -36,6 +36,7 @@ def run_derivative_coupling(tmp_path: str, input_file: str, orbitals_type: str =
     tmp_hdf5 = os.path.join(tmp_path, 'fast_couplings.hdf5')
     shutil.copy(config.path_hdf5, tmp_hdf5)
     config['path_hdf5'] = tmp_hdf5
+    config['write_overlaps'] = True
     try:
         check_results(config, tmp_hdf5, orbitals_type)
     finally:
