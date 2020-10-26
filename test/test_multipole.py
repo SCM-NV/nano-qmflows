@@ -20,8 +20,7 @@ def test_quadropole(tmp_path):
     path_test_hdf5 = (Path(tmp_path) / "multipoles.hdf5").as_posix()
 
     # copy the precomputed data to the temporal HDF5
-    copy_basis_and_orbitals(path_original_hdf5, path_test_hdf5,
-                            config.project_name)
+    copy_basis_and_orbitals(path_original_hdf5, path_test_hdf5)
     config.path_hdf5 = path_test_hdf5
 
     mol = readXYZ((PATH_TEST / "ethylene.xyz").as_posix())
