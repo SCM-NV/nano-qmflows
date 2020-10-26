@@ -5,10 +5,10 @@ import shutil
 from distutils.spawn import find_executable
 from os.path import join
 from pathlib import Path
+from typing import Union
 
 import h5py
 import pkg_resources as pkg
-from qmflows.type_hints import PathLike
 
 __all__ = ["PATH_NANOQM", "PATH_TEST", "copy_basis_and_orbitals", "cp2k_available", "remove_files"]
 
@@ -33,18 +33,3 @@ def cp2k_available(executable: str = "cp2k.popt") -> bool:
     path = find_executable(executable)
 
     return path is not None
-
-
-def copy_basis_and_orbitals(source: PathLike, dest, project_name: PathLike) -> None:
-    """Copy the Orbitals and the basis set from one the HDF5 to another."""
-    keys = [project_name, 'cp2k']
-    excluded = ['multipole', 'coupling', 'dipole_matrices',
-                'overlaps', 'swaps', 'omega_xia']
-    with h5py.File(source, 'r') as f5, h5py.File(dest, 'w') as g5:
-        for k in keys:
-            if k not in g5:
-                g5.create_group(k)
-            for label in f5[k].keys():
-                if not any(x in label for x in excluded):
-                    path = join(k, label)
-                    f5.copy(path, g5[k])

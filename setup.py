@@ -173,6 +173,7 @@ setup(
         ]
     },
     scripts=[
+        'scripts/convert_legacy_hdf5.py',
         'scripts/hamiltonians/plot_mos_energies.py',
         'scripts/hamiltonians/plot_spectra.py',
         'scripts/pyxaid/plot_average_energy.py',

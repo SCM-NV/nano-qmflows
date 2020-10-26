@@ -1,15 +1,15 @@
 """Test quadrupole calculation."""
 
+import shutil
 from pathlib import Path
 
 import numpy as np
 from assertionlib import assertion
-from qmflows.parsers.xyzParser import readXYZ
-
 from nanoqm.integrals.multipole_matrices import compute_matrix_multipole
 from nanoqm.workflows.input_validation import process_input
+from qmflows.parsers.xyzParser import readXYZ
 
-from .utilsTest import PATH_TEST, copy_basis_and_orbitals
+from .utilsTest import PATH_TEST
 
 
 def test_quadropole(tmp_path):
@@ -20,8 +20,7 @@ def test_quadropole(tmp_path):
     path_test_hdf5 = (Path(tmp_path) / "multipoles.hdf5").as_posix()
 
     # copy the precomputed data to the temporal HDF5
-    copy_basis_and_orbitals(path_original_hdf5, path_test_hdf5,
-                            config.project_name)
+    shutil.copyfile(path_original_hdf5, path_test_hdf5)
     config.path_hdf5 = path_test_hdf5
 
     mol = readXYZ((PATH_TEST / "ethylene.xyz").as_posix())

@@ -135,7 +135,7 @@ def guesses_to_compute(calculate_guesses: str, enumerate_from: int, len_geometri
     return points_guess
 
 
-def read_swaps(path_hdf5: PathLike, project_name: str) -> Matrix:
+def read_swaps(path_hdf5: Union[str, Path], project_name: str) -> Matrix:
     """Read the crossing tracking for the Molecular orbital."""
     path_swaps = join(project_name, 'swaps')
     if is_data_in_hdf5(path_hdf5, path_swaps):

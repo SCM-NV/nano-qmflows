@@ -26,9 +26,8 @@ from typing import List, Tuple
 
 import numpy as np
 from noodles import schedule
-from qmflows.parsers import parse_string_xyz
-from qmflows.type_hints import PathLike
 from scipy.optimize import linear_sum_assignment
+from qmflows.parsers import parse_string_xyz
 
 from ..common import (DictConfig, Matrix, MolXYZ, Tensor3D, Vector,
                       femtosec2au, h2ev, is_data_in_hdf5, retrieve_hdf5_data,
@@ -111,8 +110,6 @@ def lazy_couplings(
 
 def compute_the_fixed_phase_overlaps(
         paths_overlaps: List[str], config: DictConfig) -> Tuple[np.ndarray, np.ndarray]:
-    #  path_hdf5: PathLike, project_name: str,
-    # enumerate_from: int, nHOMO: int)
     """Fix the phase of the overlaps.
 
     First track the unavoided crossings between Molecular orbitals and
@@ -121,12 +118,12 @@ def compute_the_fixed_phase_overlaps(
     number_of_frames = len(paths_overlaps)
     # Pasth to the overlap matrices after the tracking
     # and phase correction
-    roots = [join(config.project_name, config.orbitals_type, f'overlaps_{i}')
+    roots = [join(config.orbitals_type, f'overlaps_{i}')
              for i in range(config.enumerate_from, number_of_frames + config.enumerate_from)]
     paths_corrected_overlaps = [join(r, 'mtx_sji_t0_corrected') for r in roots]
     # Paths inside the HDF5 to the array containing the tracking of the
     # unavoided crossings
-    path_swaps = join(config.project_name, config.orbitals_type, 'swaps')
+    path_swaps = join(config.orbitals_type, 'swaps')
 
     # Compute the corrected overlaps if not avaialable in the HDF5
     all_data_in_hdf5 = all(is_data_in_hdf5(config.path_hdf5, path_data)
@@ -188,7 +185,7 @@ def calculate_couplings(config: DictConfig, i: int, fixed_phase_overlaps: Tensor
 
     # Path were the couplinp is store
     k = i + config.enumerate_from
-    path = join(config.project_name, config.orbitals_type, f'coupling_{k}')
+    path = join(config.orbitals_type, f'coupling_{k}')
 
     # Skip the computation if the coupling is already done
     if is_data_in_hdf5(config.path_hdf5, path):
@@ -381,7 +378,7 @@ def single_machine_overlaps(
 
 def create_overlap_path(config: DictConfig, i: int) -> str:
     """Create the path inside the HDF5 where the overlap is going to be store."""
-    root = join(config.project_name, config.orbitals_type, 'overlaps_{}'.format(
+    root = join(config.orbitals_type, 'overlaps_{}'.format(
         i + config.enumerate_from))
     return join(root, 'mtx_sji_t0')
 
