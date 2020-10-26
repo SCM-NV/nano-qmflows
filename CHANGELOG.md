@@ -6,6 +6,7 @@
 # 0.10.4 (26/10/2020)
 ## New
 * Allow to compute both alphas/betas derivative couplings simultaneusly (#275)
+* Allow to compute multipoles for unrestricted calculations (#297)
 
 ## Changed
 * Do not remove the CP2K log files by default
