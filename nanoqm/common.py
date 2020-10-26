@@ -157,12 +157,12 @@ def xc(s: str) -> Dict[str, Any]:
 
 
 @overload
-def retrieve_hdf5_data(path_hdf5: PathLike, paths_to_prop: str) -> np.ndarray:
+def retrieve_hdf5_data(path_hdf5: Union[str, Path], paths_to_prop: str) -> np.ndarray:
     ...
 
 
 @overload
-def retrieve_hdf5_data(path_hdf5: PathLike, paths_to_prop: List[str]) -> List[np.ndarray]:
+def retrieve_hdf5_data(path_hdf5: Union[str, Path], paths_to_prop: List[str]) -> List[np.ndarray]:
     ...
 
 

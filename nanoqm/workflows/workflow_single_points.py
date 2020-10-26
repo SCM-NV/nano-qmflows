@@ -15,7 +15,7 @@ import logging
 from typing import List
 
 from qmflows import run
-from qmflows.type_hints import PathLike
+from qmflows.packages import Result
 
 from ..common import DictConfig
 from ..schedule.components import calculate_mos
@@ -25,7 +25,7 @@ from .initialization import initialize
 logger = logging.getLogger(__name__)
 
 
-def workflow_single_points(config: DictConfig) -> List[PathLike]:
+def workflow_single_points(config: DictConfig) -> Result:
     """Perform single point calculations for a given trajectory.
 
     Parameters

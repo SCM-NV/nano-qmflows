@@ -1,9 +1,9 @@
 """Test he absorption spectrum workflows."""
 import shutil
+from os.path import join
 from pathlib import Path
 
 import numpy as np
-
 from nanoqm.common import retrieve_hdf5_data
 from nanoqm.workflows import workflow_stddft
 from nanoqm.workflows.input_validation import process_input
@@ -42,7 +42,7 @@ def test_compute_oscillators_unrestricted(tmp_path: Path):
             path_test_hdf5 = Path(tmp_path) / f"{project}_{approx}.hdf5"
             shutil.copyfile(path_original_hdf5, path_test_hdf5)
             calculate_oscillators(path_test_hdf5, tmp_path, approx, input_file)
-            # check_properties(path_test_hdf5)
+            check_properties(path_test_hdf5, "alphas")
         finally:
             remove_files()
 
@@ -60,10 +60,11 @@ def calculate_oscillators(path_test_hdf5: Path, scratch_path: Path, approx: str,
     workflow_stddft(config)
 
 
-def check_properties(path_test_hdf5: Path):
+def check_properties(path_test_hdf5: Path, orbitals_type: str = ""):
     """Check that the tensor stored in the HDF5 are correct."""
+    path_dipole = join(orbitals_type, 'dipole', 'point_0')
     dipole_matrices = retrieve_hdf5_data(
-        path_test_hdf5, 'dipole/point_0')
+        path_test_hdf5, path_dipole)
 
     # The diagonals of each component of the matrix must be zero
     # for a single atom
