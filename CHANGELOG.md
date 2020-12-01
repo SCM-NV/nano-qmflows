@@ -1,6 +1,9 @@
 # Change Log
 
 # 0.11.0 (Unrelease)
+## New
+* Print CP2K err/out files if the calculation fails (#150)
+
 ## Changed
 * HDF5 storage layout (#300)
 
