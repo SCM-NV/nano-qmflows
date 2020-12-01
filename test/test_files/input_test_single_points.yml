@@ -3,7 +3,7 @@ workflow:
 project_name: ethylene
 compute_orbitals: True
 active_space: [2, 2]
-path_hdf5: "ethylene.hdf5"
+path_hdf5: "test/test_files/ethylene.hdf5"
 path_traj_xyz: "test/test_files/ethylene.xyz"
 scratch_path: "/tmp/namd"
 remove_log_file: false

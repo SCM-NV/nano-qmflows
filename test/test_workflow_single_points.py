@@ -17,14 +17,15 @@ def run_single_point(tmp_path: Path, input_file: str):
     file_path = PATH_TEST / input_file
     config = process_input(file_path, 'single_points')
     config["scratch_path"] = tmp_path
-    path_hdf5 = config['path_hdf5']
-    Path(path_hdf5).touch()
+    tmp_hdf5 = os.path.join(tmp_path, 'single_points.hdf5')
+    config['path_hdf5'] = tmp_hdf5
+    Path(tmp_hdf5).touch()
     try:
         path_orbitals, path_energies = workflow_single_points(config)
         print("path_orbitals: ", path_orbitals)
         print("path_energies: ", path_energies)
         if config["compute_orbitals"]:
-            assertion.truth(is_data_in_hdf5(path_hdf5, path_orbitals[0]))
+            assertion.truth(is_data_in_hdf5(tmp_hdf5, path_orbitals[0]))
     finally:
         remove_files()
 
@@ -34,3 +35,10 @@ def run_single_point(tmp_path: Path, input_file: str):
 def test_single_point(tmp_path: Path):
     """Check that the couplings run."""
     run_single_point(tmp_path, "input_test_single_points.yml")
+
+
+@pytest.mark.skipif(
+    not cp2k_available(), reason="CP2K is not install or not loaded")
+def test_single_point_hybrid(tmp_path: Path):
+    """Check that the couplings run."""
+    run_single_point(tmp_path, "input_test_single_points_hybrid_functional.yml")
