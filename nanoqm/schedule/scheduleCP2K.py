@@ -13,6 +13,7 @@ API
 """
 
 import fnmatch
+import logging
 import os
 from os.path import join
 from pathlib import Path
@@ -23,6 +24,9 @@ from qmflows import Settings, cp2k, templates
 from qmflows.packages.cp2k_package import CP2K, CP2K_Result
 from qmflows.parsers.xyzParser import string_to_plams_Molecule
 from qmflows.type_hints import PathLike, PromisedObject
+
+# Starting logger
+logger = logging.getLogger(__name__)
 
 
 def try_to_read_wf(path_dir: PathLike) -> PathLike:
@@ -120,5 +124,8 @@ def print_cp2k_error(path_dir: PathLike) -> None:
     err_file = next(Path(path_dir).glob("*err"), None)
     if err_file is not None:
         with open(err_file, 'r') as handler:
-            msg = handler.read()
-        print("CP2K Error:\n", msg)
+            err = handler.read()
+
+        msg = f"CP2K Error:\n{err}"
+        logger.error(msg)
+        print(msg)
