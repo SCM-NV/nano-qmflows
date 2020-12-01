@@ -3,24 +3,23 @@ workflow:
 project_name: ethylene
 compute_orbitals: True
 active_space: [2, 2]
-path_hdf5: "ethylene.hdf5"
-path_traj_xyz: "test/test_files/ethylene.xyz"
+path_hdf5: "C.hdf5"
+path_traj_xyz: "test/test_files/C.xyz"
 scratch_path: "/tmp/namd"
 remove_log_file: false
 
 cp2k_general_settings:
   basis:  "DZVP-MOLOPT-SR-GTH"
   potential: "GTH-PBE"
-  cell_parameters: 5.0
+  cell_parameters: 2.0
   periodic: none
-  file_cell_parameters: "test/test_files/file_cell_parameters.txt"
   executable: cp2k.popt
 
   cp2k_settings_main:
     specific:
-      template: pbe_main
+      template: pbe0_main
 
   cp2k_settings_guess:
     specific:
       template:
-        pbe_guess
+        pbe0_guess
