@@ -346,7 +346,6 @@ templates_dict = {
     "b3lyp_guess": cp2k_b3lyp_guess, "b3lyp_main": cp2k_b3lyp_main}
 
 
-
 def create_settings_from_template(
         general: Dict[str, Any], template_name: str, path_traj_xyz: PathLike) -> Settings:
     """Create a job Settings using the name provided by the user."""
@@ -357,8 +356,6 @@ def create_settings_from_template(
 
     if 'pbe0' in template_name:
         s = Settings()
-        s.cp2k.force_eval.dft.xc.hf.interaction_potential.t_c_g_data = os.path.abspath(
-            join(general['path_basis'], "t_c_g.dat"))
         return generate_auxiliar_basis(setts + s + kinds, general['basis'], general['aux_fit'])
     elif 'hse06' in template_name:
         return generate_auxiliar_basis(setts + kinds, general['basis'], general['aux_fit'])

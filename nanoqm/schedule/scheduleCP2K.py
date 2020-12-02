@@ -13,16 +13,20 @@ API
 """
 
 import fnmatch
+import logging
 import os
 from os.path import join
+from pathlib import Path
+from typing import Any, Dict
 
 from noodles import schedule  # Workflow Engine
-
 from qmflows import Settings, cp2k, templates
 from qmflows.packages.cp2k_package import CP2K, CP2K_Result
 from qmflows.parsers.xyzParser import string_to_plams_Molecule
 from qmflows.type_hints import PathLike, PromisedObject
-from typing import Any, Dict
+
+# Starting logger
+logger = logging.getLogger(__name__)
 
 
 def try_to_read_wf(path_dir: PathLike) -> PathLike:
@@ -44,6 +48,8 @@ def try_to_read_wf(path_dir: PathLike) -> PathLike:
     if files:
         return join(path_dir, files[0])
     else:
+        print_cp2k_error(path_dir, "err")
+        print_cp2k_error(path_dir, "out")
         raise RuntimeError(
             f"There are no wave function file in path:{path_dir}")
 
@@ -112,3 +118,14 @@ def prepare_job_cp2k(
     return cp2k(
         job_settings, string_to_plams_Molecule(dict_input["geometry"]),
         work_dir=dict_input['point_dir'])
+
+
+def print_cp2k_error(path_dir: PathLike, prefix: str) -> None:
+    """Search for error in the CP2K output files."""
+    err_file = next(Path(path_dir).glob(f"*{prefix}"), None)
+    if err_file is not None:
+        with open(err_file, 'r') as handler:
+            err = handler.read()
+        msg = f"CP2K {prefix} file:\n{err}"
+        logger.error(msg)
+        print(msg)

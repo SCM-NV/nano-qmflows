@@ -12,11 +12,9 @@ from nanoqm.workflows.workflow_single_points import workflow_single_points
 from .utilsTest import PATH_TEST, cp2k_available, remove_files
 
 
-@pytest.mark.skipif(
-    not cp2k_available(), reason="CP2K is not install or not loaded")
-def test_single_point(tmp_path):
-    """Check that the couplings run."""
-    file_path = PATH_TEST / "input_test_single_points.yml"
+def run_single_point(tmp_path: Path, input_file: str):
+    """Run a single point calculation using cp2k."""
+    file_path = PATH_TEST / input_file
     config = process_input(file_path, 'single_points')
     config["scratch_path"] = tmp_path
     tmp_hdf5 = os.path.join(tmp_path, 'single_points.hdf5')
@@ -30,3 +28,10 @@ def test_single_point(tmp_path):
             assertion.truth(is_data_in_hdf5(tmp_hdf5, path_orbitals[0]))
     finally:
         remove_files()
+
+
+@pytest.mark.skipif(
+    not cp2k_available(), reason="CP2K is not install or not loaded")
+def test_single_point(tmp_path: Path):
+    """Check that the couplings run."""
+    run_single_point(tmp_path, "input_test_single_points.yml")
