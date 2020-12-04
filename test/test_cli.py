@@ -19,8 +19,6 @@ def call_main(mocker: MockFixture, path_input: Path, scratch_path: Path):
         i=path_input))
 
     mocker.patch("nanoqm.workflows.run_workflow.process_input", return_value={})
-    # mocker.patch("nanoqm.workflows.run_workflow.process_input", return_value=DictConfig(
-    #     {"project_name": "test", "scratch_path": scratch_path}))
     mocker.patch("nanoqm.workflows.run_workflow.dict_workflows", return_value=len)
     main()
 
