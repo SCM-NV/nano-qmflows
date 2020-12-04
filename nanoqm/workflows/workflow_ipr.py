@@ -38,8 +38,8 @@ def workflow_ipr(config: DictConfig) -> np.ndarray:
     LOGGER.info("Starting IPR calculation.")
 
     # Get eigenvalues and coefficients from hdf5
-    node_path_coefficients = f'{config.project_name}/point_0/cp2k/mo/coefficients'
-    node_path_eigenvalues = f'{config.project_name}/point_0/cp2k/mo/eigenvalues'
+    node_path_coefficients = 'coefficients/point_0/'
+    node_path_eigenvalues = 'eigenvalues/point_0'
     atomic_orbitals = retrieve_hdf5_data(config.path_hdf5, node_path_coefficients)
     energies = retrieve_hdf5_data(config.path_hdf5, node_path_eigenvalues)
     energies *= h2ev  # To get them from Hartree to eV

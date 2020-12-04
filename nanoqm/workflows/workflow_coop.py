@@ -68,8 +68,8 @@ def workflow_crystal_orbital_overlap_population(config: DictConfig):
 def get_eigenvalues_coefficients(config: DictConfig) -> Tuple[np.ndarray, np.ndarray]:
     """Retrieve eigenvalues and coefficients from hdf5 file."""
     # Define paths to eigenvalues and coefficients hdf5
-    node_path_coefficients = f'{config.project_name}/point_0/cp2k/mo/coefficients'
-    node_path_eigenvalues = f'{config.project_name}/point_0/cp2k/mo/eigenvalues'
+    node_path_coefficients = 'coefficients/point_0/'
+    node_path_eigenvalues = 'eigenvalues/point_0'
 
     # Retrieves eigenvalues and coefficients
     atomic_orbitals = retrieve_hdf5_data(config.path_hdf5, node_path_coefficients)
