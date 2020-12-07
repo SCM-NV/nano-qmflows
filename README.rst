@@ -1,5 +1,3 @@
-.. image:: https://travis-ci.org/SCM-NV/nano-qmflows.svg?branch=0.1.7
-    :target: https://travis-ci.org/SCM-NV/nano-qmflows
 .. image:: https://readthedocs.org/projects/qmflows-namd/badge/?version=latest
    :target: https://qmflows-namd.readthedocs.io/en/latest/?badge=latest
 .. image:: https://zenodo.org/badge/DOI/10.5281/zenodo.3661036.svg
