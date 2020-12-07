@@ -48,10 +48,10 @@ def try_to_read_wf(path_dir: PathLike) -> PathLike:
     if files:
         return join(path_dir, files[0])
     else:
-        print_cp2k_error(path_dir, "err")
-        print_cp2k_error(path_dir, "out")
-        raise RuntimeError(
-            f"There are no wave function file in path:{path_dir}")
+        msg = f"There are no wave function file in path:{path_dir}\n"
+        msg += print_cp2k_error(path_dir, "err")
+        msg += print_cp2k_error(path_dir, "out")
+        raise RuntimeError(msg)
 
 
 def prepare_cp2k_settings(
@@ -120,12 +120,14 @@ def prepare_job_cp2k(
         work_dir=dict_input['point_dir'])
 
 
-def print_cp2k_error(path_dir: PathLike, prefix: str) -> None:
+def print_cp2k_error(path_dir: PathLike, prefix: str) -> str:
     """Search for error in the CP2K output files."""
     err_file = next(Path(path_dir).glob(f"*{prefix}"), None)
+    msg = ""
     if err_file is not None:
         with open(err_file, 'r') as handler:
             err = handler.read()
-        msg = f"CP2K {prefix} file:\n{err}"
+        msg = f"CP2K {prefix} file:\n{err}\n"
         logger.error(msg)
-        print(msg)
+
+    return msg

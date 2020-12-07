@@ -5,7 +5,6 @@ from pathlib import Path
 
 import pytest
 import yaml
-from nanoqm.common import DictConfig
 from nanoqm.workflows.run_workflow import main
 from pytest_mock import MockFixture
 
