@@ -11,7 +11,7 @@ API
 """
 
 import os
-from typing import Tuple
+from typing import List, Tuple
 
 import numpy as np
 import pyparsing as pa
@@ -199,7 +199,7 @@ def read_pops_pyxaid(path, fn, nstates, nconds):
     return xs
 
 
-def parse_list_of_lists(xs: list):
+def parse_list_of_lists(xs: str) -> List[List[int]]:
     """Parse a list of list of integers using pyparsing."""
     enclosed = pa.Forward()  # Parser to be defined later
     natural = pa.Word(pa.nums)  # Natural Number
