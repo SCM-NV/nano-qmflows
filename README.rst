@@ -6,9 +6,9 @@
    :target: https://doi.org/10.5281/zenodo.3661036
 .. image:: https://github.com/SCM-NV/nano-qmflows/workflows/build%20with%20conda/badge.svg
    :target: https://github.com/SCM-NV/nano-qmflows/actions
-.. image:: https://api.codacy.com/project/badge/Grade/2bb0085352354caa9dd2ca655c2a8db3
-   :target: https://www.codacy.com/app/tifonzafel/nonAdiabaticCoupling?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=felipeZ/nonAdiabaticCoupling&amp;utm_campaign=Badge_Grade
-	    
+.. image:: https://codecov.io/gh/SCM-NV/nano-qmflows/branch/master/graph/badge.svg?token=L1W0fPrSUn
+:target: https://codecov.io/gh/SCM-NV/nano-qmflows
+
 ====================
 nano-qmflows
 ====================
