@@ -7,7 +7,7 @@
 .. image:: https://github.com/SCM-NV/nano-qmflows/workflows/build%20with%20conda/badge.svg
    :target: https://github.com/SCM-NV/nano-qmflows/actions
 .. image:: https://codecov.io/gh/SCM-NV/nano-qmflows/branch/master/graph/badge.svg?token=L1W0fPrSUn
-:target: https://codecov.io/gh/SCM-NV/nano-qmflows
+   :target: https://codecov.io/gh/SCM-NV/nano-qmflows
 
 ====================
 nano-qmflows
