@@ -460,18 +460,15 @@ def write_hamiltonians(
         file_ham_im = join(path_dir_results, f'Ham_{i}_im')
         file_ham_re = join(path_dir_results, f'Ham_{j}_re')
 
-        # Time units are atomic units. Conversion in fs-1
-        ham_im = css # * femtosec2au
-        
-        # If necessary, convert them in eV by multiplying by hbar (given in eV * fs about 0.685)
-        #ham_im = ham_im * hbar 
-
-        # Energies in eV
-        ham_re = np.diag(h2ev * energies)
+        # Time units are atomic units. Convert them in fs-1, then in eV by hbar (eV * fs) 
+        ham_im = css * femtosec2au * hbar 
 
         # Set the diagonal of the imaginary matrix to 0
         np.fill_diagonal(ham_im, 0)
-
+        
+        # Energies in eV
+        ham_re = np.diag(h2ev * energies)
+       
         write_pyxaid_format(ham_im, file_ham_im)
         write_pyxaid_format(ham_re, file_ham_re)
 
