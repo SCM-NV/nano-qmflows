@@ -29,7 +29,7 @@ from noodles import schedule
 from scipy.optimize import linear_sum_assignment
 from qmflows.parsers import parse_string_xyz
 
-from ..common import (DictConfig, Matrix, MolXYZ, Tensor3D, Vector,
+from ..common import (DictConfig, Matrix, MolXYZ, Tensor3D, Vector, hbar,
                       femtosec2au, h2ev, is_data_in_hdf5, retrieve_hdf5_data,
                       store_arrays_in_hdf5)
 from ..integrals import (calculate_couplings_3points,
@@ -460,8 +460,11 @@ def write_hamiltonians(
         file_ham_im = join(path_dir_results, f'Ham_{i}_im')
         file_ham_re = join(path_dir_results, f'Ham_{j}_re')
 
-        # Units are fs^-1
-        ham_im = css
+        # Time units are atomic units. Conversion in fs-1
+        ham_im = css # * femtosec2au
+        
+        # If necessary, convert them in eV by multiplying by hbar (given in eV * fs about 0.685)
+        #ham_im = ham_im * hbar 
 
         # Energies in eV
         ham_re = np.diag(h2ev * energies)
