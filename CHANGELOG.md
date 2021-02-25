@@ -2,6 +2,9 @@
 
 # 0.11.1 (Unrelease)
 
+## New
+* Support Python 3.9
+
 # 0.11.0 (04/12/2020)
 ## New
 * Print CP2K err/out files if the calculation fails (#150)
