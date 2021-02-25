@@ -36,8 +36,7 @@ jobs:
       env:
         CONDA_PREFIX: /usr/share/miniconda
       run: |
-        pip install pytest pytest-cov
-        pytest test
+        pytest -m "not (slow or long)"
 
     - name: coverage
       uses: codecov/codecov-action@v1

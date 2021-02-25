@@ -30,8 +30,9 @@ def run_single_point(tmp_path: Path, input_file: str):
         remove_files()
 
 
-@pytest.mark.skipif(
-    not cp2k_available(), reason="CP2K is not install or not loaded")
+# @pytest.mark.skipif(
+#     not cp2k_available(), reason="CP2K is not install or not loaded")
+@pytest.mark.slow
 def test_single_point(tmp_path: Path):
     """Check that the couplings run."""
     run_single_point(tmp_path, "input_test_single_points.yml")
