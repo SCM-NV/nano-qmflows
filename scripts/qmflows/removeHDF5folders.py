@@ -27,8 +27,8 @@ def main(path_hdf5: str, remove_overlaps: bool):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser("removeHDF5folders.py")
     parser.add_argument('-hdf5', required=True,
-                        help='Index of the first state')
+                        help='Path to the HDF5 file')
     parser.add_argument(
         '-o', help='Remove the overlap matrices', action='store_true')
     args = parser.parse_args()
-    main(args.path_hdf5, args.o)
+    main(args.hdf5, args.o)
