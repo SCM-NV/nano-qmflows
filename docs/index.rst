@@ -16,6 +16,9 @@ Contents:
    :caption: Tutorials 
 
    intro
+   single_points
+   coop
+   ipr
    derivative_couplings
    absorption_spectrum
    distribute_absorption_spectrum
