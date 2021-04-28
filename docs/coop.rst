@@ -75,4 +75,9 @@ Once all settings of your yml input have been customized, can to launch your coo
 - Finally, use the command run_workflow.py to submit your calculation.
 
   ``run_workflow.py -i input_test_coop.yml``
-  
+
+Results 
+-------
+
+Once your calculation has finished successfully, you will find a *COOP.txt* file in your working directory.
+The two columns of this file contain, respectively, the orbitals’ energies and the corresponding COOP values for the selected atoms pair.
