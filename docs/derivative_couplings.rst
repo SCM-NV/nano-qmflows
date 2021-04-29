@@ -20,22 +20,25 @@ The following is an example of the inputfile for the calculation of derivative c
     path_traj_xyz: "test/test_files/Cd33Se33_fivePoints.xyz" 
     scratch_path: "/tmp/namd"
     workdir: "."
-    blocks: 5
+    blocks: 2
 
     job_scheduler:
-      scheduler: SLURM
-      nodes: 1
-      tasks: 24
-      wall_time: "24:00:00"
-      load_modules: "source activate qmflows\nmodule load cp2k/3.0"
-
-      
+      free_format: "
+      #! /bin/bash\n
+      #SBATCH --job-name=Cd33Se33\n
+      #SBATCH -N 1\n
+      #SBATCH -t 00:15:00\n
+      #SBATCH -p short\n
+      source activate qmflows\n
+      module load cp2k/3.0\n\n"
+    
     cp2k_general_settings:
       basis:  "DZVP-MOLOPT-SR-GTH"
       potential: "GTH-PBE"
-      path_basis: "test/test_files"
       cell_parameters: 28.0
-      cell_angles: [90.0, 90.0, 90.0]
+      file_cell_parameters: "test/test_files/file_distribute_cell_parameters.txt"
+      periodic: none
+      executable: cp2k.popt
 
       cp2k_settings_main:
         specific:
@@ -96,26 +99,24 @@ Merging the chunks and recalculating the couplings
 
 Once the overlaps and couplings are all calculated, you need to merge the different chunks into a single chunk, as the overlaps between the different chunks still need to be calculated. For this you will use the *mergeHDF5.py* command that you will have if you have installed QMFlows correctly. 
 
-You are free to choose your own HDF5 file name but for this tutorial we will use *chunk_01234.hdf5* as an example. 
+You are free to choose your own HDF5 file name but for this tutorial we will use *chunk_01.hdf5* as an example. 
 
 - Merge the different chunk into a single file using the *mergeHDF5.py* script:
 
-  ``mergeHDF5.py -i chunk_0.hdf5 chunk_1.hdf5 chunk_2.hdf5 chunk_3.hdf5 chunk_4.hdf5 -o chunk_01234.hdf5``
+  ``mergeHDF5.py -i chunk_0.hdf5 chunk_1.hdf5 -o chunk_01.hdf5``
 
 Follow -i with the names of different chunks you want to merge and follow -o the name of the merged HDF5 file.  
 
-- Remove the couplings from the chunk_01234.hdf5 using the *removeHDF5folders.py* script. To run the script, use: 
+- Remove the couplings from the chunk_01.hdf5 using the *removeHDF5folders.py* script. To run the script, use: 
 
-  ``removeHDF5folders.py -pn PROJECTNAME -HDF5 chunk_01234.hdf5``
-
-Replace PROJECTNAME with your project name. 
+  ``removeHDF5folders.py -hdf5 chunk_01.hdf5``
 
 Using the script in this manner will only allow the couplings to be removed. 
 
 .. Note::
    If required, you can remove all overlaps by by adding -o at the end of the previous command:
 
-  ``removeHDF5folders.py -pn PROJECTNAME -hdf5 chunk_01234.hdf5 –o``
+  ``removeHDF5folders.py -hdf5 chunk_01.hdf5 –o``
 
 
 - Create a new subfolder in your original working directory and copy the *input.yml* file that was created for chunk 0 (when running the *distribute_jobs.py* script) to this folder. 
