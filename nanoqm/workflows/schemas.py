@@ -66,8 +66,8 @@ schema_cp2k_general_settings = Schema({
     # Multiplicity
     Optional("multiplicity", default=1): int,
 
-    # Specify the Cartesian components for the cell vector
-    "cell_parameters": Or(
+    # Specify the Cartesian components for the cell vector Units Angstrom
+    Optional("cell_parameters", default=10): Or(
         Real,
         lambda xs: len(xs) == 3 and isinstance(xs, list),
         lambda xs: len(xs) == 3 and all(len(r) == 3 for r in xs)),
