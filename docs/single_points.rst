@@ -56,8 +56,14 @@ Pay attention to the following parameters that are common to all input files: **
 You can find the complete list of all the general options (common to all workflows) in this dictionary_.
 
 In the cp2k_general_settings, you can customize the settings used to generate the cp2k input (see available options in schema_cp2k_general_settings_).
-Here you can specify the level of theory you want to use in your cp2k calculation (basis set and potential) as well as the main characteristics of your system (cell parameters and angles, periodicity, charge, multiplicity, …).
-In the cp2k_settings_guess and cp2k_settings_main subsections you can provide more detailed information about the cp2k input settings to be used to compute the guess wavefunction and to perform the main calculation respectively. In this example, we have used one of the available templates_, specifically customized for calculations with a PBE exchange-correlation functional. You can also use the cp2k manual_ to personalize your input requirements.
+
+Here you can specify the level of theory you want to use in your cp2k calculation (basis set and potential) as well as the main characteristics of your system (cell parameters and angles, periodicity, charge, multiplicity, …). 
+
+Note that the (fast) SCF routine in cp2k is based on the Orbital Transformation (OT) method, which works on the occupied orbital subspace. To obtain the full spectrum of molecular orbitals, one should perform a full diagonalization of the Fock matrix. For this reason, to obtain and store both occupied and unoccupied orbitals, defined using the active_space keyword, we have to follow a 2-step procedure: in the first step, which in the yaml input we define as cp2k_settings_guess, we perform a single point calculation using the fast OT approach; then in the second step, defined as cp2k_settings_main, we use the converged orbitals in the first step to start a full diagonalization calculation using the DIIS procedure.
+
+In the cp2k_settings_guess and cp2k_settings_main subsections you can provide more detailed information about the cp2k input settings to be used to compute the guess wavefunction and to perform the main calculation respectively.
+In this example, we have used one of the available templates_, specifically customized for calculations with a PBE exchange-correlation functional. 
+You can use the cp2k manual_ to further personalize your input requirements.
 
 .. _Cd33Se33.xyz: https://github.com/SCM-NV/nano-qmflows/blob/master/test/test_files/Cd33Se33.xyz
 .. _dictionary: https://github.com/SCM-NV/nano-qmflows/blob/e176ade9783677962d5146d8e6bc5dd6bb4f9102/nanoqm/workflows/schemas.py#L116
