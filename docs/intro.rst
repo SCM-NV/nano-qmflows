@@ -2,7 +2,9 @@ Introduction to the Tutorials
 =============================
 
 The *nano-qmflows* packages offers the following set of workflows to compute different properties:
-
+ * single_points
+ * coop_calculation
+ * ipr_calculation
  * derivative_coupling
  * absorption_spectrum
  * distribute_absorption_spectrum

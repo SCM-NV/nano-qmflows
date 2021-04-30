@@ -10,23 +10,18 @@ path_hdf5: "test/test_files/Cd33Se33.hdf5"
 path_traj_xyz: "test/test_files/Cd33Se33_fivePoints.xyz" 
 scratch_path: "/tmp/namd"
 workdir: "."
-blocks: 5
+blocks: 2
 
 job_scheduler:
-  scheduler: SLURM
-  nodes: 1
-  tasks: 24
-  wall_time: "24:00:00"
-  load_modules: "source activate qmflows\nmodule load cp2k/3.0"
-# The user can also provide the slurm options like:
-# free_format: "
-# #! /bin/bash
-#   #SBATCH --job-name=Cd33Se33
-#   #SBATCH -N 1
-#   #SBATCH -t 00:15:00
-#   #SBATCH -p short
-#   module load <awesome_module>
-#   "
+  free_format: "
+  #! /bin/bash\n
+  #SBATCH --job-name=Cd33Se33\n
+  #SBATCH -N 1\n
+  #SBATCH -t 00:15:00\n
+  #SBATCH -p short\n
+
+  source activate qmflows\n
+  module load cp2k/3.0\n\n"
 
 cp2k_general_settings:
   basis:  "DZVP-MOLOPT-SR-GTH"
@@ -34,6 +29,7 @@ cp2k_general_settings:
   cell_parameters: 28.0
   file_cell_parameters: "test/test_files/file_distribute_cell_parameters.txt"
   periodic: none
+  executable: cp2k.popt
 
   cp2k_settings_main:
     specific:
