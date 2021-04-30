@@ -47,12 +47,13 @@ In your working directory, copy the previous input into an *input_test_ipr.yml* 
 Also copy locally the file containing the coordinates of the relaxed Cd33Se33 system, Cd33Se33.xyz_.
 
 Your *input_test_ipr.yml* input file now contains all settings to perform the coop calculations and needs to be edited according to your system and preferences.
-Please note that this input is very similar to the basic example of single point calculation provided in a previous tutorial (please refer to it for a more extensive description of the above options)
+Please note that this input is very similar to the basic example of single point calculation provided in a previous tutorial_ (please refer to it for a more extensive description of the above options)
 except for the **workflow** option, set in this case to *ipr_calculation*.
 
 Here again you can customize the settings used to generate the cp2k input in the cp2k_general_settings. To help you creating your custom input requirements, please consult the cp2k manual_ and the templates_ available in nano-qmflows.
 
 .. _Cd33Se33.xyz: https://github.com/SCM-NV/nano-qmflows/blob/master/test/test_files/Cd33Se33.xyz
+.. _tutorial: https://qmflows-namd.readthedocs.io/en/latest/single_points.html
 .. _manual: https://manual.cp2k.org/
 .. _templates: https://github.com/SCM-NV/nano-qmflows/blob/master/nanoqm/workflows/templates.py
 
