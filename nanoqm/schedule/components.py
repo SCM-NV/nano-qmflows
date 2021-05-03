@@ -299,10 +299,18 @@ def split_file_geometries(path_xyz: PathLike) -> Sequence[str]:
     """Read a set of molecular geometries in xyz format."""
     # Read Cartesian Coordinates
     with open(path_xyz) as f:
-        xss = f.readlines()
+        xss = iter(f.readlines())
 
-    numat = int(xss[0].split()[0])
-    return list(map(''.join, chunked(xss, numat + 2)))
+    data = []
+    while True:
+        try:
+            natoms = int(next(xss).split()[0])
+            molecule = "".join([next(xss) for _ in range(natoms + 1)])
+            data.append(f"{natoms}\n{molecule}")
+        except StopIteration:
+            break
+
+    return data
 
 
 def create_file_names(work_dir: PathLike, i: int) -> JobFiles:
