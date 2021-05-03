@@ -88,10 +88,9 @@ We are now ready to move to a more advanced example in which we want to compute 
     scratch_path: "/tmp/absorption_spectrum_advanced1"
     calculate_guesses: "first"
 
-    stride: 4
-
     xc_dft: pbe
-    tddft: stda
+    tddft: stda 
+    stride: 4
 
     cp2k_general_settings:
       basis:  "DZVP-MOLOPT-SR-GTH"
