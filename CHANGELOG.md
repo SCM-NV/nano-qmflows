@@ -4,6 +4,7 @@
 
 ## New
 * Support Python 3.9
+* Allow to compute the spectrum of multiple stack geometries (324)
 
 # 0.11.0 (04/12/2020)
 ## New
