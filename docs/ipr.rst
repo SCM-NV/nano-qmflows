@@ -66,7 +66,7 @@ Once all settings of your yml input have been customized, can to launch your ipr
 
   ``conda activate qmflows``
   
-- Then, load the your version of the cp2k module, for example:
+- Then, load the module with your version of cp2k, for example:
 
   ``module load CP2K/7.1.0``
   
