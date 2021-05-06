@@ -38,7 +38,7 @@ import yaml
 from qmflows import Settings
 from qmflows.type_hints import PathLike
 
-from ..common import DictConfig, read_cell_parameters_as_array
+from ..common import DictConfig, read_cell_parameters_as_array, UniqueSafeLoader
 from .initialization import split_trajectory
 from .input_validation import process_input
 
@@ -61,7 +61,7 @@ def main():
     input_file = read_cmd_line()
 
     with open(input_file, 'r') as f:
-        args = yaml.load(f, Loader=yaml.FullLoader)
+        args = yaml.load(f, Loader=UniqueSafeLoader)
 
     # Read and process input
     workflow_type = args['workflow'].lower()

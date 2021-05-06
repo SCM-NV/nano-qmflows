@@ -25,7 +25,7 @@ API
 __all__ = ['DictConfig', 'Matrix', 'Tensor3D', 'Vector',
            'change_mol_units', 'getmass', 'h2ev', 'hardness',
            'number_spherical_functions_per_atom', 'retrieve_hdf5_data',
-           'is_data_in_hdf5', 'store_arrays_in_hdf5']
+           'is_data_in_hdf5', 'store_arrays_in_hdf5', 'UniqueSafeLoader']
 
 
 import os
@@ -41,6 +41,8 @@ from scipy.constants import physical_constants
 from qmflows.common import AtomXYZ
 from qmflows.type_hints import PathLike
 from scm.plams import Atom, Molecule
+
+from qmflows.yaml_utils import UniqueSafeLoader
 
 
 class DictConfig(dict):

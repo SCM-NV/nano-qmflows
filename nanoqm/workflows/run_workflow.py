@@ -19,6 +19,7 @@ import os
 
 import yaml
 
+from ..common import UniqueSafeLoader
 from .input_validation import process_input
 from .workflow_coop import workflow_crystal_orbital_overlap_population
 from .workflow_coupling import workflow_derivative_couplings
@@ -48,7 +49,7 @@ def main():
     args = parser.parse_args()
     input_file = args.i
     with open(input_file, 'r') as f:
-        dict_input = yaml.load(f, Loader=yaml.FullLoader)
+        dict_input = yaml.load(f, Loader=UniqueSafeLoader)
     if 'workflow' not in dict_input:
         raise RuntimeError(
             "The name of the workflow is required in the input file")
