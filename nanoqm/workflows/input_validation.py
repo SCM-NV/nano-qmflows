@@ -24,7 +24,7 @@ from scm.plams import Molecule
 from qmflows.settings import Settings
 from qmflows.type_hints import PathLike
 
-from ..common import DictConfig
+from ..common import DictConfig, UniqueSafeLoader
 from .schemas import (schema_absorption_spectrum, schema_coop,
                       schema_cp2k_general_settings,
                       schema_derivative_couplings,
@@ -74,7 +74,7 @@ def process_input(input_file: PathLike, workflow_name: str) -> DictConfig:
     schema = schema_workflows[workflow_name]
 
     with open(input_file, 'r') as f:
-        dict_input = yaml.load(f.read(), Loader=yaml.FullLoader)
+        dict_input = yaml.load(f.read(), Loader=UniqueSafeLoader)
 
     try:
         d = schema.validate(dict_input)

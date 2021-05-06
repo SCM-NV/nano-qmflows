@@ -42,6 +42,20 @@ from qmflows.common import AtomXYZ
 from qmflows.type_hints import PathLike
 from scm.plams import Atom, Molecule
 
+# TODO: Move this `try`/`accept` import after some time
+try:
+    from qmflows.yaml_utils import UniqueSafeLoader as UniqueSafeLoader
+except ImportError as ex:
+    import warnings
+    from yaml import SafeLoader as UniqueSafeLoader  # type: ignore[misc]
+
+    _warning = ImportWarning("Failed to import `qmflows.yaml_utils.UniqueSafeLoader`;"
+                             " falling back to `yaml.SafeLoader`")
+    _warning.__cause__ = ex
+
+    warnings.warn(_warning)
+    del _warning, warnings
+
 
 class DictConfig(dict):
     """Class to extend the Dict class with `.` dot notation."""

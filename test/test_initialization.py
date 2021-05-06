@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Optional
 import yaml
 
+from nanoqm.common import UniqueSafeLoader
 from nanoqm.workflows.initialization import initialize
 from nanoqm.workflows.input_validation import process_input
 from qmflows.type_hints import PathLike
@@ -20,7 +21,7 @@ def test_run_workflow(tmp_path: PathLike) -> None:
 def create_config(tmp_path: str, scrath_is_None: bool) -> str:
     path = PATH_TEST / "input_fast_test_derivative_couplings.yml"
     with open(path, 'r') as f:
-        inp = yaml.load(f, yaml.FullLoader)
+        inp = yaml.load(f, UniqueSafeLoader)
 
     # change scratch
     if scrath_is_None:

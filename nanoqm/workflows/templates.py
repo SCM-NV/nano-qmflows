@@ -20,6 +20,7 @@ from scm.plams import Molecule
 
 from qmflows.settings import Settings
 from qmflows.type_hints import PathLike
+from nanoqm.common import UniqueSafeLoader
 from typing import Any, Dict, Iterable, FrozenSet
 
 path_valence_electrons = pkg.resource_filename(
@@ -69,7 +70,7 @@ cp2k:
           minimizer: "DIIS"
           n_diis: 7
           preconditioner: "FULL_SINGLE_INVERSE"
-""", Loader=yaml.FullLoader))
+""", Loader=UniqueSafeLoader))
 
 #: Settings for a PBE calculation to compute the Molecular orbitals
 cp2k_pbe_main = Settings(yaml.load("""
@@ -89,7 +90,7 @@ cp2k:
         eps_scf: 5e-4
         max_scf: 200
         scf_guess: "restart"
-""", Loader=yaml.FullLoader))
+""", Loader=UniqueSafeLoader))
 
 #: Settings for a PBE0 calculation to compute a guess wave function
 cp2k_pbe0_guess = Settings(yaml.load("""
@@ -134,7 +135,7 @@ cp2k:
             n_diis: 7
             preconditioner: "FULL_SINGLE_INVERSE"
 
-""", Loader=yaml.FullLoader))
+""", Loader=UniqueSafeLoader))
 
 #: Settings for a PBE0 calculation to compute the Molecular orbitals
 cp2k_pbe0_main = Settings(yaml.load("""
@@ -174,7 +175,7 @@ cp2k:
           eps_scf: 5e-4
           max_scf: 200
           scf_guess: "restart"
-""", Loader=yaml.FullLoader))
+""", Loader=UniqueSafeLoader))
 
 #: Settings for a HSE06 calculation to compute a guess wave function
 cp2k_hse06_guess = Settings(yaml.load("""
@@ -223,7 +224,7 @@ cp2k:
             n_diis: 7
             preconditioner: "FULL_SINGLE_INVERSE"
 
-""", Loader=yaml.FullLoader))
+""", Loader=UniqueSafeLoader))
 
 #: Settings for a HSE06 calculation to compute the Molecular orbitals
 cp2k_hse06_main = Settings(yaml.load("""
@@ -267,7 +268,7 @@ cp2k:
           eps_scf: 1e-6
           max_scf: 200
           scf_guess: "restart"
-""", Loader=yaml.FullLoader))
+""", Loader=UniqueSafeLoader))
 
 #: Settings for a B3LYP calculation to compute a guess wave function
 cp2k_b3lyp_guess = Settings(yaml.load("""
@@ -291,7 +292,7 @@ cp2k:
              minimizer: "DIIS"
              n_diis: 7
              preconditioner: "FULL_SINGLE_INVERSE"
-""", Loader=yaml.FullLoader))
+""", Loader=UniqueSafeLoader))
 
 #: Settings for a B3LYP calculation to compute the Molecular orbitals
 cp2k_b3lyp_main = Settings(yaml.load("""
@@ -311,7 +312,7 @@ cp2k:
         eps_scf: 5e-4
         max_scf: 200
         scf_guess: "restart"
-""", Loader=yaml.FullLoader))
+""", Loader=UniqueSafeLoader))
 
 
 #: Settings to add the CP2K kinds for each atom
@@ -323,7 +324,7 @@ cp2k:
         C:
           basis_set: DZVP-MOLOPT-SR-GTH-q4
           potential: GTH-PBE-q4
-""", Loader=yaml.FullLoader))
+""", Loader=UniqueSafeLoader))
 
 
 def generate_kinds(elements: Iterable[str], basis: str, potential: str) -> Settings:

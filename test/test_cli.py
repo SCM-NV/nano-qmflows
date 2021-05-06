@@ -5,6 +5,7 @@ from pathlib import Path
 
 import pytest
 import yaml
+from nanoqm.common import UniqueSafeLoader
 from nanoqm.workflows.run_workflow import main
 from pytest_mock import MockFixture
 
@@ -32,7 +33,7 @@ def test_run_workflow_no_workflow(mocker: MockFixture, tmp_path: Path):
     """Check that an error is raised if not workflow is provided."""
     # remove workflow keyword
     with open(PATH_TEST / "input_fast_test_derivative_couplings.yml", 'r') as handler:
-        input = yaml.load(handler, yaml.SafeLoader)
+        input = yaml.load(handler, UniqueSafeLoader)
     input.pop('workflow')
     path_input = tmp_path / "wrong_input.yml"
     with open(path_input, 'w') as handler:
