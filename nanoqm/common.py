@@ -25,7 +25,7 @@ API
 __all__ = ['DictConfig', 'Matrix', 'Tensor3D', 'Vector',
            'change_mol_units', 'getmass', 'h2ev', 'hardness',
            'number_spherical_functions_per_atom', 'retrieve_hdf5_data',
-           'is_data_in_hdf5', 'store_arrays_in_hdf5']
+           'is_data_in_hdf5', 'store_arrays_in_hdf5', 'UniqueSafeLoader']
 
 
 import os
@@ -42,19 +42,7 @@ from qmflows.common import AtomXYZ
 from qmflows.type_hints import PathLike
 from scm.plams import Atom, Molecule
 
-# TODO: Move this `try`/`accept` import after some time
-try:
-    from qmflows.yaml_utils import UniqueSafeLoader as UniqueSafeLoader
-except ImportError as ex:
-    import warnings
-    from yaml import SafeLoader as UniqueSafeLoader  # type: ignore[misc]
-
-    _warning = ImportWarning("Failed to import `qmflows.yaml_utils.UniqueSafeLoader`;"
-                             " falling back to `yaml.SafeLoader`")
-    _warning.__cause__ = ex
-
-    warnings.warn(_warning)
-    del _warning, warnings
+from qmflows.yaml_utils import UniqueSafeLoader
 
 
 class DictConfig(dict):
