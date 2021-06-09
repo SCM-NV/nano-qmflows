@@ -192,7 +192,7 @@ def write_slurm_script(config: DictConfig, dict_input: DictConfig,
     if dict_input.get("hamiltonians_dir") is None:
         copy = ""
     else:
-        range_batch = (acc, acc - dim_batch - 1)
+        range_batch = (acc, acc + dim_batch - 1)
         files_hams = f"{dict_input.hamiltonians_dir}/Ham_{{{range_batch[0]}..{range_batch[1]}}}_*"
         copy = f'cp -r {config.path_hdf5} {files_hams} {results_dir}\n'
 
