@@ -94,8 +94,8 @@ You can keep track of the calculations by going to your scratch path. The locati
 
 The overlaps and couplings between each state will be calculated once the single point calculations are finished. The progress can be tracked with the .log file in your working directory folders. The calculated couplings are meaningless at this point and need to be removed and recalculated, more on that later.  
 
-Merging the chunks and recalculating the couplings 
----------------------------------------------------
+Merging the chunks and calculating the missing couplings 
+--------------------------------------------------------
 
 Once the overlaps and couplings are all calculated, you need to merge the different chunks into a single chunk, as the overlaps between the different chunks still need to be calculated. For this you will use the *mergeHDF5.py* command that you will have if you have installed QMFlows correctly. 
 
