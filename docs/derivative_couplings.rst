@@ -107,16 +107,17 @@ You are free to choose your own HDF5 file name but for this tutorial we will use
 
 Follow -i with the names of different chunks you want to merge and follow -o the name of the merged HDF5 file.  
 
-- Remove the couplings from the chunk_01.hdf5 using the *removeHDF5folders.py* script. To run the script, use: 
-
-  ``removeHDF5folders.py -hdf5 chunk_01.hdf5``
 
 Using the script in this manner will only allow the couplings to be removed. 
 
-.. Note::
-   If required, you can remove all overlaps by by adding -o at the end of the previous command:
+.. note::
+   If required, you can remove all couplings from the chunk_01.hdf5 using the *removeHDF5folders.py* script. To run the script, use:
 
-  ``removeHDF5folders.py -hdf5 chunk_01.hdf5 –o``
+   ``removeHDF5folders.py -hdf5 chunk_01.hdf5``
+
+   You can also remove all the overlaps by adding -o at the end of the previous command:
+
+   ``removeHDF5folders.py -hdf5 chunk_01.hdf5 -o``
 
 
 - Create a new subfolder in your original working directory and copy the *input.yml* file that was created for chunk 0 (when running the *distribute_jobs.py* script) to this folder. 
