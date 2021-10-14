@@ -152,7 +152,7 @@ setup(
     install_requires=[
         'h5py', 'mendeleev', 'more-itertools', 'noodles==0.3.3', 'numpy', 'pybind11>=2.2.4',
         'scipy', 'schema', 'pyyaml>=5.1',
-        'plams@git+https://github.com/SCM-NV/PLAMS@master',
+        'plams>=1.5.1',
         'qmflows@git+https://github.com/SCM-NV/qmflows@master'
     ],
     cmdclass={'build_ext': BuildExt},
