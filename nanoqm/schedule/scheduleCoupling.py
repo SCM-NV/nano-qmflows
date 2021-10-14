@@ -260,8 +260,8 @@ def track_unavoided_crossings(
 
     # Indexes taking into account the crossing
     # There are 2 Overlap matrices at each time t
-    indexes = np.empty((nOverlaps + 1, nOrbitals), dtype=np.int)
-    indexes[0] = np.arange(nOrbitals, dtype=np.int)
+    indexes = np.empty((nOverlaps + 1, nOrbitals), dtype=np.int_)
+    indexes[0] = np.arange(nOrbitals, dtype=np.int_)
 
     # Track the crossing using the overlap matrices
 
@@ -287,7 +287,7 @@ def track_unavoided_crossings(
             overlaps[k1:] = swap_forward(overlaps[k1:], total_swaps)
     # Accumulate the swaps
     acc = indexes[0]
-    arr = np.empty(indexes.shape, dtype=np.int)
+    arr = np.empty(indexes.shape, dtype=np.int_)
     arr[0] = acc
 
     # Fold accumulating the crossings
@@ -460,15 +460,15 @@ def write_hamiltonians(
         file_ham_im = join(path_dir_results, f'Ham_{i}_im')
         file_ham_re = join(path_dir_results, f'Ham_{j}_re')
 
-        # Time units are atomic units. Convert them in fs-1, then in eV by hbar (eV * fs) 
-        ham_im = css * femtosec2au * hbar 
+        # Time units are atomic units. Convert them in fs-1, then in eV by hbar (eV * fs)
+        ham_im = css * femtosec2au * hbar
 
         # Set the diagonal of the imaginary matrix to 0
         np.fill_diagonal(ham_im, 0)
-        
+
         # Energies in eV
         ham_re = np.diag(h2ev * energies)
-       
+
         write_pyxaid_format(ham_im, file_ham_im)
         write_pyxaid_format(ham_re, file_ham_re)
 
