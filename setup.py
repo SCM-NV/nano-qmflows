@@ -145,6 +145,8 @@ setup(
         'License :: OSI Approved :: Apache-2.0',
         'Intended Audience :: Science/Research',
         'programming language :: python :: 3.8',
+        'programming language :: python :: 3.9',
+        'programming language :: python :: 3.10',
         'development status :: 4 - Beta',
         'intended audience :: science/research',
         'topic :: scientific/engineering :: chemistry'
