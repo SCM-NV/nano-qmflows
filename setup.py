@@ -158,8 +158,18 @@ setup(
     cmdclass={'build_ext': BuildExt},
     ext_modules=[ext_pybind],
     extras_require={
-        'test': ['assertionlib', 'codacy-coverage', 'mypy', 'pytest', 'pytest-cov',
-                 'pytest-mock', 'pytest-pycodestyle', 'pytest-pydocstyle'],
+        'test': [
+            'assertionlib',
+            'codacy-coverage',
+            'mypy',
+            'pytest',
+            'pytest-cov',
+            'pytest-mock',
+            'pytest-pycodestyle',
+            'pytest-pydocstyle',
+            'types-pyyaml',
+            'types-pkg_resources',
+        ],
         'doc': ['sphinx>=2.1', 'sphinx-autodoc-typehints', 'sphinx_rtd_theme', 'nbsphinx']
     },
     include_package_data=True,
