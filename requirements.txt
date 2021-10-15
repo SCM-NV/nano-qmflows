@@ -1,2 +1,0 @@
-Cython
-sphinx>=2.1

@@ -38,7 +38,12 @@ jobs:
       run: |
         conda create -n test -c conda-forge python=${{ matrix.version }} boost eigen libint==2.6.0 highfive
         source $CONDA/bin/activate test
-        pip install -e .[test]
+        pip install -r ./test_requirements.txt
+
+    - name: Install the package
+      run: |
+        source $CONDA/bin/activate test
+        pip install -e . -vvv
 
     - name: Conda info
       run: |
