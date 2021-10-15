@@ -56,14 +56,15 @@ jobs:
 
     - name: Install dependencies
       run: |
-        conda create -n test -c conda-forge python=${{ matrix.python-version }} boost eigen libint==2.6.0 highfive
+        case ${{ matrix.gcc }} in
+          6)
+            conda create -n test -c conda-forge python=${{ matrix.python-version }} boost eigen=3.3 libint==2.6.0 highfive ;;
+          *)
+            conda create -n test -c conda-forge python=${{ matrix.python-version }} boost eigen libint==2.6.0 highfive ;;
+        esac
+
         source $CONDA/bin/activate test
         pip install -r ./test_requirements.txt
-
-    - name: Install the package
-      run: |
-        source $CONDA/bin/activate test
-        pip install -e . -vvv
 
     - name: Conda info
       run: |
@@ -72,6 +73,11 @@ jobs:
 
     - name: Conda list
       run: conda list -n test
+
+    - name: Install the package
+      run: |
+        source $CONDA/bin/activate test
+        pip install -e . -vvv
 
     - name: Test with pytest
       run: |
