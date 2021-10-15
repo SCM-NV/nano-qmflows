@@ -29,6 +29,8 @@ Then,  to install the **nano-qmflows** library type the following commands insid
   - ``conda activate qmflows``
   - ``pip install git+https://github.com/SCM-NV/nano-qmflows@master --upgrade``
 
+.. note::
+   For GCC <7 one has to pass ``eigen=3.3``.
 
 Advantages and Limitations
 --------------------------
