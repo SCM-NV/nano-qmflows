@@ -1,0 +1,23 @@
+# Tests
+assertionlib
+codacy-coverage
+mypy
+pytest
+pytest-cov
+pytest-mock
+pytest-pycodestyle
+pytest-pydocstyle
+types-pyyaml
+types-pkg_resources
+
+# Runtime dependencies
+h5py
+mendeleev
+more-itertools
+noodles==0.3.3
+numpy
+scipy
+schema
+pyyaml>=5.1
+plams>=1.5.1
+qmflows@git+https://github.com/SCM-NV/qmflows@master

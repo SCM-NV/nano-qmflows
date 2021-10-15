@@ -1,4 +1,4 @@
-name: build with conda
+name: build
 
 on:
   push:
@@ -8,11 +8,24 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    name: ${{ matrix.os }} (py ${{ matrix.python-version }}; gcc ${{ matrix.gcc }})
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        version: ['3.8', '3.9']
+        os: [ubuntu-latest]
+        python-version: [3.9]
+        gcc: [7, 8, 9, 10, 11]
+        include:
+          - os: ubuntu-latest
+            python-version: 3.8
+            gcc: default
+          - os: ubuntu-18.04
+            python-version: 3.9
+            gcc: 5
+          - os: ubuntu-18.04
+            python-version: 3.9
+            gcc: 6
 
     steps:
     - name: Cancel Previous Runs
@@ -28,6 +41,16 @@ jobs:
     - name: Info CP2K
       run: cp2k.popt --version
 
+    - name: Install GCC
+      if: matrix.gcc != 'default'
+      uses: egor-tensin/setup-gcc@v1
+      with:
+        version: ${{ matrix.gcc }}
+        platform: x64
+
+    - name: Info GCC
+      run: gcc --version
+
     - name: Setup conda
       uses: s-weigand/setup-conda@v1
       with:
@@ -36,9 +59,15 @@ jobs:
 
     - name: Install dependencies
       run: |
-        conda create -n test -c conda-forge python=${{ matrix.version }} boost eigen libint==2.6.0 highfive
+        case ${{ matrix.gcc }} in
+          5|6)
+            conda create -n test -c conda-forge python=${{ matrix.python-version }} boost eigen=3.3 libint==2.6.0 highfive ;;
+          *)
+            conda create -n test -c conda-forge python=${{ matrix.python-version }} boost eigen libint==2.6.0 highfive ;;
+        esac
+
         source $CONDA/bin/activate test
-        pip install -e .[test]
+        pip install -r ./test_requirements.txt
 
     - name: Conda info
       run: |
@@ -47,6 +76,11 @@ jobs:
 
     - name: Conda list
       run: conda list -n test
+
+    - name: Install the package
+      run: |
+        source $CONDA/bin/activate test
+        pip install -e . -vvv
 
     - name: Test with pytest
       run: |
