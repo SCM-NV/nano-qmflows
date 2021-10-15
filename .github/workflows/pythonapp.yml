@@ -22,6 +22,9 @@ jobs:
             gcc: default
           - os: ubuntu-18.04
             python-version: 3.9
+            gcc: 5
+          - os: ubuntu-18.04
+            python-version: 3.9
             gcc: 6
 
     steps:
@@ -57,7 +60,7 @@ jobs:
     - name: Install dependencies
       run: |
         case ${{ matrix.gcc }} in
-          6)
+          5|6)
             conda create -n test -c conda-forge python=${{ matrix.python-version }} boost eigen=3.3 libint==2.6.0 highfive ;;
           *)
             conda create -n test -c conda-forge python=${{ matrix.python-version }} boost eigen libint==2.6.0 highfive ;;
