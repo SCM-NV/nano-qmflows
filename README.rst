@@ -63,4 +63,4 @@ The figure represents schematically a Worflow to compute the **Hamiltonians** th
 .. image:: docs/_images/nac_worflow.png
 
 .. _PYXAID: https://www.acsu.buffalo.edu/~alexeyak/pyxaid/overview.html
-.. _documentation: https://nano-qmflows.readthedocs.io/en/latest/
+.. _documentation: https://qmflows-namd.readthedocs.io/en/latest/

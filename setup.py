@@ -169,6 +169,8 @@ setup(
             'pytest-pydocstyle',
             'types-pyyaml',
             'types-pkg_resources',
+            'Cython',
+            'setuptools',
         ],
         'doc': ['sphinx>=2.1', 'sphinx-autodoc-typehints', 'sphinx_rtd_theme', 'nbsphinx']
     },

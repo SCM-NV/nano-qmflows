@@ -9,6 +9,8 @@ pytest-pycodestyle
 pytest-pydocstyle
 types-pyyaml
 types-pkg_resources
+Cython
+setuptools
 
 # Runtime dependencies
 h5py
