@@ -8,7 +8,7 @@ on:
 
 jobs:
   build:
-    name: ${{ matrix.os }} (py ${{ matrix.python-version }}; gcc ${{ matrix.gcc }})
+    name: ${{ matrix.os }} (py ${{ matrix.python-version }}; CP2K ${{ matrix.cp2k }}; gcc ${{ matrix.gcc }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -16,16 +16,28 @@ jobs:
         os: [ubuntu-latest]
         python-version: [3.9]
         gcc: [7, 8, 9, 10, 11]
+        cp2k: [8.2]
         include:
           - os: ubuntu-latest
             python-version: 3.8
             gcc: default
+            cp2k: 8.2
           - os: ubuntu-18.04
             python-version: 3.9
             gcc: 5
+            cp2k: 8.2
           - os: ubuntu-18.04
             python-version: 3.9
             gcc: 6
+            cp2k: 8.2
+          - os: ubuntu-latest
+            python-version: 3.9
+            gcc: default
+            cp2k: 6.1
+          - os: ubuntu-latest
+            python-version: 3.9
+            gcc: default
+            cp2k: 7.1
 
     steps:
     - name: Cancel Previous Runs
@@ -35,8 +47,19 @@ jobs:
 
     - uses: actions/checkout@v2
 
-    - name: Install cp2k
-      run: sudo apt install cp2k cp2k-data
+    - name: Install CP2K
+      run: |
+        version="${{ matrix.cp2k }}"
+        version_long=v"${{ matrix.cp2k }}".0
+
+        git clone https://github.com/cp2k/cp2k
+        cd cp2k
+        git checkout tags/$version_long
+        ln -s data /usr/share/cp2k
+
+        wget -nv https://github.com/cp2k/cp2k/releases/download/$version_long/cp2k-$version-Linux-x86_64.ssmp -O cp2k.ssmp
+        chmod u+rx cp2k.ssmp
+        mv cp2k.ssmp /usr/local/bin/cp2k.popt
 
     - name: Info CP2K
       run: cp2k.popt --version
@@ -85,6 +108,7 @@ jobs:
     - name: Test with pytest
       run: |
         source $CONDA/bin/activate test
+        export CP2K_DATA_DIR="/usr/share/cp2k"
         pytest -m "not (slow or long)"
 
     - name: coverage
