@@ -116,9 +116,9 @@ jobs:
 
         case "${{ matrix.special }}"" in
           "slow")
-            pytest -m '(slow or long)' ;;
+            pytest ;;
           *)
-            pytest -m 'not (slow or long)'' ;;
+            pytest -m "not (slow or long)" ;;
         esac
 
     - name: coverage
