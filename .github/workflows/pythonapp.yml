@@ -8,7 +8,7 @@ on:
 
 jobs:
   build:
-    name: ${{ matrix.os }} (py ${{ matrix.python-version }}; gcc ${{ matrix.gcc }}; CP2K ${{ matrix.cp2k }})
+    name: ${{ matrix.os }} (py ${{ matrix.python-version }}; CP2K ${{ matrix.cp2k }}; gcc ${{ matrix.gcc }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
