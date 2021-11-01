@@ -8,7 +8,7 @@ on:
 
 jobs:
   build:
-    name: ${{ matrix.os }} (py ${{ matrix.python-version }}; gcc ${{ matrix.gcc }})
+    name: ${{ matrix.os }} (py ${{ matrix.python-version }}; gcc ${{ matrix.gcc }}${{ matrix.special }}${{ matrix.cp2k }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -29,12 +29,12 @@ jobs:
           - os: ubuntu-latest
             python-version: 3.8
             gcc: default
-            special: "slow"
+            special: "; slow; CP2K "
             cp2k: 6.1
           - os: ubuntu-latest
             python-version: 3.9
             gcc: default
-            special: "slow"
+            special: "; slow; CP2K "
             cp2k: 8.2
 
     steps:
@@ -48,7 +48,7 @@ jobs:
     - name: Install CP2K
       run: |
         case "${{ matrix.special }}" in
-          "slow")
+          "; slow; CP2K ")
             version="${{ matrix.cp2k }}"
             version_long=v"${{ matrix.cp2k }}".0
 
@@ -114,8 +114,8 @@ jobs:
         source $CONDA/bin/activate test
         export CP2K_DATA_DIR="/usr/share/cp2k"
 
-        case "${{ matrix.special }}"" in
-          "slow")
+        case "${{ matrix.special }}" in
+          "; slow; CP2K ")
             pytest ;;
           *)
             pytest -m "not (slow or long)" ;;
