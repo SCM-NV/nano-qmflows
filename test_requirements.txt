@@ -22,4 +22,4 @@ scipy
 schema
 pyyaml>=5.1
 plams>=1.5.1
-qmflows@git+https://github.com/SCM-NV/qmflows@master
+qmflows>=0.11.0

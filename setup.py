@@ -152,10 +152,16 @@ setup(
         'topic :: scientific/engineering :: chemistry'
     ],
     install_requires=[
-        'h5py', 'mendeleev', 'more-itertools', 'noodles==0.3.3', 'numpy',
-        'scipy', 'schema', 'pyyaml>=5.1',
+        'h5py',
+        'mendeleev',
+        'more-itertools',
+        'noodles==0.3.3',
+        'numpy',
+        'scipy',
+        'schema',
+        'pyyaml>=5.1',
         'plams>=1.5.1',
-        'qmflows@git+https://github.com/SCM-NV/qmflows@master'
+        'qmflows>=0.11.0',
     ],
     cmdclass={'build_ext': BuildExt},
     ext_modules=[ext_pybind],
