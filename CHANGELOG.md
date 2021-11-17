@@ -1,5 +1,11 @@
 # Change Log
 
+# 0.12.1 (17/11/2021)
+
+## Fixed
+* Fixed a number of pypi classifiers.
+
+
 # 0.12.0 (17/11/2021)
 
 ## New
