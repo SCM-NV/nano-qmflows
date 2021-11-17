@@ -144,13 +144,12 @@ setup(
     classifiers=[
         'License :: OSI Approved :: Apache Software License',
         'Natural Language :: English',
+        'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9',
+        'Programming Language :: Python :: 3.10',
+        'Development Status :: 4 - Beta',
         'Intended Audience :: Science/Research',
-        'programming language :: python :: 3.8',
-        'programming language :: python :: 3.9',
-        'programming language :: python :: 3.10',
-        'development status :: 4 - Beta',
-        'intended audience :: science/research',
-        'topic :: scientific/engineering :: chemistry',
+        'Topic :: Scientific/Engineering :: Chemistry',
         'Typing :: Typed',
     ],
     install_requires=[
