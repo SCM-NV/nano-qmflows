@@ -1,10 +1,18 @@
 # Change Log
 
-# 0.11.1 (Unrelease)
+# 0.12.0 (17/11/2021)
 
 ## New
-* Support Python 3.9
+* Support Python 3.9 and 3.10
 * Allow to compute the spectrum of multiple stack geometries (324)
+
+## Changed
+* Check for duplicate keys when loading .yaml files.
+* Make cell parameters optional.
+
+## Fixed
+* Various fixes.
+
 
 # 0.11.0 (04/12/2020)
 ## New
@@ -123,9 +131,9 @@
  * Compute the overlap integrals to calculate the derivative coupling and the multipole integrals using [libint2](https://github.com/evaleev/)
  * Used `openmp` to compute the integrals in all the available cores
  * New dependencies: [eigen](http://eigen.tuxfamily.org/dox/), [highfive](https://github.com/BlueBrain/HighFive/tree/master/include/highfive), [libint2](https://github.com/evaleev/libint/wiki) and [pybind11](https://pybind11.readthedocs.io/en/master/)
- 
+
 ### Deleted
- 
+
  * Python/Cython implementation of the overlap integrals
  * Unused functionality replaced by [libint2](https://github.com/evaleev/)
 
@@ -200,8 +208,8 @@ The following actions were performed:
 * Validate input files with json schemas
 * Refactor the workflow API
 * Used [noodles==0.3.1](https://github.com/NLeSC/noodles) and [qmflows==0.3.0](https://github.com/SCM-NV/qmflows)
-   
-   
+
+
 ### Removed
 
 * Dead code from `workflow_cube`
