@@ -142,14 +142,16 @@ setup(
     long_description_content_type='text/markdown',
     packages=find_packages(),
     classifiers=[
-        'License :: OSI Approved :: Apache-2.0',
+        'License :: OSI Approved :: Apache Software License',
+        'Natural Language :: English',
         'Intended Audience :: Science/Research',
         'programming language :: python :: 3.8',
         'programming language :: python :: 3.9',
         'programming language :: python :: 3.10',
         'development status :: 4 - Beta',
         'intended audience :: science/research',
-        'topic :: scientific/engineering :: chemistry'
+        'topic :: scientific/engineering :: chemistry',
+        'Typing :: Typed',
     ],
     install_requires=[
         'h5py',
