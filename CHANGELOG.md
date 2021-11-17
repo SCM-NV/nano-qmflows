@@ -1,5 +1,11 @@
 # Change Log
 
+# 0.12.2 (17/11/2021)
+
+## Changed
+* Only distribute source files on pypi.
+
+
 # 0.12.1 (17/11/2021)
 
 ## Fixed
