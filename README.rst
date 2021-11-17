@@ -27,7 +27,7 @@ In order to install the **nano-qmflows** library you need to install *Miniconda*
 Then,  to install the **nano-qmflows** library type the following commands inside the conda environment:
   - ``conda create -n qmflows -c conda-forge boost eigen libint==2.6.0 highfive``
   - ``conda activate qmflows``
-  - ``pip install git+https://github.com/SCM-NV/nano-qmflows@master --upgrade``
+  - ``pip install nano-qmflows --upgrade``
 
 .. note::
    For GCC <7 one has to pass ``eigen=3.3``.
