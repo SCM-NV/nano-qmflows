@@ -19,7 +19,7 @@ import sys
 # -- Project information -----------------------------------------------------
 
 project = 'nano-qmflows'
-copyright = '2020, Felipe Zapata and Ivan Infante'
+copyright = '2021, Felipe Zapata and Ivan Infante'
 author = 'Felipe Zapata and Ivan Infante'
 
 here = os.path.dirname(__file__)

@@ -94,3 +94,4 @@ input_parameters.yml
 
 # temporal files
 tmp
+.DS_Store

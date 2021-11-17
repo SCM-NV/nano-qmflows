@@ -142,20 +142,28 @@ setup(
     long_description_content_type='text/markdown',
     packages=find_packages(),
     classifiers=[
-        'License :: OSI Approved :: Apache-2.0',
+        'License :: OSI Approved :: Apache Software License',
+        'Natural Language :: English',
         'Intended Audience :: Science/Research',
         'programming language :: python :: 3.8',
         'programming language :: python :: 3.9',
         'programming language :: python :: 3.10',
         'development status :: 4 - Beta',
         'intended audience :: science/research',
-        'topic :: scientific/engineering :: chemistry'
+        'topic :: scientific/engineering :: chemistry',
+        'Typing :: Typed',
     ],
     install_requires=[
-        'h5py', 'mendeleev', 'more-itertools', 'noodles==0.3.3', 'numpy',
-        'scipy', 'schema', 'pyyaml>=5.1',
+        'h5py',
+        'mendeleev',
+        'more-itertools',
+        'noodles==0.3.3',
+        'numpy',
+        'scipy',
+        'schema',
+        'pyyaml>=5.1',
         'plams>=1.5.1',
-        'qmflows@git+https://github.com/SCM-NV/qmflows@master'
+        'qmflows>=0.11.0',
     ],
     cmdclass={'build_ext': BuildExt},
     ext_modules=[ext_pybind],
@@ -178,7 +186,7 @@ setup(
     },
     include_package_data=True,
     package_data={
-        'nanoqm': ['basis/*.json', 'basis/BASIS*', 'basis/GTH_POTENTIALS']
+        'nanoqm': ['basis/*.json', 'basis/BASIS*', 'basis/GTH_POTENTIALS', 'py.typed']
     },
     entry_points={
         'console_scripts': [
