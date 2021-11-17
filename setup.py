@@ -139,7 +139,7 @@ setup(
     author_email='f.zapata@esciencecenter.nl',
     keywords='chemistry Photochemistry Simulation',
     long_description=readme() + '\n\n',
-    long_description_content_type='text/markdown',
+    long_description_content_type='text/x-rst',
     packages=find_packages(),
     classifiers=[
         'License :: OSI Approved :: Apache Software License',
