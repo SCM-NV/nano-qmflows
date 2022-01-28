@@ -42,6 +42,10 @@ jobs:
             python-version: "3.9"
             gcc: default
             cp2k: "7.1"
+          - os: ubuntu-latest
+            python-version: "3.9"
+            gcc: default
+            cp2k: "9.1"
     env:
       CP2K_DATA_DIR: /usr/share/cp2k/data
 
