@@ -110,11 +110,6 @@ def prepare_job_cp2k(
     """
     job_settings = prepare_cp2k_settings(settings, dict_input, guess_job)
 
-    # remove keywords not use on the next translation phase
-    for x in ('basis', 'potential'):
-        if x in job_settings:
-            del job_settings[x]
-
     return cp2k(
         job_settings, string_to_plams_Molecule(dict_input["geometry"]),
         work_dir=dict_input['point_dir'])
