@@ -110,15 +110,17 @@ def compute_overlap_and_atomic_orbitals(
     atom_indices = np.zeros(len(mol) + 1, dtype='int')
     atom_indices[1:] = np.cumsum(sphericals)
 
-    el_1_orbital_ind = [np.arange(sphericals[i]) +
-                        atom_indices[i] for i in element_1_index]
-    el_1_orbital_ind = np.reshape(el_1_orbital_ind, len(
-        element_1_index) * sphericals[element_1_index[0]])
+    el_1_orbital_ind = [np.arange(sphericals[i]) + atom_indices[i] for i in element_1_index]
+    el_1_orbital_ind = np.reshape(
+        el_1_orbital_ind,
+        len(element_1_index) * sphericals[element_1_index[0]],
+    )
 
-    el_2_orbital_ind = [np.arange(sphericals[i]) +
-                        atom_indices[i] for i in element_2_index]
-    el_2_orbital_ind = np.reshape(el_2_orbital_ind, len(
-        element_2_index) * sphericals[element_2_index[0]])
+    el_2_orbital_ind = [np.arange(sphericals[i]) + atom_indices[i] for i in element_2_index]
+    el_2_orbital_ind = np.reshape(
+        el_2_orbital_ind,
+        len(element_2_index) * sphericals[element_2_index[0]],
+    )
 
     # Reduced overlap matrix, containing only the elements related to the
     # overlap between element_1 and element_2

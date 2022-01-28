@@ -1,3 +1,7 @@
+"""Nano-QMFlows is a generic python library for computing (numerically) electronic properties \
+for nanomaterials like the non-adiabatic coupling vectors (NACV) using several quantum \
+chemical (QM) packages."""
+
 from .analysis import (
     autocorrelate, dephasing, convolute, func_conv, gauss_function,
     parse_list_of_lists, read_couplings, read_energies,

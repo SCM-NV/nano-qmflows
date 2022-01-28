@@ -34,6 +34,7 @@ logger = logging.getLogger(__name__)
 
 def workflow_stddft(config: DictConfig) -> None:
     """Compute the excited states using simplified TDDFT.
+
     Both restricted and unrestricted orbitals calculations are available.
 
     Parameters
@@ -124,12 +125,12 @@ def get_omega_xia(
 
     # search data in HDF5
     point = f'point_{dict_input.i + config.enumerate_from}'
-                
+
     paths_omega_xia = [join(x, point) for x in ("omega", "xia")]
 
     if is_data_in_hdf5(config.path_hdf5, paths_omega_xia):
         return tuple(retrieve_hdf5_data(config.path_hdf5, paths_omega_xia))
-    
+
     else:
         omega, xia = compute_omega_xia()
         store_arrays_in_hdf5(
@@ -263,9 +264,7 @@ def write_output(config: DictConfig, inp: DictConfig) -> None:
 
 
 def ex_descriptor(omega, f, xia, n_lowest, c_ao, s, tdm, tqm, nocc, nvirt, mol, config):
-    """
-    ADD DOCUMENTATION
-    """
+    """TODO: ADD DOCUMENTATION."""
     # Reshape xia
     xia_I = xia.reshape(nocc, nvirt, nocc * nvirt)
 
@@ -500,9 +499,13 @@ def compute_MNOK_integrals(mol, xc_dft):
         gamma_J = np.zeros((n_atoms, n_atoms))
     else:
         gamma_J = np.power(
-            1 / (np.power(r_ab, beta) + np.power((xc(xc_dft)['ax'] * hard), -beta)), 1 / beta)
-    gamma_K = np.power(1 / (np.power(r_ab, alpha) +
-                            np.power(hard, -alpha)), 1 / alpha)
+            1 / (np.power(r_ab, beta) + np.power((xc(xc_dft)['ax'] * hard), -beta)),
+            1 / beta,
+        )
+    gamma_K = np.power(
+        1 / (np.power(r_ab, alpha) + np.power(hard, -alpha)),
+        1 / alpha,
+    )
 
     return gamma_J, gamma_K
 

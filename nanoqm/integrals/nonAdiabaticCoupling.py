@@ -103,7 +103,6 @@ def calculate_couplings_levine(dt: float, w_jk: Matrix,
         Coupling matrix
 
     """
-
     # Diagonal matrix
     w_jj = np.diag(np.diag(w_jk))
     w_kk = np.diag(np.diag(w_kj))
