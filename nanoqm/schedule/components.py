@@ -105,7 +105,7 @@ def calculate_mos(config: DictConfig) -> List[str]:
             predicate = dict_input["node_MOs"]
         else:
             predicate = dict_input["node_energy"]
-        
+
         if is_data_in_hdf5(config.path_hdf5, predicate):
             logger.info(f"point_{k} has already been calculated")
             orbitals.append(dict_input["node_MOs"])
@@ -223,7 +223,6 @@ def compute_orbitals(
 
     When finish store the MOs in the HdF5 and returns a new guess.
     """
-
     dict_input["job_files"] = create_file_names(
         dict_input["point_dir"], dict_input["k"])
 

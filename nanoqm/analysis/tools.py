@@ -28,7 +28,7 @@ def gauss_function(x: float, sigma: float) -> np.ndarray:
 
 
 def lorentzian_function(x_L, sigma_L, amplitude_L):
-    """Compute a Lorentzian function used for fitting data"""
+    """Compute a Lorentzian function used for fitting data."""
     return amplitude_L * sigma_L**2 / (sigma_L**2 + x_L ** 2)
 
 
@@ -124,14 +124,14 @@ def dephasing(f: np.ndarray, dt: float):
 
 
 def fit_dephasing(fit_func, deph, ts, res, t_deph_guess):
-    """ 
-        fit_func = 0 for Gaussian fit, or 1 for exponential fit
-        deph     = dephasing function vs. time "
-        ts       = time, in fs
-        res      = factor by which to increase the time resolution of ts for the fit
-        t_deph_guess = initial guess, in fs
-    """
+    """Work in progress (?).
 
+    fit_func = 0 for Gaussian fit, or 1 for exponential fit
+    deph     = dephasing function vs. time "
+    ts       = time, in fs
+    res      = factor by which to increase the time resolution of ts for the fit
+    t_deph_guess = initial guess, in fs
+    """
     np.seterr(over='ignore')
 
     if fit_func == 0:

@@ -42,6 +42,12 @@ jobs:
             python-version: "3.9"
             gcc: default
             cp2k: "7.1"
+          - os: ubuntu-latest
+            python-version: "3.9"
+            gcc: default
+            cp2k: "9.1"
+    env:
+      CP2K_DATA_DIR: /usr/share/cp2k/data
 
     steps:
     - name: Cancel Previous Runs
@@ -112,7 +118,6 @@ jobs:
     - name: Test with pytest
       run: |
         source $CONDA/bin/activate test
-        export CP2K_DATA_DIR="/usr/share/cp2k"
         pytest -m "not (slow or long)"
 
     - name: coverage
@@ -120,3 +125,34 @@ jobs:
       with:
         file: ./coverage.xml
         name: codecov-umbrella
+
+  Linting:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Python 3.10 on ubuntu-latest
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.10"
+
+      - name: Install linters
+        run: pip install pydocstyle pycodestyle mypy qmflows types-pyyaml types-pkg_resources
+
+      - name: Python info
+        run: |
+          which python
+          python --version
+
+      - name: Installed packages
+        run: pip list
+
+      - name: Run pycodestyle
+        run: pycodestyle nanoqm
+
+      - name: Run pydocstyle
+        run: pydocstyle nanoqm
+
+      - name: Run mypy
+        run: mypy nanoqm
+        continue-on-error: true

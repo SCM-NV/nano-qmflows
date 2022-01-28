@@ -1,14 +1,9 @@
 # Tests
 assertionlib
 codacy-coverage
-mypy
 pytest
 pytest-cov
 pytest-mock
-pytest-pycodestyle
-pytest-pydocstyle
-types-pyyaml
-types-pkg_resources
 Cython
 setuptools
 
@@ -22,4 +17,4 @@ scipy
 schema
 pyyaml>=5.1
 plams>=1.5.1
-qmflows>=0.11.0
+qmflows>=0.11.1
