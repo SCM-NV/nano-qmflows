@@ -65,8 +65,9 @@ def convolute(x: np.ndarray, y: np.ndarray, x_points: np.ndarray, sigma: float) 
     # Compute gaussian prefactor
     prefactor = np.sqrt(2.0) / (sigma * np.sqrt(np.pi))
     # Convolute spectrum over grid
-    y_points = prefactor * np.stack(
-        np.sum(y * func_conv(x, x_point, sigma)) for x_point in x_points)
+    y_points = prefactor * np.stack([
+        np.sum(y * func_conv(x, x_point, sigma)) for x_point in x_points
+    ])
     return y_points
 
 

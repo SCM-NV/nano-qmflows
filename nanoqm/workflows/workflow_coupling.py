@@ -9,8 +9,10 @@ Index
 .. autosummary::
 
 """
-__all__ = ['workflow_derivative_couplings']
 
+from __future__ import annotations
+
+__all__ = ['workflow_derivative_couplings']
 
 import logging
 import os
@@ -80,7 +82,7 @@ def run_workflow_couplings(config: DictConfig) -> PromisedObject:
     return gather(promise_files, energy_paths_hdf5)
 
 
-def create_path_hamiltonians(workdir: PathLike, orbitals_type: str) -> PathLike:
+def create_path_hamiltonians(workdir: str | os.PathLike[str], orbitals_type: str) -> str:
     """Create the Paths to store the resulting hamiltonians."""
     prefix = "hamiltonians"
     name = prefix if not orbitals_type else f"{orbitals_type}_{prefix}"

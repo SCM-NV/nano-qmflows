@@ -8,8 +8,11 @@ Index
 
 """
 
+from __future__ import annotations
+
 __all__ = ["create_settings_from_template"]
 
+import os
 import yaml
 from scm.plams import Molecule
 
@@ -428,7 +431,10 @@ templates_dict = {
 
 
 def create_settings_from_template(
-        general: Dict[str, Any], template_name: str, path_traj_xyz: PathLike) -> Settings:
+    general: Dict[str, Any],
+    template_name: str,
+    path_traj_xyz: str | os.PathLike[str],
+) -> Settings:
     """Create a job Settings using the name provided by the user."""
     setts = templates_dict[template_name]
     elements = read_unique_atomic_labels(path_traj_xyz)
@@ -444,7 +450,7 @@ def create_settings_from_template(
         return setts + kinds
 
 
-def read_unique_atomic_labels(path_traj_xyz: PathLike) -> FrozenSet[str]:
+def read_unique_atomic_labels(path_traj_xyz: str | os.PathLike[str]) -> FrozenSet[str]:
     """Return the unique atomic labels."""
     mol = Molecule(path_traj_xyz, 'xyz')
 

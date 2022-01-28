@@ -6,6 +6,8 @@ API
 
 """
 
+from __future__ import annotations
+
 __all__ = ["calculate_mos", "create_point_folder",
            "split_file_geometries"]
 
@@ -171,7 +173,7 @@ def save_orbitals_in_hdf5(mos: OrbitalType, config: DictConfig, job_name: str) -
     if isinstance(mos, InfoMO):
         dump_orbitals_to_hdf5(mos, config, job_name)
     else:
-        alphas, betas = mos  # type: Tuple[InfoMO, InfoMO]
+        alphas, betas = mos
         dump_orbitals_to_hdf5(alphas, config, job_name, "alphas")
         dump_orbitals_to_hdf5(betas, config, job_name, "betas")
 
@@ -283,7 +285,7 @@ def schedule_check(
 
 
 def create_point_folder(
-        work_dir: PathLike, n: int, enumerate_from: int) -> List[str]:
+        work_dir: str | os.PathLike[str], n: int, enumerate_from: int) -> List[str]:
     """Create a new folder for each point in the MD trajectory."""
     folders = []
     for k in range(enumerate_from, n + enumerate_from):
@@ -312,7 +314,7 @@ def split_file_geometries(path_xyz: PathLike) -> Sequence[str]:
     return data
 
 
-def create_file_names(work_dir: PathLike, i: int) -> JobFiles:
+def create_file_names(work_dir: str | os.PathLike[str], i: int) -> JobFiles:
     """Create a namedTuple with the name of the 4 files used for each point in the trajectory."""
     file_xyz = join(work_dir, f'coordinates_{i}.xyz')
     file_inp = join(work_dir, f'point_{i}.inp')

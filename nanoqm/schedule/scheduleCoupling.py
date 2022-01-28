@@ -18,11 +18,14 @@ API
 .. autofunction:: write_hamiltonians
 
 """
+
+from __future__ import annotations
+
 import logging
 import os
 from os.path import join
 # Types hint
-from typing import List, Tuple
+from typing import List, Tuple, TYPE_CHECKING
 
 import numpy as np
 from noodles import schedule
@@ -38,6 +41,9 @@ from ..integrals import (calculate_couplings_3points,
 from ..integrals.nonAdiabaticCoupling import (compute_range_orbitals,
                                               read_overlap_data)
 
+if TYPE_CHECKING:
+    import numpy.typing as npt
+
 # Starting logger
 logger = logging.getLogger(__name__)
 
@@ -46,8 +52,9 @@ __all__ = ["calculate_overlap", "lazy_couplings", "write_hamiltonians"]
 
 @schedule
 def lazy_couplings(
-        config: DictConfig,
-        paths_overlaps: List[str]) -> Tuple[np.ndarray, List[np.ndarray]]:
+    config: DictConfig,
+    paths_overlaps: List[str],
+) -> Tuple[npt.NDArray[np.int_], List[str]]:
     """Compute the Nonadibatic coupling.
 
     The coupling is computed sing a either 3-point approximation. See:
@@ -109,7 +116,9 @@ def lazy_couplings(
 
 
 def compute_the_fixed_phase_overlaps(
-        paths_overlaps: List[str], config: DictConfig) -> Tuple[np.ndarray, np.ndarray]:
+    paths_overlaps: List[str],
+    config: DictConfig,
+) -> Tuple[npt.NDArray[np.float64], npt.NDArray[np.int_]]:
     """Fix the phase of the overlaps.
 
     First track the unavoided crossings between Molecular orbitals and
@@ -241,7 +250,9 @@ def compute_phases(overlaps: Tensor3D, nCouplings: int,
 
 
 def track_unavoided_crossings(
-        overlaps: Tensor3D, nHOMO: int) -> Tuple[List[Matrix], np.ndarray]:
+    overlaps: npt.NDArray[np.float64],
+    nHOMO: int,
+) -> Tuple[npt.NDArray[np.float64], npt.NDArray[np.int_]]:
     """Track the index of the states if there is a crossing.
 
     It uses the algorithm  described at:
@@ -298,7 +309,10 @@ def track_unavoided_crossings(
     return overlaps, arr
 
 
-def swap_forward(overlaps: Tensor3D, swaps: np.ndarray) -> List[Matrix]:
+def swap_forward(
+    overlaps: npt.NDArray[np.float64],
+    swaps: npt.NDArray[np.integer],
+) -> npt.NDArray[np.float64]:
     """Track all the crossings that happend previous to the current time.
 
     Swap the index i corresponding to the ith Molecular orbital
@@ -386,7 +400,10 @@ def create_overlap_path(config: DictConfig, i: int) -> str:
 def select_molecules(config: DictConfig, i: int) -> Tuple[MolXYZ, MolXYZ]:
     """Select the pairs of molecules to compute the couplings."""
     k = 0 if config.overlaps_deph else i
-    return tuple(parse_string_xyz(config.geometries[idx]) for idx in (k, i + 1))
+    return (
+        parse_string_xyz(config.geometries[k]),
+        parse_string_xyz(config.geometries[i + 1]),
+    )
 
 
 def check_if_overlap_is_done(config: DictConfig, overlaps_paths_hdf5: str) -> bool:

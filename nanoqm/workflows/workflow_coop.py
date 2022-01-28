@@ -7,10 +7,13 @@ Index
     workflow_crystal_orbital_overlap_population
 
 """
+
+from __future__ import annotations
+
 __all__ = ['workflow_crystal_orbital_overlap_population']
 
 import logging
-from typing import List, Tuple
+from typing import Tuple, TYPE_CHECKING
 
 import numpy as np
 
@@ -22,11 +25,15 @@ from ..integrals.multipole_matrices import compute_matrix_multipole
 from .initialization import initialize
 from .tools import compute_single_point_eigenvalues_coefficients
 
+if TYPE_CHECKING:
+    from numpy.typing import NDArray
+    from numpy import float64 as f8, int64 as i8
+
 # Starting logger
 LOGGER = logging.getLogger(__name__)
 
 
-def workflow_crystal_orbital_overlap_population(config: DictConfig):
+def workflow_crystal_orbital_overlap_population(config: DictConfig) -> NDArray[f8]:
     """Compute the Crystal Orbital Overlap Population."""
     # Dictionary containing the general information
     config.update(initialize(config))
@@ -56,7 +63,8 @@ def workflow_crystal_orbital_overlap_population(config: DictConfig):
         atomic_orbitals,
         overlap_reduced,
         el_1_orbital_ind,
-        el_2_orbital_ind)
+        el_2_orbital_ind,
+    )
 
     # Lastly, we save the COOP as a txt-file
     result_coop = print_coop(energies, coop)
@@ -65,7 +73,7 @@ def workflow_crystal_orbital_overlap_population(config: DictConfig):
     return result_coop
 
 
-def get_eigenvalues_coefficients(config: DictConfig) -> Tuple[np.ndarray, np.ndarray]:
+def get_eigenvalues_coefficients(config: DictConfig) -> Tuple[NDArray[f8], NDArray[f8]]:
     """Retrieve eigenvalues and coefficients from hdf5 file."""
     # Define paths to eigenvalues and coefficients hdf5
     node_path_coefficients = 'coefficients/point_0/'
@@ -83,7 +91,9 @@ def get_eigenvalues_coefficients(config: DictConfig) -> Tuple[np.ndarray, np.nda
 
 
 def compute_overlap_and_atomic_orbitals(
-        mol: MolXYZ, config: DictConfig) -> Tuple[List[int], List[int], List[int]]:
+    mol: MolXYZ,
+    config: DictConfig,
+) -> Tuple[NDArray[i8], NDArray[i8], NDArray[f8]]:
     """Compute the indices of the atomic orbitals of the two selected elements.
 
     Computes the overlap matrix, containing only the elements related to those two elements.
@@ -107,18 +117,22 @@ def compute_overlap_and_atomic_orbitals(
 
     # Making a list of the indices of the atomic orbitals for each of the two
     # elements
-    atom_indices = np.zeros(len(mol) + 1, dtype='int')
+    atom_indices = np.zeros(len(mol) + 1, dtype=np.int64)
     atom_indices[1:] = np.cumsum(sphericals)
 
-    el_1_orbital_ind = [np.arange(sphericals[i]) + atom_indices[i] for i in element_1_index]
+    _el_1_orbital_ind = [
+        np.arange(sphericals[i], dtype=np.int64) + atom_indices[i] for i in element_1_index
+    ]
     el_1_orbital_ind = np.reshape(
-        el_1_orbital_ind,
+        _el_1_orbital_ind,
         len(element_1_index) * sphericals[element_1_index[0]],
     )
 
-    el_2_orbital_ind = [np.arange(sphericals[i]) + atom_indices[i] for i in element_2_index]
+    _el_2_orbital_ind = [
+        np.arange(sphericals[i], dtype=np.int64) + atom_indices[i] for i in element_2_index
+    ]
     el_2_orbital_ind = np.reshape(
-        el_2_orbital_ind,
+        _el_2_orbital_ind,
         len(element_2_index) * sphericals[element_2_index[0]],
     )
 
@@ -135,16 +149,17 @@ def compute_overlap_and_atomic_orbitals(
 
 
 def compute_coop(
-        atomic_orbitals: np.array,
-        overlap_reduced: np.array,
-        el_1_orbital_ind: np.array,
-        el_2_orbital_ind: np.array) -> np.ndarray:
+    atomic_orbitals: NDArray[f8],
+    overlap_reduced: NDArray[f8],
+    el_1_orbital_ind: NDArray[i8],
+    el_2_orbital_ind: NDArray[i8],
+) -> NDArray[f8]:
     """Define the function that computes the crystal orbital overlap population.
 
     Applying it to each column of the coefficent matrix.
     """
     # Define a function to be applied to each column of the coefficient matrix
-    def coop_func(column_of_coefficient_matrix: np.array):
+    def coop_func(column_of_coefficient_matrix: NDArray[f8]) -> NDArray[f8]:
         # Multiply each coefficient-product with the relevant overlap, and sum
         # everything
         return np.sum(
@@ -163,7 +178,7 @@ def compute_coop(
     return coop
 
 
-def print_coop(energies: np.ndarray, coop: np.ndarray) -> np.ndarray:
+def print_coop(energies: NDArray[f8], coop: NDArray[f8]) -> NDArray[f8]:
     """Save the COOP in a txt-file."""
     result_coop = np.zeros((len(coop), 2))
     result_coop[:, 0], result_coop[:, 1] = energies, coop

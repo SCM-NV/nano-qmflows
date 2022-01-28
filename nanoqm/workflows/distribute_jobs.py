@@ -25,6 +25,8 @@ own configuration in the yaml input file.
 
 """
 
+from __future__ import annotations
+
 import argparse
 import os
 import shutil
@@ -36,14 +38,13 @@ import numpy as np
 import yaml
 
 from qmflows import Settings
-from qmflows.type_hints import PathLike
 
 from ..common import DictConfig, read_cell_parameters_as_array, UniqueSafeLoader
 from .initialization import split_trajectory
 from .input_validation import process_input
 
 
-def read_cmd_line():
+def read_cmd_line() -> str:
     """Read the input file and the workflow name from the command line."""
     msg = "distribute_jobs.py -i input.yml"
 
@@ -55,7 +56,7 @@ def read_cmd_line():
     return args.i
 
 
-def main():
+def main() -> None:
     """Distribute the user specified by the user."""
     # command line argument
     input_file = read_cmd_line()
@@ -141,7 +142,7 @@ def distribute_computations(config: DictConfig, hamiltonians: bool = False) -> N
         accumulated_number_of_geometries += dim_batch
 
 
-def write_input(folder_path: PathLike, original_config: DictConfig) -> None:
+def write_input(folder_path: str | os.PathLike[str], original_config: DictConfig) -> None:
     """Write the python script to compute the PYXAID hamiltonians."""
     file_path = join(folder_path, "input.yml")
 
@@ -225,12 +226,12 @@ def format_slurm_parameters(slurm: Dict[str, str]) -> str:
         return ''.join((header, time, nodes, tasks, name, queue, modules))
 
 
-def compute_number_of_geometries(file_name: PathLike) -> int:
+def compute_number_of_geometries(file_name: str | os.PathLike[str]) -> int:
     """Count the number of geometries in XYZ formant in a given file."""
     with open(file_name, 'r') as f:
         numat = int(f.readline())
 
-    cmd = f"wc -l {file_name}"
+    cmd = f"wc -l {os.fspath(file_name)}"
     wc = subprocess.getoutput(cmd).split()[0]
 
     lines_per_geometry = numat + 2
