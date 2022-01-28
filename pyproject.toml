@@ -1,3 +1,31 @@
 [build-system]
 # Minimum requirements for the build system to execute.
 requires = ['Cython', 'setuptools', 'wheel', 'pybind11>=2.2.4']
+
+[[tool.mypy.overrides]]
+module = "scm.plams.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "h5py.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "scipy.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "pyparsing.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "noodles.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "schema.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "mendeleev.*"
+ignore_missing_imports = true

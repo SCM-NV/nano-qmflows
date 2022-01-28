@@ -1,14 +1,9 @@
 # Tests
 assertionlib
 codacy-coverage
-mypy
 pytest
 pytest-cov
 pytest-mock
-pytest-pycodestyle
-pytest-pydocstyle
-types-pyyaml
-types-pkg_resources
 Cython
 setuptools
 
