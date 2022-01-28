@@ -2,6 +2,10 @@
 # Minimum requirements for the build system to execute.
 requires = ['Cython', 'setuptools', 'wheel', 'pybind11>=2.2.4']
 
+[tool.mypy]
+mypy_path = "libint"
+files = ["nanoqm", "libint"]
+
 [[tool.mypy.overrides]]
 module = "scm.plams.*"
 ignore_missing_imports = true
