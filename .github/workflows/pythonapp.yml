@@ -148,7 +148,7 @@ jobs:
         run: pip list
 
       - name: Run pycodestyle
-        run: pycodestyle nanoqm
+        run: pycodestyle nanoqm test
 
       - name: Run pydocstyle
         run: pydocstyle nanoqm
