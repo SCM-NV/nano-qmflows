@@ -51,6 +51,16 @@ def merge(d1: Dict[str, Any], d2: Dict[str, Any]) -> Dict[str, Any]:
     return x
 
 
+def _parse_filenames(f: "None | str | list[str]") -> "None | list[str]":
+    """Helper function for sanitizing one or multiple filenames."""
+    if isinstance(f, str):
+        return [f]
+    elif f is None or (isinstance(f, list) and all(isinstance(i, str) for i in f)):
+        return f
+    else:
+        raise TypeError(type(f).__name__)
+
+
 #: Schema to validate the CP2K general settings
 schema_cp2k_general_settings = Schema({
 
@@ -80,6 +90,12 @@ schema_cp2k_general_settings = Schema({
 
     # Path to the folder containing the basis set specifications
     Optional("path_basis", default=pkg.resource_filename("nanoqm", "basis")): os.path.isdir,
+
+    # Name(s) of the basis set file(s) stored in ``path_basis``
+    Optional("basis_file_name", default=None): Use(_parse_filenames),
+
+    # Name(s) of the potential file(s) stored in ``path_basis``
+    Optional("potential_file_name", default=None): Use(_parse_filenames),
 
     # Settings describing the input of the quantum package
     "cp2k_settings_main": object,
