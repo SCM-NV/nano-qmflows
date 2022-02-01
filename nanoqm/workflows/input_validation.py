@@ -178,6 +178,12 @@ class InputSanitizer:
         """Add path to the basis and potential."""
         setts = [self.general[p] for p in ['cp2k_settings_main', 'cp2k_settings_guess']]
 
+        root = os.path.abspath(self.general['path_basis'])
+        if self.general['potential_file_name'] is not None:
+            names = [join(root, f) for f in self.general["potential_file_name"]]
+        else:
+            names = [join(root, "GTH_POTENTIALS")]
+
         # add basis and potential path
         if self.general["path_basis"] is not None:
             logger.info("path to basis added to cp2k settings")
@@ -188,9 +194,7 @@ class InputSanitizer:
                 # Do not overwrite explicitly specified CP2K settings
                 dft = x.specific.cp2k.force_eval.dft
                 if dft.get("potential_file_name") is None:
-                    dft["potential_file_name"] = os.path.abspath(join(
-                        self.general['path_basis'], "GTH_POTENTIALS"
-                    ))
+                    dft["potential_file_name"] = names
 
                 # Choose the file basis to use
                 self.select_basis_file(x)
@@ -202,17 +206,18 @@ class InputSanitizer:
         # Do not overwrite explicitly specified CP2K settings
         if dft.get("basis_set_file_name") is not None:
             return
-        else:
-            dft["basis_set_file_name"] = [
-                os.path.abspath(join(self.general['path_basis'], "BASIS_MOLOPT")),
-            ]
 
-        if dft.xc.get("xc_functional pbe") is None:
+        root = os.path.abspath(self.general['path_basis'])
+        if self.general['basis_file_name'] is not None:
+            dft["basis_set_file_name"] = [join(root, f) for f in self.general["basis_file_name"]]
+        else:
+            dft["basis_set_file_name"] = [join(root, "BASIS_MOLOPT")]
             # USE ADMM
-            dft["basis_set_file_name"].append(os.path.abspath(
-                join(self.general['path_basis'], "BASIS_ADMM_MOLOPT")))
-            dft["basis_set_file_name"].append(os.path.abspath(
-                join(self.general['path_basis'], "BASIS_ADMM")))
+            if dft.xc.get("xc_functional pbe") is None:
+                dft["basis_set_file_name"] += [
+                    join(root, "BASIS_ADMM_MOLOPT"),
+                    join(root, "BASIS_ADMM"),
+                ]
 
     def add_cell_parameters(self) -> None:
         """Add the Unit cell information to both the main and the guess settings."""

@@ -1,11 +1,14 @@
 """Test input validation functionality."""
 
+import os
+
 import yaml
 import pytest
 from qmflows import cp2k, run
 from qmflows.type_hints import PathLike
 from scm import plams
 
+import nanoqm
 from nanoqm.common import read_cell_parameters_as_array
 from nanoqm.workflows.input_validation import process_input, schema_workflows, InputSanitizer
 
@@ -36,6 +39,24 @@ class TestInputValidation:
 
         dft2 = s_output.cp2k_general_settings.cp2k_settings_main.specific.cp2k.force_eval.dft
         assert dft2[key] == "test"
+
+    @pytest.mark.parametrize("is_list", [True, False], ids=["list", "str"])
+    @pytest.mark.parametrize("key", ["potential_file_name", "basis_file_name"])
+    def test_basis_filename(self, key: str, is_list: bool) -> None:
+        with open(PATH_TEST / "input_test_pbe0.yml", "r") as f:
+            s = plams.Settings(yaml.load(f, Loader=yaml.SafeLoader))
+            dft1 = s.cp2k_general_settings[key] = ["a", "b", "c"] if is_list else "a"
+
+        s_output = schema_workflows["derivative_couplings"].validate(s)
+        InputSanitizer(s_output).sanitize()
+
+        root = os.path.join(nanoqm.__path__[0], "basis")
+        if is_list:
+            ref = [os.path.join(root, i) for i in ["a", "b", "c"]]
+        else:
+            ref = [os.path.join(root, "a")]
+        dft2 = s_output.cp2k_general_settings.cp2k_settings_main.specific.cp2k.force_eval.dft
+        assert dft2["basis_set_file_name" if key == "basis_file_name" else key] == ref
 
 
 @pytest.mark.skipif(
