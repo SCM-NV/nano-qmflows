@@ -194,7 +194,10 @@ epub_exclude_files = ['search.html']
 # -- Options for intersphinx extension ---------------------------------------
 
 # Example configuration for intersphinx: refer to the Python standard library.
-intersphinx_mapping = {'https://docs.python.org/': None}
+intersphinx_mapping = {
+    'python': ('https://docs.python.org/3/', None),
+    'qmflows': ('https://qmflows.readthedocs.io/en/latest/', None),
+}
 
 # -- Options for todo extension ----------------------------------------------
 
@@ -205,7 +208,15 @@ todo_include_todos = True
 # This is useful when some external dependencies are not met at build time and break the building process.
 # You may only specify the root package of the dependencies themselves and omit the sub-modules:
 autodoc_mock_imports = [
-    'rdkit',
     'h5py',
-    'Cython'
+    'qmflows',
+    'compute_integrals',
+    'mendeleev',
+    'scm',
+    'noodles',
+    'more_itertools',
+    'yaml',
+    'schema',
+    'numpy',
+    'scipy',
 ]

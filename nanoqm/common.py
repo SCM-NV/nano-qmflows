@@ -74,20 +74,25 @@ def concat(xss: Iterable) -> List[Any]:
 
 
 # ================> Constants <================
-#: Angstrom to a.u
-angs2au = 1e-10 / physical_constants['atomic unit of length'][0]
-#: from femtoseconds to au
-femtosec2au = 1e-15 / physical_constants['atomic unit of time'][0]
-#: hartrees to electronvolts
-h2ev = physical_constants['Hartree energy in eV'][0]
-#: conversion from rydberg to meV
-r2meV = 1e3 * physical_constants['Rydberg constant times hc in eV'][0]
-#: conversion from fs to cm-1
-fs_to_cm = 1e13 * physical_constants['hertz-inverse meter relationship'][0]
-#: conversion from fs to nm
-fs_to_nm = 299.79246
-#: planck constant in eV * fs
-hbar = 1e15 * physical_constants['Planck constant over 2 pi in eV s'][0]
+
+# Prevent a TypeError whenever scipy is mocked
+if isinstance(physical_constants['atomic unit of length'][0], float):
+    #: Angstrom to a.u
+    angs2au = 1e-10 / physical_constants['atomic unit of length'][0]
+    #: from femtoseconds to au
+    femtosec2au = 1e-15 / physical_constants['atomic unit of time'][0]
+    #: hartrees to electronvolts
+    h2ev = physical_constants['Hartree energy in eV'][0]
+    #: conversion from rydberg to meV
+    r2meV = 1e3 * physical_constants['Rydberg constant times hc in eV'][0]
+    #: conversion from fs to cm-1
+    fs_to_cm = 1e13 * physical_constants['hertz-inverse meter relationship'][0]
+    #: conversion from fs to nm
+    fs_to_nm = 299.79246
+    #: planck constant in eV * fs
+    hbar = 1e15 * physical_constants['Planck constant over 2 pi in eV s'][0]
+else:
+    angs2au = femtosec2au = h2ev = r2meV = fs_to_cm = fs_to_nm = hbar = 1.0
 
 # type hints
 MolXYZ = List[AtomXYZ]
