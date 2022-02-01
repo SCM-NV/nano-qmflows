@@ -184,8 +184,13 @@ class InputSanitizer:
             for x in setts:
                 x.basis = self.general['basis']
                 x.potential = self.general['potential']
-                x.specific.cp2k.force_eval.dft.potential_file_name = os.path.abspath(
-                    join(self.general['path_basis'], "GTH_POTENTIALS"))
+
+                # Do not overwrite explicitly specified CP2K settings
+                dft = x.specific.cp2k.force_eval.dft
+                if dft.get("potential_file_name") is None:
+                    dft["potential_file_name"] = os.path.abspath(join(
+                        self.general['path_basis'], "GTH_POTENTIALS"
+                    ))
 
                 # Choose the file basis to use
                 self.select_basis_file(x)
@@ -194,8 +199,13 @@ class InputSanitizer:
         """Choose the right basis set based on the potential and basis name."""
         dft = sett.specific.cp2k.force_eval.dft
 
-        dft["basis_set_file_name"] = [os.path.abspath(
-            join(self.general['path_basis'], "BASIS_MOLOPT"))]
+        # Do not overwrite explicitly specified CP2K settings
+        if dft.get("basis_set_file_name") is not None:
+            return
+        else:
+            dft["basis_set_file_name"] = [
+                os.path.abspath(join(self.general['path_basis'], "BASIS_MOLOPT")),
+            ]
 
         if dft.xc.get("xc_functional pbe") is None:
             # USE ADMM

@@ -1,24 +1,41 @@
 """Test input validation functionality."""
+
+import yaml
 import pytest
 from qmflows import cp2k, run
 from qmflows.type_hints import PathLike
 from scm import plams
 
 from nanoqm.common import read_cell_parameters_as_array
-from nanoqm.workflows.input_validation import process_input
+from nanoqm.workflows.input_validation import process_input, schema_workflows, InputSanitizer
 
 from .utilsTest import PATH_TEST, cp2k_available, remove_files
 
 
-def test_input_validation() -> None:
-    """Test the templates and keywords completion."""
-    path_input = PATH_TEST / "input_test_pbe0.yml"
-    dict_input = process_input(path_input, "derivative_couplings")
-    sett = dict_input['cp2k_general_settings']['cp2k_settings_guess']
+class TestInputValidation:
+    def test_basic(self) -> None:
+        """Test the templates and keywords completion."""
+        path_input = PATH_TEST / "input_test_pbe0.yml"
+        dict_input = process_input(path_input, "derivative_couplings")
+        sett = dict_input['cp2k_general_settings']['cp2k_settings_guess']
 
-    scale_x = sett.specific.cp2k.force_eval.dft.xc.xc_functional.pbe.scale_x
+        scale_x = sett.specific.cp2k.force_eval.dft.xc.xc_functional.pbe.scale_x
 
-    assert abs(scale_x - 0.75) < 1e-16
+        assert abs(scale_x - 0.75) < 1e-16
+
+    @pytest.mark.parametrize("key", ["potential_file_name", "basis_set_file_name"])
+    def test_filename_override(self, key: str) -> None:
+        """Test that filename overrides are respected."""
+        with open(PATH_TEST / "input_test_pbe0.yml", "r") as f:
+            s = plams.Settings(yaml.load(f, Loader=yaml.SafeLoader))
+            dft1 = s.cp2k_general_settings.cp2k_settings_main.specific.cp2k.force_eval.dft
+            dft1[key] = "test"
+
+        s_output = schema_workflows["derivative_couplings"].validate(s)
+        InputSanitizer(s_output).sanitize()
+
+        dft2 = s_output.cp2k_general_settings.cp2k_settings_main.specific.cp2k.force_eval.dft
+        assert dft2[key] == "test"
 
 
 @pytest.mark.skipif(
