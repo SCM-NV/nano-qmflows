@@ -161,13 +161,10 @@ class InputSanitizer:
 
     def compute_homo_index(self) -> int:
         """Compute the HOMO index."""
-        basis = self.general['basis']
         charge = self.general['charge']
         mol = Molecule(self.user_input["path_traj_xyz"], 'xyz')
 
-        number_of_electrons = sum(
-            valence_electrons['-'.join((at.symbol, basis))] for at in mol.atoms)
-
+        number_of_electrons = sum(valence_electrons[at.symbol] for at in mol.atoms)
         # Correct for total charge of the system
         number_of_electrons = number_of_electrons - charge
 
