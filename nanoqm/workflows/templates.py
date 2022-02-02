@@ -104,12 +104,12 @@ cp2k:
         periodic: "None"
     dft:
       xc:
-        xc_functional: 
-          mgga_x_r2scan: 
-          mgga_c_r2scan:  
+        xc_functional:
+          mgga_x_r2scan:
+          mgga_c_r2scan:
         xc_grid:
           xc_deriv: "spline3"
-          xc_smooth_rho: "None" 
+          xc_smooth_rho: "None"
       scf:
         eps_scf: 1e-6
         added_mos: 0
@@ -133,12 +133,12 @@ cp2k:
         periodic: "None"
     dft:
       xc:
-        xc_functional: 
-          mgga_x_r2scan: 
-          mgga_c_r2scan:  
+        xc_functional:
+          mgga_x_r2scan:
+          mgga_c_r2scan:
         xc_grid:
           xc_deriv: "spline3"
-          xc_smooth_rho: "None" 
+          xc_smooth_rho: "None"
       scf:
         eps_scf: 5e-4
         max_scf: 200
