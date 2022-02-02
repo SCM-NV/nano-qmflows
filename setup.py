@@ -162,7 +162,7 @@ setup(
         'schema',
         'pyyaml>=5.1',
         'plams>=1.5.1',
-        'qmflows>=0.11.1',
+        'qmflows>=0.11.0',
     ],
     cmdclass={'build_ext': BuildExt},
     ext_modules=[ext_pybind],
