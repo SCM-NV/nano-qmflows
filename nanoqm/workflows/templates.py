@@ -327,6 +327,18 @@ cp2k:
 """, Loader=UniqueSafeLoader))
 
 
+def generate_kinds(elements: Iterable[str], basis: str, potential: str) -> Settings:
+    """Generate the kind section for cp2k basis."""
+    s = Settings()
+    subsys = s.cp2k.force_eval.subsys
+    for e in elements:
+        q = valence_electrons[e]
+        subsys.kind[e]['basis_set'] = [f"{basis}-q{q}"]
+        subsys.kind[e]['potential'] = f"{potential}-q{q}"
+
+    return s
+
+
 #: available templates
 templates_dict = {
     "pbe_guess": cp2k_pbe_guess, "pbe_main": cp2k_pbe_main,
@@ -339,13 +351,17 @@ def create_settings_from_template(
         general: Dict[str, Any], template_name: str, path_traj_xyz: PathLike) -> Settings:
     """Create a job Settings using the name provided by the user."""
     setts = templates_dict[template_name]
+    elements = read_unique_atomic_labels(path_traj_xyz)
+
+    kinds = generate_kinds(elements, general['basis'], general['potential'])
+
     if 'pbe0' in template_name:
         s = Settings()
-        return generate_auxiliar_basis(setts + s, general['basis'], general['aux_fit'])
+        return generate_auxiliar_basis(setts + s + kinds, general['basis'], general['aux_fit'])
     elif 'hse06' in template_name:
-        return generate_auxiliar_basis(setts, general['basis'], general['aux_fit'])
+        return generate_auxiliar_basis(setts + kinds, general['basis'], general['aux_fit'])
     else:
-        return setts
+        return setts + kinds
 
 
 def read_unique_atomic_labels(path_traj_xyz: PathLike) -> FrozenSet[str]:

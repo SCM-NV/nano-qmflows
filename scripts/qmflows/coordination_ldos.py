@@ -12,6 +12,8 @@ from nanoCAT.recipes import coordination_number
 from qmflows import Settings, cp2k, run, templates
 from scm.plams import Molecule
 
+from nanoqm.workflows.templates import generate_kinds
+
 #: A nested dictonary
 NestedDict = Dict[str, Dict[int, List[int]]]
 
@@ -49,6 +51,14 @@ def create_cp2k_settings(mol: Molecule) -> Settings:
 
     # functional
     s.specific.cp2k.force_eval.dft.xc["xc_functional pbe"] = {}
+
+    # Generate kinds for the atom types
+    elements = [x.symbol for x in mol.atoms]
+    kinds = generate_kinds(elements, s.basis, s.potential)
+
+    # Update the setting with the kinds
+    s.specific = s.specific + kinds
+
     return s
 
 
