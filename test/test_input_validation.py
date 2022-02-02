@@ -58,6 +58,28 @@ class TestInputValidation:
         dft2 = s_output.cp2k_general_settings.cp2k_settings_main.specific.cp2k.force_eval.dft
         assert dft2["basis_set_file_name" if key == "basis_file_name" else key] == ref
 
+    def test_basis(self) -> None:
+        with open(PATH_TEST / "input_test_pbe0.yml", "r") as f:
+            s = plams.Settings(yaml.load(f, Loader=yaml.SafeLoader))
+            s.cp2k_general_settings.basis = "DZVP-MOLOPT-MGGA-GTH"
+            s.cp2k_general_settings.potential = "GTH-MGGA"
+
+        s_out = schema_workflows["derivative_couplings"].validate(s)
+        InputSanitizer(s_out).sanitize()
+
+        ref = {
+            "C": {
+                "basis_set": ["DZVP-MOLOPT-MGGA-GTH-q4", "AUX_FIT CFIT3"],
+                "potential": "GTH-MGGA-q4",
+            },
+            "H": {
+                "basis_set": ["DZVP-MOLOPT-MGGA-GTH-q1", "AUX_FIT CFIT3"],
+                "potential": "GTH-MGGA-q1",
+            },
+        }
+        kind = s_out.cp2k_general_settings.cp2k_settings_main.specific.cp2k.force_eval.subsys.kind
+        assert kind == ref
+
 
 @pytest.mark.skipif(
     not cp2k_available(), reason="CP2K is not install or not loaded")
