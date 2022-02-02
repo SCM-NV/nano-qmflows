@@ -92,6 +92,59 @@ cp2k:
         scf_guess: "restart"
 """, Loader=UniqueSafeLoader))
 
+#: Settings for a R2SCAN calculation to compute a guess wave function
+cp2k_scan_guess = Settings(yaml.load("""
+cp2k:
+  global:
+    run_type:
+      energy
+  force_eval:
+    subsys:
+      cell:
+        periodic: "None"
+    dft:
+      xc:
+        xc_functional: 
+           mgga_x_r2scan: 
+           mgga_c_r2scan:  
+        xc_grid:
+           xc_deriv: "spline3"
+           xc_smooth_rho: "None" 
+      scf:
+        eps_scf: 1e-6
+        added_mos: 0
+        scf_guess: "restart"
+        ot:
+          minimizer: "DIIS"
+          n_diis: 7
+          preconditioner: "FULL_SINGLE_INVERSE"
+""", Loader=UniqueSafeLoader))
+
+#: Settings for a R2SCAN calculation to compute the Molecular orbitals
+cp2k_scan_main = Settings(yaml.load("""
+cp2k:
+  global:
+    run_type:
+      energy
+
+  force_eval:
+    subsys:
+      cell:
+        periodic: "None"
+    dft:
+      xc:
+        xc_functional: 
+           mgga_x_r2scan: 
+           mgga_c_r2scan:  
+        xc_grid:
+           xc_deriv: "spline3"
+           xc_smooth_rho: "None" 
+      scf:
+        eps_scf: 5e-4
+        max_scf: 200
+        scf_guess: "restart"
+""", Loader=UniqueSafeLoader))
+
 #: Settings for a PBE0 calculation to compute a guess wave function
 cp2k_pbe0_guess = Settings(yaml.load("""
 cp2k:
@@ -342,6 +395,7 @@ def generate_kinds(elements: Iterable[str], basis: str, potential: str) -> Setti
 #: available templates
 templates_dict = {
     "pbe_guess": cp2k_pbe_guess, "pbe_main": cp2k_pbe_main,
+    "scan_guess": cp2k_scan_guess, "scan_main": cp2k_scan_main,
     "pbe0_guess": cp2k_pbe0_guess, "pbe0_main": cp2k_pbe0_main,
     "hse06_guess": cp2k_hse06_guess, "hse06_main": cp2k_hse06_main,
     "b3lyp_guess": cp2k_b3lyp_guess, "b3lyp_main": cp2k_b3lyp_main}
