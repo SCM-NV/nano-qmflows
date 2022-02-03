@@ -6,13 +6,14 @@ import yaml
 import pytest
 from qmflows import cp2k, run
 from qmflows.type_hints import PathLike
+from qmflows.packages.cp2k_package import CP2K_Result
 from scm import plams
 
 import nanoqm
 from nanoqm.common import read_cell_parameters_as_array
 from nanoqm.workflows.input_validation import process_input, schema_workflows, InputSanitizer
 
-from .utilsTest import PATH_TEST, cp2k_available, remove_files
+from .utilsTest import PATH_TEST, cp2k_available, remove_files, validate_status
 
 
 class TestInputValidation:
@@ -86,13 +87,14 @@ class TestInputValidation:
 def test_call_cp2k_pbe() -> None:
     """Check if the input for a PBE cp2k job is valid."""
     try:
-        results = run_plams(PATH_TEST / "input_test_pbe.yml")
-        assert (results is not None)
+        result = run_plams(PATH_TEST / "input_test_pbe.yml")
+        validate_status(result)
+        assert result.energy is not None
     finally:
         remove_files()
 
 
-def run_plams(path_input: PathLike) -> float:
+def run_plams(path_input: PathLike) -> CP2K_Result:
     """Call Plams to run a CP2K job."""
     # create settings
     dict_input = process_input(path_input, "derivative_couplings")
@@ -107,4 +109,4 @@ def run_plams(path_input: PathLike) -> float:
         # Run the job
     job = cp2k(sett, plams.Molecule(PATH_TEST / "C.xyz"))
 
-    return run(job.energy)
+    return run(job)
