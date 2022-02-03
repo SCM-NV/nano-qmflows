@@ -95,9 +95,16 @@ def initialize(config: DictConfig) -> DictConfig:
 
 def save_basis_to_hdf5(config: DictConfig) -> None:
     """Store the specification of the basis set in the HDF5 to compute the integrals."""
-    path_basis = pkg_resources.resource_filename("nanoqm", "basis/BASIS_MOLOPT")
-    if not is_data_in_hdf5(config.path_hdf5, path_basis):
-        store_cp2k_basis(config.path_hdf5, path_basis)
+    root: str = config['cp2k_general_settings']['path_basis']
+    files: "None | list[str]" = config['cp2k_general_settings']['basis_file_name']
+    if files is not None:
+        basis_paths = [os.path.join(root, i) for i in files]
+    else:
+        basis_paths = [os.path.join(root, "BASIS_MOLOPT")]
+
+    for path in basis_paths:
+        if not is_data_in_hdf5(config.path_hdf5, path):
+            store_cp2k_basis(config.path_hdf5, path)
 
 
 def store_cp2k_basis(path_hdf5: PathLike, path_basis: PathLike) -> None:
