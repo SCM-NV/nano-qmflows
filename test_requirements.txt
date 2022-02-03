@@ -6,6 +6,7 @@ pytest-cov
 pytest-mock
 Cython
 setuptools
+Nano-Utils>=2.0
 
 # Runtime dependencies
 h5py
