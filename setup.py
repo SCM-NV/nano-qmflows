@@ -175,6 +175,7 @@ setup(
             'pytest-mock',
             'Cython',
             'setuptools',
+            'Nano-Utils>=2.0',
         ],
         'doc': ['sphinx>=2.1', 'sphinx-autodoc-typehints', 'sphinx_rtd_theme', 'nbsphinx']
     },

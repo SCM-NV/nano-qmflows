@@ -1,24 +1,35 @@
 """Test that the path are created propery."""
 
+from __future__ import annotations
+
+import os
 from pathlib import Path
-from typing import Optional
+from typing import TYPE_CHECKING
+
+import h5py
+import pytest
 import yaml
+import pkg_resources as pkg
+from nanoutils import RecursiveKeysView
+from assertionlib import assertion
+from qmflows.parsers.cp2KParser import readCp2KBasis
 
-from nanoqm.common import UniqueSafeLoader
-from nanoqm.workflows.initialization import initialize
+from nanoqm.common import UniqueSafeLoader, DictConfig
+from nanoqm.workflows.initialization import initialize, save_basis_to_hdf5
 from nanoqm.workflows.input_validation import process_input
-from qmflows.type_hints import PathLike
-
 from .utilsTest import PATH_TEST
 
+if TYPE_CHECKING:
+    import _pytest
 
-def test_run_workflow(tmp_path: PathLike) -> None:
+
+def test_run_workflow(tmp_path: Path) -> None:
     """Check that all the paths are initialize."""
     create_config(tmp_path, True)
     create_config(tmp_path, False)
 
 
-def create_config(tmp_path: str, scrath_is_None: bool) -> str:
+def create_config(tmp_path: Path, scrath_is_None: bool) -> None:
     path = PATH_TEST / "input_fast_test_derivative_couplings.yml"
     with open(path, 'r') as f:
         inp = yaml.load(f, UniqueSafeLoader)
@@ -41,3 +52,56 @@ def create_config(tmp_path: str, scrath_is_None: bool) -> str:
     config = initialize(new_inp)
 
     assert Path(config.path_hdf5).exists()
+
+
+class TestSaveBasisToHDF5:
+    """Test ``save_basis_to_hdf5``."""
+
+    PARAM = {
+        "None": None,
+        "MOLOPT": ["BASIS_MOLOPT"],
+        "MOLOPT_UZH": ["BASIS_MOLOPT", "BASIS_MOLOPT_UZH"],
+    }
+
+    @pytest.fixture(scope="function", autouse=True, params=PARAM.items(), ids=PARAM, name="input")
+    def get_input(
+        self,
+        request: _pytest.fixtures.SubRequest,
+        tmp_path: Path,
+    ) -> tuple[DictConfig, set[str]]:
+        name, basis_file_name = request.param
+
+        # COnstruct the settings
+        hdf5_file = tmp_path / f"{name}.hdf5"
+        config = DictConfig(
+            path_hdf5=hdf5_file,
+            cp2k_general_settings=DictConfig(
+                path_basis=PATH_TEST,
+                basis_file_name=basis_file_name,
+            ),
+        )
+
+        # Ensure that a fresh .hdf5 is created
+        if os.path.isfile(hdf5_file):
+            os.remove(hdf5_file)
+        with h5py.File(hdf5_file, "w-") as f:
+            pass
+
+        # Construct a set with all keys that are supposed to be in the .hdf5 file
+        if basis_file_name is None:
+            proto_keys = readCp2KBasis(PATH_TEST / "BASIS_MOLOPT")[0]
+        else:
+            proto_keys = []
+            for name in basis_file_name:
+                proto_keys += readCp2KBasis(PATH_TEST / name)[0]
+        keys = {os.path.join("/cp2k/basis", xs.atom, xs.basis, "exponents") for xs in proto_keys}
+        keys |= {os.path.join("/cp2k/basis", xs.atom, xs.basis, "coefficients") for xs in proto_keys}
+        return config, keys
+
+    def test_pass(self, input: tuple[DictConfig, set[str]]) -> None:
+        config, ref = input
+
+        save_basis_to_hdf5(config)
+
+        with h5py.File(config.path_hdf5, "r") as f:
+            assertion.eq(RecursiveKeysView(f), ref)
