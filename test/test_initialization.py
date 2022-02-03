@@ -61,6 +61,7 @@ class TestSaveBasisToHDF5:
         "None": None,
         "MOLOPT": ["BASIS_MOLOPT"],
         "MOLOPT_UZH": ["BASIS_MOLOPT", "BASIS_MOLOPT_UZH"],
+        "ADMM": ["BASIS_MOLOPT", "BASIS_ADMM", "BASIS_ADMM_MOLOPT"],
     }
 
     @pytest.fixture(scope="function", autouse=True, params=PARAM.items(), ids=PARAM, name="input")
@@ -70,6 +71,8 @@ class TestSaveBasisToHDF5:
         tmp_path: Path,
     ) -> tuple[DictConfig, set[str]]:
         name, basis_file_name = request.param
+        if name == "ADMM":  # TODO
+            pytest.xfail("Basis sets consisting of multiple subsets aren't supported yet")
 
         # COnstruct the settings
         hdf5_file = tmp_path / f"{name}.hdf5"
