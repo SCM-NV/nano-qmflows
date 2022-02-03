@@ -106,7 +106,9 @@ cp2k:
       xc:
         xc_functional:
           mgga_x_r2scan:
+            scale: 1.0
           mgga_c_r2scan:
+            scale: 1.0
         xc_grid:
           xc_deriv: "spline3"
           xc_smooth_rho: "None"
@@ -135,7 +137,9 @@ cp2k:
       xc:
         xc_functional:
           mgga_x_r2scan:
+            scale: 1.0
           mgga_c_r2scan:
+            scale: 1.0
         xc_grid:
           xc_deriv: "spline3"
           xc_smooth_rho: "None"
