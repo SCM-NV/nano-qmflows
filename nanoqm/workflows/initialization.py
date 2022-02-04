@@ -14,6 +14,7 @@ API
 """
 __all__ = ['initialize', 'read_swaps', 'split_trajectory']
 
+import re
 import fnmatch
 import getpass
 import logging
@@ -110,6 +111,18 @@ def save_basis_to_hdf5(config: DictConfig) -> None:
 def store_cp2k_basis(path_hdf5: PathLike, path_basis: PathLike) -> None:
     """Read the CP2K basis set into an HDF5 file."""
     keys, vals = readCp2KBasis(path_basis)
+
+    # Ensure that basis sets are available both with and without the `-q([0-9]+)` prefix
+    pattern = re.compile("(.)-q([0-9]+)")
+    for k, v in zip(reversed(keys), reversed(vals)):
+        match = pattern.match(k.basis)
+        if match is None:
+            continue
+        k_new = k._replace(basis=match[1])
+        if k_new not in vals:
+            keys.append(k_new)
+            vals.append(v)
+
     node_paths_exponents = [
         join("cp2k/basis", xs.atom.lower(), xs.basis, "exponents") for xs in keys
     ]
