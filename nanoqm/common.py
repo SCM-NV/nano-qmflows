@@ -322,8 +322,9 @@ def number_spherical_functions_per_atom(
         mol: List[AtomXYZ], package_name: str, basis_name: str, path_hdf5: PathLike) -> np.ndarray:
     """Compute the number of spherical shells per atom."""
     with h5py.File(path_hdf5, 'r') as f5:
-        xs = [f5[f'{package_name}/basis/{atom[0]}/{basis_name}/coefficients']
-              for atom in mol]
+        iterator = ((at_tup[0], valence_electrons[at_tup[0].capitalize()]) for at_tup in mol)
+        xs = [f5[f'{package_name}/basis/{atom}/{basis_name}-q{q}/coefficients']
+              for atom, q in iterator]
         ys = [calc_orbital_Slabels(
             read_basis_format(path.attrs['basisFormat'])) for path in xs]
 
