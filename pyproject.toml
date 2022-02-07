@@ -3,6 +3,7 @@
 requires = ['Cython', 'setuptools', 'wheel', 'pybind11>=2.2.4']
 
 [tool.mypy]
+plugins = "numpy.typing.mypy_plugin"
 mypy_path = "libint"
 files = ["nanoqm", "libint"]
 
