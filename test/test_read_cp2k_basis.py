@@ -16,12 +16,12 @@ def test_read_cp2k_basis(tmp_path: PathLike) -> None:
     path_basis = pkg_resources.resource_filename(
         "nanoqm", "basis/BASIS_MOLOPT")
 
-    coefficients_format_carbon_DZVP_MOLOPT_GTH = '[2, 0, 2, 7, 2, 2, 1]'
+    coefficients_format_carbon_DZVP_MOLOPT_GTH = {'[2, 0, 2, 7, 2, 2, 1]', '(2, 0, 2, 7, 2, 2, 1)'}
     store_cp2k_basis(tmp_hdf5, path_basis)
 
     with h5py.File(tmp_hdf5, 'a') as f5:
         dset = f5["cp2k/basis/c/DZVP-MOLOPT-GTH/coefficients"]
         # Check that the format is store
-        assert dset.attrs['basisFormat'] == coefficients_format_carbon_DZVP_MOLOPT_GTH
+        assert dset.attrs['basisFormat'] in coefficients_format_carbon_DZVP_MOLOPT_GTH
         # Check Shape of the coefficients
         assert dset.shape == (5, 7)

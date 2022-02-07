@@ -87,18 +87,12 @@ class TestSaveBasisToHDF5:
         # Ensure that a fresh .hdf5 is created
         if os.path.isfile(hdf5_file):
             os.remove(hdf5_file)
-        with h5py.File(hdf5_file, "w-") as f:
+        with h5py.File(hdf5_file, "w-"):
             pass
 
         # Construct a set with all keys that are supposed to be in the .hdf5 file
-        if basis_file_name is None:
-            proto_keys = readCp2KBasis(PATH_TEST / "BASIS_MOLOPT")[0]
-        else:
-            proto_keys = []
-            for name in basis_file_name:
-                proto_keys += readCp2KBasis(PATH_TEST / name)[0]
-        keys = {os.path.join("/cp2k/basis", xs.atom, xs.basis, "exponents") for xs in proto_keys}
-        keys |= {os.path.join("/cp2k/basis", xs.atom, xs.basis, "coefficients") for xs in proto_keys}
+        with open(PATH_TEST / "test_initialization.yaml", "r") as f:
+            keys = set(yaml.load(f, Loader=yaml.SafeLoader)[name])
         return config, keys
 
     def test_pass(self, input: tuple[DictConfig, set[str]]) -> None:

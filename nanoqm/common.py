@@ -383,10 +383,8 @@ def funSlabels(data, label, fs):
 
 def read_basis_format(basis_format: str) -> List[int]:
     """Read the basis set using the specified format."""
-    s = basis_format.replace('[', '').split(']')[0]
-    fss = list(map(int, s.split(',')))
-    fss = fss[4:]  # cp2k coefficient formats start in column 5
-    return fss
+    fss = [int(i) for i in basis_format[1:-1].split(",")]
+    return fss[4:]  # cp2k coefficient formats start in column 5
 
 
 #: Ordering of the Spherical shells

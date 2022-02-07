@@ -18,6 +18,7 @@ using libint2::Operator;
 using libint2::Shell;
 using namd::CP2K_Basis_Atom;
 using namd::map_elements;
+using namd::valence_electrons;
 using namd::Matrix;
 using std::string;
 
@@ -305,7 +306,8 @@ CP2K_Basis_Atom read_basis_from_hdf5(const string &path_file,
     File file(path_file, File::ReadOnly);
 
     // build paths to the coefficients and exponents
-    string root = "cp2k/basis/" + symbol + "/" + basis;
+    int n_elec = valence_electrons.at(symbol);
+    string root = "cp2k/basis/" + symbol + "/" + basis + "-q" + std::to_string(n_elec);
     string path_coefficients = root + "/coefficients";
     string path_exponents = root + "/exponents";
 
