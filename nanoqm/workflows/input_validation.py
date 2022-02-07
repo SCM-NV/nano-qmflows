@@ -24,7 +24,7 @@ from scm.plams import Molecule
 from qmflows.settings import Settings
 from qmflows.type_hints import PathLike
 
-from ..common import DictConfig, UniqueSafeLoader
+from ..common import DictConfig, UniqueSafeLoader, valence_electrons
 from .schemas import (schema_absorption_spectrum, schema_coop,
                       schema_cp2k_general_settings,
                       schema_derivative_couplings,
@@ -32,7 +32,7 @@ from .schemas import (schema_absorption_spectrum, schema_coop,
                       schema_distribute_derivative_couplings,
                       schema_distribute_single_points, schema_ipr,
                       schema_single_points)
-from .templates import create_settings_from_template, valence_electrons
+from .templates import create_settings_from_template
 
 logger = logging.getLogger(__name__)
 

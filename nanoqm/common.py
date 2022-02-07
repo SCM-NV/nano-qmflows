@@ -25,15 +25,17 @@ API
 __all__ = ['DictConfig', 'Matrix', 'Tensor3D', 'Vector',
            'change_mol_units', 'getmass', 'h2ev', 'hardness',
            'number_spherical_functions_per_atom', 'retrieve_hdf5_data',
-           'is_data_in_hdf5', 'store_arrays_in_hdf5', 'UniqueSafeLoader']
-
+           'is_data_in_hdf5', 'store_arrays_in_hdf5', 'UniqueSafeLoader',
+           'valence_electrons', 'aux_fit']
 
 import os
+import json
 from itertools import chain, repeat
 from pathlib import Path
 from typing import (Any, Dict, Iterable, List, Mapping, NamedTuple, Tuple,
                     Union, overload)
 
+import pkg_resources as pkg
 import h5py
 import mendeleev
 import numpy as np
@@ -43,6 +45,15 @@ from qmflows.type_hints import PathLike
 from scm.plams import Atom, Molecule
 
 from qmflows.yaml_utils import UniqueSafeLoader
+
+
+_path_valence_electrons = pkg.resource_filename(
+    "nanoqm", "basis/valence_electrons.json")
+_path_aux_fit = pkg.resource_filename("nanoqm", "basis/aux_fit.json")
+
+with open(_path_valence_electrons, 'r') as f1, open(_path_aux_fit, 'r') as f2:
+    valence_electrons: "dict[str, int]" = json.load(f1)
+    aux_fit: "dict[str, list[int]]" = json.load(f2)
 
 
 class DictConfig(dict):

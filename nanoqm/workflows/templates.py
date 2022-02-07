@@ -10,26 +10,13 @@ Index
 
 __all__ = ["create_settings_from_template"]
 
-import json
-import os
-from os.path import join
-
-import pkg_resources as pkg
 import yaml
 from scm.plams import Molecule
 
 from qmflows.settings import Settings
 from qmflows.type_hints import PathLike
-from nanoqm.common import UniqueSafeLoader
+from nanoqm.common import UniqueSafeLoader, valence_electrons, aux_fit
 from typing import Any, Dict, Iterable, FrozenSet
-
-path_valence_electrons = pkg.resource_filename(
-    "nanoqm", "basis/valence_electrons.json")
-path_aux_fit = pkg.resource_filename("nanoqm", "basis/aux_fit.json")
-
-with open(path_valence_electrons, 'r') as f1, open(path_aux_fit, 'r') as f2:
-    valence_electrons: "dict[str, int]" = json.load(f1)
-    aux_fit: "dict[str, list[int]]" = json.load(f2)
 
 
 def generate_auxiliar_basis(
