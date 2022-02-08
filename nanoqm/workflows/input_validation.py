@@ -264,6 +264,8 @@ class InputSanitizer:
 
     def add_functional_x(self) -> None:
         """Add the keyword for the exchange part of the DFT functional: GGA or MGGA"""
+        if self.general['functional_x'] is None:
+            return
         for s in (
             self.general[p] for p in [
                 'cp2k_settings_main',
@@ -272,6 +274,8 @@ class InputSanitizer:
 
     def add_functional_c(self) -> None:
         """Add the keyword for the correlation part of the DFT functional: GGA or MGGA"""
+        if self.general['functional_c'] is None:
+            return
         for s in (
             self.general[p] for p in [
                 'cp2k_settings_main',
