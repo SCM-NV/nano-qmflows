@@ -35,6 +35,7 @@ def generate_auxiliar_basis(
 
     return sett
 
+
 #: Settings for a PBE calculation to compute a guess wave function
 cp2k_guess = Settings(yaml.load("""
 cp2k:

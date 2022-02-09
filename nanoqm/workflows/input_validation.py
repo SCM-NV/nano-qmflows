@@ -263,24 +263,24 @@ class InputSanitizer:
                 s.specific.cp2k.force_eval.dft.uks = ""
 
     def add_functional_x(self) -> None:
-        """Add the keyword for the exchange part of the DFT functional: GGA or MGGA"""
+        """Add the keyword for the exchange part of the DFT functional: GGA or MGGA."""
         if self.general['functional_x'] is None:
             return
         for s in (
             self.general[p] for p in [
                 'cp2k_settings_main',
                 'cp2k_settings_guess']):
-            s.specific.cp2k.force_eval.dft.xc.xc_functional[self.general['functional_x']] = {} 
+            s.specific.cp2k.force_eval.dft.xc.xc_functional[self.general['functional_x']] = {}
 
     def add_functional_c(self) -> None:
-        """Add the keyword for the correlation part of the DFT functional: GGA or MGGA"""
+        """Add the keyword for the correlation part of the DFT functional: GGA or MGGA."""
         if self.general['functional_c'] is None:
             return
         for s in (
             self.general[p] for p in [
                 'cp2k_settings_main',
                 'cp2k_settings_guess']):
-            s.specific.cp2k.force_eval.dft.xc.xc_functional[self.general['functional_c']] = {} 
+            s.specific.cp2k.force_eval.dft.xc.xc_functional[self.general['functional_c']] = {}
 
     def add_restart_point(self) -> None:
         """Add a restart file if the user provided it."""

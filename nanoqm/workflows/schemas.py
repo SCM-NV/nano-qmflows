@@ -102,7 +102,7 @@ schema_cp2k_general_settings = Schema({
 
     # Name(s) of the correlation part of the DFT functional`
     Optional("functional_c", default=None): str,
- 
+
     # Settings describing the input of the quantum package
     "cp2k_settings_main": object,
 
