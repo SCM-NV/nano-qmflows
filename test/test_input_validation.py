@@ -81,6 +81,29 @@ class TestInputValidation:
         kind = s_out.cp2k_general_settings.cp2k_settings_main.specific.cp2k.force_eval.subsys.kind
         assert kind == ref
 
+    @pytest.mark.parametrize("functional_c", [True, False])
+    @pytest.mark.parametrize("functional_x", [True, False])
+    def test_functional(self, functional_c: bool, functional_x: bool) -> None:
+        with open(PATH_TEST / "input_test_pbe0.yml", "r") as f:
+            s = plams.Settings(yaml.load(f, Loader=yaml.SafeLoader))
+            s.cp2k_general_settings.cp2k_settings_main.specific.template = "main"
+            if functional_c:
+                s.cp2k_general_settings["functional_c"] = "GGA_C_LYP"
+            if functional_x:
+                s.cp2k_general_settings["functional_x"] = "GGA_X_OL2"
+
+        s_out = schema_workflows["derivative_couplings"].validate(s)
+        InputSanitizer(s_out).sanitize()
+
+        ref = {}
+        if functional_c:
+            ref["GGA_C_LYP"] = {}
+        if functional_x:
+            ref["GGA_X_OL2"] = {}
+
+        dft = s_out.cp2k_general_settings.cp2k_settings_main.specific.cp2k.force_eval.dft
+        assert dft.xc.xc_functional == ref
+
 
 @pytest.mark.skipif(
     not cp2k_available(), reason="CP2K is not install or not loaded")
