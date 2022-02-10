@@ -159,6 +159,12 @@ class InputSanitizer:
         # Add multiplicity
         self.add_multiplicity()
 
+        # Add DFT exchange part
+        self.add_functional_x()
+
+        # Add DFT correlation part
+        self.add_functional_c()
+
     def compute_homo_index(self) -> int:
         """Compute the HOMO index."""
         charge = self.general['charge']
@@ -255,6 +261,26 @@ class InputSanitizer:
                     self.general[p] for p in ('cp2k_settings_main', 'cp2k_settings_guess')):
                 s.specific.cp2k.force_eval.dft.multiplicity = self.general['multiplicity']
                 s.specific.cp2k.force_eval.dft.uks = ""
+
+    def add_functional_x(self) -> None:
+        """Add the keyword for the exchange part of the DFT functional: GGA or MGGA."""
+        if self.general['functional_x'] is None:
+            return
+        for s in (
+            self.general[p] for p in [
+                'cp2k_settings_main',
+                'cp2k_settings_guess']):
+            s.specific.cp2k.force_eval.dft.xc.xc_functional[self.general['functional_x']] = {}
+
+    def add_functional_c(self) -> None:
+        """Add the keyword for the correlation part of the DFT functional: GGA or MGGA."""
+        if self.general['functional_c'] is None:
+            return
+        for s in (
+            self.general[p] for p in [
+                'cp2k_settings_main',
+                'cp2k_settings_guess']):
+            s.specific.cp2k.force_eval.dft.xc.xc_functional[self.general['functional_c']] = {}
 
     def add_restart_point(self) -> None:
         """Add a restart file if the user provided it."""
