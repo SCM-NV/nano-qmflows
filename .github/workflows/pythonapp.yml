@@ -8,7 +8,7 @@ on:
 
 jobs:
   test:
-    name: Test ${{ matrix.os }}; py ${{ matrix.python-version }}; CP2K ${{ matrix.cp2k }}; gcc ${{ matrix.gcc }}
+    name: ${{ matrix.os }}; py ${{ matrix.python-version }}; CP2K ${{ matrix.cp2k }}; gcc ${{ matrix.gcc }}; pre-release ${{ matrix.pre_release }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -17,35 +17,48 @@ jobs:
         python-version: ["3.9"]
         gcc: [7, 8, 9, 10, 11]
         cp2k: ["8.2"]
+        pre_release: [false]
         include:
           - os: ubuntu-latest
             python-version: "3.8"
             gcc: default
             cp2k: "8.2"
+            pre_release: False
           - os: ubuntu-latest
             python-version: "3.10"
             gcc: default
             cp2k: "8.2"
+            pre_release: False
           - os: ubuntu-18.04
             python-version: "3.9"
             gcc: 5
             cp2k: "8.2"
+            pre_release: False
           - os: ubuntu-18.04
             python-version: "3.9"
             gcc: 6
             cp2k: "8.2"
+            pre_release: False
           - os: ubuntu-latest
             python-version: "3.9"
             gcc: default
             cp2k: "6.1"
+            pre_release: False
           - os: ubuntu-latest
             python-version: "3.9"
             gcc: default
             cp2k: "7.1"
+            pre_release: False
           - os: ubuntu-latest
             python-version: "3.9"
             gcc: default
             cp2k: "9.1"
+            pre_release: False
+          - os: ubuntu-latest
+            python-version: "3.9"
+            gcc: "default"
+            cp2k: "8.2"
+            pre_release: True
     env:
       CP2K_DATA_DIR: /usr/share/cp2k/data
 
@@ -100,7 +113,17 @@ jobs:
         esac
 
         source $CONDA/bin/activate test
-        pip install -r ./test_requirements.txt
+        case "${{ matrix.pre_release }}" in
+          "True")
+            pip install --pre -r ./test_requirements.txt --upgrade --force-reinstall
+            pip install git+https://github.com/SCM-NV/qmflows@master --upgrade
+            pip install git+https://github.com/SCM-NV/PLAMS@master --upgrade
+            pip install git+https://github.com/NLeSC/noodles@master --upgrade
+            ;;
+          *)
+            pip install -r ./test_requirements.txt
+            ;;
+        esac
 
     - name: Conda info
       run: |
