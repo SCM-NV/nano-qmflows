@@ -144,6 +144,7 @@ setup(
     classifiers=[
         'License :: OSI Approved :: Apache Software License',
         'Natural Language :: English',
+        'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
         'Programming Language :: Python :: 3.10',
@@ -165,6 +166,7 @@ setup(
         'qmflows>=0.11.2',
     ],
     cmdclass={'build_ext': BuildExt},
+    python_requires='>=3.7',
     ext_modules=[ext_pybind],
     extras_require={
         'test': [

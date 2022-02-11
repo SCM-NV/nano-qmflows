@@ -12,6 +12,8 @@ API
 
 """
 
+from __future__ import annotations
+
 import fnmatch
 import logging
 import os
@@ -23,13 +25,13 @@ from noodles import schedule  # Workflow Engine
 from qmflows import Settings, cp2k, templates
 from qmflows.packages.cp2k_package import CP2K, CP2K_Result
 from qmflows.parsers.xyzParser import string_to_plams_Molecule
-from qmflows.type_hints import PathLike, PromisedObject
+from qmflows.type_hints import PromisedObject
 
 # Starting logger
 logger = logging.getLogger(__name__)
 
 
-def try_to_read_wf(path_dir: PathLike) -> PathLike:
+def try_to_read_wf(path_dir: str | os.PathLike[str]) -> str:
     """Try to get a wave function file from ``path_dir``.
 
     Returns
@@ -48,7 +50,7 @@ def try_to_read_wf(path_dir: PathLike) -> PathLike:
     if files:
         return join(path_dir, files[0])
     else:
-        msg = f"There are no wave function file in path:{path_dir}\n"
+        msg = f"There are no wave function file in path: {os.fspath(path_dir)!r}\n"
         msg += print_cp2k_error(path_dir, "err")
         msg += print_cp2k_error(path_dir, "out")
         raise RuntimeError(msg)
@@ -80,8 +82,10 @@ def prepare_cp2k_settings(
     settings.specific.cp2k['global']['project'] = f'point_{dict_input["k"]}'
 
     if guess_job is not None:
-        dft.wfn_restart_file_name = try_to_read_wf(
-            guess_job.archive['plams_dir'])
+        plams_dir = guess_job.archive['plams_dir']
+        if plams_dir is None:
+            raise RuntimeError(f"There are no wave function file in path: None\n")
+        dft.wfn_restart_file_name = try_to_read_wf(plams_dir)
 
     input_args = templates.singlepoint.overlay(settings)
 
@@ -120,7 +124,7 @@ def prepare_job_cp2k(
         work_dir=dict_input['point_dir'])
 
 
-def print_cp2k_error(path_dir: PathLike, prefix: str) -> str:
+def print_cp2k_error(path_dir: str | os.PathLike[str], prefix: str) -> str:
     """Search for error in the CP2K output files."""
     err_file = next(Path(path_dir).glob(f"*{prefix}"), None)
     msg = ""

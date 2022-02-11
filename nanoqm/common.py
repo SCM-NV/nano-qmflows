@@ -22,6 +22,8 @@ API
 
 """
 
+from __future__ import annotations
+
 __all__ = ['DictConfig', 'Matrix', 'Tensor3D', 'Vector',
            'change_mol_units', 'getmass', 'h2ev', 'hardness',
            'number_spherical_functions_per_atom', 'retrieve_hdf5_data',
@@ -31,9 +33,8 @@ __all__ = ['DictConfig', 'Matrix', 'Tensor3D', 'Vector',
 import os
 import json
 from itertools import chain, repeat
-from pathlib import Path
 from typing import (Any, Dict, Iterable, List, Mapping, NamedTuple, Tuple,
-                    Union, overload)
+                    Sequence, overload, TypeVar, TYPE_CHECKING, Iterator)
 
 import pkg_resources as pkg
 import h5py
@@ -46,6 +47,10 @@ from scm.plams import Atom, Molecule
 
 from qmflows.yaml_utils import UniqueSafeLoader
 
+if TYPE_CHECKING:
+    import numpy.typing as npt
+
+_T = TypeVar("_T")
 
 _path_valence_electrons = pkg.resource_filename(
     "nanoqm", "basis/valence_electrons.json")
@@ -56,18 +61,18 @@ with open(_path_valence_electrons, 'r') as f1, open(_path_aux_fit, 'r') as f2:
     aux_fit: "dict[str, list[int]]" = json.load(f2)
 
 
-class DictConfig(dict):
+class DictConfig(Dict[str, Any]):
     """Class to extend the Dict class with `.` dot notation."""
 
-    def __getattr__(self, attr):
+    def __getattr__(self, attr: str) -> Any:
         """Extract key using dot notation."""
         return self.get(attr)
 
-    def __setattr__(self, key, value):
+    def __setattr__(self, key: str, value: Any) -> None:
         """Set value using dot notation."""
         self.__setitem__(key, value)
 
-    def __deepcopy__(self, _):
+    def __deepcopy__(self, _: object) -> "DictConfig":
         """Deepcopy of the Settings object."""
         return DictConfig(self.copy())
 
@@ -79,7 +84,7 @@ class BasisFormats(NamedTuple):
     value: List[str]
 
 
-def concat(xss: Iterable) -> List[Any]:
+def concat(xss: Iterable[Iterable[_T]]) -> List[_T]:
     """Concatenate of all the elements of a list."""
     return list(chain(*xss))
 
@@ -110,14 +115,6 @@ MolXYZ = List[AtomXYZ]
 Vector = np.ndarray
 Matrix = np.ndarray
 Tensor3D = np.ndarray
-
-
-def path_to_posix(path: Union[str, Path]) -> str:
-    """Convert a Path to posix string."""
-    if isinstance(path, Path):
-        return path.absolute().as_posix()
-    else:
-        return path
 
 
 def getmass(s: str) -> int:
@@ -175,16 +172,19 @@ def xc(s: str) -> Dict[str, Any]:
 
 
 @overload
-def retrieve_hdf5_data(path_hdf5: Union[str, Path], paths_to_prop: str) -> np.ndarray:
+def retrieve_hdf5_data(path_hdf5: str | os.PathLike[str], paths_to_prop: str) -> npt.NDArray[Any]:
     ...
 
 
 @overload
-def retrieve_hdf5_data(path_hdf5: Union[str, Path], paths_to_prop: List[str]) -> List[np.ndarray]:
+def retrieve_hdf5_data(path_hdf5: str | os.PathLike[str], paths_to_prop: List[str]) -> List[npt.NDArray[Any]]:
     ...
 
 
-def retrieve_hdf5_data(path_hdf5, paths_to_prop):
+def retrieve_hdf5_data(
+    path_hdf5: str | os.PathLike[str],
+    paths_to_prop: str | list[str],
+) -> npt.NDArray[Any] | list[npt.NDArray[Any]]:
     """Read Numerical properties from ``paths_hdf5``.
 
     Parameters
@@ -205,7 +205,7 @@ def retrieve_hdf5_data(path_hdf5, paths_to_prop):
         The property has not been found
 
     """
-    path_hdf5 = path_to_posix(path_hdf5)
+    path_hdf5 = os.fspath(path_hdf5)
     try:
         with h5py.File(path_hdf5, 'r') as f5:
             if isinstance(paths_to_prop, list):
@@ -220,7 +220,7 @@ def retrieve_hdf5_data(path_hdf5, paths_to_prop):
         raise RuntimeError(msg)
 
 
-def is_data_in_hdf5(path_hdf5: Union[str, Path], xs: Union[str, List[str]]) -> bool:
+def is_data_in_hdf5(path_hdf5: str | os.PathLike[str], xs: str | List[str]) -> bool:
     """Search if the node exists in the HDF5 file.
 
     Parameters
@@ -236,7 +236,7 @@ def is_data_in_hdf5(path_hdf5: Union[str, Path], xs: Union[str, List[str]]) -> b
         Whether the data is stored
 
     """
-    path_hdf5 = path_to_posix(path_hdf5)
+    path_hdf5 = os.fspath(path_hdf5)
     if os.path.exists(path_hdf5):
         with h5py.File(path_hdf5, 'r+') as f5:
             if isinstance(xs, list):
@@ -247,22 +247,13 @@ def is_data_in_hdf5(path_hdf5: Union[str, Path], xs: Union[str, List[str]]) -> b
         return False
 
 
-@overload
 def store_arrays_in_hdf5(
-        path_hdf5: PathLike, paths: str, tensor: np.ndarray,
-        dtype: float = np.float32, attribute: Union[BasisFormats, None] = None) -> None:
-    ...
-
-
-@overload
-def store_arrays_in_hdf5(
-    path_hdf5: PathLike, paths: List[str], tensor: np.ndarray,
-        dtype: float = np.float32, attribute: Union[BasisFormats, None] = None) -> None:
-    ...
-
-
-def store_arrays_in_hdf5(
-        path_hdf5, paths, tensor, dtype=np.float32, attribute=None):
+    path_hdf5: PathLike,
+    paths: str | List[str],
+    tensor: np.ndarray | Sequence[np.ndarray],
+    dtype: npt.DTypeLike = np.float32,
+    attribute: BasisFormats | None = None,
+) -> None:
     """Store a tensor in the HDF5.
 
     Parameters
@@ -279,7 +270,7 @@ def store_arrays_in_hdf5(
         Attribute associated with the tensor
 
     """
-    path_hdf5 = path_to_posix(path_hdf5)
+    path_hdf5 = os.fspath(path_hdf5)
 
     def add_attribute(data_set, k: int = 0):
         if attribute is not None:
@@ -303,7 +294,7 @@ def change_mol_units(mol: List[AtomXYZ], factor: float = angs2au) -> List[AtomXY
     new_molecule = []
     for atom in mol:
         coord = tuple(map(lambda x: x * factor, atom.xyz))
-        new_molecule.append(AtomXYZ(atom.symbol, coord))
+        new_molecule.append(AtomXYZ(atom.symbol, coord))  # type: ignore[arg-type]
     return new_molecule
 
 
@@ -319,7 +310,11 @@ def tuplesXYZ_to_plams(xs: List[AtomXYZ]) -> Molecule:
 
 
 def number_spherical_functions_per_atom(
-        mol: List[AtomXYZ], package_name: str, basis_name: str, path_hdf5: PathLike) -> np.ndarray:
+    mol: List[AtomXYZ],
+    package_name: str,
+    basis_name: str,
+    path_hdf5: PathLike,
+) -> npt.NDArray[np.int_]:
     """Compute the number of spherical shells per atom."""
     with h5py.File(path_hdf5, 'r') as f5:
         iterator = ((at_tup[0], valence_electrons[at_tup[0].capitalize()]) for at_tup in mol)
@@ -331,17 +326,7 @@ def number_spherical_functions_per_atom(
         return np.stack([sum(len(x) for x in ys[i]) for i in range(len(mol))])
 
 
-@overload
-def calc_orbital_Slabels(fss: List[int]) -> List[Tuple[str, ...]]:
-    ...
-
-
-@overload
-def calc_orbital_Slabels(fss: List[List[int]]) -> List[Tuple[str, ...]]:
-    ...
-
-
-def calc_orbital_Slabels(fss):
+def calc_orbital_Slabels(fss: List[int] | List[List[int]]) -> List[Tuple[str, ...]]:
     """Compute the spherical CGFs for a given basis set.
 
     Most quantum packages use standard basis set which contraction is
@@ -371,26 +356,20 @@ def calc_orbital_Slabels(fss):
 
     """
     angular_momentum = ['s', 'p', 'd', 'f', 'g']
-    return concat([funSlabels(dict_cp2k_order_sphericals, label, fs)
+    return concat([funSlabels(dict_cp2k_order_sphericals, label, fs)  # type: ignore[arg-type]
                    for label, fs in zip(angular_momentum, fss)])
 
 
-@overload
-def funSlabels(d: Mapping[str, Tuple[str, ...]], label: str, fs: int) -> List[Tuple[str, ...]]:
-    ...
-
-
-@overload
-def funSlabels(d: Mapping[str, Tuple[str, ...]], label: str, fs: List[int]) -> List[Tuple[str, ...]]:
-    ...
-
-
-def funSlabels(data, label, fs):
+def funSlabels(
+    data: Mapping[str, Tuple[str, ...]],
+    label: str,
+    fs: int | List[int],
+) -> Iterator[Tuple[str, ...]]:
     """Search for the spherical functions for each orbital type `label`."""
     if isinstance(fs, list):
-        fs = sum(fs)
-    labels = repeat(data[label], fs)
-    return labels
+        return repeat(data[label], sum(fs))
+    else:
+        return repeat(data[label], fs)
 
 
 def read_basis_format(basis_format: str) -> List[int]:
@@ -408,7 +387,9 @@ dict_cp2k_order_sphericals: Mapping[str, Tuple[str, ...]] = {
 }
 
 
-def read_cell_parameters_as_array(file_cell_parameters: PathLike) -> Tuple[str, np.ndarray]:
+def read_cell_parameters_as_array(
+    file_cell_parameters: str | os.PathLike[str],
+) -> Tuple[str, npt.NDArray[np.float64]]:
     """Read the cell parameters as a numpy array."""
     arr = np.loadtxt(file_cell_parameters, skiprows=1)
 

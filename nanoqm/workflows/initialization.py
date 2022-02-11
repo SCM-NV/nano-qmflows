@@ -12,6 +12,9 @@ API
 .. autofunction:: split_trajectory
 
 """
+
+from __future__ import annotations
+
 __all__ = ['initialize', 'read_swaps', 'split_trajectory']
 
 import fnmatch
@@ -156,7 +159,7 @@ def read_swaps(path_hdf5: Union[str, Path], project_name: str) -> Matrix:
         raise RuntimeError(msg)
 
 
-def split_trajectory(path: PathLike, nblocks: int, pathOut: PathLike) -> List[str]:
+def split_trajectory(path: str | Path, nblocks: int, pathOut: str | os.PathLike[str]) -> List[str]:
     """Split an XYZ trajectory in n Block and write them in a given path.
 
     Parameters
@@ -224,6 +227,6 @@ def log_config(config: DictConfig) -> None:
     logger.info(f"Data will be stored in HDF5 file: {config.path_hdf5}")
 
 
-def create_path_option(path: str) -> Union[Path, None]:
+def create_path_option(path: str | os.PathLike[str]) -> Path | None:
     """Create a Path object or return None if path is None."""
     return Path(path) if path is not None else None

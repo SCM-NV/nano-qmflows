@@ -7,11 +7,14 @@ Index
     workflow_stddft
 
 """
+
+from __future__ import annotations
+
 __all__ = ['workflow_stddft']
 
 import logging
 from os.path import join
-from typing import Tuple
+from typing import Tuple, TYPE_CHECKING
 
 import numpy as np
 from scipy.linalg import sqrtm
@@ -27,6 +30,10 @@ from ..common import (DictConfig, angs2au, change_mol_units, h2ev, hardness,
 from ..integrals.multipole_matrices import get_multipole_matrix
 from ..schedule.components import calculate_mos
 from .orbitals_type import select_orbitals_type
+
+if TYPE_CHECKING:
+    from numpy.typing import NDArray
+    from numpy import float64 as f8
 
 # Starting logger
 logger = logging.getLogger(__name__)
@@ -104,7 +111,7 @@ def compute_excited_states_tddft(
 
 
 def get_omega_xia(
-        config: DictConfig, dict_input: DictConfig) -> Tuple[np.ndarray, np.ndarray]:
+        config: DictConfig, dict_input: DictConfig) -> Tuple[NDArray[f8], NDArray[f8]]:
     """Search for the multipole_matrices, Omega and xia values in the HDF5.
 
     if they are not available compute and store them.
@@ -129,7 +136,8 @@ def get_omega_xia(
     paths_omega_xia = [join(x, point) for x in ("omega", "xia")]
 
     if is_data_in_hdf5(config.path_hdf5, paths_omega_xia):
-        return tuple(retrieve_hdf5_data(config.path_hdf5, paths_omega_xia))
+        ret = retrieve_hdf5_data(config.path_hdf5, paths_omega_xia)
+        return ret[0], ret[1]
 
     else:
         omega, xia = compute_omega_xia()
@@ -141,7 +149,7 @@ def get_omega_xia(
         return omega, xia
 
 
-def compute_sing_orb(inp: DictConfig) -> Tuple[np.ndarray, np.ndarray]:
+def compute_sing_orb(inp: DictConfig) -> Tuple[NDArray[f8], NDArray[f8]]:
     """Compute the Single Orbital approximation."""
     energy, nocc, nvirt = tuple(inp[x]for x in ("energy", "nocc", "nvirt"))
     omega = -np.subtract(
@@ -152,7 +160,7 @@ def compute_sing_orb(inp: DictConfig) -> Tuple[np.ndarray, np.ndarray]:
 
 
 def compute_std_aproximation(
-        config: DictConfig, dict_input: DictConfig) -> Tuple[np.ndarray, np.ndarray]:
+        config: DictConfig, dict_input: DictConfig) -> Tuple[NDArray[f8], NDArray[f8]]:
     """Compute the oscillator strenght using either the stda or stddft approximations."""
     logger.info("Reading or computing the dipole matrices")
 
@@ -343,12 +351,12 @@ def write_output_descriptors(
     return ex_output
 
 
-def get_omega(d0I_ao, s, n_lowest):
+def get_omega(d0I_ao: NDArray[f8], s, n_lowest: int) -> NDArray[f8]:
     """TODO: add Documentation."""
-    return np.stack(
-        np.trace(
-            np.linalg.multi_dot([d0I_ao[i, :, :].T, s, d0I_ao[i, :, :], s]))
-        for i in range(n_lowest))
+    return np.stack([
+        np.trace(np.linalg.multi_dot([d0I_ao[i, :, :].T, s, d0I_ao[i, :, :], s]))
+        for i in range(n_lowest)
+    ])
 
 
 def get_r_ab(mol):

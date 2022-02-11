@@ -21,6 +21,12 @@ jobs:
         pre_release: [false]
         include:
           # Python 3.8/3.9 tests
+          # Python 3.7/3.8/3.9 tests
+          - os: ubuntu-latest
+            python-version: "3.7"
+            gcc: 11
+            cp2k: "9.1"
+            pre_release: False
           - os: ubuntu-latest
             python-version: "3.8"
             gcc: 11
@@ -164,7 +170,7 @@ jobs:
           python-version: "3.10"
 
       - name: Install linters
-        run: pip install pydocstyle pycodestyle mypy qmflows types-pyyaml types-pkg_resources
+        run: pip install pydocstyle pycodestyle mypy qmflows "numpy>=1.21" types-pyyaml types-pkg_resources
 
       - name: Python info
         run: |

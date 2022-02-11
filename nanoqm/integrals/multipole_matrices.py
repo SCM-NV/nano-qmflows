@@ -15,24 +15,31 @@ API
 .. autofunction:: get_multipole_matrix
 .. autofunction:: compute_matrix_multipole
 """
+
+from __future__ import annotations
+
 import logging
 import os
 import uuid
 from os.path import join
 from pathlib import Path
-from typing import List, Optional, Union
+from typing import List, Union, TYPE_CHECKING
 
 import numpy as np
 from compute_integrals import compute_integrals_multipole
 from qmflows.common import AtomXYZ
 
-from ..common import (DictConfig, Matrix, is_data_in_hdf5, retrieve_hdf5_data,
+from ..common import (DictConfig, is_data_in_hdf5, retrieve_hdf5_data,
                       store_arrays_in_hdf5, tuplesXYZ_to_plams)
+
+if TYPE_CHECKING:
+    from numpy.typing import NDArray
+    from numpy import float64 as f8
 
 logger = logging.getLogger(__name__)
 
 
-def get_multipole_matrix(config: DictConfig, inp: DictConfig, multipole: str) -> Matrix:
+def get_multipole_matrix(config: DictConfig, inp: DictConfig, multipole: str) -> NDArray[f8]:
     """Retrieve the `multipole` number `i` from the trajectory. Otherwise compute it.
 
     Parameters
@@ -64,7 +71,7 @@ def get_multipole_matrix(config: DictConfig, inp: DictConfig, multipole: str) ->
 
 
 def search_multipole_in_hdf5(
-        path_hdf5: Union[str, Path], path_multipole_hdf5: str, multipole: str) -> Optional[np.ndarray]:
+        path_hdf5: Union[str, Path], path_multipole_hdf5: str, multipole: str) -> None | NDArray[f8]:
     """Search if the multipole is already store in the HDF5."""
     if is_data_in_hdf5(path_hdf5, path_multipole_hdf5):
         logger.info(f"retrieving multipole: {multipole} from the hdf5")
@@ -75,7 +82,7 @@ def search_multipole_in_hdf5(
 
 
 def compute_matrix_multipole(
-        mol: List[AtomXYZ], config: DictConfig, multipole: str) -> Matrix:
+        mol: List[AtomXYZ], config: DictConfig, multipole: str) -> NDArray[f8]:
     """Compute a `multipole` matrix: overlap, dipole, etc. for a given geometry `mol`.
 
     The multipole is Computed in spherical coordinates.
