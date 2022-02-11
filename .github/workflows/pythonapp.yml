@@ -15,48 +15,52 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        python-version: ["3.9"]
+        python-version: ["3.10"]
         gcc: [7, 8, 9, 10, 11]
         cp2k: ["9.1"]
         pre_release: [false]
         include:
+          # Python 3.8/3.9 tests
           - os: ubuntu-latest
             python-version: "3.8"
             gcc: 11
             cp2k: "9.1"
             pre_release: False
           - os: ubuntu-latest
-            python-version: "3.10"
+            python-version: "3.9"
             gcc: 11
             cp2k: "9.1"
             pre_release: False
+          # GCC 5/6 tests
           - os: ubuntu-18.04
-            python-version: "3.9"
+            python-version: "3.10"
             gcc: 5
             cp2k: "9.1"
             pre_release: False
           - os: ubuntu-18.04
-            python-version: "3.9"
+            python-version: "3.10"
             gcc: 6
             cp2k: "9.1"
             pre_release: False
+          # CP2K 6.1/7.1/8.2 tests
           - os: ubuntu-latest
-            python-version: "3.9"
+            python-version: "3.10"
             gcc: 11
             cp2k: "6.1"
             pre_release: False
           - os: ubuntu-latest
-            python-version: "3.9"
+            python-version: "3.10"
             gcc: 11
             cp2k: "7.1"
             pre_release: False
           - os: ubuntu-latest
-            python-version: "3.9"
+            python-version: "3.10"
             gcc: 11
             cp2k: "8.2"
             pre_release: False
+          # Pre-release tests
           - os: ubuntu-latest
-            python-version: "3.9"
+            python-version: "3.10"
             gcc: 11
             cp2k: "9.1"
             pre_release: True
