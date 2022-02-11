@@ -2,20 +2,23 @@
 import os
 import sys
 from os.path import join
-from typing import Dict
+from typing import Dict, List, Tuple, TYPE_CHECKING
 
 import setuptools
 from Cython.Distutils import build_ext
 from setuptools import Extension, find_packages, setup
 
+if TYPE_CHECKING:
+    from distutils.ccompiler import CCompiler
+
 here = os.path.abspath(os.path.dirname(__file__))
 
-version = {}  # type: Dict[str, str]
+version: Dict[str, str] = {}
 with open(os.path.join(here, 'nanoqm', '__version__.py')) as f:
     exec(f.read(), version)
 
 
-def readme():
+def readme() -> str:
     """Load readme."""
     with open('README.rst') as f:
         return f.read()
@@ -29,15 +32,15 @@ class get_pybind_include:
     method can be invoked.
     """
 
-    def __init__(self, user=False):
+    def __init__(self, user: bool = False) -> None:
         self.user = user
 
-    def __str__(self):
+    def __str__(self) -> str:
         import pybind11
         return pybind11.get_include(self.user)
 
 
-def has_flag(compiler, flagname):
+def has_flag(compiler: "CCompiler", flagname: str) -> bool:
     """Return a boolean indicating whether a flag name is supported on the specified compiler.
 
     As of Python 3.6, CCompiler has a `has_flag` method.
@@ -53,7 +56,7 @@ def has_flag(compiler, flagname):
     return True
 
 
-def cpp_flag(compiler):
+def cpp_flag(compiler: "CCompiler") -> str:
     """Return the -std=c++[17/14/11] compiler flag.
 
     The newer version is prefered over c++11 (when it is available).
@@ -71,11 +74,11 @@ def cpp_flag(compiler):
 class BuildExt(build_ext):
     """A custom build extension for adding compiler-specific options."""
 
-    c_opts = {
+    c_opts: Dict[str, List[str]] = {
         'msvc': ['/EHsc'],
         'unix': [],
     }
-    l_opts = {
+    l_opts: Dict[str, List[str]] = {
         'msvc': [],
         'unix': [],
     }
@@ -85,7 +88,7 @@ class BuildExt(build_ext):
         c_opts['unix'] += darwin_opts
         l_opts['unix'] += darwin_opts
 
-    def build_extensions(self):
+    def build_extensions(self) -> None:
         """Actual compilation."""
         ct = self.compiler.compiler_type
         opts = self.c_opts.get(ct, [])
@@ -105,29 +108,43 @@ class BuildExt(build_ext):
         build_ext.build_extensions(self)
 
 
-# Set path to the conda libraries
-conda_prefix = os.environ["CONDA_PREFIX"]
-if conda_prefix is None:
-    raise RuntimeError(
-        "No conda module found. A Conda environment is required")
+def get_includes() -> Tuple[str, str]:
+    """Get the include directories of the ``eigen`` and ``libint`` C++ libraries.
 
-conda_include = join(conda_prefix, 'include')
-conda_lib = join(conda_prefix, 'lib')
+    Use the paths specified in the ``$EIGEN3_INCLUDE_DIR`` and ``$LIBINT_INCLUDE_DIR``
+    environment variables if specified; use ``$CONDA_PREFIX`` otherwise.
+    """
+    conda_prefix = os.environ.get("CONDA_PREFIX")
+    eigen_dir = os.environ.get("EIGEN3_INCLUDE_DIR")
+    libint_dir = os.environ.get("LIBINT_INCLUDE_DIR")
+    if conda_prefix is None and (None in (eigen_dir, libint_dir)):
+        raise RuntimeError(
+            "No conda module found. A Conda environment is required "
+            "or one must set both the `$EIGEN3_INCLUDE_DIR` and `$LIBINT_INCLUDE_DIR` "
+            "environment variables"
+        )
+
+    if conda_prefix is not None:
+        return join(conda_prefix, 'include', 'eigen3'), join(conda_prefix, 'include')
+    else:
+        return eigen_dir, libint_dir
+
+
+eigen_include, libint_include = get_includes()
 ext_pybind = Extension(
     'compute_integrals',
     sources=['libint/compute_integrals.cc'],
     include_dirs=[
         # Path to pybind11 headers
         'libint/include',
-        conda_include,
-        join(conda_include, 'eigen3'),
+        libint_include,
+        eigen_include,
         get_pybind_include(),
         get_pybind_include(user=True),
-        '/usr/include/eigen3'
     ],
     libraries=['hdf5', 'int2'],
-    library_dirs=[conda_lib],
-    language='c++')
+    language='c++',
+)
 
 setup(
     name='nano-qmflows',
