@@ -156,7 +156,7 @@ setup(
         'h5py',
         'mendeleev',
         'more-itertools',
-        'noodles==0.3.3',
+        'noodles>=0.3.3',
         'numpy',
         'scipy',
         'schema',
