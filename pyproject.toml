@@ -6,6 +6,7 @@ requires = ['Cython', 'setuptools', 'wheel', 'pybind11>=2.2.4']
 plugins = "numpy.typing.mypy_plugin"
 mypy_path = "libint"
 files = ["nanoqm", "libint"]
+show_error_codes = true
 
 [[tool.mypy.overrides]]
 module = "scm.plams.*"
