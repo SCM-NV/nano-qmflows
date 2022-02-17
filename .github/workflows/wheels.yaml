@@ -31,11 +31,8 @@ jobs:
         env:
           VERSION: "3.4.0"
         run: |
-          echo $PWD
-          wget -nv https://gitlab.com/libeigen/eigen/-/archive/$VERSION/eigen-$VERSION.tar.gz -O eigen.tar.gz
-          ls -la
-          tar -xz eigen.tar.gz
-          chmod -R u+rx eigen
+          wget -nv https://gitlab.com/libeigen/eigen/-/archive/$VERSION/eigen-$VERSION.zip -O eigen.zip
+          unzip eigen.zip
 
       - name: Install HighFive
         env:
