@@ -1,0 +1,33 @@
+name: Wheels
+
+on: [push, pull_request]
+
+jobs:
+  build_wheels:
+    name: Python ${{ matrix.version }} on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        version: ["3.7", "3.8", "3.9", "3.10"]
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+            python-version: ${{ matrix.version }}
+
+      - name: Install cibuildwheel
+        run: pip install cibuildwheel
+
+      - name: Build wheels
+        run: python -m cibuildwheel --output-dir wheelhouse
+        env:
+          CIBW_MANYLINUX_X86_64_IMAGE: manylinux2014
+          CIBW_BUILD_VERBOSITY: 3
+
+      - uses: actions/upload-artifact@v2
+        with:
+          path: ./wheelhouse/*.whl
