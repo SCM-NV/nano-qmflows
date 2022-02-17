@@ -39,9 +39,10 @@ jobs:
         env:
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux2014
           CIBW_BUILD_VERBOSITY: 3
+          CIBW_BEFORE_BUILD: bash {project}/tools/install_cpp_deps.sh "${{ matrix.version }}"
           CIBW_ENVIRONMENT_LINUX:
-            EIGEN3_INCLUDE_DIR="$CONDA_PREFIX/include/eigen"
-            LIBINT_INCLUDE_DIR="$CONDA_PREFIX/include"
+            EIGEN3_INCLUDE_DIR="$HOME/miniconda/include/eigen3"
+            LIBINT_INCLUDE_DIR="$HOME/miniconda/include"
 
       - uses: actions/upload-artifact@v2
         with:
