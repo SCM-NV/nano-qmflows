@@ -117,8 +117,26 @@ if conda_prefix is None:
     raise RuntimeError(
         "No conda module found. A Conda environment is required")
 
-conda_include = join(conda_prefix, 'include')
-conda_lib = join(conda_prefix, 'lib')
+    Use the paths specified in the ``$EIGEN3_INCLUDE_DIR`` and ``$LIBINT_INCLUDE_DIR``
+    environment variables if specified; use ``$CONDA_PREFIX`` otherwise.
+    """
+    conda_prefix = os.environ.get("CONDA_PREFIX")
+    eigen_dir = os.environ.get("EIGEN3_INCLUDE_DIR")
+    libint_dir = os.environ.get("LIBINT_INCLUDE_DIR")
+    if conda_prefix is None and (None in (eigen_dir, libint_dir)):
+        raise RuntimeError(
+            "No conda module found. A Conda environment is required "
+            "or one must set both the `$EIGEN3_INCLUDE_DIR` and `$LIBINT_INCLUDE_DIR` "
+            "environment variables"
+        )
+
+    if conda_prefix is None:
+        return eigen_dir, libint_dir
+    else:
+        return join(conda_prefix, 'include', 'eigen3'), join(conda_prefix, 'include')
+
+
+eigen_include, libint_include = get_includes()
 ext_pybind = Extension(
     'compute_integrals',
     sources=['libint/compute_integrals.cc'],
