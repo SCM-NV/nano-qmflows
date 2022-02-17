@@ -1,12 +1,13 @@
 name: Wheels
 
-on: [push, pull_request]
+on: [pull_request]
 
 jobs:
   build_wheels:
     name: Python ${{ matrix.version }} on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest]
         version: ["3.7", "3.8", "3.9", "3.10"]
@@ -19,6 +20,14 @@ jobs:
         with:
             python-version: ${{ matrix.version }}
 
+      - name: Install eigen
+        env:
+          VERSION: "3.4.0"
+        run: |
+          wget -nv https://gitlab.com/libeigen/eigen/-/archive/$VERSION/eigen-$VERSION.tar.gz -O eigen.tar.gz
+          tar -xz eigen.tar.gz
+          echo $PWD
+
       - name: Install cibuildwheel
         run: pip install cibuildwheel
 
@@ -27,6 +36,9 @@ jobs:
         env:
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux2014
           CIBW_BUILD_VERBOSITY: 3
+          CIBW_ENVIRONMENT_LINUX:
+            EIGEN3_INCLUDE_DIR="eigen/Eigen"
+            LIBINT_INCLUDE_DIR="bob"
 
       - uses: actions/upload-artifact@v2
         with:
