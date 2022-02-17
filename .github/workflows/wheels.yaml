@@ -6,14 +6,18 @@ on:
 
 jobs:
   build_wheels:
-    name: Python ${{ matrix.version }} on ${{ matrix.buildplat[0] }}
+    name: ${{ matrix.version[1] }}-${{ matrix.buildplat[1] }}
     runs-on: ${{ matrix.buildplat[0] }}
     strategy:
       fail-fast: false
       matrix:
         buildplat:
         - [ubuntu-20.04, manylinux_x86_64]
-        version: ["cp37", "cp38", "cp39", "cp310"]
+        version:
+        - ["3.7", "cp37"]
+        - ["3.8", "cp38"]
+        - ["3.9", "cp39"]
+        - ["3.10", "cp310"]
 
     steps:
       - name: Cancel Previous Runs
@@ -26,11 +30,11 @@ jobs:
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.3.0
         env:
-          CIBW_BUILD: ${{ matrix.version }}-${{ matrix.buildplat[1] }}
+          CIBW_BUILD: ${{ matrix.version[1] }}-${{ matrix.buildplat[1] }}
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux2014
           CIBW_BUILD_VERBOSITY: 3
-          CIBW_BEFORE_BUILD: bash {project}/tools/install_cpp_deps.sh "${{ matrix.version }}"
-          CIBW_ENVIRONMENT_LINUX:
+          CIBW_BEFORE_BUILD: bash {project}/tools/install_cpp_deps.sh "${{ matrix.version[0] }}"
+          CIBW_ENVIRONMENT:
             EIGEN3_INCLUDE_DIR="$HOME/miniconda/include/eigen3"
             LIBINT_INCLUDE_DIR="$HOME/miniconda/include"
             LIB_DIR="$HOME/miniconda/lib"
