@@ -39,6 +39,7 @@ jobs:
           CIBW_ENVIRONMENT_LINUX:
             EIGEN3_INCLUDE_DIR="$HOME/miniconda/include/eigen3"
             LIBINT_INCLUDE_DIR="$HOME/miniconda/include"
+            LIB_DIR="$HOME/miniconda/lib"
 
       - uses: actions/upload-artifact@v2
         with:

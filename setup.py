@@ -137,6 +137,10 @@ if conda_prefix is None:
 
 
 eigen_include, libint_include = get_includes()
+lib_dir = os.environ.get("LIB_DIR")
+if lib_dir is None:
+    lib_dir = os.path.join(os.environ["CONDA_PREFIX"], "lib")
+
 ext_pybind = Extension(
     'compute_integrals',
     sources=['libint/compute_integrals.cc'],
@@ -150,7 +154,7 @@ ext_pybind = Extension(
         '/usr/include/eigen3'
     ],
     libraries=['hdf5', 'int2'],
-    library_dirs=[conda_lib],
+    library_dirs=[lib_dir],
     language='c++',
 )
 
