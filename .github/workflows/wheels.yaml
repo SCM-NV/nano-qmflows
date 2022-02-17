@@ -32,8 +32,10 @@ jobs:
           VERSION: "3.4.0"
         run: |
           echo $PWD
-          wget -v https://gitlab.com/libeigen/eigen/-/archive/$VERSION/eigen-$VERSION.tar.gz -O eigen.tar.gz
-          tar -xzv eigen.tar.gz
+          wget -nv https://gitlab.com/libeigen/eigen/-/archive/$VERSION/eigen-$VERSION.tar.gz -O eigen.tar.gz
+          ls -la
+          tar -xz eigen.tar.gz
+          chmod -R u+rx eigen
 
       - name: Install HighFive
         env:
@@ -58,7 +60,7 @@ jobs:
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux2014
           CIBW_BUILD_VERBOSITY: 3
           CIBW_ENVIRONMENT_LINUX:
-            EIGEN3_INCLUDE_DIR="eigen"
+            EIGEN3_INCLUDE_DIR="/home/runner/work/nano-qmflows/nano-qmflows/eigen"
             LIBINT_INCLUDE_DIR="bob"
 
       - uses: actions/upload-artifact@v2
