@@ -20,13 +20,27 @@ jobs:
         with:
             python-version: ${{ matrix.version }}
 
-      - name: Install eigen
+      - name: Install Eigen
         env:
           VERSION: "3.4.0"
         run: |
-          wget -nv https://gitlab.com/libeigen/eigen/-/archive/$VERSION/eigen-$VERSION.tar.gz -O eigen.tar.gz
-          tar -xz eigen.tar.gz
           echo $PWD
+          wget -nv https://gitlab.com/libeigen/eigen/-/archive/$VERSION/eigen-$VERSION.tar.gz -O eigen.tar.gz
+          tar -xzv eigen.tar.gz
+
+      - name: Install HighFive
+        env:
+          VERSION: "v2.3.1"
+        run: |
+          wget -nv https://github.com/BlueBrain/HighFive/archive/refs/tags/$VERSION.tar.gz -O highfive.tar.gz
+          tar -xz highfive.tar.gz
+
+      - name: Install Libint
+        env:
+          VERSION: "v2.6.0"
+        run: |
+          wget -nv https://github.com/evaleev/libint/archive/refs/tags/$VERSION.tar.gz -O libint.tar.gz
+          tar -xz libint.tar.gz
 
       - name: Install cibuildwheel
         run: pip install cibuildwheel
@@ -37,7 +51,7 @@ jobs:
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux2014
           CIBW_BUILD_VERBOSITY: 3
           CIBW_ENVIRONMENT_LINUX:
-            EIGEN3_INCLUDE_DIR="eigen/Eigen"
+            EIGEN3_INCLUDE_DIR="eigen"
             LIBINT_INCLUDE_DIR="bob"
 
       - uses: actions/upload-artifact@v2
