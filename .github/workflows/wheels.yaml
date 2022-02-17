@@ -25,7 +25,7 @@ jobs:
           VERSION: "3.4.0"
         run: |
           echo $PWD
-          wget -nv https://gitlab.com/libeigen/eigen/-/archive/$VERSION/eigen-$VERSION.tar.gz -O eigen.tar.gz
+          wget -v https://gitlab.com/libeigen/eigen/-/archive/$VERSION/eigen-$VERSION.tar.gz -O eigen.tar.gz
           tar -xzv eigen.tar.gz
 
       - name: Install HighFive
