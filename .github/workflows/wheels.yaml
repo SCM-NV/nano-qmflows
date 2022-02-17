@@ -28,7 +28,7 @@ jobs:
       - uses: actions/checkout@v2
 
       - name: Build wheels
-        uses: pypa/cibuildwheel@v2.3.0
+        uses: pypa/cibuildwheel@v2.3.1
         env:
           CIBW_BUILD: ${{ matrix.version[1] }}-${{ matrix.buildplat[1] }}
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux2014
@@ -38,6 +38,7 @@ jobs:
             EIGEN3_INCLUDE_DIR="$HOME/miniconda/include/eigen3"
             LIBINT_INCLUDE_DIR="$HOME/miniconda/include"
             LIB_DIR="$HOME/miniconda/lib"
+          CIBW_REPAIR_WHEEL_COMMAND: auditwheel repair -w {dest_dir} {wheel} -vvv
 
       - uses: actions/upload-artifact@v2
         with:
