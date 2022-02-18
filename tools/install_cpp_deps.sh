@@ -6,4 +6,4 @@ PYTHON_VERSION="$1"
 curl https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -o miniconda.sh
 chmod u+rx miniconda.sh
 bash miniconda.sh -b -p $HOME/miniconda
-$HOME/miniconda/bin/conda install -c conda-forge python=$PYTHON_VERSION boost eigen libint==2.6.0 highfive -y
+$HOME/miniconda/bin/conda install -c conda-forge python=$PYTHON_VERSION eigen libint==2.6.0 highfive -y
