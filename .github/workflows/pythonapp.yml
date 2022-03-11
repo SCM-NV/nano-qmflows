@@ -7,6 +7,10 @@ on:
   pull_request:
   workflow_dispatch:
 
+concurrency:
+    group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+    cancel-in-progress: true
+
 jobs:
   test:
     name: ${{ matrix.os }}; py ${{ matrix.python-version }}; CP2K ${{ matrix.cp2k }}; gcc ${{ matrix.gcc }}; pre-release ${{ matrix.pre_release }}
@@ -74,11 +78,6 @@ jobs:
       CP2K_DATA_DIR: /usr/share/cp2k/data
 
     steps:
-    - name: Cancel Previous Runs
-      uses: styfle/cancel-workflow-action@0.9.1
-      with:
-        access_token: ${{ github.token }}
-
     - uses: actions/checkout@v2
 
     - name: Install CP2K
@@ -170,7 +169,7 @@ jobs:
           python-version: "3.10"
 
       - name: Install linters
-        run: pip install pydocstyle pycodestyle mypy qmflows "numpy>=1.21" types-pyyaml types-pkg_resources
+        run: pip install pydocstyle pycodestyle mypy qmflows "numpy>=1.21" types-pyyaml types-pkg_resources types-setuptools
 
       - name: Python info
         run: |
@@ -187,5 +186,5 @@ jobs:
         run: pydocstyle nanoqm
 
       - name: Run mypy
-        run: mypy nanoqm
+        run: mypy nanoqm setup.py
         continue-on-error: true

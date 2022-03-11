@@ -2,7 +2,7 @@
 import os
 import sys
 from os.path import join
-from typing import Dict, List, Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import setuptools
 from Cython.Distutils import build_ext
@@ -10,10 +10,14 @@ from setuptools import Extension, find_packages, setup
 
 if TYPE_CHECKING:
     from distutils.ccompiler import CCompiler
+    from distutils.errors import CompileError
+else:
+    CCompiler = setuptools.distutils.ccompiler.CCompiler
+    CompileError = setuptools.distutils.errors.CompileError
 
 here = os.path.abspath(os.path.dirname(__file__))
 
-version: Dict[str, str] = {}
+version: "dict[str, str]" = {}
 with open(os.path.join(here, 'nanoqm', '__version__.py')) as f:
     exec(f.read(), version)
 
@@ -51,7 +55,7 @@ def has_flag(compiler: "CCompiler", flagname: str) -> bool:
         f.write('int main (int argc, char **argv) { return 0; }')
         try:
             compiler.compile([f.name], extra_postargs=[flagname])
-        except setuptools.distutils.errors.CompileError:
+        except CompileError:
             return False
     return True
 
@@ -62,7 +66,6 @@ def cpp_flag(compiler: "CCompiler") -> str:
     The newer version is prefered over c++11 (when it is available).
     """
     flags = ['-std=c++17', '-std=c++14', '-std=c++11']
-
     for flag in flags:
         if has_flag(compiler, flag):
             return flag
@@ -74,11 +77,11 @@ def cpp_flag(compiler: "CCompiler") -> str:
 class BuildExt(build_ext):
     """A custom build extension for adding compiler-specific options."""
 
-    c_opts: Dict[str, List[str]] = {
+    c_opts: "dict[str, list[str]]" = {
         'msvc': ['/EHsc'],
         'unix': [],
     }
-    l_opts: Dict[str, List[str]] = {
+    l_opts: "dict[str, list[str]]" = {
         'msvc': [],
         'unix': [],
     }
@@ -108,41 +111,28 @@ class BuildExt(build_ext):
         build_ext.build_extensions(self)
 
 
-def get_includes() -> Tuple[str, str]:
-    """Get the include directories of the ``eigen`` and ``libint`` C++ libraries.
+# Set path to the conda libraries
+conda_prefix = os.environ["CONDA_PREFIX"]
+if conda_prefix is None:
+    raise RuntimeError(
+        "No conda module found. A Conda environment is required")
 
-    Use the paths specified in the ``$EIGEN3_INCLUDE_DIR`` and ``$LIBINT_INCLUDE_DIR``
-    environment variables if specified; use ``$CONDA_PREFIX`` otherwise.
-    """
-    conda_prefix = os.environ.get("CONDA_PREFIX")
-    eigen_dir = os.environ.get("EIGEN3_INCLUDE_DIR")
-    libint_dir = os.environ.get("LIBINT_INCLUDE_DIR")
-    if conda_prefix is None and (None in (eigen_dir, libint_dir)):
-        raise RuntimeError(
-            "No conda module found. A Conda environment is required "
-            "or one must set both the `$EIGEN3_INCLUDE_DIR` and `$LIBINT_INCLUDE_DIR` "
-            "environment variables"
-        )
-
-    if conda_prefix is not None:
-        return join(conda_prefix, 'include', 'eigen3'), join(conda_prefix, 'include')
-    else:
-        return eigen_dir, libint_dir
-
-
-eigen_include, libint_include = get_includes()
+conda_include = join(conda_prefix, 'include')
+conda_lib = join(conda_prefix, 'lib')
 ext_pybind = Extension(
     'compute_integrals',
     sources=['libint/compute_integrals.cc'],
     include_dirs=[
         # Path to pybind11 headers
         'libint/include',
-        libint_include,
-        eigen_include,
+        conda_include,
+        join(conda_include, 'eigen3'),
         get_pybind_include(),
         get_pybind_include(user=True),
+        '/usr/include/eigen3'
     ],
     libraries=['hdf5', 'int2'],
+    library_dirs=[conda_lib],
     language='c++',
 )
 

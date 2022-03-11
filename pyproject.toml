@@ -1,6 +1,6 @@
 [build-system]
 # Minimum requirements for the build system to execute.
-requires = ['Cython', 'setuptools', 'wheel', 'pybind11>=2.2.4']
+requires = ['Cython', 'setuptools>=48.0', 'wheel', 'pybind11>=2.2.4']
 
 [tool.mypy]
 plugins = "numpy.typing.mypy_plugin"
