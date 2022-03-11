@@ -1,5 +1,18 @@
 # Change Log
 
+# 0.12.3 (11/03/2022)
+
+## Changed
+* Do not hard code basis set names for compution of the HOMO index.
+* Do not overwrite explicit `basis_set_file_name` and `potential_file_name` CP2K settings.
+* Add the `basis_file_name` and `potential_file_name` options.
+* Do not hard-code the `BASIS_MOLOPT` coefficients in the .hdf5 file.
+* Always use the `-q` suffix when reading basis sets from .hdf5.
+* Add settings for manual choice of XC functionals for GGA, MGGA and hybrids.
+* Remove the upper version bound of noodles.
+* Formally set the minimum python version to >= 3.7.
+
+
 # 0.12.2 (17/11/2021)
 
 ## Changed
