@@ -169,7 +169,7 @@ jobs:
           python-version: "3.10"
 
       - name: Install linters
-        run: pip install pydocstyle pycodestyle mypy qmflows "numpy>=1.21" types-pyyaml types-pkg_resources
+        run: pip install pydocstyle pycodestyle mypy qmflows "numpy>=1.21" types-pyyaml types-pkg_resources types-setuptools
 
       - name: Python info
         run: |
@@ -186,5 +186,5 @@ jobs:
         run: pydocstyle nanoqm
 
       - name: Run mypy
-        run: mypy nanoqm
+        run: mypy nanoqm setup.py
         continue-on-error: true

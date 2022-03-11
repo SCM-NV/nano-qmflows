@@ -2,20 +2,27 @@
 import os
 import sys
 from os.path import join
-from typing import Dict
+from typing import TYPE_CHECKING
 
 import setuptools
 from Cython.Distutils import build_ext
 from setuptools import Extension, find_packages, setup
 
+if TYPE_CHECKING:
+    from distutils.ccompiler import CCompiler
+    from distutils.errors import CompileError
+else:
+    CCompiler = setuptools.distutils.ccompiler.CCompiler
+    CompileError = setuptools.distutils.errors.CompileError
+
 here = os.path.abspath(os.path.dirname(__file__))
 
-version = {}  # type: Dict[str, str]
+version: "dict[str, str]" = {}
 with open(os.path.join(here, 'nanoqm', '__version__.py')) as f:
     exec(f.read(), version)
 
 
-def readme():
+def readme() -> str:
     """Load readme."""
     with open('README.rst') as f:
         return f.read()
@@ -29,15 +36,15 @@ class get_pybind_include:
     method can be invoked.
     """
 
-    def __init__(self, user=False):
+    def __init__(self, user: bool = False) -> None:
         self.user = user
 
-    def __str__(self):
+    def __str__(self) -> str:
         import pybind11
         return pybind11.get_include(self.user)
 
 
-def has_flag(compiler, flagname):
+def has_flag(compiler: "CCompiler", flagname: str) -> bool:
     """Return a boolean indicating whether a flag name is supported on the specified compiler.
 
     As of Python 3.6, CCompiler has a `has_flag` method.
@@ -48,18 +55,17 @@ def has_flag(compiler, flagname):
         f.write('int main (int argc, char **argv) { return 0; }')
         try:
             compiler.compile([f.name], extra_postargs=[flagname])
-        except setuptools.distutils.errors.CompileError:
+        except CompileError:
             return False
     return True
 
 
-def cpp_flag(compiler):
+def cpp_flag(compiler: "CCompiler") -> str:
     """Return the -std=c++[17/14/11] compiler flag.
 
     The newer version is prefered over c++11 (when it is available).
     """
     flags = ['-std=c++17', '-std=c++14', '-std=c++11']
-
     for flag in flags:
         if has_flag(compiler, flag):
             return flag
@@ -71,11 +77,11 @@ def cpp_flag(compiler):
 class BuildExt(build_ext):
     """A custom build extension for adding compiler-specific options."""
 
-    c_opts = {
+    c_opts: "dict[str, list[str]]" = {
         'msvc': ['/EHsc'],
         'unix': [],
     }
-    l_opts = {
+    l_opts: "dict[str, list[str]]" = {
         'msvc': [],
         'unix': [],
     }
@@ -85,7 +91,7 @@ class BuildExt(build_ext):
         c_opts['unix'] += darwin_opts
         l_opts['unix'] += darwin_opts
 
-    def build_extensions(self):
+    def build_extensions(self) -> None:
         """Actual compilation."""
         ct = self.compiler.compiler_type
         opts = self.c_opts.get(ct, [])
@@ -127,7 +133,8 @@ ext_pybind = Extension(
     ],
     libraries=['hdf5', 'int2'],
     library_dirs=[conda_lib],
-    language='c++')
+    language='c++',
+)
 
 setup(
     name='nano-qmflows',
