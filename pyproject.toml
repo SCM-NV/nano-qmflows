@@ -9,29 +9,15 @@ files = ["nanoqm", "libint"]
 show_error_codes = true
 
 [[tool.mypy.overrides]]
-module = "scm.plams.*"
-ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
-module = "h5py.*"
-ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
-module = "scipy.*"
-ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
-module = "pyparsing.*"
-ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
-module = "noodles.*"
-ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
-module = "schema.*"
-ignore_missing_imports = true
-
-[[tool.mypy.overrides]]
-module = "mendeleev.*"
+module = [
+    "scm.plams.*",
+    "h5py.*",
+    "scipy.*",
+    "pyparsing.*",
+    "noodles.*",
+    "schema.*",
+    "mendeleev.*",
+    "pybind11.*",
+    "Cython.*",
+]
 ignore_missing_imports = true
