@@ -7,6 +7,10 @@ on:
   pull_request:
   workflow_dispatch:
 
+concurrency:
+    group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+    cancel-in-progress: true
+
 jobs:
   test:
     name: ${{ matrix.os }}; py ${{ matrix.python-version }}; CP2K ${{ matrix.cp2k }}; gcc ${{ matrix.gcc }}; pre-release ${{ matrix.pre_release }}
@@ -74,11 +78,6 @@ jobs:
       CP2K_DATA_DIR: /usr/share/cp2k/data
 
     steps:
-    - name: Cancel Previous Runs
-      uses: styfle/cancel-workflow-action@0.9.1
-      with:
-        access_token: ${{ github.token }}
-
     - uses: actions/checkout@v2
 
     - name: Install CP2K
