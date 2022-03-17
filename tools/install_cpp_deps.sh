@@ -10,6 +10,14 @@ setup_boost () {
     export BOOSt_INCLUDE_DIR="$PWD/boost/boost"
 }
 
+setup_eigen () {
+    echo "Downloading eigen"
+    curl https://gitlab.com/libeigen/eigen/-/archive/3.4.0/eigen-3.4.0.tar.gz -o eigen-3.4.0.tar.gz
+    tar -xf eigen-3.4.0.tar.gz
+    mv eigen-3.4.0 eigen
+    export EIGEN3_INCLUDE_DIR="$PWD/eigen/Eigen"
+}
+
 setup_libint () {
     echo "Downloading libint"
     curl -L https://github.com/evaleev/libint/archive/refs/tags/v2.6.0.tar.gz -o libint-2.6.0.tar.gz
@@ -23,18 +31,12 @@ setup_libint () {
     cd libint-2.6.0
     chmod u+rx autogen.sh
     ./autogen.sh
-    ./configure --prefix=$LIBINT_DIR CPPFLAGS="-I/$BOOSt_INCLUDE_DIR"
+    mkdir build
+    cd build
+    ../configure --prefix=$LIBINT_DIR CPPFLAGS="-I/$BOOSt_INCLUDE_DIR -I/$EIGEN3_INCLUDE_DIR"
     make -j 2
     make install
-    cd ..
-}
-
-setup_eigen () {
-    echo "Downloading eigen"
-    curl https://gitlab.com/libeigen/eigen/-/archive/3.4.0/eigen-3.4.0.tar.gz -o eigen-3.4.0.tar.gz
-    tar -xf eigen-3.4.0.tar.gz
-    mv eigen-3.4.0 eigen
-    export EIGEN3_INCLUDE_DIR="$PWD/eigen/Eigen"
+    cd ../..
 }
 
 setup_hdf5 () {
@@ -62,7 +64,7 @@ setup_highfive () {
 
 cd ..
 setup_boost
-setup_libint
 setup_eigen
+setup_libint
 setup_hdf5
 setup_highfive
