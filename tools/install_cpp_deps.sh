@@ -93,7 +93,7 @@ setup_libint () {
         chmod u+rx autogen.sh
         ./autogen.sh
         cd ../libint_build
-        ../libint-$LIBINT_VERSION/configure --enable-shared=yes --prefix=$LIBINT_DIR CPPFLAGS="-I$BOOST_DIR -I$GMP_DIR/include"
+        ../libint-$LIBINT_VERSION/configure --enable-shared=yes --prefix=$LIBINT_DIR CPPFLAGS="-I$BOOST_DIR -I$GMP_DIR/include" LIBS="-I$GMP_DIR/lib" --enable-shared=yes
         echo ::endgroup::
         printf "%71.71s\n" "✓ $(($SECONDS - $start))s"
 
