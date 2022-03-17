@@ -4,9 +4,13 @@ on:
   pull_request:
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
 jobs:
   build_wheels:
-    name: ${{ matrix.version[1] }}-${{ matrix.buildplat[1] }}
+    name: ${{ matrix.version }}-${{ matrix.buildplat[1] }}
     runs-on: ${{ matrix.buildplat[0] }}
     strategy:
       fail-fast: false
@@ -14,23 +18,18 @@ jobs:
         buildplat:
         - [ubuntu-20.04, manylinux_x86_64]
         version:
-        - ["3.7", "cp37"]
-        - ["3.8", "cp38"]
-        - ["3.9", "cp39"]
-        - ["3.10", "cp310"]
+        - "cp37"
+        - "cp38"
+        - "cp39"
+        - "cp310"
 
     steps:
-      - name: Cancel Previous Runs
-        uses: styfle/cancel-workflow-action@0.9.1
-        with:
-          access_token: ${{ github.token }}
-
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.3.1
         env:
-          CIBW_BUILD: ${{ matrix.version[1] }}-${{ matrix.buildplat[1] }}
+          CIBW_BUILD: ${{ matrix.version }}-${{ matrix.buildplat[1] }}
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux2014
           CIBW_BUILD_VERBOSITY: 3
           CIBW_BEFORE_BUILD: bash {project}/tools/install_cpp_deps.sh
