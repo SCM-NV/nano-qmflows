@@ -60,7 +60,7 @@ target/
 *~
 
 #vi
-*.swp 
+*.swp
 
 #Profiling
 *.lprof
@@ -95,3 +95,15 @@ input_parameters.yml
 # temporal files
 tmp
 .DS_Store
+
+# Building
+boost
+libint2
+libint-*
+libint_build
+hdf5
+hdf5-*
+eigen
+eigen-*
+highfive
+HighFive-*

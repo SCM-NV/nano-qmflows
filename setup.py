@@ -142,14 +142,16 @@ def get_paths() -> "tuple[list[str], list[str]]":
     conda_prefix = os.environ.get("CONDA_PREFIX")
     include_dirs = os.environ.get("QMFLOWS_INCLUDEDIR")
     lib_dirs = os.environ.get("QMFLOWS_LIBDIR")
-    if conda_prefix is None and (include_dirs is None or lib_dirs is None):
+
+    has_env_vars = include_dirs is not None and lib_dirs is not None
+    if conda_prefix is None and not has_env_vars:
         raise RuntimeError(
             "No conda module found. A Conda environment is required "
             "or one must set both the `QMFLOWS_INCLUDEDIR` and `QMFLOWS_LIBDIR` "
             "environment variables"
         )
 
-    if conda_prefix is None:
+    if has_env_vars:
         include_list = include_dirs.split(os.pathsep)
         lib_list = lib_dirs.split(os.pathsep)
     else:
@@ -166,8 +168,8 @@ ext_pybind = Extension(
     'compute_integrals',
     sources=['libint/compute_integrals.cc'],
     include_dirs=[
+        "libint/include",
         *include_list,
-        # Path to pybind11 headers
         get_pybind_include(),
         get_pybind_include(user=True),
     ],
