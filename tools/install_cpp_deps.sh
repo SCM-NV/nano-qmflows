@@ -15,8 +15,8 @@ setup_boost () {
     start=$SECONDS
 
     echo ::group::"Download boost"
-    curl -L https://boostorg.jfrog.io/artifactory/main/release/$BOOST_VERSION/source/boost_$BOOST_VERSION_UNDERSCORE.tar.gz -o boost_$BOOST_VERSION.tar.gz
-    tar -xf boost_$BOOST_VERSION.tar.gz
+    curl -L https://boostorg.jfrog.io/artifactory/main/release/$BOOST_VERSION/source/boost_$BOOST_VERSION_UNDERSCORE.tar.gz -o boost_$BOOST_VERSION_UNDERSCORE.tar.gz
+    tar -xf boost_$BOOST_VERSION_UNDERSCORE.tar.gz
     mv boost_$BOOST_VERSION_UNDERSCORE boost
     export BOOST_INCLUDEDIR="$PWD/boost/boost"
     echo ::endgroup::
