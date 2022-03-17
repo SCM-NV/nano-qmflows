@@ -60,6 +60,7 @@ setup_highfive () {
     mv highfive-2.3.1 highfive
 }
 
+cd ..
 setup_boost
 setup_libint
 setup_eigen
