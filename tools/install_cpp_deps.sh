@@ -66,6 +66,7 @@ setup_gmp () {
         echo ::group::"Build GMP $GMP_VERSION"
         make -j $N_PROC
         make install
+        export LD_LIBRARY_PATH="$GMP_DIR/lib":"$LD_LIBRARY_PATH"
         cd ..
         rm gmp-$GMP_VERSION.tar.xz
         rm -rf gmp-$GMP_VERSION
