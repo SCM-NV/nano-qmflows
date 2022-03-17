@@ -2,10 +2,13 @@
 
 set -e
 
+N_PROC=2
+
 BOOST_VERSION="1.78.0"
 EIGEN_VERSION="3.4.0"
 LIBINT_VERSION="2.6.0"
 HDF5_VERSION="1.12.1"
+GMP_VERIOSN="6.2.1"
 HIGHFIVE_VERSION="2.3.1"
 
 BOOST_VERSION_UNDERSCORE="${BOOST_VERSION//./_}"
@@ -41,6 +44,36 @@ setup_eigen () {
     printf "%71.71s\n" "✓ $(($SECONDS - $start))s"
 }
 
+setup_gmp () {
+    start=$SECONDS
+    echo ::group::"Download GMP $GMP_VERSION"
+    if [ ! -d "gmp" ]; then
+        curl -Ls https://gmplib.org/download/gmp/gmp-$GMP_VERSION.tar.xz -o gmp-$GMP_VERSION.tar.xz
+        tar -xf gmp-$GMP_VERSION.tar.xz
+        mkdir gmp
+        GMP_DIR="$PWD/gmp"
+        echo ::endgroup::
+        printf "%71.71s\n" "✓ $(($SECONDS - $start))s"
+
+        start=$SECONDS
+        echo ::group::"Configure GMP $GMP_VERSION"
+        cd gmp-$GMP_VERSION
+        ./configure --prefix=$GMP_DIR --enable-cxx
+        echo ::endgroup::
+        printf "%71.71s\n" "✓ $(($SECONDS - $start))s"
+
+        start=$SECONDS
+        echo ::group::"Build GMP $GMP_VERSION"
+        make -j $N_PROC
+        make install
+        cd ..
+        rm gmp-$GMP_VERSION.tar.xz
+        rm -rf gmp-$GMP_VERSION
+    fi
+    echo ::endgroup::
+    printf "%71.71s\n" "✓ $(($SECONDS - $start))s"
+}
+
 setup_libint () {
     start=$SECONDS
     echo ::group::"Download libint $LIBINT_VERSION"
@@ -59,12 +92,13 @@ setup_libint () {
         chmod u+rx autogen.sh
         ./autogen.sh
         cd ../libint_build
-        ../libint-$LIBINT_VERSION/configure --enable-shared=yes --prefix=$LIBINT_DIR CPPFLAGS="-I$BOOST_DIR"
+        ../libint-$LIBINT_VERSION/configure --enable-shared=yes --prefix=$LIBINT_DIR CPPFLAGS="-I$BOOST_DIR -I$GMP_DIR/include"
         echo ::endgroup::
+        printf "%71.71s\n" "✓ $(($SECONDS - $start))s"
 
         start=$SECONDS
         echo ::group::"Build libint $LIBINT_VERSION"
-        make
+        make -j $N_PROC
         make install
         cd ..
         rm libint-$LIBINT_VERSION.tar.gz
@@ -96,7 +130,7 @@ setup_hdf5 () {
 
         start=$SECONDS
         echo ::group::"Build HDF5 $HDF5_VERSION"
-        make -j 2
+        make -j $N_PROC
         make install
         cd ..
         rm hdf5-$HDF5_VERSION.tar.gz
