@@ -7,7 +7,7 @@ setup_boost () {
     curl -Ls https://boostorg.jfrog.io/artifactory/main/release/1.78.0/source/boost_1_78_0.tar.gz -o boost_1_78_0.tar.gz
     tar -xf boost_1_78_0.tar.gz
     mv boost_1_78_0 boost
-    export BOOSt_INCLUDE_DIR="$PWD/boost/boost"
+    export BOOST_INCLUDE_DIR="$PWD/boost/boost"
 }
 
 setup_eigen () {
@@ -34,6 +34,7 @@ setup_hdf5 () {
     tar -xf hdf5-1.12.1.tar.gz
     mkdir hdf5
     export HDF5_DIR="$PWD/hdf5"
+    export LIB_DIR="$HDF5_DIR/lib"
 
     echo "Building HDF5"
     cd hdf5-1.12.1

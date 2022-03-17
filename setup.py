@@ -111,15 +111,9 @@ class BuildExt(build_ext):
         build_ext.build_extensions(self)
 
 
-# Set path to the conda libraries
-conda_prefix = os.environ["CONDA_PREFIX"]
-if conda_prefix is None:
-    raise RuntimeError(
-        "No conda module found. A Conda environment is required")
-
-    Use the paths specified in the ``$EIGEN3_INCLUDE_DIR`` and ``$LIBINT_INCLUDE_DIR``
-    environment variables if specified; use ``$CONDA_PREFIX`` otherwise.
-    """
+def get_includes() -> "tuple[str, str]":
+    # Use the paths specified in the ``$EIGEN3_INCLUDE_DIR`` and ``$LIBINT_INCLUDE_DIR``
+    # environment variables if specified; use ``$CONDA_PREFIX`` otherwise.
     conda_prefix = os.environ.get("CONDA_PREFIX")
     eigen_dir = os.environ.get("EIGEN3_INCLUDE_DIR")
     libint_dir = os.environ.get("LIBINT_INCLUDE_DIR")
@@ -146,14 +140,12 @@ ext_pybind = Extension(
     sources=['libint/compute_integrals.cc'],
     include_dirs=[
         # Path to pybind11 headers
-        'libint/include',
-        conda_include,
-        join(conda_include, 'eigen3'),
+        libint_include,
+        eigen_include,
         get_pybind_include(),
         get_pybind_include(user=True),
-        '/usr/include/eigen3'
     ],
-    libraries=['hdf5', 'int2'],
+    libraries=['hdf5'],
     library_dirs=[lib_dir],
     language='c++',
 )
