@@ -1,7 +1,7 @@
 #!/bin/bash
 
 echo
-# set -e
+set -e
 
 N_PROC=2
 
@@ -66,7 +66,6 @@ setup_gmp () {
         echo ::group::"Build GMP $GMP_VERSION"
         make -j $N_PROC
         make install
-        export LD_LIBRARY_PATH="$GMP_DIR/lib":"$LD_LIBRARY_PATH"
         cd ..
         rm gmp-$GMP_VERSION.tar.xz
         rm -rf gmp-$GMP_VERSION
@@ -93,9 +92,8 @@ setup_libint () {
         chmod u+rx autogen.sh
         ./autogen.sh
         cd ../libint_build
-        ../libint-$LIBINT_VERSION/configure --enable-shared=yes --prefix=$LIBINT_DIR CPPFLAGS="-I$BOOST_DIR -I$GMP_DIR/include" LIBS="-I$GMP_DIR/lib"
-        cat config.log
-        exit 1
+        export LD_LIBRARY_PATH="$GMP_DIR/lib":"$LD_LIBRARY_PATH"
+        ../libint-$LIBINT_VERSION/configure --prefix=$LIBINT_DIR CPPFLAGS="-I$BOOST_DIR -I$GMP_DIR/include" LIBS="-I$GMP_DIR/lib" --enable-shared=yes --enable-static=no
         echo ::endgroup::
         printf "%71.71s\n" "✓ $(($SECONDS - $start))s"
 
