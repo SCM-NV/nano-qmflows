@@ -15,7 +15,7 @@ setup_boost () {
     start=$SECONDS
 
     echo ::group::"Download boost"
-    curl -L https://boostorg.jfrog.io/artifactory/main/release/$BOOST_VERSION/source/boost_$BOOST_VERSION_UNDERSCORE.tar.gz -o boost_$BOOST_VERSION_UNDERSCORE.tar.gz
+    curl -Ls https://boostorg.jfrog.io/artifactory/main/release/$BOOST_VERSION/source/boost_$BOOST_VERSION_UNDERSCORE.tar.gz -o boost_$BOOST_VERSION_UNDERSCORE.tar.gz
     tar -xf boost_$BOOST_VERSION_UNDERSCORE.tar.gz
     mv boost_$BOOST_VERSION_UNDERSCORE boost
     export BOOST_INCLUDEDIR="$PWD/boost/boost"
@@ -28,7 +28,7 @@ setup_eigen () {
     start=$SECONDS
 
     echo ::group::"Download eigen"
-    curl https://gitlab.com/libeigen/eigen/-/archive/$EIGEN_VERSION/eigen-$EIGEN_VERSION.tar.gz -o eigen-$EIGEN_VERSION.tar.gz
+    curl -s https://gitlab.com/libeigen/eigen/-/archive/$EIGEN_VERSION/eigen-$EIGEN_VERSION.tar.gz -o eigen-$EIGEN_VERSION.tar.gz
     tar -xf eigen-$EIGEN_VERSION.tar.gz
     mv eigen-$EIGEN_VERSION eigen
     export EIGEN3_INCLUDEDIR="$PWD/eigen/Eigen"
@@ -41,7 +41,7 @@ setup_libint () {
     start=$SECONDS
 
     echo ::group::"Download libint"
-    curl -L https://github.com/evaleev/libint/archive/refs/tags/v$LIBINT_VERSION.tar.gz -o libint-$LIBINT_VERSION.tar.gz
+    curl -Ls https://github.com/evaleev/libint/archive/refs/tags/v$LIBINT_VERSION.tar.gz -o libint-$LIBINT_VERSION.tar.gz
     tar -xf libint-$LIBINT_VERSION.tar.gz
     mv libint-$LIBINT_VERSION libint
     export LIBINT_INCLUDEDIR="$PWD/libint/include"
@@ -53,7 +53,7 @@ setup_libint () {
 setup_hdf5 () {
     start=$SECONDS
     echo ::group::"Download HDF5"
-    curl https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-$HDF5_VERSION_SHORT/hdf5-$HDF5_VERSION/src/hdf5-$HDF5_VERSION.tar.gz -o hdf5-$HDF5_VERSION.tar.gz
+    curl -s https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-$HDF5_VERSION_SHORT/hdf5-$HDF5_VERSION/src/hdf5-$HDF5_VERSION.tar.gz -o hdf5-$HDF5_VERSION.tar.gz
     tar -xf hdf5-$HDF5_VERSION.tar.gz
     mkdir hdf5
     export HDF5_DIR="$PWD/hdf5"
@@ -80,9 +80,9 @@ setup_highfive () {
     start=$SECONDS
 
     echo ::group::"Download highfive"
-    curl -L https://github.com/BlueBrain/HighFive/archive/refs/tags/v$HIGHFIVE_VERSION.tar.gz -o highfive-$HIGHFIVE_VERSION.tar.gz
+    curl -Ls https://github.com/BlueBrain/HighFive/archive/refs/tags/v$HIGHFIVE_VERSION.tar.gz -o highfive-$HIGHFIVE_VERSION.tar.gz
     tar -xf highfive-$HIGHFIVE_VERSION.tar.gz
-    mv highfive-$HIGHFIVE_VERSION highfive
+    mv HighFive-$HIGHFIVE_VERSION highfive
     export HIGHFIVE_INCLUDEDIR="$PWD/highfive/include"
     echo ::endgroup::
 
