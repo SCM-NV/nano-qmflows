@@ -1,5 +1,6 @@
 #!/bin/bash
 
+echo
 set -e
 
 N_PROC=2
@@ -38,7 +39,6 @@ setup_eigen () {
         tar -xf eigen-$EIGEN_VERSION.tar.gz
         mv eigen-$EIGEN_VERSION eigen
         rm eigen-$EIGEN_VERSION.tar.gz
-        EIGEN_INCLUDE_DIR="$PWD/eigen/Eigen"
     fi
     echo ::endgroup::
     printf "%71.71s\n" "✓ $(($SECONDS - $start))s"
@@ -155,6 +155,7 @@ setup_highfive () {
 
 setup_boost
 setup_eigen
+setup_gmp
 setup_libint
 setup_hdf5
 setup_highfive
