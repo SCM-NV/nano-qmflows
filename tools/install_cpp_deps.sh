@@ -12,7 +12,7 @@ setup_boost () {
     export BOOST_INCLUDEDIR="$PWD/boost/boost"
     echo ::endgroup::
 
-    printf "%70.70s\n" "✓ $(($SECONDS - $start))s"
+    printf "%66.66\n" "✓ $(($SECONDS - $start))s"
 }
 
 setup_eigen () {
@@ -25,7 +25,7 @@ setup_eigen () {
     export EIGEN3_INCLUDEDIR="$PWD/eigen/Eigen"
     echo ::endgroup::
 
-    printf "%70.70s\n" "✓ $(($SECONDS - $start))s"
+    printf "%66.66\n" "✓ $(($SECONDS - $start))s"
 }
 
 setup_libint () {
@@ -38,7 +38,7 @@ setup_libint () {
     export LIBINT_INCLUDEDIR="$PWD/libint/include"
     echo ::endgroup::
 
-    printf "%70.70s\n" "✓ $(($SECONDS - $start))s"
+    printf "%66.66\n" "✓ $(($SECONDS - $start))s"
 }
 
 setup_hdf5 () {
@@ -52,7 +52,7 @@ setup_hdf5 () {
     export HDF5_LIBDIR="$HDF5_DIR/lib"
     echo ::endgroup::
 
-    printf "%70.70s\n" "✓ $(($SECONDS - $start))s"
+    printf "%66.66\n" "✓ $(($SECONDS - $start))s"
     start=$SECONDS
 
     echo ::group::"Build HDF5"
@@ -64,7 +64,7 @@ setup_hdf5 () {
     cd ..
     echo ::endgroup::
 
-    printf "%70.70s\n" "✓ $(($SECONDS - $start))s"
+    printf "%66.66\n" "✓ $(($SECONDS - $start))s"
 }
 
 setup_highfive () {
@@ -77,7 +77,7 @@ setup_highfive () {
     export HIGHFIVE_INCLUDEDIR="$PWD/highfive/include"
     echo ::endgroup::
 
-    printf "%70.70s\n" "✓ $(($SECONDS - $start))s"
+    printf "%66.66\n" "✓ $(($SECONDS - $start))s"
 }
 
 cd ..
