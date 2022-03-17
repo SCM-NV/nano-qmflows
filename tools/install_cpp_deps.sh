@@ -76,7 +76,7 @@ setup_highfive () {
     tar -xf highfive-$HIGHFIVE_VERSION.tar.gz
     mv HighFive-$HIGHFIVE_VERSION highfive
     echo ::endgroup::
-    printf "%71.71\n" "✓ $(($SECONDS - $start))s"
+    printf "%71.71s\n" "✓ $(($SECONDS - $start))s"
 }
 
 setup_boost
