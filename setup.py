@@ -111,42 +111,68 @@ class BuildExt(build_ext):
         build_ext.build_extensions(self)
 
 
-def get_includes() -> "tuple[str, str]":
-    # Use the paths specified in the ``$EIGEN3_INCLUDE_DIR`` and ``$LIBINT_INCLUDE_DIR``
-    # environment variables if specified; use ``$CONDA_PREFIX`` otherwise.
+def get_paths() -> "tuple[list[str], list[str]]":
+    """Get the paths specified in the ``QMFLOWS_INCLUDEDIR`` and ``QMFLOWS_LIBDIR`` \
+    environment variables.
+
+    If not specified if specified use ``CONDA_PREFIX`` instead.
+
+    Multiple include and/or lib paths must be specified with the standard (OS-specific)
+    path separator, *e.g.* ``":"`` for POSIX.
+
+    Examples
+    --------
+    .. code-block:: bash
+
+        export QMFLOWS_INCLUDEDIR="/libint/include:/eigen3/include"
+        export QMFLOWS_LIBDIR="/hdf5/lib:/libint/lib"
+
+    .. code-block:: python
+
+        >>> get_paths()
+        (['/libint/include', '/eigen3/include'], ['/hdf5/lib', '/libint/lib'])
+
+    Returns
+    -------
+    tuple[list[str], list[str]]
+        Lists of include- and library-directories used in compiling the ``compute_integrals``
+        extension module.
+
+    """
     conda_prefix = os.environ.get("CONDA_PREFIX")
-    eigen_dir = os.environ.get("EIGEN3_INCLUDE_DIR")
-    libint_dir = os.environ.get("LIBINT_INCLUDE_DIR")
-    if conda_prefix is None and (None in (eigen_dir, libint_dir)):
+    include_dirs = os.environ.get("QMFLOWS_INCLUDEDIR")
+    lib_dirs = os.environ.get("QMFLOWS_LIBDIR")
+    if conda_prefix is None and (include_dirs is None or lib_dirs is None):
         raise RuntimeError(
             "No conda module found. A Conda environment is required "
-            "or one must set both the `$EIGEN3_INCLUDE_DIR` and `$LIBINT_INCLUDE_DIR` "
+            "or one must set both the `QMFLOWS_INCLUDEDIR` and `QMFLOWS_LIBDIR` "
             "environment variables"
         )
 
     if conda_prefix is None:
-        return eigen_dir, libint_dir
+        include_list = include_dirs.split(os.pathsep)
+        lib_list = lib_dirs.split(os.pathsep)
     else:
-        return join(conda_prefix, 'include', 'eigen3'), join(conda_prefix, 'include')
+        include_list = [
+            join(conda_prefix, 'include', 'eigen3'),
+            join(conda_prefix, 'include'),
+        ]
+        lib_list = [os.path.join(conda_prefix, "lib")]
+    return include_list, lib_list
 
 
-eigen_include, libint_include = get_includes()
-lib_dir = os.environ.get("LIB_DIR")
-if lib_dir is None:
-    lib_dir = os.path.join(os.environ["CONDA_PREFIX"], "lib")
-
+include_list, lib_list = get_paths()
 ext_pybind = Extension(
     'compute_integrals',
     sources=['libint/compute_integrals.cc'],
     include_dirs=[
+        *include_list,
         # Path to pybind11 headers
-        libint_include,
-        eigen_include,
         get_pybind_include(),
         get_pybind_include(user=True),
     ],
-    libraries=['hdf5'],
-    library_dirs=[lib_dir],
+    libraries=['hdf5', 'int2'],
+    library_dirs=lib_list,
     language='c++',
 )
 

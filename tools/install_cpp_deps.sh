@@ -7,7 +7,8 @@ setup_boost () {
     curl -Ls https://boostorg.jfrog.io/artifactory/main/release/1.78.0/source/boost_1_78_0.tar.gz -o boost_1_78_0.tar.gz
     tar -xf boost_1_78_0.tar.gz
     mv boost_1_78_0 boost
-    export BOOST_INCLUDE_DIR="$PWD/boost/boost"
+    export BOOST_INCLUDEDIR="$PWD/boost/boost"
+    echo "Boost setup successful"
 }
 
 setup_eigen () {
@@ -15,7 +16,8 @@ setup_eigen () {
     curl -s https://gitlab.com/libeigen/eigen/-/archive/3.4.0/eigen-3.4.0.tar.gz -o eigen-3.4.0.tar.gz
     tar -xf eigen-3.4.0.tar.gz
     mv eigen-3.4.0 eigen
-    export EIGEN3_INCLUDE_DIR="$PWD/eigen/Eigen"
+    export EIGEN3_INCLUDEDIR="$PWD/eigen/Eigen"
+    echo "Eigen setup successful"
 }
 
 setup_libint () {
@@ -23,9 +25,18 @@ setup_libint () {
     curl -Ls https://github.com/evaleev/libint/archive/refs/tags/v2.6.0.tar.gz -o libint-2.6.0.tar.gz
     tar -xf libint-2.6.0.tar.gz
     mv libint-2.6.0 libint
-    export LIBINT_DIR="$PWD/libint"
-    export LIBINT_INCLUDE_DIR="$LIBINT_DIR/include"
-    export LIBINT_LIB_DIR="$LIBINT_DIR/lib"
+    export LIBINT_INCLUDEDIR="$PWD/libint/include"
+    echo "Libint setup successful"
+}
+
+
+setup_highfive () {
+    echo "Downloading highfive"
+    curl -Ls https://github.com/BlueBrain/HighFive/archive/refs/tags/v2.3.1.tar.gz -o highfive-2.3.1.tar.gz
+    tar -xf highfive-2.3.1.tar.gz
+    mv highfive-2.3.1 highfive
+    export HIGHFIVE_INCLUDEDIR="$PWD/highfive/include"
+    echo "Highfive setup successful"
 }
 
 setup_hdf5 () {
@@ -34,7 +45,8 @@ setup_hdf5 () {
     tar -xf hdf5-1.12.1.tar.gz
     mkdir hdf5
     export HDF5_DIR="$PWD/hdf5"
-    export LIB_DIR="$HDF5_DIR/lib"
+    export HDF5_INCLUDEDIR="$HDF5_DIR/include"
+    export HDF5_LIBDIR="$HDF5_DIR/lib"
 
     echo "Building HDF5"
     cd hdf5-1.12.1
@@ -43,13 +55,7 @@ setup_hdf5 () {
     make -j 2
     make install
     cd ..
-}
-
-setup_highfive () {
-    echo "Downloading highfive"
-    curl -Ls https://github.com/BlueBrain/HighFive/archive/refs/tags/v2.3.1.tar.gz -o highfive-2.3.1.tar.gz
-    tar -xf highfive-2.3.1.tar.gz
-    mv highfive-2.3.1 highfive
+    echo "HDF5 setup successful"
 }
 
 cd ..
@@ -58,3 +64,6 @@ setup_eigen
 setup_libint
 setup_hdf5
 setup_highfive
+
+export QMFLOWS_INCLUDEDIR="$HIGHFIVE_INCLUDEDIR:$HDF5_INCLUDEDIR:$LIBINT_INCLUDEDIR:$EIGEN3_INCLUDEDIR:$BOOST_INCLUDEDIR"
+export QMFLOWS_LIBDIR="$LIBINT_INCLUDEDIR"
