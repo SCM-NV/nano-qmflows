@@ -1,7 +1,7 @@
 #!/bin/bash
 
 echo
-set -e
+# set -e
 
 N_PROC=2
 
@@ -93,7 +93,9 @@ setup_libint () {
         chmod u+rx autogen.sh
         ./autogen.sh
         cd ../libint_build
-        ../libint-$LIBINT_VERSION/configure --enable-shared=yes --prefix=$LIBINT_DIR CPPFLAGS="-I$BOOST_DIR -I$GMP_DIR/include" LIBS="-I$GMP_DIR/lib" --enable-shared=yes
+        ../libint-$LIBINT_VERSION/configure --enable-shared=yes --prefix=$LIBINT_DIR CPPFLAGS="-I$BOOST_DIR -I$GMP_DIR/include" LIBS="-I$GMP_DIR/lib"
+        cat config.log
+        exit 1
         echo ::endgroup::
         printf "%71.71s\n" "✓ $(($SECONDS - $start))s"
 
