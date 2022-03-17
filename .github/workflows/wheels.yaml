@@ -34,6 +34,9 @@ jobs:
           CIBW_BUILD_VERBOSITY: 3
           CIBW_BEFORE_BUILD: bash {project}/tools/install_cpp_deps.sh
           CIBW_REPAIR_WHEEL_COMMAND: auditwheel -v repair -w {dest_dir} {wheel}
+          CIBW_ENVIRONMENT:
+            QMFLOWS_INCLUDEDIR="{project}/highfive/include:{project}/hdf5/include:{project}/libint2/include:{project}/eigen/Eigen:{project}/boost/boost"
+            QMFLOWS_LIBDIR="{project}/hdf5/lib"
 
       - uses: actions/upload-artifact@v2
         with:

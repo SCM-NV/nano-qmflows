@@ -21,7 +21,7 @@ setup_boost () {
     export BOOST_INCLUDEDIR="$PWD/boost/boost"
     echo ::endgroup::
 
-    printf "%66.66s\n" "✓ $(($SECONDS - $start))s"
+    printf "%70.70s\n" "✓ $(($SECONDS - $start))s"
 }
 
 setup_eigen () {
@@ -34,7 +34,7 @@ setup_eigen () {
     export EIGEN3_INCLUDEDIR="$PWD/eigen/Eigen"
     echo ::endgroup::
 
-    printf "%66.66s\n" "✓ $(($SECONDS - $start))s"
+    printf "%70.70s\n" "✓ $(($SECONDS - $start))s"
 }
 
 setup_libint () {
@@ -43,11 +43,11 @@ setup_libint () {
     echo ::group::"Download libint"
     curl -Ls https://github.com/evaleev/libint/archive/refs/tags/v$LIBINT_VERSION.tar.gz -o libint-$LIBINT_VERSION.tar.gz
     tar -xf libint-$LIBINT_VERSION.tar.gz
-    mv libint-$LIBINT_VERSION libint
-    export LIBINT_INCLUDEDIR="$PWD/libint/include"
+    mv libint-$LIBINT_VERSION libint2
+    export LIBINT_INCLUDEDIR="$PWD/libint2/include"
     echo ::endgroup::
 
-    printf "%66.66s\n" "✓ $(($SECONDS - $start))s"
+    printf "%70.70s\n" "✓ $(($SECONDS - $start))s"
 }
 
 setup_hdf5 () {
@@ -61,19 +61,24 @@ setup_hdf5 () {
     export HDF5_LIBDIR="$HDF5_DIR/lib"
     echo ::endgroup::
 
-    printf "%66.66s\n" "✓ $(($SECONDS - $start))s"
+    printf "%70.70s\n" "✓ $(($SECONDS - $start))s"
     start=$SECONDS
 
-    echo ::group::"Build HDF5"
+    echo ::group::"Configure HDF5"
     cd hdf5-$HDF5_VERSION
     chmod u+rx autogen.sh
     ./configure --prefix=$HDF5_DIR --enable-build-mode=production
+
+    printf "%70.70s\n" "✓ $(($SECONDS - $start))s"
+    start=$SECONDS
+
+    echo ::group::"Build HDF5"
     make -j 2
     make install
     cd ..
     echo ::endgroup::
 
-    printf "%66.66s\n" "✓ $(($SECONDS - $start))s"
+    printf "%70.70s\n" "✓ $(($SECONDS - $start))s"
 }
 
 setup_highfive () {
@@ -86,15 +91,11 @@ setup_highfive () {
     export HIGHFIVE_INCLUDEDIR="$PWD/highfive/include"
     echo ::endgroup::
 
-    printf "%66.66s\n" "✓ $(($SECONDS - $start))s"
+    printf "%70.70s\n" "✓ $(($SECONDS - $start))s"
 }
 
-cd ..
 setup_boost
 setup_eigen
 setup_libint
 setup_hdf5
 setup_highfive
-
-export QMFLOWS_INCLUDEDIR="$HIGHFIVE_INCLUDEDIR:$HDF5_INCLUDEDIR:$LIBINT_INCLUDEDIR:$EIGEN3_INCLUDEDIR:$BOOST_INCLUDEDIR"
-export QMFLOWS_LIBDIR="$LIBINT_INCLUDEDIR"
