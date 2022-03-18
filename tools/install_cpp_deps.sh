@@ -91,9 +91,11 @@ setup_libint () {
         chmod u+rx autogen.sh
         ./autogen.sh
         cd ../libint_build
+        export LD_LIBRARY_PATH="$GMP_DIR/lib":"$LD_LIBRARY_PATH"
+        export LIBRARY_PATH="$GMP_DIR/lib":"$LIBRARY_PATH"
         set +e
         {
-            ../libint-$LIBINT_VERSION/configure CPPFLAGS="-I$BOOST_DIR -I$GMP_DIR/include" LIBRARY_PATH="$GMP_DIR/lib" LD_LIBRARY_PATH="$GMP_DIR/lib":$LD_LIBRARY_PATH --enable-shared=yes --enable-static=no
+            ../libint-$LIBINT_VERSION/configure --prefix=$LIBINT_DIR CPPFLAGS="-I$BOOST_DIR -I$GMP_DIR/include" LIBS="-I$GMP_DIR/lib" --enable-shared=yes --enable-static=no
         } || {
             exit_code=$?
             echo ::endgroup::
