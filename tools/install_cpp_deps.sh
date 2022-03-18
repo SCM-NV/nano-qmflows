@@ -92,6 +92,7 @@ setup_libint () {
         ./autogen.sh
         cd ../libint_build
         export LD_LIBRARY_PATH="$GMP_DIR/lib":"$LD_LIBRARY_PATH"
+        export LIBRARY_PATH="$GMP_DIR/lib":"$LIBRARY_PATH"
         export LD_RUN_PATH="$GMP_DIR/lib":$LD_RUN_PATH
         set +e
         {
