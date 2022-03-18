@@ -27,4 +27,4 @@ build-verbosity = "3"
 before-build = "bash {project}/tools/install_cpp_deps.sh"
 repair-wheel-command = "auditwheel -v repair -w {dest_dir} {wheel}"
 manylinux-x86_64-image = "manylinux2014"
-environment = { QMFLOWS_INCLUDEDIR="highfive/include:hdf5/include:libint2/include:eigen/Eigen:boost/boost", QMFLOWS_LIBDIR="hdf5/lib:libint2/lib" }
+environment = { QMFLOWS_INCLUDEDIR="highfive/include:hdf5/include:libint2/include:eigen:boost", QMFLOWS_LIBDIR="hdf5/lib:libint2/lib" }
