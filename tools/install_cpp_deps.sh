@@ -103,6 +103,7 @@ setup_libint () {
 
             start=$SECONDS
             echo ::group::"Dumping libint $LIBINT_VERSION build log"
+            ls -la "$GMP_DIR/lib"
             cat config.log
             echo ::endgroup::
             printf "%71.71s\n" "✓ $(($SECONDS - $start))s"
