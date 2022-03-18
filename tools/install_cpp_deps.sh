@@ -1,6 +1,5 @@
 #!/bin/bash
 
-echo
 set -e
 
 N_PROC=2
@@ -93,7 +92,23 @@ setup_libint () {
         ./autogen.sh
         cd ../libint_build
         export LD_LIBRARY_PATH="$GMP_DIR/lib":"$LD_LIBRARY_PATH"
-        ../libint-$LIBINT_VERSION/configure --prefix=$LIBINT_DIR CPPFLAGS="-I$BOOST_DIR -I$GMP_DIR/include" LIBS="-I$GMP_DIR/lib" --enable-shared=yes --enable-static=no
+        export LD_RUN_PATH="$GMP_DIR/lib":$LD_RUN_PATH
+        set +e
+        {
+            ../libint-$LIBINT_VERSION/configure --prefix=$LIBINT_DIR CPPFLAGS="-I$BOOST_DIR -I$GMP_DIR/include" LIBS="-I$GMP_DIR/lib" --enable-shared=yes
+        } || {
+            exit_code=$?
+            echo ::endgroup::
+            printf "%71.71s\n" "✕ $(($SECONDS - $start))s"
+
+            start=$SECONDS
+            echo ::group::"Dumping libint $LIBINT_VERSION build log"
+            cat config.log
+            echo ::endgroup::
+            printf "%71.71s\n" "✓ $(($SECONDS - $start))s"
+            exit $exit_code
+        }
+        set -e
         echo ::endgroup::
         printf "%71.71s\n" "✓ $(($SECONDS - $start))s"
 
