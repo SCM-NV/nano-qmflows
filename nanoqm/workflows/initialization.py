@@ -33,7 +33,7 @@ import h5py
 import numpy as np
 import pkg_resources
 import qmflows
-from nanoutils import RecursiveKeysView
+from nanoutils import RecursiveItemsView
 from packaging.version import Version
 from qmflows.common import AtomBasisKey
 from qmflows.parsers import parse_string_xyz
@@ -135,10 +135,17 @@ def _prepend_exp_set(match: re.Match) -> str:
 
 def _convert_legacy_basis(f: h5py.Group) -> None:
     """Update the basis-set format to nanoqm 0.13.0-style and store ``nanoqm__version__``."""
-    keys = [k for k in RecursiveKeysView(f) if _BASIS_PATH_PATTERN.match(k) is not None]
-    for k in keys:
-        k_new = _SUFFIX_PATTERN.sub(_prepend_exp_set, k)
-        f.move(k, k_new)
+    items = [(k, v) for k, v in RecursiveItemsView(f) if _BASIS_PATH_PATTERN.match(k) is not None]
+    for name, dset in items:
+        # Update the dataset-path
+        name_new = _SUFFIX_PATTERN.sub(_prepend_exp_set, name)
+        f.move(name, name_new)
+
+        # Update the type of `basisFormat`
+        if not name.endswith("coefficients"):
+            continue
+        basis_fmt = dset.attrs["basisFormat"]
+        dset.attrs["basisFormat"] = np.fromiter(basis_fmt[1:-1].split(","), dtype=np.int64)
     f.attrs["__version__"] = __version__
 
 
@@ -159,7 +166,7 @@ def store_cp2k_basis(path_hdf5: PathLike, path_basis: PathLike) -> None:
 
     exponents = [xs.exponents for xs in vals]
     coefficients = [xs.coefficients for xs in vals]
-    formats = [str(xs.basisFormat) for xs in keys]
+    formats = [np.fromiter(xs.basisFormat, dtype=np.int64) for xs in keys]
 
     store_arrays_in_hdf5(path_hdf5, node_paths_exponents, exponents)
     store_arrays_in_hdf5(path_hdf5, node_paths_coefficients, coefficients,

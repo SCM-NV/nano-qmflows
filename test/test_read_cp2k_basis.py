@@ -1,12 +1,15 @@
 """Read basis in CP2K format."""
 
+from __future__ import annotations
+
 import shutil
 from pathlib import Path
 
+import numpy as np
 import yaml
 import h5py
 import pkg_resources
-from nanoutils import RecursiveKeysView
+from nanoutils import RecursiveKeysView, RecursiveItemsView
 from packaging.version import Version
 from assertionlib import assertion
 
@@ -23,24 +26,34 @@ class TestRedCP2KBasis:
         path_basis = pkg_resources.resource_filename(
             "nanoqm", "basis/BASIS_MOLOPT")
 
-        coefficients_format_carbon_DZVP_MOLOPT_GTH = {'[2, 0, 2, 7, 2, 2, 1]', '(2, 0, 2, 7, 2, 2, 1)'}
         store_cp2k_basis(tmp_hdf5, path_basis)
 
         with h5py.File(tmp_hdf5, 'r') as f5:
             dset = f5["cp2k/basis/c/DZVP-MOLOPT-GTH/0/coefficients"]
+
             # Check that the format is store
-            assertion.contains(coefficients_format_carbon_DZVP_MOLOPT_GTH, dset.attrs['basisFormat'])
+            ref = [2, 0, 2, 7, 2, 2, 1]
+            np.testing.assert_array_equal(dset.attrs['basisFormat'], ref)
+
             # Check Shape of the coefficients
             assertion.eq(dset.shape, (5, 7))
 
-    def test_legacy_hdf5(self, tmp_path: Path) -> None:
+    def test_legacy(self, tmp_path: Path) -> None:
         hdf5_file = tmp_path / "legacy.hdf5"
         shutil.copy2(PATH_TEST / "legacy.hdf5", hdf5_file)
 
         store_cp2k_basis(hdf5_file, PATH_TEST / "BASIS_MOLOPT")
-
         with open(PATH_TEST / "test_initialization.yaml", "r") as f1:
             ref = set(yaml.load(f1, Loader=yaml.SafeLoader)["MOLOPT"])
+
         with h5py.File(hdf5_file, "r") as f2:
             assertion.eq(RecursiveKeysView(f2), ref)
             assertion.assert_(Version, f2.attrs.get("__version__"))
+
+            for name, dset in RecursiveItemsView(f2):
+                if not name.endswith("coefficients"):
+                    continue
+                basis_fmt = dset.attrs.get("basisFormat")
+                assertion.isinstance(basis_fmt, np.ndarray, message=name)
+                assertion.eq(basis_fmt.ndim, 1, message=name)
+                assertion.eq(basis_fmt.dtype, np.int64, message=name)

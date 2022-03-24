@@ -281,15 +281,9 @@ std::vector<Matrix> compute_multipoles(
   return result;
 }
 
-libint2::svector<int> read_basisFormat(const string &basisFormat) {
-  // Transform the string containing the basis format for CP2K, into a vector of
-  // strings
-  libint2::svector<int> rs;
-  for (auto x : basisFormat) {
-    if (std::isdigit(x))
-      // convert char to int
-      rs.push_back(x - '0');
-  }
+libint2::svector<int> read_basisFormat(const std::vector<int> &basisFormat) {
+  // Transform a stdlib vector into a libint2 svector
+  libint2::svector<int> rs(basisFormat.begin(), basisFormat.end());
   return rs;
 }
 
@@ -302,7 +296,7 @@ CP2K_Basis_Atom read_basis_from_hdf5(const string &path_file,
                                      const int exp_set) {
   std::vector<std::vector<double>> coefficients;
   std::vector<double> exponents;
-  string format;
+  std::vector<int> format;
   try {
 
     // Open an existing HDF5 File
