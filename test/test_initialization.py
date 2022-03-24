@@ -6,13 +6,13 @@ import os
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+import qmflows
 import h5py
 import pytest
 import yaml
-import pkg_resources as pkg
 from nanoutils import RecursiveKeysView
 from assertionlib import assertion
-from qmflows.parsers.cp2KParser import readCp2KBasis
+from packaging.version import Version
 
 from nanoqm.common import UniqueSafeLoader, DictConfig
 from nanoqm.workflows.initialization import initialize, save_basis_to_hdf5
@@ -64,15 +64,15 @@ class TestSaveBasisToHDF5:
         "ADMM": ["BASIS_MOLOPT", "BASIS_ADMM", "BASIS_ADMM_MOLOPT"],
     }
 
-    @pytest.fixture(scope="function", autouse=True, params=PARAM.items(), ids=PARAM, name="input")
+    @pytest.fixture(scope="function", params=PARAM.items(), ids=PARAM, name="input")
     def get_input(
         self,
         request: _pytest.fixtures.SubRequest,
         tmp_path: Path,
     ) -> tuple[DictConfig, set[str]]:
         name, basis_file_name = request.param
-        if name == "ADMM":  # TODO
-            pytest.xfail("Basis sets consisting of multiple subsets aren't supported yet")
+        if name == "ADMM" and (Version(qmflows.__version__) < Version("0.11.3")):
+            pytest.xfail("Basis sets consisting of multiple subsets require qmflows >=0.11.3")
 
         # COnstruct the settings
         hdf5_file = tmp_path / f"{name}.hdf5"

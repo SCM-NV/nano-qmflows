@@ -19,8 +19,8 @@ def test_read_cp2k_basis(tmp_path: PathLike) -> None:
     coefficients_format_carbon_DZVP_MOLOPT_GTH = {'[2, 0, 2, 7, 2, 2, 1]', '(2, 0, 2, 7, 2, 2, 1)'}
     store_cp2k_basis(tmp_hdf5, path_basis)
 
-    with h5py.File(tmp_hdf5, 'a') as f5:
-        dset = f5["cp2k/basis/c/DZVP-MOLOPT-GTH/coefficients"]
+    with h5py.File(tmp_hdf5, 'r') as f5:
+        dset = f5["cp2k/basis/c/DZVP-MOLOPT-GTH/0/coefficients"]
         # Check that the format is store
         assert dset.attrs['basisFormat'] in coefficients_format_carbon_DZVP_MOLOPT_GTH
         # Check Shape of the coefficients

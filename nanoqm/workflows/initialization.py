@@ -30,6 +30,9 @@ from typing import List, Union
 
 import numpy as np
 import pkg_resources
+import qmflows
+from packaging.version import Version
+from qmflows.common import AtomBasisKey
 from qmflows.parsers import parse_string_xyz
 from qmflows.parsers.cp2KParser import readCp2KBasis
 from qmflows.type_hints import PathLike
@@ -110,15 +113,24 @@ def save_basis_to_hdf5(config: DictConfig) -> None:
             store_cp2k_basis(config.path_hdf5, path)
 
 
+_QMFLOWS_VERSION = Version(qmflows.__version__)
+_QMFLOWS_11_3 = Version("0.11.3")
+
+
+def _join(xs: AtomBasisKey, *args: str) -> str:
+    return join("cp2k/basis", xs.atom.lower(), xs.basis, *args)
+
+
 def store_cp2k_basis(path_hdf5: PathLike, path_basis: PathLike) -> None:
     """Read the CP2K basis set into an HDF5 file."""
-    keys, vals = readCp2KBasis(path_basis)
-    node_paths_exponents = [
-        join("cp2k/basis", xs.atom.lower(), xs.basis, "exponents") for xs in keys
-    ]
-    node_paths_coefficients = [
-        join("cp2k/basis", xs.atom.lower(), xs.basis, "coefficients") for xs in keys
-    ]
+    if _QMFLOWS_VERSION >= _QMFLOWS_11_3:
+        keys, vals = readCp2KBasis(path_basis, allow_multiple_exponents=True)
+        node_paths_exponents = [_join(xs, str(xs.exponent_set), "exponents") for xs in keys]
+        node_paths_coefficients = [_join(xs, str(xs.exponent_set), "coefficients") for xs in keys]
+    else:
+        keys, vals = readCp2KBasis(path_basis)
+        node_paths_exponents = [_join(xs, "0", "exponents") for xs in keys]
+        node_paths_coefficients = [_join(xs, "0", "coefficients") for xs in keys]
 
     exponents = [xs.exponents for xs in vals]
     coefficients = [xs.coefficients for xs in vals]

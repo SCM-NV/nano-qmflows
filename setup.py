@@ -18,7 +18,7 @@ else:
 here = os.path.abspath(os.path.dirname(__file__))
 
 version: "dict[str, str]" = {}
-with open(os.path.join(here, 'nanoqm', '__version__.py')) as f:
+with open(os.path.join(here, 'nanoqm', '_version.py')) as f:
     exec(f.read(), version)
 
 
@@ -171,6 +171,7 @@ setup(
         'pyyaml>=5.1',
         'plams>=1.5.1',
         'qmflows>=0.11.2',
+        'packaging>=1.16.8',
     ],
     cmdclass={'build_ext': BuildExt},
     python_requires='>=3.7',
