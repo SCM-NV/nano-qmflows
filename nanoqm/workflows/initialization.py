@@ -17,6 +17,7 @@ from __future__ import annotations
 
 __all__ = ['initialize', 'read_swaps', 'split_trajectory']
 
+import re
 import fnmatch
 import getpass
 import logging
@@ -28,15 +29,18 @@ from pathlib import Path
 from subprocess import PIPE, Popen
 from typing import List, Union
 
+import h5py
 import numpy as np
 import pkg_resources
 import qmflows
+from nanoutils import RecursiveKeysView
 from packaging.version import Version
 from qmflows.common import AtomBasisKey
 from qmflows.parsers import parse_string_xyz
 from qmflows.parsers.cp2KParser import readCp2KBasis
 from qmflows.type_hints import PathLike
 
+from .. import __version__
 from ..common import (BasisFormats, DictConfig, Matrix, change_mol_units,
                       is_data_in_hdf5, retrieve_hdf5_data,
                       store_arrays_in_hdf5)
@@ -114,16 +118,37 @@ def save_basis_to_hdf5(config: DictConfig) -> None:
 
 
 _QMFLOWS_VERSION = Version(qmflows.__version__)
-_QMFLOWS_11_3 = Version("0.11.3")
+_QMFLOWS_0_11_3 = Version("0.11.3")
+_NANO_QMFLOWS_0_13_0 = Version("0.13.0")
+
+_BASIS_PATH_PATTERN = re.compile(r"/cp2k/basis/([a-z]+)/([^/]+)/(coefficients|exponents)")
+_SUFFIX_PATTERN = re.compile(r"/(coefficients|exponents)")
 
 
 def _join(xs: AtomBasisKey, *args: str) -> str:
     return join("cp2k/basis", xs.atom.lower(), xs.basis, *args)
 
 
+def _prepend_exp_set(match: re.Match) -> str:
+    return f"/0/{match[1]}"
+
+
+def _convert_legacy_basis(f: h5py.Group) -> None:
+    """Update the basis-set format to nanoqm 0.13.0-style and store ``nanoqm__version__``."""
+    keys = [k for k in RecursiveKeysView(f) if _BASIS_PATH_PATTERN.match(k) is not None]
+    for k in keys:
+        k_new = _SUFFIX_PATTERN.sub(_prepend_exp_set, k)
+        f.move(k, k_new)
+    f.attrs["__version__"] = __version__
+
+
 def store_cp2k_basis(path_hdf5: PathLike, path_basis: PathLike) -> None:
     """Read the CP2K basis set into an HDF5 file."""
-    if _QMFLOWS_VERSION >= _QMFLOWS_11_3:
+    with h5py.File(path_hdf5, "r+") as f:
+        if Version(f.attrs.get("__version__", "0.0.0")) < _NANO_QMFLOWS_0_13_0:
+            _convert_legacy_basis(f)
+
+    if _QMFLOWS_VERSION >= _QMFLOWS_0_11_3:
         keys, vals = readCp2KBasis(path_basis, allow_multiple_exponents=True)
         node_paths_exponents = [_join(xs, str(xs.exponent_set), "exponents") for xs in keys]
         node_paths_coefficients = [_join(xs, str(xs.exponent_set), "coefficients") for xs in keys]

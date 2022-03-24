@@ -1,27 +1,46 @@
 """Read basis in CP2K format."""
+
+import shutil
 from pathlib import Path
 
+import yaml
 import h5py
 import pkg_resources
-from qmflows.type_hints import PathLike
+from nanoutils import RecursiveKeysView
+from packaging.version import Version
+from assertionlib import assertion
 
 from nanoqm.workflows.initialization import store_cp2k_basis
+from .utilsTest import PATH_TEST
 
 
-def test_read_cp2k_basis(tmp_path: PathLike) -> None:
-    """Read Basis set in CP2K format."""
-    tmp_hdf5 = Path(tmp_path) / 'cp2k_basis.hdf5'
-    tmp_hdf5.touch()
+class TestRedCP2KBasis:
+    def test_pass(self, tmp_path: Path) -> None:
+        """Read Basis set in CP2K format."""
+        tmp_hdf5 = Path(tmp_path) / 'cp2k_basis.hdf5'
+        tmp_hdf5.touch()
 
-    path_basis = pkg_resources.resource_filename(
-        "nanoqm", "basis/BASIS_MOLOPT")
+        path_basis = pkg_resources.resource_filename(
+            "nanoqm", "basis/BASIS_MOLOPT")
 
-    coefficients_format_carbon_DZVP_MOLOPT_GTH = {'[2, 0, 2, 7, 2, 2, 1]', '(2, 0, 2, 7, 2, 2, 1)'}
-    store_cp2k_basis(tmp_hdf5, path_basis)
+        coefficients_format_carbon_DZVP_MOLOPT_GTH = {'[2, 0, 2, 7, 2, 2, 1]', '(2, 0, 2, 7, 2, 2, 1)'}
+        store_cp2k_basis(tmp_hdf5, path_basis)
 
-    with h5py.File(tmp_hdf5, 'r') as f5:
-        dset = f5["cp2k/basis/c/DZVP-MOLOPT-GTH/0/coefficients"]
-        # Check that the format is store
-        assert dset.attrs['basisFormat'] in coefficients_format_carbon_DZVP_MOLOPT_GTH
-        # Check Shape of the coefficients
-        assert dset.shape == (5, 7)
+        with h5py.File(tmp_hdf5, 'r') as f5:
+            dset = f5["cp2k/basis/c/DZVP-MOLOPT-GTH/0/coefficients"]
+            # Check that the format is store
+            assertion.contains(coefficients_format_carbon_DZVP_MOLOPT_GTH, dset.attrs['basisFormat'])
+            # Check Shape of the coefficients
+            assertion.eq(dset.shape, (5, 7))
+
+    def test_legacy_hdf5(self, tmp_path: Path) -> None:
+        hdf5_file = tmp_path / "legacy.hdf5"
+        shutil.copy2(PATH_TEST / "legacy.hdf5", hdf5_file)
+
+        store_cp2k_basis(hdf5_file, PATH_TEST / "BASIS_MOLOPT")
+
+        with open(PATH_TEST / "test_initialization.yaml", "r") as f1:
+            ref = set(yaml.load(f1, Loader=yaml.SafeLoader)["MOLOPT"])
+        with h5py.File(hdf5_file, "r") as f2:
+            assertion.eq(RecursiveKeysView(f2), ref)
+            assertion.assert_(Version, f2.attrs.get("__version__"))

@@ -172,6 +172,7 @@ setup(
         'plams>=1.5.1',
         'qmflows>=0.11.2',
         'packaging>=1.16.8',
+        'Nano-Utils>=2.0.0',
     ],
     cmdclass={'build_ext': BuildExt},
     python_requires='>=3.7',
@@ -185,7 +186,6 @@ setup(
             'pytest-mock',
             'Cython',
             'setuptools',
-            'Nano-Utils>=2.0',
         ],
         'doc': ['sphinx>=2.1', 'sphinx-autodoc-typehints', 'sphinx_rtd_theme', 'nbsphinx']
     },
