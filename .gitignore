@@ -60,15 +60,12 @@ target/
 *~
 
 #vi
-*.swp 
+*.swp
 
 #Profiling
 *.lprof
 *.prof
 *.out
-
-# HDF5
-*.hdf5
 
 # pytest
 .pytest*
