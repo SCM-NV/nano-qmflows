@@ -117,11 +117,11 @@ def compute_matrix_multipole(
 
     if multipole == 'overlap':
         matrix_multipole = compute_integrals_multipole(
-            path, path_hdf5, basis_name, multipole, 0)
+            path, path_hdf5, basis_name, multipole)
     elif multipole == 'dipole':
         # The tensor contains the overlap + {x, y, z} dipole matrices
         super_matrix = compute_integrals_multipole(
-            path, path_hdf5, basis_name, multipole, 0)
+            path, path_hdf5, basis_name, multipole)
         dim = super_matrix.shape[1]
 
         # Reshape the super_matrix as a tensor containing overlap + {x, y, z} dipole matrices
@@ -131,7 +131,7 @@ def compute_matrix_multipole(
         # The tensor contains the overlap + {xx, xy, xz, yy, yz, zz} quadrupole matrices
         print("super_matrix: ", path, path_hdf5, basis_name, multipole)
         super_matrix = compute_integrals_multipole(
-            path, path_hdf5, basis_name, multipole, 0)
+            path, path_hdf5, basis_name, multipole)
         dim = super_matrix.shape[1]
 
         # Reshape to 3d tensor containing overlap + {x, y, z} + {xx, xy, xz, yy, yz, zz} quadrupole matrices

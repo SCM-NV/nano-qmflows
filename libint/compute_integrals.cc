@@ -12,6 +12,7 @@ namespace py = pybind11;
 using HighFive::Attribute;
 using HighFive::DataSet;
 using HighFive::File;
+using HighFive::Group;
 using libint2::Atom;
 using libint2::BasisSet;
 using libint2::Operator;
@@ -35,8 +36,7 @@ std::vector<Atom> read_xyz_from_file(const string &path_xyz) {
 Matrix compute_integrals_couplings(const string &path_xyz_1,
                                    const string &path_xyz_2,
                                    const string &path_hdf5,
-                                   const string &basis_name,
-                                   const int exp_set);
+                                   const string &basis_name);
 
 int main() {
 
@@ -44,10 +44,9 @@ int main() {
   string path_hdf5 = "../test/test_files/ethylene.hdf5";
   string basis_name = "DZVP-MOLOPT-SR-GTH";
   string dataset_name = "ethylene/point_n";
-  int exp_set = 0;
 
   auto xs =
-      compute_integrals_couplings(path_xyz, path_xyz, path_hdf5, basis_name, exp_set);
+      compute_integrals_couplings(path_xyz, path_xyz, path_hdf5, basis_name);
 }
 
 // OpenMP or multithread computations
@@ -281,62 +280,80 @@ std::vector<Matrix> compute_multipoles(
   return result;
 }
 
-libint2::svector<int> read_basisFormat(const std::vector<int> &basisFormat) {
-  // Transform a stdlib vector into a libint2 svector
-  libint2::svector<int> rs(basisFormat.begin(), basisFormat.end());
-  return rs;
-}
-
 /**
  * \brief Read a basis set from HDF5 as a matrix
  */
 CP2K_Basis_Atom read_basis_from_hdf5(const string &path_file,
                                      const string &symbol,
-                                     const string &basis,
-                                     const int exp_set) {
+                                     const string &basis) {
   std::vector<std::vector<double>> coefficients;
   std::vector<double> exponents;
   std::vector<int> format;
-  try {
 
+  libint2::svector<double> small_exp;
+  libint2::svector<libint2::svector<double>> small_coef;
+  libint2::svector<int> small_fmt;
+
+  try {
     // Open an existing HDF5 File
-    File file(path_file, File::ReadOnly);
+    const File file(path_file, File::ReadOnly);
 
     // build paths to the coefficients and exponents
-    int n_elec = valence_electrons.at(symbol);
-    string root = "cp2k/basis/" + symbol + "/" + basis + "-q" + std::to_string(n_elec) + "/" + std::to_string(exp_set);
-    string path_coefficients = root + "/coefficients";
-    string path_exponents = root + "/exponents";
+    const int n_elec = valence_electrons.at(symbol);
+    const string root = "cp2k/basis/" + symbol + "/" + basis + "-q" + std::to_string(n_elec);
 
-    // Get the dataset
-    DataSet dataset_cs = file.getDataSet(path_coefficients);
-    DataSet dataset_es = file.getDataSet(path_exponents);
-    Attribute attr = dataset_cs.getAttribute("basisFormat");
+    const Group group = file.getGroup(root);
+    const std::vector<string> dset_names = group.listObjectNames();
 
-    // extract data from the
-    dataset_cs.read(coefficients);
-    dataset_es.read(exponents);
-    attr.read(format);
+    // Iterate over all exponent sets; for most basis sets there is
+    // only a single set of exponents, but there are exception such
+    // as BASIS_ADMM_MOLOPT
+    for (const auto &name : dset_names) {
+      const string path_coefficients = root + "/" + name + "/coefficients";
+      const string path_exponents = root + "/" + name + "/exponents";
 
+      // Get the dataset
+      const DataSet dataset_cs = file.getDataSet(path_coefficients);
+      const DataSet dataset_es = file.getDataSet(path_exponents);
+      const Attribute attr = dataset_cs.getAttribute("basisFormat");
+
+      // extract data from the datasets
+      dataset_cs.read(coefficients);
+      dataset_es.read(exponents);
+      attr.read(format);
+
+      // Move data to small vectors and keep extending them as iteration
+      // over `dset_names` continues
+      std::move(exponents.begin(), exponents.end(), std::back_inserter(small_exp));
+
+      for (const auto &v : coefficients) {
+        libint2::svector<double> small;
+        std::move(v.begin(), v.end(), std::back_inserter(small));
+        small_coef.push_back(small);
+      }
+
+      // The CP2K basis format is defined by a vector of integers, for each atom.
+      // For example For the C atom and the Basis DZVP-MOLOPT-GTH the basis format
+      // is:
+      //  2 0 2 7 2 2 1
+      // where:
+      //   * 2 is the Principal quantum number
+      //   * 0 is the minimum angular momemtum l
+      //   * 2 is the maximum angular momentum l
+      //   * 7 is the number of total exponents
+      //   * 2 Contractions of S Gaussian Orbitals
+      //   * 2 Contractions of P Gaussian Orbitals
+      //   * 1 Contraction of D Gaussian Orbital
+      //
+      // Note: From element 4 onwards are define the number of contracted for each
+      // quantum number (all prior elements are disgarded).
+      std::move(format.begin() + 4, format.end(), std::back_inserter(small_fmt));
+    }
   } catch (HighFive::Exception &err) {
     // catch and print any HDF5 error
     std::cerr << err.what() << std::endl;
   }
-
-  // Move data to small vector
-  libint2::svector<double> small_exponents;
-  std::move(exponents.begin(), exponents.end(),
-            std::back_inserter(small_exponents));
-
-  libint2::svector<libint2::svector<double>> small_coefficients;
-  for (const auto &v : coefficients) {
-    libint2::svector<double> small;
-    std::move(v.begin(), v.end(), std::back_inserter(small));
-    small_coefficients.push_back(small);
-  }
-
-  return CP2K_Basis_Atom{symbol, small_coefficients, small_exponents,
-                         read_basisFormat(format)};
+  return CP2K_Basis_Atom{symbol, small_coef, small_exp, small_fmt};
 }
 
 /**
@@ -360,8 +377,7 @@ std::vector<string> get_unique_symbols(const std::vector<Atom> &atoms) {
 std::unordered_map<string, CP2K_Basis_Atom>
 create_map_symbols_basis(const string &path_hdf5,
                          const std::vector<Atom> &atoms,
-                         const string &basis,
-                         const int exp_set) {
+                         const string &basis) {
   // Function to generate a map from symbols to basis specification
 
   std::unordered_map<string, CP2K_Basis_Atom> dict;
@@ -369,7 +385,7 @@ create_map_symbols_basis(const string &path_hdf5,
   // Select the unique atomic symbols
   std::vector<string> symbols = get_unique_symbols(atoms);
   for (const auto &at : symbols)
-    dict[at] = read_basis_from_hdf5(path_hdf5, at, basis, exp_set);
+    dict[at] = read_basis_from_hdf5(path_hdf5, at, basis);
 
   return dict;
 }
@@ -379,31 +395,17 @@ create_map_symbols_basis(const string &path_hdf5,
  */
 libint2::svector<Shell> create_shells_for_atom(const CP2K_Basis_Atom &data,
                                                const Atom &atom) {
-  // The CP2K basis format is defined by a vector of integers, for each atom.
-  // For example For the C atom and the Basis DZVP-MOLOPT-GTH the basis format
-  // is:
-  //  2 0 2 7 2 2 1
-  // where:
-  //   * 2 is the Principal quantum number
-  //   * 0 is the minimum angular momemtum l
-  //   * 2 is the maximum angular momentum l
-  //   * 7 is the number of total exponents
-  //   * 2 Contractions of S Gaussian Orbitals
-  //   * 2 Contractions of P Gaussian Orbitals
-  //   * 1 Contraction of D Gaussian Orbital
-  // Note: From element 4 onwards are define the number of contracted for each
-  // quantum number.
   libint2::svector<int> basis_format = data.basis_format;
   libint2::svector<Shell> shells;
 
   int acc = 0;
-  for (int i = 0; i + 4 < static_cast<int>(basis_format.size()); i++) {
-    for (int j = 0; j < basis_format[i + 4]; j++) {
-      shells.push_back({data.exponents,
-                        {// compute integrals in sphericals
-                         {i, true, data.coefficients[acc]}},
-                        // Atomic Coordinates
-                        {{atom.x, atom.y, atom.z}}});
+  for (int i = 0; i < static_cast<int>(basis_format.size()); i++) {
+    for (int j = 0; j < basis_format[i]; j++) {
+      shells.push_back({
+        data.exponents,
+        {{i, true, data.coefficients[acc]}},  // compute integrals in sphericals
+        {{atom.x, atom.y, atom.z}}  // Atomic Coordinates
+      });
       acc += 1;
     }
   }
@@ -415,8 +417,7 @@ libint2::svector<Shell> create_shells_for_atom(const CP2K_Basis_Atom &data,
  */
 std::vector<Shell> make_cp2k_basis(const std::vector<Atom> &atoms,
                                    const string &path_hdf5,
-                                   const string &basis,
-                                   const int exp_set) {
+                                   const string &basis) {
   std::vector<Shell> shells;
 
   // set of symbols
@@ -424,7 +425,7 @@ std::vector<Shell> make_cp2k_basis(const std::vector<Atom> &atoms,
 
   // Read basis set data from the HDF5
   std::unordered_map<string, CP2K_Basis_Atom> dict =
-      create_map_symbols_basis(path_hdf5, atoms, basis, exp_set);
+      create_map_symbols_basis(path_hdf5, atoms, basis);
 
   for (const auto &atom : atoms) {
 
@@ -438,15 +439,14 @@ std::vector<Shell> make_cp2k_basis(const std::vector<Atom> &atoms,
 Matrix compute_integrals_couplings(const string &path_xyz_1,
                                    const string &path_xyz_2,
                                    const string &path_hdf5,
-                                   const string &basis_name,
-                                   const int exp_set) {
+                                   const string &basis_name) {
 
   set_nthread();
   std::vector<Atom> mol_1 = read_xyz_from_file(path_xyz_1);
   std::vector<Atom> mol_2 = read_xyz_from_file(path_xyz_2);
 
-  auto shells_1 = make_cp2k_basis(mol_1, path_hdf5, basis_name, exp_set);
-  auto shells_2 = make_cp2k_basis(mol_2, path_hdf5, basis_name, exp_set);
+  auto shells_1 = make_cp2k_basis(mol_1, path_hdf5, basis_name);
+  auto shells_2 = make_cp2k_basis(mol_2, path_hdf5, basis_name);
 
   // safe to use libint now
   libint2::initialize();
@@ -507,12 +507,11 @@ std::vector<Matrix> select_multipole(const std::vector<Atom> &atoms,
 Matrix compute_integrals_multipole(const string &path_xyz,
                                    const string &path_hdf5,
                                    const string &basis_name,
-                                   const string &multipole,
-                                   const int exp_set) {
+                                   const string &multipole) {
   set_nthread();
   std::vector<Atom> mol = read_xyz_from_file(path_xyz);
 
-  auto shells = make_cp2k_basis(mol, path_hdf5, basis_name, exp_set);
+  auto shells = make_cp2k_basis(mol, path_hdf5, basis_name);
 
   // safe to use libint now
   libint2::initialize();

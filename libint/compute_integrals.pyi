@@ -6,7 +6,6 @@ def compute_integrals_couplings(
     __path_xyz_2: str,
     __path_hdf5: str,
     __basis_name: str,
-    __exp_set: int,
 ) -> npt.NDArray[np.float64]: ...
 
 def compute_integrals_multipole(
@@ -14,5 +13,4 @@ def compute_integrals_multipole(
     __path_xyz_2: str,
     __basis_name: str,
     __multipole: str,
-    __exp_set: int,
 ) -> npt.NDArray[np.float64]: ...
