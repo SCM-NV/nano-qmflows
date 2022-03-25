@@ -241,7 +241,7 @@ def calcOverlapMtx(config: DictConfig, molecules: Tuple[MolXYZ, MolXYZ]) -> Matr
     basis_name = config["cp2k_general_settings"]["basis"]
     try:
         integrals = compute_integrals_couplings(
-            path_i, path_j, config["path_hdf5"], basis_name, 0)
+            path_i, path_j, config["path_hdf5"], basis_name)
     finally:
         os.remove(path_i)
         os.remove(path_j)
