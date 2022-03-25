@@ -81,7 +81,7 @@ class BasisFormats(NamedTuple):
     """NamedTuple that contains the name/value for the basis formats."""
 
     name: str
-    value: List[str]
+    value: list[npt.NDArray[np.int64]]
 
 
 def concat(xss: Iterable[Iterable[_T]]) -> List[_T]:
@@ -316,18 +316,20 @@ def number_spherical_functions_per_atom(
     path_hdf5: PathLike,
 ) -> npt.NDArray[np.int_]:
     """Compute the number of spherical shells per atom."""
-    with h5py.File(path_hdf5, 'r') as f5:
+    ret = []
+    with h5py.File(path_hdf5, 'r') as f:
         iterator = ((at_tup[0], valence_electrons[at_tup[0].capitalize()]) for at_tup in mol)
-        xs = [f5[f'{package_name}/basis/{atom}/{basis_name}-q{q}/coefficients']
-              for atom, q in iterator]
-        ys = [calc_orbital_Slabels(
-            read_basis_format(path.attrs['basisFormat'])) for path in xs]
+        for atom, q in iterator:
+            grp = f[f'{package_name}/basis/{atom}/{basis_name}-q{q}']
+            n_funcs = sum(
+                calc_n_spherics(grp[f"{i}/coefficients"].attrs['basisFormat'][4:]) for i in grp
+            )
+            ret.append(n_funcs)
+    return np.fromiter(ret, dtype=int)
 
-        return np.stack([sum(len(x) for x in ys[i]) for i in range(len(mol))])
 
-
-def calc_orbital_Slabels(fss: List[int] | List[List[int]]) -> List[Tuple[str, ...]]:
-    """Compute the spherical CGFs for a given basis set.
+def calc_n_spherics(fss: npt.NDArray[np.int_]) -> np.int_:
+    """Compute the number of spherical shells for a given basis set.
 
     Most quantum packages use standard basis set which contraction is
     presented usually by a format like:
@@ -344,47 +346,16 @@ def calc_orbital_Slabels(fss: List[int] | List[List[int]]) -> List[Tuple[str, ..
 
     Parameters
     ----------
-    name
-        Quantum package name
-    fss
+    fss : np.ndarray
         Format basis set
 
     Returns
     -------
-    list
-        containing tuples with the spherical CGFs
+    int
+        The number of spherical shells.
 
     """
-    angular_momentum = ['s', 'p', 'd', 'f', 'g']
-    return concat([funSlabels(dict_cp2k_order_sphericals, label, fs)  # type: ignore[arg-type]
-                   for label, fs in zip(angular_momentum, fss)])
-
-
-def funSlabels(
-    data: Mapping[str, Tuple[str, ...]],
-    label: str,
-    fs: int | List[int],
-) -> Iterator[Tuple[str, ...]]:
-    """Search for the spherical functions for each orbital type `label`."""
-    if isinstance(fs, list):
-        return repeat(data[label], sum(fs))
-    else:
-        return repeat(data[label], fs)
-
-
-def read_basis_format(basis_format: str) -> List[int]:
-    """Read the basis set using the specified format."""
-    fss = [int(i) for i in basis_format[1:-1].split(",")]
-    return fss[4:]  # cp2k coefficient formats start in column 5
-
-
-#: Ordering of the Spherical shells
-dict_cp2k_order_sphericals: Mapping[str, Tuple[str, ...]] = {
-    's': ('s',),
-    'p': ('py', 'pz', 'px'),
-    'd': ('d-2', 'd-1', 'd0', 'd+1', 'd+2'),
-    'f': ('f-3', 'f-2', 'f-1', 'f0', 'f+1', 'f+2', 'f+3')
-}
+    return (fss * np.arange(1, 1 + 2 * len(fss), 2)).sum()
 
 
 def read_cell_parameters_as_array(

@@ -35,7 +35,8 @@ std::vector<Atom> read_xyz_from_file(const string &path_xyz) {
 Matrix compute_integrals_couplings(const string &path_xyz_1,
                                    const string &path_xyz_2,
                                    const string &path_hdf5,
-                                   const string &basis_name);
+                                   const string &basis_name,
+                                   const int exp_set);
 
 int main() {
 
@@ -43,9 +44,10 @@ int main() {
   string path_hdf5 = "../test/test_files/ethylene.hdf5";
   string basis_name = "DZVP-MOLOPT-SR-GTH";
   string dataset_name = "ethylene/point_n";
+  int exp_set = 0;
 
   auto xs =
-      compute_integrals_couplings(path_xyz, path_xyz, path_hdf5, basis_name);
+      compute_integrals_couplings(path_xyz, path_xyz, path_hdf5, basis_name, exp_set);
 }
 
 // OpenMP or multithread computations
@@ -279,15 +281,9 @@ std::vector<Matrix> compute_multipoles(
   return result;
 }
 
-libint2::svector<int> read_basisFormat(const string &basisFormat) {
-  // Transform the string containing the basis format for CP2K, into a vector of
-  // strings
-  libint2::svector<int> rs;
-  for (auto x : basisFormat) {
-    if (std::isdigit(x))
-      // convert char to int
-      rs.push_back(x - '0');
-  }
+libint2::svector<int> read_basisFormat(const std::vector<int> &basisFormat) {
+  // Transform a stdlib vector into a libint2 svector
+  libint2::svector<int> rs(basisFormat.begin(), basisFormat.end());
   return rs;
 }
 
@@ -296,10 +292,11 @@ libint2::svector<int> read_basisFormat(const string &basisFormat) {
  */
 CP2K_Basis_Atom read_basis_from_hdf5(const string &path_file,
                                      const string &symbol,
-                                     const string &basis) {
+                                     const string &basis,
+                                     const int exp_set) {
   std::vector<std::vector<double>> coefficients;
   std::vector<double> exponents;
-  string format;
+  std::vector<int> format;
   try {
 
     // Open an existing HDF5 File
@@ -307,7 +304,7 @@ CP2K_Basis_Atom read_basis_from_hdf5(const string &path_file,
 
     // build paths to the coefficients and exponents
     int n_elec = valence_electrons.at(symbol);
-    string root = "cp2k/basis/" + symbol + "/" + basis + "-q" + std::to_string(n_elec);
+    string root = "cp2k/basis/" + symbol + "/" + basis + "-q" + std::to_string(n_elec) + "/" + std::to_string(exp_set);
     string path_coefficients = root + "/coefficients";
     string path_exponents = root + "/exponents";
 
@@ -362,7 +359,9 @@ std::vector<string> get_unique_symbols(const std::vector<Atom> &atoms) {
 
 std::unordered_map<string, CP2K_Basis_Atom>
 create_map_symbols_basis(const string &path_hdf5,
-                         const std::vector<Atom> &atoms, const string &basis) {
+                         const std::vector<Atom> &atoms,
+                         const string &basis,
+                         const int exp_set) {
   // Function to generate a map from symbols to basis specification
 
   std::unordered_map<string, CP2K_Basis_Atom> dict;
@@ -370,7 +369,7 @@ create_map_symbols_basis(const string &path_hdf5,
   // Select the unique atomic symbols
   std::vector<string> symbols = get_unique_symbols(atoms);
   for (const auto &at : symbols)
-    dict[at] = read_basis_from_hdf5(path_hdf5, at, basis);
+    dict[at] = read_basis_from_hdf5(path_hdf5, at, basis, exp_set);
 
   return dict;
 }
@@ -416,7 +415,8 @@ libint2::svector<Shell> create_shells_for_atom(const CP2K_Basis_Atom &data,
  */
 std::vector<Shell> make_cp2k_basis(const std::vector<Atom> &atoms,
                                    const string &path_hdf5,
-                                   const string &basis) {
+                                   const string &basis,
+                                   const int exp_set) {
   std::vector<Shell> shells;
 
   // set of symbols
@@ -424,7 +424,7 @@ std::vector<Shell> make_cp2k_basis(const std::vector<Atom> &atoms,
 
   // Read basis set data from the HDF5
   std::unordered_map<string, CP2K_Basis_Atom> dict =
-      create_map_symbols_basis(path_hdf5, atoms, basis);
+      create_map_symbols_basis(path_hdf5, atoms, basis, exp_set);
 
   for (const auto &atom : atoms) {
 
@@ -438,14 +438,15 @@ std::vector<Shell> make_cp2k_basis(const std::vector<Atom> &atoms,
 Matrix compute_integrals_couplings(const string &path_xyz_1,
                                    const string &path_xyz_2,
                                    const string &path_hdf5,
-                                   const string &basis_name) {
+                                   const string &basis_name,
+                                   const int exp_set) {
 
   set_nthread();
   std::vector<Atom> mol_1 = read_xyz_from_file(path_xyz_1);
   std::vector<Atom> mol_2 = read_xyz_from_file(path_xyz_2);
 
-  auto shells_1 = make_cp2k_basis(mol_1, path_hdf5, basis_name);
-  auto shells_2 = make_cp2k_basis(mol_2, path_hdf5, basis_name);
+  auto shells_1 = make_cp2k_basis(mol_1, path_hdf5, basis_name, exp_set);
+  auto shells_2 = make_cp2k_basis(mol_2, path_hdf5, basis_name, exp_set);
 
   // safe to use libint now
   libint2::initialize();
@@ -506,11 +507,12 @@ std::vector<Matrix> select_multipole(const std::vector<Atom> &atoms,
 Matrix compute_integrals_multipole(const string &path_xyz,
                                    const string &path_hdf5,
                                    const string &basis_name,
-                                   const string &multipole) {
+                                   const string &multipole,
+                                   const int exp_set) {
   set_nthread();
   std::vector<Atom> mol = read_xyz_from_file(path_xyz);
 
-  auto shells = make_cp2k_basis(mol, path_hdf5, basis_name);
+  auto shells = make_cp2k_basis(mol, path_hdf5, basis_name, exp_set);
 
   // safe to use libint now
   libint2::initialize();
