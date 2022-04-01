@@ -79,11 +79,11 @@ class BuildExt(build_ext):
 
     c_opts: "dict[str, list[str]]" = {
         'msvc': ['/EHsc'],
-        'unix': [],
+        'unix': ['-Wall'],
     }
     l_opts: "dict[str, list[str]]" = {
         'msvc': [],
-        'unix': [],
+        'unix': ['-Wall'],
     }
 
     if sys.platform == 'darwin':
