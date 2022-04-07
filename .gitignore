@@ -70,25 +70,11 @@ target/
 # pytest
 .pytest*
 
-# results
-cache.db
-plams_workdir
-cross_section_cm.txt
-molar_extinction_coefficients.txt
-mtx_phases
-oscillators.txt
-overlaps
-libint/main
-
 # VScode
 .vscode
-
-# Input parameters
-input_parameters.yml
 
 # Mypy
 .mypy_cache/
 
-# temporal files
-tmp
+# MacOS
 .DS_Store

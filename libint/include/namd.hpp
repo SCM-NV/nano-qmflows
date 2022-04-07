@@ -48,12 +48,17 @@ using real_t = libint2::scalar_type;
 using Matrix =
     Eigen::Matrix<real_t, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
 
+struct CP2K_Contractions {
+    int l;  // Angular momentum quantum number for a given shell-type
+    int count;  // Number of contractions for a given shell-type
+};
+
 struct CP2K_Basis_Atom {
   // Contains the basis specificationf for a given atom
   std::string symbol;
   libint2::svector<libint2::svector<double>> coefficients;
   libint2::svector<double> exponents;
-  libint2::svector<int> basis_format;
+  libint2::svector<CP2K_Contractions> basis_format;
 };
 
 // Map from atomic_number to symbol

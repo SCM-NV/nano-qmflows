@@ -24,7 +24,6 @@ jobs:
         cp2k: ["9.1"]
         pre_release: [false]
         include:
-          # Python 3.8/3.9 tests
           # Python 3.7/3.8/3.9 tests
           - os: ubuntu-latest
             python-version: "3.7"
@@ -78,7 +77,7 @@ jobs:
       CP2K_DATA_DIR: /usr/share/cp2k/data
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - name: Install CP2K
       run: |
@@ -110,7 +109,6 @@ jobs:
       uses: s-weigand/setup-conda@v1
       with:
         update-conda: true
-        conda-channels: anaconda, conda-forge
 
     - name: Install dependencies
       run: |
@@ -123,10 +121,10 @@ jobs:
 
         source $CONDA/bin/activate test
         case "${{ matrix.pre_release }}" in
-          "True")
+          "true")
             pip install --pre -r ./test_requirements.txt --upgrade --force-reinstall
             pip install git+https://github.com/SCM-NV/qmflows@master --upgrade
-            pip install git+https://github.com/SCM-NV/PLAMS@master --upgrade
+            pip uninstall plams -y; pip install git+https://github.com/SCM-NV/PLAMS@master --upgrade
             pip install git+https://github.com/NLeSC/noodles@master --upgrade
             ;;
           *)
@@ -153,7 +151,7 @@ jobs:
         pytest -m "not (slow or long)"
 
     - name: coverage
-      uses: codecov/codecov-action@v2
+      uses: codecov/codecov-action@v3
       with:
         file: ./coverage.xml
         name: codecov-umbrella
@@ -161,10 +159,10 @@ jobs:
   Linting:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Set up Python 3.10 on ubuntu-latest
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v3
         with:
           python-version: "3.10"
 

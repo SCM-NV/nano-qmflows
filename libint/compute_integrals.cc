@@ -17,6 +17,7 @@ using libint2::Atom;
 using libint2::BasisSet;
 using libint2::Operator;
 using libint2::Shell;
+using namd::CP2K_Contractions;
 using namd::CP2K_Basis_Atom;
 using namd::map_elements;
 using namd::valence_electrons;
@@ -288,11 +289,11 @@ CP2K_Basis_Atom read_basis_from_hdf5(const string &path_file,
                                      const string &basis) {
   std::vector<std::vector<double>> coefficients;
   std::vector<double> exponents;
-  std::vector<int> format;
+  std::vector<int64_t> format;
 
   libint2::svector<double> small_exp;
   libint2::svector<libint2::svector<double>> small_coef;
-  libint2::svector<int> small_fmt;
+  libint2::svector<CP2K_Contractions> small_fmt;
 
   try {
     // Open an existing HDF5 File
@@ -341,13 +342,22 @@ CP2K_Basis_Atom read_basis_from_hdf5(const string &path_file,
       //   * 0 is the minimum angular momemtum l
       //   * 2 is the maximum angular momentum l
       //   * 7 is the number of total exponents
-      //   * 2 Contractions of S Gaussian Orbitals
-      //   * 2 Contractions of P Gaussian Orbitals
-      //   * 1 Contraction of D Gaussian Orbital
+      //   * 2 Contractions of the 0 + l_min (S) Gaussian Orbitals
+      //   * 2 Contractions of the 1 + l_min (P) Gaussian Orbitals
+      //   * 1 Contractions of the 2 + l_min (D) Gaussian Orbitals
       //
-      // Note: From element 4 onwards are define the number of contracted for each
-      // quantum number (all prior elements are disgarded).
-      std::move(format.begin() + 4, format.end(), std::back_inserter(small_fmt));
+      // Note: Elements 4 and onwards define the number of contracted for each
+      // angular momentum quantum number (all prior elements are disgarded).
+      int l, i;
+      for (i=4, l=format[1]; i != static_cast<int>(format.size()); i++, l++) {
+        int count = format[i];
+        small_fmt.push_back(CP2K_Contractions{l, count});
+      }
+
+      // Clear the temp vectors for the next iteration cycle
+      coefficients.clear();
+      exponents.clear();
+      format.clear();
     }
   } catch (HighFive::Exception &err) {
     // catch and print any HDF5 error
@@ -395,15 +405,15 @@ create_map_symbols_basis(const string &path_hdf5,
  */
 libint2::svector<Shell> create_shells_for_atom(const CP2K_Basis_Atom &data,
                                                const Atom &atom) {
-  libint2::svector<int> basis_format = data.basis_format;
+  libint2::svector<CP2K_Contractions> basis_format = data.basis_format;
   libint2::svector<Shell> shells;
 
   int acc = 0;
-  for (int i = 0; i < static_cast<int>(basis_format.size()); i++) {
-    for (int j = 0; j < basis_format[i]; j++) {
+  for (auto contractions : basis_format) {
+    for (int i = 0; i < contractions.count; i++) {
       shells.push_back({
         data.exponents,
-        {{i, true, data.coefficients[acc]}},  // compute integrals in sphericals
+        {{contractions.l, true, data.coefficients[acc]}},  // compute integrals in sphericals
         {{atom.x, atom.y, atom.z}}  // Atomic Coordinates
       });
       acc += 1;
