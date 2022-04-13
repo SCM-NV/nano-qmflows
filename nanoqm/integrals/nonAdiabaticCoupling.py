@@ -35,9 +35,10 @@ from typing import List, Tuple
 
 import numpy as np
 
+from .. import logger
 from ..common import (DictConfig, Matrix, MolXYZ, Tensor3D, retrieve_hdf5_data,
                       tuplesXYZ_to_plams)
-from ..compute_integrals import compute_integrals_couplings
+from ..compute_integrals import compute_integrals_couplings, get_thread_count, get_thread_type
 
 
 def calculate_couplings_3points(
@@ -238,6 +239,10 @@ def calcOverlapMtx(config: DictConfig, molecules: Tuple[MolXYZ, MolXYZ]) -> Matr
     mol_j.write(path_j)
 
     basis_name = config["cp2k_general_settings"]["basis"]
+
+    thread_count = get_thread_count()
+    thread_type = get_thread_type()
+    logger.info(f"Will scale over {thread_count} {thread_type} threads")
     try:
         integrals = compute_integrals_couplings(
             path_i, path_j, config["path_hdf5"], basis_name)

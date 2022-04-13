@@ -18,6 +18,8 @@ import argparse
 from os.path import join
 import os
 
+from nanoqm import logger
+
 
 def main(file_xyz, cell, restart, basis, basis_folder):
     """Define which systems need to be calculated."""
@@ -49,7 +51,7 @@ def main(file_xyz, cell, restart, basis, basis_folder):
 # Output the results
 # ======================
 
-    print(result.energy)
+    logger.info(result.energy)
 
 
 def read_cmd_line(parser):

@@ -30,7 +30,7 @@ from qmflows.common import AtomXYZ
 from .. import logger
 from ..common import (DictConfig, is_data_in_hdf5, retrieve_hdf5_data,
                       store_arrays_in_hdf5, tuplesXYZ_to_plams)
-from ..compute_integrals import compute_integrals_multipole
+from ..compute_integrals import compute_integrals_multipole, get_thread_count, get_thread_type
 
 if TYPE_CHECKING:
     from numpy.typing import NDArray
@@ -112,6 +112,9 @@ def compute_matrix_multipole(
 
     # name of the basis set
     basis_name = config["cp2k_general_settings"]["basis"]
+    thread_count = get_thread_count()
+    thread_type = get_thread_type()
+    logger.info(f"Will scale over {thread_count} {thread_type} threads")
 
     if multipole == 'overlap':
         matrix_multipole = compute_integrals_multipole(
@@ -127,7 +130,6 @@ def compute_matrix_multipole(
 
     elif multipole == 'quadrupole':
         # The tensor contains the overlap + {xx, xy, xz, yy, yz, zz} quadrupole matrices
-        print("super_matrix: ", path, path_hdf5, basis_name, multipole)
         super_matrix = compute_integrals_multipole(
             path, path_hdf5, basis_name, multipole)
         dim = super_matrix.shape[1]

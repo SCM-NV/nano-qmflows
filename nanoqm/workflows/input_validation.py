@@ -80,7 +80,7 @@ def process_input(input_file: PathLike, workflow_name: str) -> DictConfig:
 
     except SchemaError as e:
         msg = f"There was an error in the input yaml provided:\n{e}"
-        print(msg)
+        logger.warning(msg)
         raise
 
 

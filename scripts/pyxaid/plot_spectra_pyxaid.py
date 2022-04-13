@@ -29,6 +29,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib import interactive
 
+from nanoqm import logger
 from nanoqm.analysis import autocorrelate, dephasing, spectral_density
 from nanoqm.common import fs_to_nm
 
@@ -79,9 +80,9 @@ def plot_stuff(ens, acf, sd, deph, rate, s1, s2, dt, wsd, wdeph):
     plt.xlim(0, wdeph)
     plt.plot(dim_x, deph[:, 0], c='r')
     plt.plot(dim_x, deph[:, 1], c='b')
-    print(f'The dephasing time is : {rate:f} fs')
+    logger.info(f'The dephasing time is : {rate:f} fs')
     line_broadening = 1 / rate * fs_to_nm
-    print(f'The homogenous line broadening is  : {line_broadening:f} nm')
+    logger.info(f'The homogenous line broadening is  : {line_broadening:f} nm')
     interactive(True)
     plt.show()
 

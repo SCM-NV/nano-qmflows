@@ -82,20 +82,33 @@ template <typename Lambda> void parallel_do(Lambda &lambda) {
  * \brief Set the number of thread to use
  */
 void set_nthread() {
-
+#if defined(_OPENMP)
   using libint2::nthreads;
   nthreads = std::thread::hardware_concurrency();
-
-#if defined(_OPENMP)
   omp_set_num_threads(nthreads);
 #endif
-  std::cout << "Will scale over " << nthreads
-#if defined(_OPENMP)
-            << " OpenMP"
-#else
-            << " C++11"
-#endif
-            << " threads" << std::endl;
+}
+
+/**
+ * \brief Get the number of threads and the thread type as a 2-tuple
+ */
+int get_thread_count() {
+  using libint2::nthreads;
+  return std::thread::hardware_concurrency();
+}
+
+/**
+ * \brief Get the type of threads
+ */
+string get_thread_type() {
+  string ret;
+
+  #if defined(_OPENMP)
+    ret = "OpenMP";
+  #else
+    ret = "C++11";
+  #endif
+  return ret;
 }
 
 /**
@@ -550,5 +563,11 @@ PYBIND11_MODULE(compute_integrals, m) {
         py::return_value_policy::reference_internal);
 
   m.def("compute_integrals_multipole", &compute_integrals_multipole,
+        py::return_value_policy::reference_internal);
+
+  m.def("get_thread_count", &get_thread_count,
+        py::return_value_policy::reference_internal);
+
+  m.def("get_thread_type", &get_thread_type,
         py::return_value_policy::reference_internal);
 }
