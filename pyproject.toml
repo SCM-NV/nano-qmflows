@@ -13,7 +13,6 @@ module = [
     "scm.plams.*",
     "h5py.*",
     "scipy.*",
-    "pyparsing.*",
     "noodles.*",
     "schema.*",
     "mendeleev.*",

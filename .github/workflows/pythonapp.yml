@@ -167,7 +167,7 @@ jobs:
           python-version: "3.10"
 
       - name: Install linters
-        run: pip install pydocstyle pycodestyle mypy qmflows "numpy>=1.21" types-pyyaml types-pkg_resources types-setuptools
+        run: pip install pydocstyle pycodestyle mypy qmflows "numpy>=1.21" types-pyyaml types-pkg_resources types-setuptools "pyparsing>=3.0.8"
 
       - name: Python info
         run: |
