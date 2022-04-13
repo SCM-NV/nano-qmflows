@@ -35,10 +35,9 @@ from typing import List, Tuple
 
 import numpy as np
 
-from compute_integrals import compute_integrals_couplings
-
 from ..common import (DictConfig, Matrix, MolXYZ, Tensor3D, retrieve_hdf5_data,
                       tuplesXYZ_to_plams)
+from ..compute_integrals import compute_integrals_couplings
 
 
 def calculate_couplings_3points(

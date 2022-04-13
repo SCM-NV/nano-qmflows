@@ -4,8 +4,6 @@ requires = ['Cython', 'setuptools>=48.0', 'wheel', 'pybind11>=2.2.4']
 
 [tool.mypy]
 plugins = "numpy.typing.mypy_plugin"
-mypy_path = "libint"
-files = ["nanoqm", "libint"]
 show_error_codes = true
 
 [[tool.mypy.overrides]]

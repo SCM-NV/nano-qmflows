@@ -120,7 +120,7 @@ if conda_prefix is None:
 conda_include = join(conda_prefix, 'include')
 conda_lib = join(conda_prefix, 'lib')
 ext_pybind = Extension(
-    'compute_integrals',
+    'nanoqm.compute_integrals',
     sources=['libint/compute_integrals.cc'],
     include_dirs=[
         # Path to pybind11 headers

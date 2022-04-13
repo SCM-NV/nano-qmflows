@@ -25,12 +25,12 @@ from pathlib import Path
 from typing import List, Union, TYPE_CHECKING
 
 import numpy as np
-from compute_integrals import compute_integrals_multipole
 from qmflows.common import AtomXYZ
 
 from .. import logger
 from ..common import (DictConfig, is_data_in_hdf5, retrieve_hdf5_data,
                       store_arrays_in_hdf5, tuplesXYZ_to_plams)
+from ..compute_integrals import compute_integrals_multipole
 
 if TYPE_CHECKING:
     from numpy.typing import NDArray
