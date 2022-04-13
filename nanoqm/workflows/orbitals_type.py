@@ -1,16 +1,13 @@
 """Module to run restricted and unrestricted calculations."""
 
-import logging
 from typing import Any, Callable
 
 from noodles import gather
 from qmflows import run
 
+from .. import logger
 from ..common import DictConfig
 from .initialization import initialize
-
-# Starting logger
-logger = logging.getLogger(__name__)
 
 
 def select_orbitals_type(

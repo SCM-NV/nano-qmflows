@@ -11,18 +11,15 @@ Index
 __all__ = ['workflow_single_points']
 
 
-import logging
 from typing import List
 
 from qmflows import run
 from qmflows.packages import Result
 
+from .. import logger
 from ..common import DictConfig
 from ..schedule.components import calculate_mos
 from .initialization import initialize
-
-# Starting logger
-logger = logging.getLogger(__name__)
 
 
 def workflow_single_points(config: DictConfig) -> Result:

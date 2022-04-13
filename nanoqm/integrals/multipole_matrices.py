@@ -18,7 +18,6 @@ API
 
 from __future__ import annotations
 
-import logging
 import os
 import uuid
 from os.path import join
@@ -29,14 +28,13 @@ import numpy as np
 from compute_integrals import compute_integrals_multipole
 from qmflows.common import AtomXYZ
 
+from .. import logger
 from ..common import (DictConfig, is_data_in_hdf5, retrieve_hdf5_data,
                       store_arrays_in_hdf5, tuplesXYZ_to_plams)
 
 if TYPE_CHECKING:
     from numpy.typing import NDArray
     from numpy import float64 as f8
-
-logger = logging.getLogger(__name__)
 
 
 def get_multipole_matrix(config: DictConfig, inp: DictConfig, multipole: str) -> NDArray[f8]:

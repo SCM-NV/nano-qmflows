@@ -12,7 +12,6 @@ from __future__ import annotations
 
 __all__ = ['workflow_stddft']
 
-import logging
 from os.path import join
 from typing import Tuple, TYPE_CHECKING
 
@@ -24,6 +23,7 @@ from noodles.interface import PromisedObject
 from qmflows.parsers import parse_string_xyz
 from qmflows.type_hints import PathLike
 
+from .. import logger
 from ..common import (DictConfig, angs2au, change_mol_units, h2ev, hardness,
                       is_data_in_hdf5, number_spherical_functions_per_atom,
                       retrieve_hdf5_data, store_arrays_in_hdf5, xc)
@@ -34,9 +34,6 @@ from .orbitals_type import select_orbitals_type
 if TYPE_CHECKING:
     from numpy.typing import NDArray
     from numpy import float64 as f8
-
-# Starting logger
-logger = logging.getLogger(__name__)
 
 
 def workflow_stddft(config: DictConfig) -> None:

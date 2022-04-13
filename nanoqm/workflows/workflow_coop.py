@@ -12,13 +12,13 @@ from __future__ import annotations
 
 __all__ = ['workflow_crystal_orbital_overlap_population']
 
-import logging
 from typing import Tuple, TYPE_CHECKING
 
 import numpy as np
 
 from qmflows.parsers import readXYZ
 
+from .. import logger
 from ..common import (DictConfig, MolXYZ, h2ev,
                       number_spherical_functions_per_atom, retrieve_hdf5_data)
 from ..integrals.multipole_matrices import compute_matrix_multipole
@@ -28,9 +28,6 @@ from .tools import compute_single_point_eigenvalues_coefficients
 if TYPE_CHECKING:
     from numpy.typing import NDArray
     from numpy import float64 as f8, int64 as i8
-
-# Starting logger
-LOGGER = logging.getLogger(__name__)
 
 
 def workflow_crystal_orbital_overlap_population(config: DictConfig) -> NDArray[f8]:
@@ -43,7 +40,7 @@ def workflow_crystal_orbital_overlap_population(config: DictConfig) -> NDArray[f
     compute_single_point_eigenvalues_coefficients(config)
 
     # Logger info
-    LOGGER.info("Starting COOP calculation.")
+    logger.info("Starting COOP calculation.")
 
     # Get eigenvalues and coefficients from hdf5
     atomic_orbitals, energies = get_eigenvalues_coefficients(config)
@@ -68,7 +65,7 @@ def workflow_crystal_orbital_overlap_population(config: DictConfig) -> NDArray[f
 
     # Lastly, we save the COOP as a txt-file
     result_coop = print_coop(energies, coop)
-    LOGGER.info("COOP calculation completed.")
+    logger.info("COOP calculation completed.")
 
     return result_coop
 

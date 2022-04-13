@@ -21,10 +21,8 @@ API
 
 from __future__ import annotations
 
-import logging
 import os
 from os.path import join
-# Types hint
 from typing import List, Tuple, TYPE_CHECKING
 
 import numpy as np
@@ -32,6 +30,7 @@ from noodles import schedule
 from scipy.optimize import linear_sum_assignment
 from qmflows.parsers import parse_string_xyz
 
+from .. import logger
 from ..common import (DictConfig, Matrix, MolXYZ, Tensor3D, Vector, hbar,
                       femtosec2au, h2ev, is_data_in_hdf5, retrieve_hdf5_data,
                       store_arrays_in_hdf5)
@@ -43,9 +42,6 @@ from ..integrals.nonAdiabaticCoupling import (compute_range_orbitals,
 
 if TYPE_CHECKING:
     import numpy.typing as npt
-
-# Starting logger
-logger = logging.getLogger(__name__)
 
 __all__ = ["calculate_overlap", "lazy_couplings", "write_hamiltonians"]
 

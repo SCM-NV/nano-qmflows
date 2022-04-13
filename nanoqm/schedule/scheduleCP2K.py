@@ -15,7 +15,6 @@ API
 from __future__ import annotations
 
 import fnmatch
-import logging
 import os
 from os.path import join
 from pathlib import Path
@@ -27,8 +26,7 @@ from qmflows.packages import CP2K, CP2K_Result
 from qmflows.parsers import string_to_plams_Molecule
 from qmflows.type_hints import PromisedObject
 
-# Starting logger
-logger = logging.getLogger(__name__)
+from .. import logger
 
 
 def try_to_read_wf(path_dir: str | os.PathLike[str]) -> str:

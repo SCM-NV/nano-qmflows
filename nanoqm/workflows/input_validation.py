@@ -10,7 +10,7 @@ API
 .. autofunction:: process_input
 
 """
-import logging
+
 import os
 import warnings
 from os.path import join
@@ -24,6 +24,7 @@ from scm.plams import Molecule
 from qmflows import Settings
 from qmflows.type_hints import PathLike
 
+from .. import logger
 from ..common import DictConfig, UniqueSafeLoader, valence_electrons
 from .schemas import (schema_absorption_spectrum, schema_coop,
                       schema_cp2k_general_settings,
@@ -33,9 +34,6 @@ from .schemas import (schema_absorption_spectrum, schema_coop,
                       schema_distribute_single_points, schema_ipr,
                       schema_single_points)
 from .templates import create_settings_from_template
-
-logger = logging.getLogger(__name__)
-
 
 schema_workflows = {
     'absorption_spectrum': schema_absorption_spectrum,
