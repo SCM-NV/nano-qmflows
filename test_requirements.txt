@@ -6,6 +6,7 @@ pytest-cov
 pytest-mock
 Cython
 setuptools
+ipython
 
 # Runtime dependencies
 h5py
