@@ -5,9 +5,10 @@ from pathlib import Path
 
 import numpy as np
 from assertionlib import assertion
+from qmflows.parsers import readXYZ
+
 from nanoqm.integrals.multipole_matrices import compute_matrix_multipole
 from nanoqm.workflows.input_validation import process_input
-from qmflows.parsers.xyzParser import readXYZ
 
 from .utilsTest import PATH_TEST
 

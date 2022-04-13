@@ -17,7 +17,7 @@ from typing import Tuple, TYPE_CHECKING
 
 import numpy as np
 
-from qmflows.parsers.xyzParser import readXYZ
+from qmflows.parsers import readXYZ
 
 from ..common import (DictConfig, MolXYZ, h2ev,
                       number_spherical_functions_per_atom, retrieve_hdf5_data)

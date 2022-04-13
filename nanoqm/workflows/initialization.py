@@ -37,7 +37,7 @@ from nanoutils import RecursiveItemsView
 from packaging.version import Version
 from qmflows.common import AtomBasisKey
 from qmflows.parsers import parse_string_xyz
-from qmflows.parsers.cp2KParser import readCp2KBasis
+from qmflows.parsers.cp2k import read_cp2k_basis
 from qmflows.type_hints import PathLike
 
 from .. import __version__
@@ -117,8 +117,6 @@ def save_basis_to_hdf5(config: DictConfig) -> None:
             store_cp2k_basis(config.path_hdf5, path)
 
 
-_QMFLOWS_VERSION = Version(qmflows.__version__)
-_QMFLOWS_0_11_3 = Version("0.11.3")
 _NANO_QMFLOWS_0_13_0 = Version("0.13.0")
 
 _BASIS_PATH_PATTERN = re.compile(r"/cp2k/basis/([a-z]+)/([^/]+)/(coefficients|exponents)")
@@ -155,14 +153,9 @@ def store_cp2k_basis(path_hdf5: PathLike, path_basis: PathLike) -> None:
         if Version(f.attrs.get("__version__", "0.0.0")) < _NANO_QMFLOWS_0_13_0:
             _convert_legacy_basis(f)
 
-    if _QMFLOWS_VERSION >= _QMFLOWS_0_11_3:
-        keys, vals = readCp2KBasis(path_basis, allow_multiple_exponents=True)
-        node_paths_exponents = [_join(xs, str(xs.exponent_set), "exponents") for xs in keys]
-        node_paths_coefficients = [_join(xs, str(xs.exponent_set), "coefficients") for xs in keys]
-    else:
-        keys, vals = readCp2KBasis(path_basis)
-        node_paths_exponents = [_join(xs, "0", "exponents") for xs in keys]
-        node_paths_coefficients = [_join(xs, "0", "coefficients") for xs in keys]
+    keys, vals = read_cp2k_basis(path_basis, allow_multiple_exponents=True)
+    node_paths_exponents = [_join(xs, str(xs.exponent_set), "exponents") for xs in keys]
+    node_paths_coefficients = [_join(xs, str(xs.exponent_set), "coefficients") for xs in keys]
 
     exponents = [xs.exponents for xs in vals]
     coefficients = [xs.coefficients for xs in vals]

@@ -11,7 +11,7 @@ from typing import Union
 
 import h5py
 import pkg_resources as pkg
-from qmflows.packages.packages import Result
+from qmflows.packages import Result
 
 __all__ = [
     "PATH_NANOQM",

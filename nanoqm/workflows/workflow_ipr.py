@@ -14,7 +14,7 @@ import logging
 import numpy as np
 from scipy.linalg import sqrtm
 
-from qmflows.parsers.xyzParser import readXYZ
+from qmflows.parsers import readXYZ
 
 from ..common import (DictConfig, h2ev, number_spherical_functions_per_atom,
                       retrieve_hdf5_data)

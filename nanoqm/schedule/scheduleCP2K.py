@@ -23,8 +23,8 @@ from typing import Any, Dict
 
 from noodles import schedule  # Workflow Engine
 from qmflows import Settings, cp2k, templates
-from qmflows.packages.cp2k_package import CP2K, CP2K_Result
-from qmflows.parsers.xyzParser import string_to_plams_Molecule
+from qmflows.packages import CP2K, CP2K_Result
+from qmflows.parsers import string_to_plams_Molecule
 from qmflows.type_hints import PromisedObject
 
 # Starting logger
@@ -95,7 +95,7 @@ def prepare_cp2k_settings(
 @schedule
 def prepare_job_cp2k(
         settings: Settings, dict_input: Dict[str, Any], guess_job: PromisedObject) -> CP2K:
-    """Generate a :class:`qmflows.packages.cp2k_packages.CP2K` job.
+    """Generate a :class:`qmflows.packages.CP2K` job.
 
     Parameters
     ----------
@@ -108,7 +108,7 @@ def prepare_job_cp2k(
 
     Returns
     -------
-    :class:`qmflows.packages.cp2k_package.CP2K`
+    :class:`qmflows.packages.CP2K`
         job to run
 
     """

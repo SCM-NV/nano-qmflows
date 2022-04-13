@@ -21,7 +21,7 @@ import yaml
 from schema import SchemaError
 from scm.plams import Molecule
 
-from qmflows.settings import Settings
+from qmflows import Settings
 from qmflows.type_hints import PathLike
 
 from ..common import DictConfig, UniqueSafeLoader, valence_electrons
