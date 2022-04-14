@@ -57,8 +57,8 @@ struct CP2K_Basis_Atom {
   // Contains the basis specificationf for a given atom
   std::string symbol;
   libint2::svector<libint2::svector<double>> coefficients;
-  libint2::svector<double> exponents;
-  libint2::svector<CP2K_Contractions> basis_format;
+  libint2::svector<libint2::svector<double>> exponents;
+  libint2::svector<libint2::svector<CP2K_Contractions>> basis_format;
 };
 
 // Map from atomic_number to symbol
