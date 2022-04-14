@@ -30,7 +30,6 @@ from typing import List, Union
 
 import h5py
 import numpy as np
-import pkg_resources
 import qmflows
 from nanoutils import RecursiveItemsView
 from packaging.version import Version

@@ -7,12 +7,11 @@ import itertools
 import os
 from typing import Dict, List
 
-import pkg_resources
 from nanoCAT.recipes import coordination_number
 from qmflows import Settings, cp2k, run, templates
 from scm.plams import Molecule
 
-from nanoqm import logger
+from nanoqm import logger, __path__ as nanoqm_path
 from nanoqm._logger import EnableFileHandler
 from nanoqm.workflows.templates import generate_kinds
 
@@ -27,8 +26,8 @@ molecules = {name: Molecule(f"{name}.xyz") for name in names}
 def create_cp2k_settings(mol: Molecule) -> Settings:
     """Create CP2K general settings."""
     # Set path for basis set
-    path_basis = pkg_resources.resource_filename("nanoqm", "basis/BASIS_MOLOPT")
-    path_potential = pkg_resources.resource_filename("nanoqm", "basis/GTH_POTENTIALS")
+    path_basis = os.path.join(nanoqm_path[0], "basis", "BASIS_MOLOPT")
+    path_potential = os.path.join(nanoqm_path[0], "basis", "GTH_POTENTIALS")
 
     # Settings specifics
     s = Settings()
