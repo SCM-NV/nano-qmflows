@@ -1,11 +1,13 @@
 .. image:: https://readthedocs.org/projects/qmflows-namd/badge/?version=latest
    :target: https://qmflows-namd.readthedocs.io/en/latest/?badge=latest
-.. image:: https://zenodo.org/badge/DOI/10.5281/zenodo.3661036.svg
-   :target: https://doi.org/10.5281/zenodo.3661036
+.. image:: https://zenodo.org/badge/DOI/10.5281/zenodo.2576893.svg
+   :target: https://doi.org/10.5281/zenodo.2576893
 .. image:: https://github.com/SCM-NV/nano-qmflows/workflows/build%20with%20conda/badge.svg
    :target: https://github.com/SCM-NV/nano-qmflows/actions
 .. image:: https://codecov.io/gh/SCM-NV/nano-qmflows/branch/master/graph/badge.svg?token=L1W0fPrSUn
    :target: https://codecov.io/gh/SCM-NV/nano-qmflows
+.. image:: https://badge.fury.io/py/nano-qmflows.svg
+   :target: https://badge.fury.io/py/nano-qmflows
 
 ====================
 nano-qmflows

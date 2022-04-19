@@ -4,7 +4,7 @@
  * including the overlaps integrals between different geometries
  * And the dipoles and quadrupoles to compute absorption spectra.
  * This module is based on libint, Eigen and pybind11.
- * Copyright (C) 2018-2020 the Netherlands eScience Center.
+ * Copyright (C) 2018-2022 the Netherlands eScience Center.
  */
 
 #ifndef NAMD_H_

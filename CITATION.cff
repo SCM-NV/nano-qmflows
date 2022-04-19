@@ -1,19 +1,24 @@
 # YAML 1.2
 # Metadata for citation of this software according to the CFF format (https://citation-file-format.github.io/)
-cff-version: 1.0.3
+cff-version: 1.2.0
 message: If you use this software, please cite it as below.
 title: nano-qmflows
+abstract: Nano-QMFlows is a generic python library for computing (numerically) electronic properties for nanomaterials like the non-adiabatic coupling vectors (NACV) using several quantum chemical (QM) packages.
 authors:
 - given-names: Felipe
   family-names: Zapata
-  orcid:  "https://orcid.org/0000-0001-8286-677X"
+  orcid: "https://orcid.org/0000-0001-8286-677X"
+- given-names: Bas
+  family-names: van Beek
+  orcid: "https://orcid.org/0000-0003-2463-6559"
 
 keywords:
  - computational-chemistry
  - materials-science
  - python
  - Workflows
-version: '0.8.2'
-date-released: 2020-02-10
+version: '0.13.0'
+date-released: "2022-04-19"
 repository-code: https://github.com/SCM-NV/nano-qmflows
 license: "Apache-2.0"
+doi: 10.5281/zenodo.2576893

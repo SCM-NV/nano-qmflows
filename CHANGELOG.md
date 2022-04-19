@@ -1,9 +1,15 @@
 # Change Log
 
-# 0.13.0 (unreleased)
+# 0.13.0 (19/04/2022)
+
+## New
+* Allow for the use of basis sets consisting of multiple exponent sets.
 
 ## Changed
-* *placeholder*.
+* Bump the minimum QMFlows version to >= 0.12.0.
+* Change the `basisFormat` hdf5 attribute from a string into an integer array.
+* Move the `compute_integrals` extension module to `nanoqm.compute_integrals`.
+* Move all `print` calls to the nanoqm logger.
 
 
 # 0.12.3 (11/03/2022)
