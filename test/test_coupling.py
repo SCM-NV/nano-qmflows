@@ -107,8 +107,8 @@ class TestCoupling:
         with h5py.File(PATH_TEST / "test_files.hdf5", "r") as f:
             ref_couplings = f[f"test_coupling/TestCoupling/{name}/couplings"][...]
             ref_overlaps = f[f"test_coupling/TestCoupling/{name}/overlaps"][...]
-        np.testing.assert_allclose(couplings, ref_couplings, rtol=0, atol=1e-7)
-        np.testing.assert_allclose(overlaps, ref_overlaps, rtol=0, atol=1e-7)
+        np.testing.assert_allclose(couplings, ref_couplings, rtol=0, atol=1e-06)
+        np.testing.assert_allclose(overlaps, ref_overlaps, rtol=0, atol=1e-06)
 
     def test_hamiltonians(self, output: CouplingsOutput) -> None:
         if len(output.hamiltonians) == 1:
@@ -137,5 +137,5 @@ class TestCoupling:
         with h5py.File(PATH_TEST / "test_files.hdf5", "r") as f:
             ref_energies = f[f"test_coupling/TestCoupling/{name}/txt_energies"][...]
             ref_couplings = f[f"test_coupling/TestCoupling/{name}/txt_couplings"][...]
-        np.testing.assert_allclose(energies, ref_energies, rtol=0, atol=1e-7)
-        np.testing.assert_allclose(couplings, ref_couplings, rtol=0, atol=1e-7)
+        np.testing.assert_allclose(energies, ref_energies, rtol=0, atol=1e-06)
+        np.testing.assert_allclose(couplings, ref_couplings, rtol=0, atol=1e-06)
