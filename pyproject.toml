@@ -18,3 +18,10 @@ module = [
     "Cython.*",
 ]
 ignore_missing_imports = true
+
+[tool.cibuildwheel]
+build-verbosity = "3"
+before-build = "echo 1"
+repair-wheel-command = "auditwheel -v repair -w {dest_dir} {wheel}"
+manylinux-x86_64-image = "manylinux2014"
+environment = { QMFLOWS_INCLUDEDIR="include", QMFLOWS_LIBDIR="lib" }

@@ -111,28 +111,62 @@ class BuildExt(build_ext):
         build_ext.build_extensions(self)
 
 
-# Set path to the conda libraries
-conda_prefix = os.environ["CONDA_PREFIX"]
-if conda_prefix is None:
-    raise RuntimeError(
-        "No conda module found. A Conda environment is required")
+def get_paths() -> "tuple[list[str], list[str]]":
+    """Get the paths specified in the ``QMFLOWS_INCLUDEDIR`` and ``QMFLOWS_LIBDIR`` \
+    environment variables.
 
-conda_include = join(conda_prefix, 'include')
-conda_lib = join(conda_prefix, 'lib')
+    If not specified if specified use ``CONDA_PREFIX`` instead.
+
+    Multiple include and/or lib paths must be specified with the standard (OS-specific)
+    path separator, *e.g.* ``":"`` for POSIX.
+
+    Examples
+    --------
+    .. code-block:: bash
+
+        export QMFLOWS_INCLUDEDIR="/libint/include:/eigen3/include"
+        export QMFLOWS_LIBDIR="/hdf5/lib:/libint/lib"
+
+    .. code-block:: python
+
+        >>> get_paths()
+        (['/libint/include', '/eigen3/include'], ['/hdf5/lib', '/libint/lib'])
+
+    Returns
+    -------
+    tuple[list[str], list[str]]
+        Lists of include- and library-directories used in compiling the ``compute_integrals``
+        extension module.
+
+    """
+    conda_prefix = os.environ.get("CONDA_PREFIX")
+    include_dirs = os.environ.get("QMFLOWS_INCLUDEDIR")
+    lib_dirs = os.environ.get("QMFLOWS_LIBDIR")
+
+    if include_dirs is not None and lib_dirs is not None:
+        include_list = include_dirs.split(os.pathsep)
+        lib_list = lib_dirs.split(os.pathsep)
+    else:
+        raise RuntimeError(
+            "No conda module found. A Conda environment is required "
+            "or one must set both the `QMFLOWS_INCLUDEDIR` and `QMFLOWS_LIBDIR` "
+            "environment variables"
+        )
+    return include_list, lib_list
+
+
+include_list, lib_list = get_paths()
 ext_pybind = Extension(
     'nanoqm.compute_integrals',
-    sources=['libint/compute_integrals.cc'],
+    sources=['src/compute_integrals.cc'],
     include_dirs=[
-        # Path to pybind11 headers
-        'libint/include',
-        conda_include,
-        join(conda_include, 'eigen3'),
+        "include",
+        *include_list,
         get_pybind_include(),
         get_pybind_include(user=True),
-        '/usr/include/eigen3'
     ],
     libraries=['hdf5', 'int2'],
-    library_dirs=[conda_lib],
+    library_dirs=lib_list,
     language='c++',
 )
 
