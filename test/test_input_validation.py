@@ -6,7 +6,7 @@ import yaml
 import pytest
 from qmflows import cp2k, run
 from qmflows.type_hints import PathLike
-from qmflows.packages.cp2k_package import CP2K_Result
+from qmflows.packages import CP2K_Result
 from scm import plams
 
 import nanoqm

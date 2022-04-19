@@ -10,7 +10,7 @@ API
 .. autofunction:: process_input
 
 """
-import logging
+
 import os
 import warnings
 from os.path import join
@@ -21,9 +21,10 @@ import yaml
 from schema import SchemaError
 from scm.plams import Molecule
 
-from qmflows.settings import Settings
+from qmflows import Settings
 from qmflows.type_hints import PathLike
 
+from .. import logger
 from ..common import DictConfig, UniqueSafeLoader, valence_electrons
 from .schemas import (schema_absorption_spectrum, schema_coop,
                       schema_cp2k_general_settings,
@@ -33,9 +34,6 @@ from .schemas import (schema_absorption_spectrum, schema_coop,
                       schema_distribute_single_points, schema_ipr,
                       schema_single_points)
 from .templates import create_settings_from_template
-
-logger = logging.getLogger(__name__)
-
 
 schema_workflows = {
     'absorption_spectrum': schema_absorption_spectrum,
@@ -82,7 +80,7 @@ def process_input(input_file: PathLike, workflow_name: str) -> DictConfig:
 
     except SchemaError as e:
         msg = f"There was an error in the input yaml provided:\n{e}"
-        print(msg)
+        logger.warning(msg)
         raise
 
 

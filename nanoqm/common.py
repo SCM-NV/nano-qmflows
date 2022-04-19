@@ -32,11 +32,11 @@ __all__ = ['DictConfig', 'Matrix', 'Tensor3D', 'Vector',
 
 import os
 import json
-from itertools import chain, repeat
+from itertools import chain
+from pathlib import Path
 from typing import (Any, Dict, Iterable, List, Mapping, NamedTuple, Tuple,
                     Sequence, overload, TypeVar, TYPE_CHECKING, Iterator)
 
-import pkg_resources as pkg
 import h5py
 import mendeleev
 import numpy as np
@@ -46,15 +46,16 @@ from qmflows.type_hints import PathLike
 from scm.plams import Atom, Molecule
 
 from qmflows.yaml_utils import UniqueSafeLoader
+from . import __path__ as nanoqm_path
 
 if TYPE_CHECKING:
     import numpy.typing as npt
 
 _T = TypeVar("_T")
 
-_path_valence_electrons = pkg.resource_filename(
-    "nanoqm", "basis/valence_electrons.json")
-_path_aux_fit = pkg.resource_filename("nanoqm", "basis/aux_fit.json")
+
+_path_valence_electrons = Path(nanoqm_path[0]) / "basis" / "valence_electrons.json"
+_path_aux_fit = Path(nanoqm_path[0]) / "basis" / "aux_fit.json"
 
 with open(_path_valence_electrons, 'r') as f1, open(_path_aux_fit, 'r') as f2:
     valence_electrons: "dict[str, int]" = json.load(f1)

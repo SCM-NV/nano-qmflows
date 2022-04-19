@@ -5,6 +5,8 @@ import argparse
 import h5py
 import numpy as np
 
+from nanoqm import logger
+
 
 def main(project_name, path_hdf5, indices, overlap_flag, mo_flag):
 
@@ -27,7 +29,7 @@ def main(project_name, path_hdf5, indices, overlap_flag, mo_flag):
     with h5py.File(path_hdf5, 'r+') as f5:
         for p in paths:
             if p in f5:
-                print("removing: ", p)
+                logger.info("removing: ", p)
                 del f5[p]
 
 

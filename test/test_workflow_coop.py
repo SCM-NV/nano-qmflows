@@ -2,9 +2,8 @@
 import os
 import shutil
 import sys
+from pathlib import Path
 from os.path import join
-
-from qmflows.type_hints import PathLike
 
 from nanoqm.workflows.input_validation import process_input
 from nanoqm.workflows.workflow_coop import \
@@ -13,7 +12,7 @@ from nanoqm.workflows.workflow_coop import \
 from .utilsTest import PATH_TEST
 
 
-def test_workflow_coop(tmp_path: PathLike) -> None:
+def test_workflow_coop(tmp_path: Path) -> None:
     """Test the Crystal Orbital Overlap Population workflow."""
     file_path = PATH_TEST / 'input_test_coop.yml'
     config = process_input(file_path, 'coop_calculation')
@@ -25,7 +24,5 @@ def test_workflow_coop(tmp_path: PathLike) -> None:
     try:
         workflow_crystal_orbital_overlap_population(config)
         os.remove("COOP.txt")
-    except BaseException:
-        print("scratch_path: ", tmp_path)
-        print("Unexpected error:", sys.exc_info()[0])
-        raise
+    except Exception as ex:
+        raise AssertionError(f"Unxpected error for scratch_path {tmp_path!r}") from ex

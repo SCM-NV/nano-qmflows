@@ -7,6 +7,7 @@ from typing import Iterable, List, Tuple
 
 import h5py
 
+from nanoqm import logger
 from nanoqm.workflows.distribute_jobs import compute_number_of_geometries
 
 msg = "reenumerate.py -n name_project -d directory"
@@ -17,7 +18,7 @@ parser.add_argument('-n', required=True,
 parser.add_argument('-d', help="work directory", default='.')
 
 
-def create_new_group_names(groups: Iterable[str], index: str) -> List[str]:
+def create_new_group_names(groups: Iterable[str], index: int) -> List[str]:
     """Create new names using index for groups."""
     new_names = []
     for g in groups:
@@ -48,7 +49,7 @@ def rename_groups_in_hdf5(path_hdf5: Path, project: str, index: int) -> None:
 def reenumerate(project: str, folder_and_hdf5: Tuple[str, str], acc: int) -> int:
     """Reenumerate hdf5 files in folder using acc."""
     folder, hdf5 = folder_and_hdf5
-    print(f"Renaming {hdf5} by adding {acc} to the index")
+    logger.info(f"Renaming {hdf5} by adding {acc} to the index")
     rename_groups_in_hdf5(Path(hdf5), project, acc)
 
     # Count the number of geometries in the chunk

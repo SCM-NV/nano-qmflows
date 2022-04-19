@@ -3,6 +3,7 @@
 from pathlib import Path
 
 import pytest
+from assertionlib import assertion
 from nanoqm.schedule.scheduleCP2K import try_to_read_wf
 
 
@@ -16,5 +17,4 @@ def test_cp2k_call_error(tmp_path: Path):
         try_to_read_wf(tmp_path)
 
     error = info.value.args[0]
-    print(error)
-    assert "CP2K error" in error
+    assertion.contains(error, "CP2K error")

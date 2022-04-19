@@ -3,6 +3,8 @@ for nanomaterials like the non-adiabatic coupling vectors (NACV) using several q
 chemical (QM) packages."""
 
 from ._version import __version__ as __version__
+from ._version_info import version_info as version_info
+from ._logger import logger as logger
 
 from .analysis import (
     autocorrelate, dephasing, convolute, func_conv, gauss_function,

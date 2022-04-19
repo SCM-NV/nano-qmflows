@@ -3,6 +3,7 @@ import argparse
 from os.path import join
 
 import h5py
+from nanoqm import logger
 
 
 def main(path_hdf5: str, remove_overlaps: bool):
@@ -20,7 +21,7 @@ def main(path_hdf5: str, remove_overlaps: bool):
         paths_css = list(filter(lambda x: 'coupling' in x, f5.keys()))
         paths = paths_css + paths_overlaps_corrected + path_swaps + paths_overlaps
         for p in (p for p in paths if p in f5):
-            print("removing: ", p)
+            logger.info("removing: ", p)
             del f5[p]
 
 

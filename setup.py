@@ -120,7 +120,7 @@ if conda_prefix is None:
 conda_include = join(conda_prefix, 'include')
 conda_lib = join(conda_prefix, 'lib')
 ext_pybind = Extension(
-    'compute_integrals',
+    'nanoqm.compute_integrals',
     sources=['libint/compute_integrals.cc'],
     include_dirs=[
         # Path to pybind11 headers
@@ -170,7 +170,7 @@ setup(
         'schema',
         'pyyaml>=5.1',
         'plams>=1.5.1',
-        'qmflows>=0.11.2',
+        'qmflows>=0.12.0',
         'packaging>=1.16.8',
         'Nano-Utils>=2.0.0',
     ],
@@ -186,6 +186,7 @@ setup(
             'pytest-mock',
             'Cython',
             'setuptools',
+            'ipython',
         ],
         'doc': ['sphinx>=2.1', 'sphinx-autodoc-typehints', 'sphinx_rtd_theme', 'nbsphinx']
     },

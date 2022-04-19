@@ -12,7 +12,6 @@ import pytest
 import yaml
 from nanoutils import RecursiveKeysView
 from assertionlib import assertion
-from packaging.version import Version
 
 from nanoqm.common import UniqueSafeLoader, DictConfig
 from nanoqm.workflows.initialization import initialize, save_basis_to_hdf5
@@ -71,8 +70,6 @@ class TestSaveBasisToHDF5:
         tmp_path: Path,
     ) -> tuple[DictConfig, set[str]]:
         name, basis_file_name = request.param
-        if name == "ADMM" and (Version(qmflows.__version__) < Version("0.11.3")):
-            pytest.xfail("Basis sets consisting of multiple subsets require qmflows >=0.11.3")
 
         # COnstruct the settings
         hdf5_file = tmp_path / f"{name}.hdf5"

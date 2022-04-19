@@ -7,7 +7,6 @@ import h5py
 import pytest
 import qmflows
 import numpy as np
-from packaging.version import Version
 from nanoqm.common import retrieve_hdf5_data
 from nanoqm.workflows import workflow_stddft
 from nanoqm.workflows.input_validation import process_input
@@ -36,9 +35,6 @@ class TestComputeOscillators:
         approx: str,
     ) -> None:
         """Compute the oscillator strenght and check the results."""
-        if project == "He" and (Version(qmflows.__version__) < Version("0.11.3")):
-            pytest.skip("Requires QMFlows >= 0.11.3")
-
         name += f"-{approx}"
         path_original_hdf5 = PATH_TEST / f'{project}.hdf5'
         shutil.copy(path_original_hdf5, tmp_path)

@@ -18,6 +18,7 @@ from os.path import join
 
 from qmflows import cp2k, run, templates
 from scm.plams import Molecule
+from nanoqm import logger
 
 
 def main(file_xyz, cell, restart, basis, basis_folder):
@@ -47,7 +48,7 @@ def main(file_xyz, cell, restart, basis, basis_folder):
     # Output the results
     # ======================
 
-    print(result.energy)
+    logger.info(result.energy)
 
 
 def read_cmd_line(parser):

@@ -20,6 +20,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib import interactive
 
+from nanoqm import logger
+
 
 def readatom(filename):
     # In the first line in column 6, the atom is defined
@@ -92,7 +94,7 @@ def main(group, emin, emax):
     files = sorted(glob.glob('*-k*.pdos'))
     # Define the atom type for each DOS file
     legends = [readatom(files[i]) for i in range(len(files))]
-    print(files, legends)
+    logger.info(files, legends)
     # MO energies
     energies = np.loadtxt(files[0], usecols=1)
     # Convert energies to eV
@@ -103,7 +105,7 @@ def main(group, emin, emax):
     lumo_indx = lumos_indx[0][0]
     homo_indx = lumo_indx - 1
     hl_gap = (energies[lumo_indx] - energies[homo_indx])
-    print(f'The homo-lumo gap is: {hl_gap} eV')
+    logger.info(f'The homo-lumo gap is: {hl_gap} eV')
 
     # Read Files with PDOS info
     xs = [np.loadtxt(files[i]) for i in range(len(files))]

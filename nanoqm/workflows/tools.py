@@ -1,11 +1,8 @@
 """Common utilities use by the workflows."""
 
+from .. import logger
 from ..common import DictConfig, is_data_in_hdf5
 from .workflow_single_points import workflow_single_points
-import logging
-
-# Starting logger
-LOGGER = logging.getLogger(__name__)
 
 
 def compute_single_point_eigenvalues_coefficients(config: DictConfig):
@@ -18,9 +15,9 @@ def compute_single_point_eigenvalues_coefficients(config: DictConfig):
 
     node_paths = (node_path_coefficients, node_path_eigenvalues)
     if all(is_data_in_hdf5(config.path_hdf5, x) for x in node_paths):
-        LOGGER.info("Coefficients and eigenvalues already in hdf5.")
+        logger.info("Coefficients and eigenvalues already in hdf5.")
     else:
         # Call the single point workflow to calculate the eigenvalues and
         # coefficients
-        LOGGER.info("Starting single point calculation.")
+        logger.info("Starting single point calculation.")
         workflow_single_points(config)

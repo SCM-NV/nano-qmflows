@@ -16,7 +16,7 @@ import os
 import yaml
 from scm.plams import Molecule
 
-from qmflows.settings import Settings
+from qmflows import Settings
 from qmflows.type_hints import PathLike
 from nanoqm.common import UniqueSafeLoader, valence_electrons, aux_fit
 from typing import Any, Dict, Iterable, FrozenSet

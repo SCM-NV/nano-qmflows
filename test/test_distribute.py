@@ -33,15 +33,14 @@ def check_scripts() -> None:
 
     # Check that the files are created correctly
     files = ["launch.sh", "chunk_xyz*", "input.yml"]
-    for p in paths:
-        p = Path(p)
+    for _p in paths:
+        p = Path(_p)
         for f in files:
             try:
                 next(p.glob(f))
             except StopIteration:
-                msg = f"There is not file: {f}"
-                print(msg)
-                raise RuntimeError(msg)
+                msg = f"There is no such file: {f!r}"
+                raise RuntimeError(msg) from None
 
 
 def remove_chunk_folder() -> None:

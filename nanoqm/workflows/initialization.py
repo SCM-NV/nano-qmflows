@@ -20,7 +20,6 @@ __all__ = ['initialize', 'read_swaps', 'split_trajectory']
 import re
 import fnmatch
 import getpass
-import logging
 import os
 import subprocess
 import tempfile
@@ -31,23 +30,20 @@ from typing import List, Union
 
 import h5py
 import numpy as np
-import pkg_resources
 import qmflows
 from nanoutils import RecursiveItemsView
 from packaging.version import Version
 from qmflows.common import AtomBasisKey
 from qmflows.parsers import parse_string_xyz
-from qmflows.parsers.cp2KParser import readCp2KBasis
+from qmflows.parsers.cp2k import read_cp2k_basis
 from qmflows.type_hints import PathLike
 
-from .. import __version__
+from .. import logger, __version__, __path__ as nanoqm_path
+from .._logger import EnableFileHandler
 from ..common import (BasisFormats, DictConfig, Matrix, change_mol_units,
                       is_data_in_hdf5, retrieve_hdf5_data,
                       store_arrays_in_hdf5)
 from ..schedule.components import create_point_folder, split_file_geometries
-
-# Starting logger
-logger = logging.getLogger(__name__)
 
 
 def initialize(config: DictConfig) -> DictConfig:
@@ -59,46 +55,50 @@ def initialize(config: DictConfig) -> DictConfig:
         Input to run the workflow.
 
     """
-    log_config(config)
+    with EnableFileHandler(f'{config.project_name}.log'):
+        logger.info(f"Using nano-qmflows version: {qmflows.__version__} ")
+        logger.info(f"nano-qmflows path is: {nanoqm_path[0]}")
+        logger.info(f"Working directory is: {os.path.abspath('.')}")
+        logger.info(f"Data will be stored in HDF5 file: {config.path_hdf5}")
 
-    # Scratch folder
-    scratch_path = create_path_option(config["scratch_path"])
-    if scratch_path is None:
-        scratch_path = Path(tempfile.gettempdir()) / \
-            getpass.getuser() / config.project_name
-        logger.warning(
-            f"path to scratch was not defined, using: {scratch_path}")
-    config['workdir'] = scratch_path
+        # Scratch folder
+        scratch_path = create_path_option(config["scratch_path"])
+        if scratch_path is None:
+            scratch_path = (
+                Path(tempfile.gettempdir()) / getpass.getuser() / config.project_name
+            )
+            logger.warning(f"path to scratch was not defined, using: {scratch_path}")
+        config['workdir'] = scratch_path
 
-    # If the directory does not exist create it
-    if not scratch_path.exists():
-        scratch_path.mkdir(parents=True)
+        # If the directory does not exist create it
+        if not scratch_path.exists():
+            scratch_path.mkdir(parents=True)
 
-    # Touch HDF5 if it doesn't exists
-    if not os.path.exists(config.path_hdf5):
-        Path(config.path_hdf5).touch()
+        # Touch HDF5 if it doesn't exists
+        if not os.path.exists(config.path_hdf5):
+            Path(config.path_hdf5).touch()
 
-    # all_geometries type :: [String]
-    geometries = split_file_geometries(config["path_traj_xyz"])
-    config['geometries'] = geometries
+        # all_geometries type :: [String]
+        geometries = split_file_geometries(config["path_traj_xyz"])
+        config['geometries'] = geometries
 
-    # Create a folder for each point the the dynamics
-    enumerate_from = config["enumerate_from"]
-    len_geometries = len(geometries)
-    config["folders"] = create_point_folder(
-        scratch_path, len_geometries, enumerate_from)
+        # Create a folder for each point the the dynamics
+        enumerate_from = config["enumerate_from"]
+        len_geometries = len(geometries)
+        config["folders"] = create_point_folder(
+            scratch_path, len_geometries, enumerate_from)
 
-    config['calc_new_wf_guess_on_points'] = guesses_to_compute(
-        config['calculate_guesses'], enumerate_from, len_geometries)
+        config['calc_new_wf_guess_on_points'] = guesses_to_compute(
+            config['calculate_guesses'], enumerate_from, len_geometries)
 
-    # Generate a list of tuples containing the atomic label
-    # and the coordinates to generate the primitive CGFs
-    atoms = parse_string_xyz(geometries[0])
-    if 'angstrom' in config["geometry_units"].lower():
-        atoms = change_mol_units(atoms)
+        # Generate a list of tuples containing the atomic label
+        # and the coordinates to generate the primitive CGFs
+        atoms = parse_string_xyz(geometries[0])
+        if 'angstrom' in config["geometry_units"].lower():
+            atoms = change_mol_units(atoms)
 
-    # Save Basis to HDF5
-    save_basis_to_hdf5(config)
+        # Save Basis to HDF5
+        save_basis_to_hdf5(config)
 
     return config
 
@@ -117,8 +117,6 @@ def save_basis_to_hdf5(config: DictConfig) -> None:
             store_cp2k_basis(config.path_hdf5, path)
 
 
-_QMFLOWS_VERSION = Version(qmflows.__version__)
-_QMFLOWS_0_11_3 = Version("0.11.3")
 _NANO_QMFLOWS_0_13_0 = Version("0.13.0")
 
 _BASIS_PATH_PATTERN = re.compile(r"/cp2k/basis/([a-z]+)/([^/]+)/(coefficients|exponents)")
@@ -155,14 +153,9 @@ def store_cp2k_basis(path_hdf5: PathLike, path_basis: PathLike) -> None:
         if Version(f.attrs.get("__version__", "0.0.0")) < _NANO_QMFLOWS_0_13_0:
             _convert_legacy_basis(f)
 
-    if _QMFLOWS_VERSION >= _QMFLOWS_0_11_3:
-        keys, vals = readCp2KBasis(path_basis, allow_multiple_exponents=True)
-        node_paths_exponents = [_join(xs, str(xs.exponent_set), "exponents") for xs in keys]
-        node_paths_coefficients = [_join(xs, str(xs.exponent_set), "coefficients") for xs in keys]
-    else:
-        keys, vals = readCp2KBasis(path_basis)
-        node_paths_exponents = [_join(xs, "0", "exponents") for xs in keys]
-        node_paths_coefficients = [_join(xs, "0", "coefficients") for xs in keys]
+    keys, vals = read_cp2k_basis(path_basis, allow_multiple_exponents=True)
+    node_paths_exponents = [_join(xs, str(xs.exponent_set), "exponents") for xs in keys]
+    node_paths_coefficients = [_join(xs, str(xs.exponent_set), "coefficients") for xs in keys]
 
     exponents = [xs.exponents for xs in vals]
     coefficients = [xs.coefficients for xs in vals]
@@ -249,26 +242,6 @@ def split_trajectory(path: str | Path, nblocks: int, pathOut: str | os.PathLike[
         raise RuntimeError(f"Submission Errors: {err.decode()}")
     else:
         return fnmatch.filter(os.listdir(), "chunk_xyz_?")
-
-
-def log_config(config: DictConfig) -> None:
-    """Print initial configuration."""
-    workdir = os.path.abspath('.')
-    file_log = f'{config.project_name}.log'
-    logging.basicConfig(filename=file_log, level=logging.DEBUG,
-                        format='%(asctime)s---%(levelname)s\n%(message)s\n',
-                        datefmt='[%I:%M:%S]')
-    logging.getLogger("noodles").setLevel(logging.WARNING)
-    handler = logging.StreamHandler()
-    handler.terminator = ""
-
-    version = pkg_resources.get_distribution('nano-qmflows').version
-    path = pkg_resources.resource_filename('nanoqm', '')
-
-    logger.info(f"Using nano-qmflows version: {version} ")
-    logger.info(f"nano-qmflows path is: {path}")
-    logger.info(f"Working directory is: {workdir}")
-    logger.info(f"Data will be stored in HDF5 file: {config.path_hdf5}")
 
 
 def create_path_option(path: str | os.PathLike[str]) -> Path | None:

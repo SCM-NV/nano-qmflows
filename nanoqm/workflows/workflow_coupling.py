@@ -14,7 +14,6 @@ from __future__ import annotations
 
 __all__ = ['workflow_derivative_couplings']
 
-import logging
 import os
 from os.path import join
 from typing import List, Tuple, Union
@@ -23,14 +22,12 @@ from noodles import gather, schedule, unpack
 from noodles.interface import PromisedObject
 from qmflows.type_hints import PathLike
 
+from .. import logger
 from ..common import DictConfig
 from ..schedule.components import calculate_mos
 from ..schedule.scheduleCoupling import (calculate_overlap, lazy_couplings,
                                          write_hamiltonians)
 from .orbitals_type import select_orbitals_type
-
-# Starting logger
-logger = logging.getLogger(__name__)
 
 #: Type defining the derivative couplings calculation
 ResultPaths = Tuple[List[str], List[str]]

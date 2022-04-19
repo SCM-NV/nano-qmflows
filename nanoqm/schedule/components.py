@@ -12,7 +12,6 @@ __all__ = ["calculate_mos", "create_point_folder",
            "split_file_geometries"]
 
 import fnmatch
-import logging
 import os
 from collections import defaultdict
 from os.path import join
@@ -25,12 +24,10 @@ from qmflows.common import InfoMO
 from qmflows.type_hints import PathLike, PromisedObject
 from qmflows.warnings_qmflows import SCF_Convergence_Warning
 
+from .. import logger
 from ..common import (DictConfig, Matrix, is_data_in_hdf5,
                       read_cell_parameters_as_array, store_arrays_in_hdf5)
 from .scheduleCP2K import prepare_job_cp2k
-
-# Starting logger
-logger = logging.getLogger(__name__)
 
 #: Molecular orbitals from both restricted and unrestricted calculations
 OrbitalType = Union[InfoMO, Tuple[InfoMO, InfoMO]]

@@ -210,7 +210,7 @@ todo_include_todos = True
 autodoc_mock_imports = [
     'h5py',
     'qmflows',
-    'compute_integrals',
+    'nanoqm.compute_integrals',
     'mendeleev',
     'scm',
     'noodles',

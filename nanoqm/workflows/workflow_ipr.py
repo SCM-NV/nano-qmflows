@@ -9,21 +9,17 @@ Index
 """
 __all__ = ['workflow_ipr']
 
-import logging
-
 import numpy as np
 from scipy.linalg import sqrtm
 
-from qmflows.parsers.xyzParser import readXYZ
+from qmflows.parsers import readXYZ
 
+from .. import logger
 from ..common import (DictConfig, h2ev, number_spherical_functions_per_atom,
                       retrieve_hdf5_data)
 from ..integrals.multipole_matrices import compute_matrix_multipole
 from .initialization import initialize
 from .tools import compute_single_point_eigenvalues_coefficients
-
-# Starting logger
-LOGGER = logging.getLogger(__name__)
 
 
 def workflow_ipr(config: DictConfig) -> np.ndarray:
@@ -35,7 +31,7 @@ def workflow_ipr(config: DictConfig) -> np.ndarray:
     compute_single_point_eigenvalues_coefficients(config)
 
     # Logger info
-    LOGGER.info("Starting IPR calculation.")
+    logger.info("Starting IPR calculation.")
 
     # Get eigenvalues and coefficients from hdf5
     node_path_coefficients = 'coefficients/point_0/'

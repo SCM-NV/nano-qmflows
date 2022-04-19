@@ -22,8 +22,6 @@ def run_single_point(tmp_path: Path, input_file: str):
     Path(tmp_hdf5).touch()
     try:
         path_orbitals, path_energies = workflow_single_points(config)
-        print("path_orbitals: ", path_orbitals)
-        print("path_energies: ", path_energies)
         if config["compute_orbitals"]:
             assertion.truth(is_data_in_hdf5(tmp_hdf5, path_orbitals[0]))
     finally:

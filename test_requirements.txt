@@ -6,6 +6,7 @@ pytest-cov
 pytest-mock
 Cython
 setuptools
+ipython
 
 # Runtime dependencies
 h5py
@@ -17,6 +18,6 @@ scipy
 schema
 pyyaml>=5.1
 plams>=1.5.1
-qmflows>=0.11.2
+qmflows>=0.12.0
 packaging>=1.16.8
 Nano-Utils>=2.0.0

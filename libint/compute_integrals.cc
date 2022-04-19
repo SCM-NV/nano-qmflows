@@ -82,20 +82,33 @@ template <typename Lambda> void parallel_do(Lambda &lambda) {
  * \brief Set the number of thread to use
  */
 void set_nthread() {
-
+#if defined(_OPENMP)
   using libint2::nthreads;
   nthreads = std::thread::hardware_concurrency();
-
-#if defined(_OPENMP)
   omp_set_num_threads(nthreads);
 #endif
-  std::cout << "Will scale over " << nthreads
-#if defined(_OPENMP)
-            << " OpenMP"
-#else
-            << " C++11"
-#endif
-            << " threads" << std::endl;
+}
+
+/**
+ * \brief Get the number of threads and the thread type as a 2-tuple
+ */
+int get_thread_count() {
+  using libint2::nthreads;
+  return std::thread::hardware_concurrency();
+}
+
+/**
+ * \brief Get the type of threads
+ */
+string get_thread_type() {
+  string ret;
+
+  #if defined(_OPENMP)
+    ret = "OpenMP";
+  #else
+    ret = "C++11";
+  #endif
+  return ret;
 }
 
 /**
@@ -287,13 +300,9 @@ std::vector<Matrix> compute_multipoles(
 CP2K_Basis_Atom read_basis_from_hdf5(const string &path_file,
                                      const string &symbol,
                                      const string &basis) {
-  std::vector<std::vector<double>> coefficients;
-  std::vector<double> exponents;
-  std::vector<int64_t> format;
-
-  libint2::svector<double> small_exp;
+  libint2::svector<libint2::svector<double>> small_exp;
   libint2::svector<libint2::svector<double>> small_coef;
-  libint2::svector<CP2K_Contractions> small_fmt;
+  libint2::svector<libint2::svector<CP2K_Contractions>> small_fmt;
 
   try {
     // Open an existing HDF5 File
@@ -310,6 +319,10 @@ CP2K_Basis_Atom read_basis_from_hdf5(const string &path_file,
     // only a single set of exponents, but there are exception such
     // as BASIS_ADMM_MOLOPT
     for (const auto &name : dset_names) {
+      std::vector<std::vector<double>> coefficients;
+      std::vector<double> exponents;
+      std::vector<int64_t> format;
+
       const string path_coefficients = root + "/" + name + "/coefficients";
       const string path_exponents = root + "/" + name + "/exponents";
 
@@ -323,14 +336,16 @@ CP2K_Basis_Atom read_basis_from_hdf5(const string &path_file,
       dataset_es.read(exponents);
       attr.read(format);
 
-      // Move data to small vectors and keep extending them as iteration
-      // over `dset_names` continues
-      std::move(exponents.begin(), exponents.end(), std::back_inserter(small_exp));
+      // Move data to small vectors and keep appending or extending them as
+      // iteration over `dset_names` continues
+      libint2::svector<double> small_exp_1d;
+      std::move(exponents.begin(), exponents.end(), std::back_inserter(small_exp_1d));
+      small_exp.push_back(small_exp_1d);
 
       for (const auto &v : coefficients) {
-        libint2::svector<double> small;
-        std::move(v.begin(), v.end(), std::back_inserter(small));
-        small_coef.push_back(small);
+        libint2::svector<double> small_coef_1d;
+        std::move(v.begin(), v.end(), std::back_inserter(small_coef_1d));
+        small_coef.push_back(small_coef_1d);
       }
 
       // The CP2K basis format is defined by a vector of integers, for each atom.
@@ -349,15 +364,12 @@ CP2K_Basis_Atom read_basis_from_hdf5(const string &path_file,
       // Note: Elements 4 and onwards define the number of contracted for each
       // angular momentum quantum number (all prior elements are disgarded).
       int l, i;
+      libint2::svector<CP2K_Contractions> small_fmt_1d;
       for (i=4, l=format[1]; i != static_cast<int>(format.size()); i++, l++) {
         int count = format[i];
-        small_fmt.push_back(CP2K_Contractions{l, count});
+        small_fmt_1d.push_back({l, count});
       }
-
-      // Clear the temp vectors for the next iteration cycle
-      coefficients.clear();
-      exponents.clear();
-      format.clear();
+      small_fmt.push_back(small_fmt_1d);
     }
   } catch (HighFive::Exception &err) {
     // catch and print any HDF5 error
@@ -405,18 +417,23 @@ create_map_symbols_basis(const string &path_hdf5,
  */
 libint2::svector<Shell> create_shells_for_atom(const CP2K_Basis_Atom &data,
                                                const Atom &atom) {
-  libint2::svector<CP2K_Contractions> basis_format = data.basis_format;
   libint2::svector<Shell> shells;
+  libint2::svector<double> exponents;
+  libint2::svector<CP2K_Contractions> basis_format;
 
   int acc = 0;
-  for (auto contractions : basis_format) {
-    for (int i = 0; i < contractions.count; i++) {
-      shells.push_back({
-        data.exponents,
-        {{contractions.l, true, data.coefficients[acc]}},  // compute integrals in sphericals
-        {{atom.x, atom.y, atom.z}}  // Atomic Coordinates
-      });
-      acc += 1;
+  for (int i = 0; i != static_cast<int>(data.exponents.size()); i++) {
+    exponents = data.exponents[i];
+    basis_format = data.basis_format[i];
+    for (auto contractions : basis_format) {
+      for (int j = 0; j < contractions.count; j++) {
+        shells.push_back({
+          exponents,
+          {{contractions.l, true, data.coefficients[acc]}},  // compute integrals in sphericals
+          {{atom.x, atom.y, atom.z}}  // Atomic Coordinates
+        });
+        acc += 1;
+      }
     }
   }
   return shells;
@@ -550,5 +567,11 @@ PYBIND11_MODULE(compute_integrals, m) {
         py::return_value_policy::reference_internal);
 
   m.def("compute_integrals_multipole", &compute_integrals_multipole,
+        py::return_value_policy::reference_internal);
+
+  m.def("get_thread_count", &get_thread_count,
+        py::return_value_policy::reference_internal);
+
+  m.def("get_thread_type", &get_thread_type,
         py::return_value_policy::reference_internal);
 }
