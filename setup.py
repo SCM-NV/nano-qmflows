@@ -192,7 +192,7 @@ setup(
     },
     include_package_data=True,
     package_data={
-        'nanoqm': ['basis/*.json', 'basis/BASIS*', 'basis/GTH_POTENTIALS', 'py.typed']
+        'nanoqm': ['basis/*.json', 'basis/BASIS*', 'basis/GTH_POTENTIALS', 'py.typed', '*.pyi']
     },
     entry_points={
         'console_scripts': [
