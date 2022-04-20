@@ -5,6 +5,7 @@ from os.path import join
 from typing import TYPE_CHECKING
 
 import setuptools
+import pybind11
 from Cython.Distutils import build_ext
 from setuptools import Extension, find_packages, setup
 
@@ -26,22 +27,6 @@ def readme() -> str:
     """Load readme."""
     with open('README.rst', 'r', encoding='utf8') as f:
         return f.read()
-
-
-class get_pybind_include:
-    """Helper class to determine the pybind11 include path.
-
-    The purpose of this class is to postpone importing pybind11
-    until it is actually installed, so that the ``get_include()``
-    method can be invoked.
-    """
-
-    def __init__(self, user: bool = False) -> None:
-        self.user = user
-
-    def __str__(self) -> str:
-        import pybind11
-        return pybind11.get_include(self.user)
 
 
 def has_flag(compiler: "CCompiler", flagname: str) -> bool:
@@ -137,9 +122,8 @@ ext_pybind = Extension(
         'libint/include',
         conda_include,
         join(conda_include, 'eigen3'),
-        get_pybind_include(),
-        get_pybind_include(user=True),
         '/usr/include/eigen3'
+        pybind11.get_include(),
     ],
     libraries=['hdf5', 'int2'],
     library_dirs=[conda_lib],
