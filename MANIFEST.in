@@ -1,0 +1,10 @@
+exclude test/*
+include *_requirements.txt
+
+include nanoqm/py.typed
+recursive-include nanoqm *.pyi
+include nanoqm/basis/GTH_POTENTIALS
+include nanoqm/basis/*.json
+include nanoqm/basis/BASIS_*
+
+include libint/include/*.hpp
