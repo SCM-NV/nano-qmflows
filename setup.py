@@ -18,13 +18,13 @@ else:
 here = os.path.abspath(os.path.dirname(__file__))
 
 version: "dict[str, str]" = {}
-with open(os.path.join(here, 'nanoqm', '_version.py')) as f:
+with open(os.path.join(here, 'nanoqm', '_version.py'), 'r', encoding='utf8') as f:
     exec(f.read(), version)
 
 
 def readme() -> str:
     """Load readme."""
-    with open('README.rst') as f:
+    with open('README.rst', 'r', encoding='utf8') as f:
         return f.read()
 
 
@@ -97,18 +97,27 @@ class BuildExt(build_ext):
         opts = self.c_opts.get(ct, [])
         link_opts = self.l_opts.get(ct, [])
         if ct == 'unix':
-            opts.append('-DVERSION_INFO="%s"' %
-                        self.distribution.get_version())
+            opts.append('-DVERSION_INFO="%s"' % self.distribution.get_version())
             opts.append(cpp_flag(self.compiler))
             if has_flag(self.compiler, '-fvisibility=hidden'):
                 opts.append('-fvisibility=hidden')
         elif ct == 'msvc':
-            opts.append('/DVERSION_INFO=\\"%s\\"' %
-                        self.distribution.get_version())
+            opts.append('/DVERSION_INFO=\\"%s\\"' % self.distribution.get_version())
         for ext in self.extensions:
             ext.extra_compile_args = opts
             ext.extra_link_args = link_opts
         build_ext.build_extensions(self)
+
+
+def parse_requirements(path: "str | os.PathLike[str]") -> "list[str]":
+    """Parse a ``requirements.txt`` file and strip all empty and commented lines."""
+    ret = []
+    with open(path, "r", encoding="utf8") as f:
+        for i in f:
+            j = i.split("#", 1)[0].strip().rstrip()
+            if j:
+                ret.append(j)
+    return ret
 
 
 # Set path to the conda libraries
@@ -116,6 +125,7 @@ conda_prefix = os.environ["CONDA_PREFIX"]
 if conda_prefix is None:
     raise RuntimeError(
         "No conda module found. A Conda environment is required")
+
 
 conda_include = join(conda_prefix, 'include')
 conda_lib = join(conda_prefix, 'lib')
@@ -160,35 +170,13 @@ setup(
         'Topic :: Scientific/Engineering :: Chemistry',
         'Typing :: Typed',
     ],
-    install_requires=[
-        'h5py',
-        'mendeleev',
-        'more-itertools',
-        'noodles>=0.3.3',
-        'numpy',
-        'scipy',
-        'schema',
-        'pyyaml>=5.1',
-        'plams>=1.5.1',
-        'qmflows>=0.12.0',
-        'packaging>=1.16.8',
-        'Nano-Utils>=2.0.0',
-    ],
+    install_requires=parse_requirements("install_requirements.txt"),
     cmdclass={'build_ext': BuildExt},
     python_requires='>=3.7',
     ext_modules=[ext_pybind],
     extras_require={
-        'test': [
-            'assertionlib',
-            'codacy-coverage',
-            'pytest',
-            'pytest-cov',
-            'pytest-mock',
-            'Cython',
-            'setuptools',
-            'ipython',
-        ],
-        'doc': ['sphinx>=2.1', 'sphinx-autodoc-typehints', 'sphinx_rtd_theme', 'nbsphinx']
+        'test': parse_requirements("test_requirements.txt"),
+        'doc': parse_requirements("doc_requirements.txt"),
     },
     include_package_data=True,
     package_data={
