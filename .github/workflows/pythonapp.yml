@@ -80,18 +80,7 @@ jobs:
     - uses: actions/checkout@v3
 
     - name: Install CP2K
-      run: |
-        version="${{ matrix.cp2k }}"
-        version_long=v"${{ matrix.cp2k }}".0
-
-        git clone https://github.com/cp2k/cp2k
-        cd cp2k
-        git checkout tags/$version_long
-        ln -s data /usr/share/cp2k
-
-        wget -nv https://github.com/cp2k/cp2k/releases/download/$version_long/cp2k-$version-Linux-x86_64.ssmp -O cp2k.ssmp
-        chmod u+rx cp2k.ssmp
-        mv cp2k.ssmp /usr/local/bin/cp2k.popt
+      run: bash scripts/download_cp2k.sh "${{ matrix.cp2k }}"
 
     - name: Info CP2K
       run: cp2k.popt --version
