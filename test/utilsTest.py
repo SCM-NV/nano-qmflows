@@ -10,7 +10,6 @@ from pathlib import Path
 from typing import Union
 
 import h5py
-import pkg_resources as pkg
 from qmflows.packages import Result
 
 __all__ = [
@@ -23,8 +22,7 @@ __all__ = [
 ]
 
 # Environment data
-PATH_NANOQM = Path(pkg.resource_filename('nanoqm', ''))
-ROOT = PATH_NANOQM.parent
+ROOT = Path(__file__).parents[1]
 PATH_TEST = ROOT / "test" / "test_files"
 
 
