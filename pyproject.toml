@@ -18,3 +18,22 @@ module = [
     "Cython.*",
 ]
 ignore_missing_imports = true
+
+[tool.cibuildwheel]
+build = "cp*-manylinux_x86_64"
+build-verbosity = "3"
+repair-wheel-command = "auditwheel -v repair -w {dest_dir} {wheel}"
+manylinux-x86_64-image = "ghcr.io/nlesc-nano/manylinux2014_x86_64-qmflows"
+environment = { QMFLOWS_INCLUDEDIR="", QMFLOWS_LIBDIR="", CFLAGS="-Werror", LDFLAGS="-Wl,--strip-debug" }
+before-test = [
+    "bash {project}/scripts/download_cp2k.sh 9.1",
+    "mkdir /tmp/nanoqm",
+    "cp {project}/setup.cfg /tmp/nanoqm/",
+    "cp {project}/conftest.py /tmp/nanoqm/conftest.py",
+    "cp -r {project}/test /tmp/nanoqm/test",
+]
+test-command = [
+    "cd /tmp/nanoqm",
+    "pytest -m 'not (slow or long)' test",
+]
+test-extras = ["test"]
