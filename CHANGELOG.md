@@ -1,9 +1,9 @@
 # Change Log
 
-# 0.13.1 (unreleased)
+# 0.13.1 (21/04/2022)
 
 ## New
-* *placeholder*.
+* Automatically build and upload manylinux2014 wheels when creating a release.
 
 
 # 0.13.0 (19/04/2022)
