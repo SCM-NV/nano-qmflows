@@ -3,37 +3,162 @@ name: Publish
 on:
   release:
     types: [published]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
 
 jobs:
-  build:
-    name: Build wheels
-    runs-on: ubuntu-latest
+  build_wheels:
+    name: Build wheels ${{ matrix.version }}-${{ matrix.buildplat[1] }}
+    runs-on: ${{ matrix.buildplat[0] }}
+    strategy:
+      fail-fast: false
+      matrix:
+        buildplat:
+        - [ubuntu-20.04, manylinux_x86_64]
+        version:
+        - "cp37"
+        - "cp38"
+        - "cp39"
+        - "cp310"
+
     steps:
-      - uses: actions/checkout@v2
-
-      - name: Setup conda
-        uses: s-weigand/setup-conda@v1
-        with:
-          update-conda: false
-
-      - name: Install dependencies
-        run: conda create -n test -c conda-forge boost eigen libint==2.6.0 highfive Cython setuptools wheel "pybind11>=2.2.4"
-
-      - name: Conda info
-        run: |
-          source $CONDA/bin/activate test
-          conda info
-
-      - name: Conda list
-        run: conda list -n test
+      - uses: actions/checkout@v3
 
       - name: Build wheels
+        uses: pypa/cibuildwheel@v2.4.0
+        env:
+          CIBW_BUILD: ${{ matrix.version }}-${{ matrix.buildplat[1] }}
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: wheels
+          path: ./wheelhouse/*.whl
+
+  build_sdist:
+    name: Build wheels sdist
+    runs-on: ubuntu-latest
+    env:
+      QMFLOWS_INCLUDEDIR: ""
+      QMFLOWS_LIBDIR: ""
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v3
+
+      - name: Install dependencies
+        run: pip install Cython "setuptools>=48.0" wheel "pybind11>=2.2.4"
+
+      - name: Python info
         run: |
-          source $CONDA/bin/activate test
+          which python
+          python --version
+
+      - name: Installed packages
+        run: pip list
+
+      - name: Build sdist
+        run: |
           python setup.py sdist
+          tree dist
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: wheels
+          path: ./dist/*.tar.gz
+
+  test_sdist:
+    name: Test wheels sdist
+    runs-on: ubuntu-latest
+    needs: [build_sdist]
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Install CP2K
+      run: bash scripts/download_cp2k.sh 9.1
+
+    - name: Info CP2K
+      run: cp2k.popt --version
+
+    - name: Setup conda
+      uses: s-weigand/setup-conda@v1
+      with:
+        update-conda: true
+
+    - uses: actions/download-artifact@v3
+      with:
+        name: wheels
+        path: dist
+
+    - name: Install dependencies
+      run: |
+        conda install -c conda-forge boost eigen libint==2.6.0 highfive
+        cd dist
+        pip install *.tar.gz -v
+        pip install -r ../test_requirements.txt
+
+    - name: Conda info
+      run: conda info
+
+    - name: Conda list
+      run: conda list
+
+    - name: Test with pytest
+      run: |
+        mkdir /tmp/nanoqm
+        cp setup.cfg /tmp/nanoqm/
+        cp conftest.py /tmp/nanoqm/conftest.py
+        cp -r test /tmp/nanoqm/test
+        cd /tmp/nanoqm
+        pytest -m "not (slow or long)"
+
+  upload_wheels:
+    name: Upload wheels
+    runs-on: ubuntu-latest
+    needs: [test_sdist, build_wheels]
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions/download-artifact@v3
+        with:
+          name: wheels
+          path: dist
+
+      - name: Set up Python
+        uses: actions/setup-python@v3
+
+      - name: Install dependencies
+        run: pip install twine
+
+      - name: Python info
+        run: |
+          which python
+          python --version
+
+      - name: Installed packages
+        run: pip list
+
+      - name: Validate wheels
+        run: |
+          tree dist
+          twine check dist/*
 
       - name: Publish wheels
         uses: pypa/gh-action-pypi-publish@master
         with:
           user: __token__
           password: ${{ secrets.PYPI_TOKEN }}
+
+      - name: Attach wheels to GitHub release
+        if: github.event_name == 'release'
+        uses: AButler/upload-release-assets@v2.0
+        with:
+          files: 'dist/*'
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
