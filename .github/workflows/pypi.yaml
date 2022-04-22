@@ -22,6 +22,8 @@ jobs:
       matrix:
         buildplat:
         - [ubuntu-20.04, manylinux_x86_64]
+        - [ubuntu-20.04, manylinux_aarch64]
+        - [macos-10.15, macosx_x86_64]
         version:
         - "cp37"
         - "cp38"
@@ -31,10 +33,36 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Build wheels
+      - name: Set up QEMU
+        if: matrix.buildplat[1] == 'manylinux_aarch64'
+        uses: docker/setup-qemu-action@v1
+        with:
+          platforms: arm64
+
+      - name: Get MacOS build dependencies
+        if: matrix.buildplat[1] == 'macosx_x86_64'
+        run: |
+          git clone https://github.com/nlesc-nano/nano-qmflows-manylinux
+
+          cd nano-qmflows-manylinux/macos
+          tar -xzf macos_deps.tar.gz
+          cp -r output/bin/* /usr/local/bin/
+          cp -r output/lib/* /usr/local/lib/
+          cp -r output/include/* /usr/local/include/
+          cp -r output/share/* /usr/local/share/
+
+      - name: Build wheels (x86_64)
         uses: pypa/cibuildwheel@v2.4.0
+        if: matrix.buildplat[1] != 'manylinux_aarch64'
         env:
           CIBW_BUILD: ${{ matrix.version }}-${{ matrix.buildplat[1] }}
+
+      - name: Build wheels (aarch64)
+        uses: pypa/cibuildwheel@v2.4.0
+        if: matrix.buildplat[1] == 'manylinux_aarch64'
+        env:
+          CIBW_BUILD: ${{ matrix.version }}-${{ matrix.buildplat[1] }}
+          CIBW_ARCHS_LINUX: aarch64
 
       - uses: actions/upload-artifact@v3
         with:
@@ -82,7 +110,7 @@ jobs:
     - uses: actions/checkout@v3
 
     - name: Install CP2K
-      run: bash scripts/download_cp2k.sh 9.1
+      run: bash scripts/download_cp2k.sh x86_64 9.1
 
     - name: Info CP2K
       run: cp2k.popt --version

@@ -80,7 +80,7 @@ jobs:
     - uses: actions/checkout@v3
 
     - name: Install CP2K
-      run: bash scripts/download_cp2k.sh "${{ matrix.cp2k }}"
+      run: bash scripts/download_cp2k.sh x86_64 "${{ matrix.cp2k }}"
 
     - name: Info CP2K
       run: cp2k.popt --version

@@ -75,4 +75,4 @@ class TestComputeOscillators:
         # Compare with reference data
         with h5py.File(PATH_TEST / "test_files.hdf5", "r") as f:
             ref = f[f"test_absorption_spectrum/TestComputeOscillators/{name}/dipole"][...]
-        np.testing.assert_allclose(dipole_matrices, ref)
+        np.testing.assert_allclose(dipole_matrices, ref, rtol=0, atol=1e-08)
