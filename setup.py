@@ -171,6 +171,7 @@ setup(
     version=version['__version__'],
     description='Derivative coupling calculation',
     license='Apache-2.0',
+    license_files=["LICENSE*.txt"],
     url='https://github.com/SCM-NV/nano-qmflows',
     author='Felipe Zapata & Ivan Infante',
     author_email='f.zapata@esciencecenter.nl',
