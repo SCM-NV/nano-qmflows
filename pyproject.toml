@@ -22,6 +22,7 @@ ignore_missing_imports = true
 [tool.cibuildwheel]
 build = "cp*-manylinux_x86_64"
 build-verbosity = "3"
+before-all = "cp licenses/LICENSE*.txt ."
 repair-wheel-command = "auditwheel -v repair -w {dest_dir} {wheel}"
 manylinux-x86_64-image = "ghcr.io/nlesc-nano/manylinux2014_x86_64-qmflows"
 environment = { QMFLOWS_INCLUDEDIR="", QMFLOWS_LIBDIR="", CFLAGS="-Werror", LDFLAGS="-Wl,--strip-debug" }

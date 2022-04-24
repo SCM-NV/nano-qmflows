@@ -1,9 +1,6 @@
 exclude test/*
 include *_requirements.txt
 
-include licenses/*.txt
-include licenses/*.rst
-
 include nanoqm/py.typed
 recursive-include nanoqm *.pyi
 include nanoqm/basis/GTH_POTENTIALS

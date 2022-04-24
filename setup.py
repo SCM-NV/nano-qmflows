@@ -171,13 +171,14 @@ setup(
     version=version['__version__'],
     description='Derivative coupling calculation',
     license='Apache-2.0',
+    license_files=["LICENSE*.txt"],
     url='https://github.com/SCM-NV/nano-qmflows',
     author='Felipe Zapata & Ivan Infante',
     author_email='f.zapata@esciencecenter.nl',
     keywords='chemistry Photochemistry Simulation',
     long_description=readme() + '\n\n',
     long_description_content_type='text/x-rst',
-    packages=find_packages(),
+    packages=find_packages(exclude=["test"]),
     classifiers=[
         'License :: OSI Approved :: Apache Software License',
         'Natural Language :: English',
@@ -198,7 +199,6 @@ setup(
         'test': parse_requirements("test_requirements.txt"),
         'doc': parse_requirements("doc_requirements.txt"),
     },
-    include_package_data=True,
     package_data={
         'nanoqm': ['basis/*.json', 'basis/BASIS*', 'basis/GTH_POTENTIALS', 'py.typed', '*.pyi']
     },
