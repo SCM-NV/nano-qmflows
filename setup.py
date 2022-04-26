@@ -5,7 +5,7 @@ from os.path import join
 from typing import TYPE_CHECKING
 
 import setuptools
-import pybind11
+import numpy as np
 from Cython.Distutils import build_ext
 from setuptools import Extension, find_packages, setup
 
@@ -153,13 +153,13 @@ def get_paths() -> "tuple[list[str], list[str]]":
 
 
 include_list, lib_list = get_paths()
-ext_pybind = Extension(
+libint_ext = Extension(
     'nanoqm.compute_integrals',
     sources=['libint/compute_integrals.cc'],
     include_dirs=[
         "libint/include",
         *include_list,
-        pybind11.get_include(),
+        np.get_include(),
     ],
     libraries=['hdf5', 'int2'],
     library_dirs=lib_list,
@@ -201,7 +201,7 @@ setup(
     install_requires=parse_requirements("install_requirements.txt"),
     cmdclass={'build_ext': BuildExt},
     python_requires='>=3.7',
-    ext_modules=[ext_pybind],
+    ext_modules=[libint_ext],
     extras_require={
         'test': parse_requirements("test_requirements.txt"),
         'doc': parse_requirements("doc_requirements.txt"),

@@ -3,12 +3,18 @@
  * kind of integrals used for non-adiabatic molecular dynamics,
  * including the overlaps integrals between different geometries
  * And the dipoles and quadrupoles to compute absorption spectra.
- * This module is based on libint, Eigen and pybind11.
+ * This module is based on libint and Eigen.
  * Copyright (C) 2018-2022 the Netherlands eScience Center.
  */
+
+#define PY_SSIZE_T_CLEAN
+#define Py_LIMITED_API 0x03070000
+#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
+#include <Python.h>
+#include <numpy/arrayobject.h>
+
 #include "namd.hpp"
 
-namespace py = pybind11;
 using HighFive::Attribute;
 using HighFive::DataSet;
 using HighFive::File;
@@ -88,29 +94,6 @@ void set_nthread() {
   omp_set_num_threads(nthreads);
 #endif
 }
-
-/**
- * \brief Get the number of threads and the thread type as a 2-tuple
- */
-int get_thread_count() {
-  using libint2::nthreads;
-  return std::thread::hardware_concurrency();
-}
-
-/**
- * \brief Get the type of threads
- */
-string get_thread_type() {
-  string ret;
-
-  #if defined(_OPENMP)
-    ret = "OpenMP";
-  #else
-    ret = "C++11";
-  #endif
-  return ret;
-}
-
 /**
  * \brief Get the number of basis
  */
@@ -559,19 +542,148 @@ Matrix compute_integrals_multipole(const string &path_xyz,
   return super_matrix;
 }
 
-PYBIND11_MODULE(compute_integrals, m) {
-  m.doc() = "Compute integrals using libint2 see: "
-            "https://github.com/evaleev/libint/wiki";
 
-  m.def("compute_integrals_couplings", &compute_integrals_couplings,
-        py::return_value_policy::reference_internal);
+/** \brief Convert python `str` instance into a C++ std::string **/
+int py_obj_to_string(PyObject *py_str, void *ptr) {
+  Py_ssize_t size;
+  char *str;
 
-  m.def("compute_integrals_multipole", &compute_integrals_multipole,
-        py::return_value_policy::reference_internal);
+  // PyUnicode_AsUTF8AndSize is part of the stable ABI ever since Python 3.10.
+  // For older versions we have to use a workaround by first converting the
+  // python str instance into a python bytes instance.
+#if defined(PyUnicode_AsUTF8AndSize)
+  str = PyUnicode_AsUTF8AndSize(py_str, &size);
+  if (str == nullptr) {
+    return 0;
+  }
+#else
+  PyObject *py_bytes = PyUnicode_AsEncodedString(py_str, "utf8", nullptr);
+  if (py_bytes == nullptr) {
+    return 0;
+  }
 
-  m.def("get_thread_count", &get_thread_count,
-        py::return_value_policy::reference_internal);
+  int num = PyBytes_AsStringAndSize(py_bytes, &str, &size);
+  Py_DecRef(py_bytes);
+  if (num == -1) {
+    return 0;
+  }
+#endif
+  *(string *)ptr = std::string(str, size);
+  return 1;
+}
 
-  m.def("get_thread_type", &get_thread_type,
-        py::return_value_policy::reference_internal);
+
+/** \brief Convert (copy) an Eigen matrix into a numpy array **/
+PyObject *mat_to_npy_array(Matrix &mat) {
+  PyObject *npy_array;
+  PyObject *ret;
+  const npy_intp shape [2] = {mat.rows(), mat.cols()};
+
+  npy_array = PyArray_SimpleNewFromData(2, shape, NPY_DOUBLE, mat.data());
+  if (npy_array == nullptr) {
+    return nullptr;
+  }
+
+  // TODO: Figure out how to transfer ownership of `mat`s memory to the numpy array.
+  // As a stop-gap measure, simply create a copy to ensure the arrays' memory is
+  // fully managed by numpy.
+  ret = PyArray_SimpleNew(2, shape, NPY_DOUBLE);
+  int res = PyArray_CopyInto((PyArrayObject *)ret, (PyArrayObject *)npy_array);
+  Py_DecRef(npy_array);
+  return (res == -1) ? nullptr : ret;
+}
+
+
+/** \brief Python wrapper for compute_integrals_couplings */
+PyObject *py_compute_integrals_couplings(PyObject *self, PyObject *args) {
+  string path_xyz_1;
+  string path_xyz_2;
+  string path_hdf5;
+  string basis_name;
+  Matrix mat;
+
+  if (!PyArg_ParseTuple(args, "O&O&O&O&:compute_integrals_couplings",
+      py_obj_to_string, &path_xyz_1,
+      py_obj_to_string, &path_xyz_2,
+      py_obj_to_string, &path_hdf5,
+      py_obj_to_string, &basis_name)) {
+    return nullptr;
+  }
+
+  mat = compute_integrals_couplings(path_xyz_1, path_xyz_2, path_hdf5, basis_name);
+  return mat_to_npy_array(mat);
+}
+
+
+/** \brief Python wrapper for compute_integrals_multipole */
+PyObject *py_compute_integrals_multipole(PyObject *self, PyObject *args) {
+  string path_xyz;
+  string path_hdf5;
+  string basis_name;
+  string multipole;
+  Matrix mat;
+
+  if (!PyArg_ParseTuple(args, "O&O&O&O&:compute_integrals_multipole",
+      py_obj_to_string, &path_xyz,
+      py_obj_to_string, &path_hdf5,
+      py_obj_to_string, &basis_name,
+      py_obj_to_string, &multipole)) {
+    return nullptr;
+  }
+
+  mat = compute_integrals_multipole(path_xyz, path_hdf5, basis_name, multipole);
+  return mat_to_npy_array(mat);
+}
+
+
+/** \brief Get the number of threads */
+PyObject * py_get_thread_count(PyObject *self, PyObject *args) {
+  using libint2::nthreads;
+  return PyLong_FromLong(std::thread::hardware_concurrency());
+}
+
+
+/** \brief Get the type of threads */
+PyObject * py_get_thread_type(PyObject *self, PyObject *args) {
+  PyObject * ret;
+
+#if defined(_OPENMP)
+  ret = PyUnicode_FromString("OpenMP");
+#else
+  ret = PyUnicode_FromString("C++11");
+#endif
+  return ret;
+}
+
+
+PyMethodDef method_defs[] = {
+  {"compute_integrals_couplings", py_compute_integrals_couplings, METH_VARARGS,
+    "Compute the basis-set-specific overlap integrals for the molecule as provided in the xyz file."},
+  {"compute_integrals_multipole", py_compute_integrals_multipole, METH_VARARGS,
+    "Compute the given multipole."},
+  {"get_thread_count", py_get_thread_count, METH_NOARGS, "Get the number of threads."},
+  {"get_thread_type", py_get_thread_type, METH_NOARGS, "Get the type of threads."},
+  {nullptr}  // Sentinel
+};
+
+
+PyModuleDef py_module = {
+  PyModuleDef_HEAD_INIT,
+  "nanoqm.compute_integrals",                                              // m_name
+  "C++ extension module for computing integral overlaps and multipoles.",  // m_doc
+  -1,                                                                      // m_size
+  method_defs                                                              // m_methods
+};
+
+// Workaround to prevent C++ name mangling
+
+#if defined(WIN32) || defined(_WIN32)
+  #define MODULE_EXPORT __declspec(dllexport)
+#else
+  #define MODULE_EXPORT __attribute__((visibility("default")))
+#endif
+
+extern "C" MODULE_EXPORT PyObject *PyInit_compute_integrals(void) {
+  import_array();
+  return PyModule_Create(&py_module);
 }

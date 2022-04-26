@@ -82,7 +82,7 @@ jobs:
         uses: actions/setup-python@v3
 
       - name: Install dependencies
-        run: pip install Cython "setuptools>=48.0" wheel "pybind11>=2.2.4"
+        run: pip install wheel setuptools numpy
 
       - name: Python info
         run: |

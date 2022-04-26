@@ -3,7 +3,7 @@
  * kind of integrals used for non-adiabatic molecular dynamics,
  * including the overlaps integrals between different geometries
  * And the dipoles and quadrupoles to compute absorption spectra.
- * This module is based on libint, Eigen and pybind11.
+ * This module is based on libint and Eigen.
  * Copyright (C) 2018-2022 the Netherlands eScience Center.
  */
 
@@ -22,9 +22,6 @@
 
 // integrals library
 #include <libint2.hpp>
-
-#include <pybind11/eigen.h>
-#include <pybind11/pybind11.h>
 
 // Eigen matrix algebra library
 #include <Eigen/Dense>

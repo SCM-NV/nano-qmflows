@@ -1,6 +1,14 @@
 [build-system]
 # Minimum requirements for the build system to execute.
-requires = ['Cython', 'setuptools>=48.0', 'wheel', 'pybind11>=2.2.4']
+requires = [
+    'Cython',
+    'setuptools>=48.0',
+    'wheel',
+
+    # Older numpy versions aren't fully compatible with Python's limited API
+    'numpy==1.17.1; python_version<"3.8" and platform_machine!="aarch64"',
+    'oldest-supported-numpy; python_version>="3.8" or platform_machine=="aarch64"',
+]
 
 [tool.mypy]
 plugins = "numpy.typing.mypy_plugin"
@@ -14,7 +22,6 @@ module = [
     "noodles.*",
     "schema.*",
     "mendeleev.*",
-    "pybind11.*",
     "Cython.*",
 ]
 ignore_missing_imports = true

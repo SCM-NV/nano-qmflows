@@ -2,7 +2,7 @@ h5py
 mendeleev
 more-itertools
 noodles>=0.3.3
-numpy
+numpy>=1.17.1
 scipy
 schema
 pyyaml>=5.1
