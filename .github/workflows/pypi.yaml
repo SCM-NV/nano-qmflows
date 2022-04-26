@@ -179,6 +179,7 @@ jobs:
           twine check dist/*
 
       - name: Publish wheels
+        if: github.event_name == 'release'
         uses: pypa/gh-action-pypi-publish@master
         with:
           user: __token__
