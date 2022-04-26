@@ -9,7 +9,7 @@ from nanoqm.common import is_data_in_hdf5
 from nanoqm.workflows.input_validation import process_input
 from nanoqm.workflows.workflow_single_points import workflow_single_points
 
-from .utilsTest import PATH_TEST, cp2k_available, remove_files
+from .utilsTest import PATH_TEST, remove_files
 
 
 def run_single_point(tmp_path: Path, input_file: str):
@@ -28,8 +28,6 @@ def run_single_point(tmp_path: Path, input_file: str):
         remove_files()
 
 
-# @pytest.mark.skipif(
-#     not cp2k_available(), reason="CP2K is not install or not loaded")
 @pytest.mark.slow
 def test_single_point(tmp_path: Path):
     """Check that the couplings run."""
