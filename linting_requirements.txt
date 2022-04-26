@@ -1,0 +1,11 @@
+pydocstyle
+pycodestyle
+
+# Mypy-related stuff
+mypy
+qmflows
+numpy>=1.21
+types-pyyaml
+types-setuptools
+pyparsing>=3.0.8
+Nano-Utils>=2.0.0

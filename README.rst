@@ -21,15 +21,11 @@ For further information on the theory behind nano-qmflows and how to use the pro
 
 Installation
 ------------
+Pre-compiled binaries are available on pypi and can be installed via ``pip install nano-qmflows`` on MacOS and Linux.
 
-In order to install the **nano-qmflows** library there two options:
-
-1. Install pre-compiled binaries.
-2. Build Nano-QMFlows from source.
-
-Pre-compiled linux binaries are available on pypi. In order to use them all one needs is a linux machine and then issue the ``pip install nano-qmflows`` command.
-
-On the other hand, other operating systems (and source builds in general) first require an installation of *Miniconda* as is detailed here_.
+Building from source
+--------------------
+Building Nano-QMFlows from source first requires an installation of *Miniconda* as is detailed here_.
 
 .. _here: https://docs.conda.io/en/latest/miniconda.html
 

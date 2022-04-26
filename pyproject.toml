@@ -20,21 +20,39 @@ module = [
 ignore_missing_imports = true
 
 [tool.cibuildwheel]
-build = "cp*-manylinux_x86_64"
+build = [
+    "cp*-manylinux_aarch64",
+    "cp*-manylinux_x86_64",
+    "cp*-macosx_x86_64",
+]
 build-verbosity = "3"
 before-all = "cp licenses/LICENSE*.txt ."
-repair-wheel-command = "auditwheel -v repair -w {dest_dir} {wheel}"
-manylinux-x86_64-image = "ghcr.io/nlesc-nano/manylinux2014_x86_64-qmflows"
-environment = { QMFLOWS_INCLUDEDIR="", QMFLOWS_LIBDIR="", CFLAGS="-Werror", LDFLAGS="-Wl,--strip-debug" }
-before-test = [
-    "bash {project}/scripts/download_cp2k.sh 9.1",
+test-command = [
     "mkdir /tmp/nanoqm",
     "cp {project}/setup.cfg /tmp/nanoqm/",
     "cp {project}/conftest.py /tmp/nanoqm/conftest.py",
     "cp -r {project}/test /tmp/nanoqm/test",
-]
-test-command = [
     "cd /tmp/nanoqm",
     "pytest -m 'not (slow or long)' test",
 ]
 test-extras = ["test"]
+
+[tool.cibuildwheel.linux]
+environment = { QMFLOWS_INCLUDEDIR="", QMFLOWS_LIBDIR="", CFLAGS="-Werror", LDFLAGS="-Wl,--strip-debug" }
+manylinux-x86_64-image = "ghcr.io/nlesc-nano/manylinux2014_x86_64-qmflows"
+manylinux-aarch64-image = "ghcr.io/nlesc-nano/manylinux2014_aarch64-qmflows"
+repair-wheel-command = "auditwheel -v repair -w {dest_dir} {wheel}"
+before-test = "bash {project}/scripts/download_cp2k.sh x86_64 9.1"
+test-skip = "cp310-manylinux_aarch64"  # TODO: Remove once aarch64 python 3.10 wheels are available for h5py
+
+[[tool.cibuildwheel.overrides]]
+select = "*-manylinux_aarch64"
+before-test = "bash {project}/scripts/download_cp2k.sh arm64 9.1"
+
+[tool.cibuildwheel.macos]
+# TODO: Install CP2K for the tests once a workaround can be found for SCM-NV/qmflows#295
+environment = { QMFLOWS_INCLUDEDIR="", QMFLOWS_LIBDIR="", CFLAGS="-Werror -Wno-sign-compare", LDFLAGS="-Wl", MACOSX_DEPLOYMENT_TARGET="10.14" }
+repair-wheel-command = [
+    "delocate-listdeps {wheel}",
+    "delocate-wheel --require-archs {delocate_archs} -w {dest_dir} {wheel}",
+]

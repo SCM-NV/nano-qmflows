@@ -7,6 +7,7 @@ import h5py
 import pytest
 import qmflows
 import numpy as np
+from qmflows.test_utils import requires_cp2k
 from nanoqm.common import retrieve_hdf5_data
 from nanoqm.workflows import workflow_stddft
 from nanoqm.workflows.input_validation import process_input
@@ -14,6 +15,7 @@ from nanoqm.workflows.input_validation import process_input
 from .utilsTest import PATH_TEST, remove_files
 
 
+@requires_cp2k
 class TestComputeOscillators:
     _PARAMS = {
         "MOLOPT": ("Cd", "input_test_absorption_spectrum.yml", ""),
@@ -75,4 +77,4 @@ class TestComputeOscillators:
         # Compare with reference data
         with h5py.File(PATH_TEST / "test_files.hdf5", "r") as f:
             ref = f[f"test_absorption_spectrum/TestComputeOscillators/{name}/dipole"][...]
-        np.testing.assert_allclose(dipole_matrices, ref)
+        np.testing.assert_allclose(dipole_matrices, ref, rtol=0, atol=1e-08)

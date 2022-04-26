@@ -182,10 +182,17 @@ setup(
     classifiers=[
         'License :: OSI Approved :: Apache Software License',
         'Natural Language :: English',
+        'Operating System :: MacOS',
+        'Operating System :: POSIX :: Linux',
+        'Programming Language :: C++',
+        'Programming Language :: Python',
+        'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3 :: Only',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
         'Programming Language :: Python :: 3.10',
+        'Programming Language :: Python :: Implementation :: CPython',
         'Development Status :: 4 - Beta',
         'Intended Audience :: Science/Research',
         'Topic :: Scientific/Engineering :: Chemistry',
@@ -198,6 +205,7 @@ setup(
     extras_require={
         'test': parse_requirements("test_requirements.txt"),
         'doc': parse_requirements("doc_requirements.txt"),
+        'lint': parse_requirements("linting_requirements.txt"),
     },
     package_data={
         'nanoqm': ['basis/*.json', 'basis/BASIS*', 'basis/GTH_POTENTIALS', 'py.typed', '*.pyi']

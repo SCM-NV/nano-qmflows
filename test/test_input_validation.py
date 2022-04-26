@@ -5,6 +5,7 @@ import os
 import yaml
 import pytest
 from qmflows import cp2k, run
+from qmflows.test_utils import requires_cp2k
 from qmflows.type_hints import PathLike
 from qmflows.packages import CP2K_Result
 from scm import plams
@@ -13,7 +14,7 @@ import nanoqm
 from nanoqm.common import read_cell_parameters_as_array
 from nanoqm.workflows.input_validation import process_input, schema_workflows, InputSanitizer
 
-from .utilsTest import PATH_TEST, cp2k_available, remove_files, validate_status
+from .utilsTest import PATH_TEST, remove_files, validate_status
 
 
 class TestInputValidation:
@@ -105,8 +106,7 @@ class TestInputValidation:
         assert dft.xc.xc_functional == ref
 
 
-@pytest.mark.skipif(
-    not cp2k_available(), reason="CP2K is not install or not loaded")
+@requires_cp2k
 def test_call_cp2k_pbe() -> None:
     """Check if the input for a PBE cp2k job is valid."""
     try:
