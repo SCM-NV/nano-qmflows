@@ -3,7 +3,7 @@
 # 0.13.2 (unreleased)
 
 ## New
-* *Placeholder**.
+* Add MacOS x86_64 and Linux aarch64 wheels.
 
 
 # 0.13.1 (21/04/2022)
