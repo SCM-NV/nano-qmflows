@@ -287,76 +287,71 @@ CP2K_Basis_Atom read_basis_from_hdf5(const string &path_file,
   libint2::svector<libint2::svector<double>> small_coef;
   libint2::svector<libint2::svector<CP2K_Contractions>> small_fmt;
 
-  try {
-    // Open an existing HDF5 File
-    const File file(path_file, File::ReadOnly);
+  // Open an existing HDF5 File
+  const File file(path_file, File::ReadOnly);
 
-    // build paths to the coefficients and exponents
-    const int n_elec = valence_electrons.at(symbol);
-    const string root = "cp2k/basis/" + symbol + "/" + basis + "-q" + std::to_string(n_elec);
+  // build paths to the coefficients and exponents
+  const int n_elec = valence_electrons.at(symbol);
+  const string root = "cp2k/basis/" + symbol + "/" + basis + "-q" + std::to_string(n_elec);
 
-    const Group group = file.getGroup(root);
-    const std::vector<string> dset_names = group.listObjectNames();
+  const Group group = file.getGroup(root);
+  const std::vector<string> dset_names = group.listObjectNames();
 
-    // Iterate over all exponent sets; for most basis sets there is
-    // only a single set of exponents, but there are exception such
-    // as BASIS_ADMM_MOLOPT
-    for (const auto &name : dset_names) {
-      std::vector<std::vector<double>> coefficients;
-      std::vector<double> exponents;
-      std::vector<int64_t> format;
+  // Iterate over all exponent sets; for most basis sets there is
+  // only a single set of exponents, but there are exception such
+  // as BASIS_ADMM_MOLOPT
+  for (const auto &name : dset_names) {
+    std::vector<std::vector<double>> coefficients;
+    std::vector<double> exponents;
+    std::vector<int64_t> format;
 
-      const string path_coefficients = root + "/" + name + "/coefficients";
-      const string path_exponents = root + "/" + name + "/exponents";
+    const string path_coefficients = root + "/" + name + "/coefficients";
+    const string path_exponents = root + "/" + name + "/exponents";
 
-      // Get the dataset
-      const DataSet dataset_cs = file.getDataSet(path_coefficients);
-      const DataSet dataset_es = file.getDataSet(path_exponents);
-      const Attribute attr = dataset_cs.getAttribute("basisFormat");
+    // Get the dataset
+    const DataSet dataset_cs = file.getDataSet(path_coefficients);
+    const DataSet dataset_es = file.getDataSet(path_exponents);
+    const Attribute attr = dataset_cs.getAttribute("basisFormat");
 
-      // extract data from the datasets
-      dataset_cs.read(coefficients);
-      dataset_es.read(exponents);
-      attr.read(format);
+    // extract data from the datasets
+    dataset_cs.read(coefficients);
+    dataset_es.read(exponents);
+    attr.read(format);
 
-      // Move data to small vectors and keep appending or extending them as
-      // iteration over `dset_names` continues
-      libint2::svector<double> small_exp_1d;
-      std::move(exponents.begin(), exponents.end(), std::back_inserter(small_exp_1d));
-      small_exp.push_back(small_exp_1d);
+    // Move data to small vectors and keep appending or extending them as
+    // iteration over `dset_names` continues
+    libint2::svector<double> small_exp_1d;
+    std::move(exponents.begin(), exponents.end(), std::back_inserter(small_exp_1d));
+    small_exp.push_back(small_exp_1d);
 
-      for (const auto &v : coefficients) {
-        libint2::svector<double> small_coef_1d;
-        std::move(v.begin(), v.end(), std::back_inserter(small_coef_1d));
-        small_coef.push_back(small_coef_1d);
-      }
-
-      // The CP2K basis format is defined by a vector of integers, for each atom.
-      // For example For the C atom and the Basis DZVP-MOLOPT-GTH the basis format
-      // is:
-      //  2 0 2 7 2 2 1
-      // where:
-      //   * 2 is the Principal quantum number
-      //   * 0 is the minimum angular momemtum l
-      //   * 2 is the maximum angular momentum l
-      //   * 7 is the number of total exponents
-      //   * 2 Contractions of the 0 + l_min (S) Gaussian Orbitals
-      //   * 2 Contractions of the 1 + l_min (P) Gaussian Orbitals
-      //   * 1 Contractions of the 2 + l_min (D) Gaussian Orbitals
-      //
-      // Note: Elements 4 and onwards define the number of contracted for each
-      // angular momentum quantum number (all prior elements are disgarded).
-      int l, i;
-      libint2::svector<CP2K_Contractions> small_fmt_1d;
-      for (i=4, l=format[1]; i != static_cast<int>(format.size()); i++, l++) {
-        int count = format[i];
-        small_fmt_1d.push_back({l, count});
-      }
-      small_fmt.push_back(small_fmt_1d);
+    for (const auto &v : coefficients) {
+      libint2::svector<double> small_coef_1d;
+      std::move(v.begin(), v.end(), std::back_inserter(small_coef_1d));
+      small_coef.push_back(small_coef_1d);
     }
-  } catch (HighFive::Exception &err) {
-    // catch and print any HDF5 error
-    std::cerr << err.what() << std::endl;
+
+    // The CP2K basis format is defined by a vector of integers, for each atom.
+    // For example For the C atom and the Basis DZVP-MOLOPT-GTH the basis format
+    // is:
+    //  2 0 2 7 2 2 1
+    // where:
+    //   * 2 is the Principal quantum number
+    //   * 0 is the minimum angular momemtum l
+    //   * 2 is the maximum angular momentum l
+    //   * 7 is the number of total exponents
+    //   * 2 Contractions of the 0 + l_min (S) Gaussian Orbitals
+    //   * 2 Contractions of the 1 + l_min (P) Gaussian Orbitals
+    //   * 1 Contractions of the 2 + l_min (D) Gaussian Orbitals
+    //
+    // Note: Elements 4 and onwards define the number of contracted for each
+    // angular momentum quantum number (all prior elements are disgarded).
+    int l, i;
+    libint2::svector<CP2K_Contractions> small_fmt_1d;
+    for (i=4, l=format[1]; i != static_cast<int>(format.size()); i++, l++) {
+      int count = format[i];
+      small_fmt_1d.push_back({l, count});
+    }
+    small_fmt.push_back(small_fmt_1d);
   }
   return CP2K_Basis_Atom{symbol, small_coef, small_exp, small_fmt};
 }
@@ -610,7 +605,12 @@ PyObject *py_compute_integrals_couplings(PyObject *self, PyObject *args) {
     return nullptr;
   }
 
-  mat = compute_integrals_couplings(path_xyz_1, path_xyz_2, path_hdf5, basis_name);
+  try {
+    mat = compute_integrals_couplings(path_xyz_1, path_xyz_2, path_hdf5, basis_name);
+  } catch (HighFive::Exception &err) {
+    PyErr_SetString(PyExc_RuntimeError, err.what());
+    return nullptr;
+  }
   return mat_to_npy_array(mat);
 }
 
@@ -631,7 +631,12 @@ PyObject *py_compute_integrals_multipole(PyObject *self, PyObject *args) {
     return nullptr;
   }
 
-  mat = compute_integrals_multipole(path_xyz, path_hdf5, basis_name, multipole);
+  try {
+    mat = compute_integrals_multipole(path_xyz, path_hdf5, basis_name, multipole);
+  } catch (HighFive::Exception &err) {
+    PyErr_SetString(PyExc_RuntimeError, err.what());
+    return nullptr;
+  }
   return mat_to_npy_array(mat);
 }
 
