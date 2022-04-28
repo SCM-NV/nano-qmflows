@@ -1,6 +1,12 @@
 # Change Log
 
-# 0.13.2 (unreleased)
+# 0.13.2 (*unreleased*)
+
+## New
+* *Placeholder*.
+
+
+# 0.13.2 (26/04/2022)
 
 ## New
 * Add MacOS x86_64 and Linux aarch64 wheels.
