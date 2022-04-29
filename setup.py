@@ -8,6 +8,7 @@ import setuptools
 import numpy as np
 from setuptools import Extension, find_packages, setup
 from setuptools.command.build_ext import build_ext
+from wheel.bdist_wheel import bdist_wheel
 
 if TYPE_CHECKING:
     from distutils.ccompiler import CCompiler
@@ -94,6 +95,19 @@ class BuildExt(build_ext):
         super().build_extensions()
 
 
+class BDistWheelABI3(bdist_wheel):
+    """Ensure that wheels are built with the ``abi3`` tag."""
+
+    def get_tag(self) -> "tuple[str, str, str]":
+        python, abi, plat = super().get_tag()
+
+        if python.startswith("cp"):
+            # on CPython, our wheels are abi3 and compatible back to 3.7
+            return "cp37", "abi3", plat
+        else:
+            return python, abi, plat
+
+
 def parse_requirements(path: "str | os.PathLike[str]") -> "list[str]":
     """Parse a ``requirements.txt`` file and strip all empty and commented lines."""
     ret = []
@@ -164,6 +178,7 @@ libint_ext = Extension(
     libraries=['hdf5', 'int2'],
     library_dirs=lib_list,
     language='c++',
+    py_limited_api=True,
 )
 
 setup(
@@ -199,7 +214,7 @@ setup(
         'Typing :: Typed',
     ],
     install_requires=parse_requirements("install_requirements.txt"),
-    cmdclass={'build_ext': BuildExt},
+    cmdclass={'build_ext': BuildExt, "bdist_wheel": BDistWheelABI3},
     python_requires='>=3.7',
     ext_modules=[libint_ext],
     extras_require={

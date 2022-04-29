@@ -5,8 +5,8 @@ requires = [
     'wheel',
 
     # Older numpy versions aren't fully compatible with Python's limited API
-    'numpy==1.17.1; python_version<"3.8" and platform_machine!="aarch64"',
-    'oldest-supported-numpy; python_version>="3.8" or platform_machine=="aarch64"',
+    'numpy==1.17.1; python_version=="3.7" and (platform_machine!="arm64" or platform_system!="Darwin") and platform_machine!="aarch64" and platform_machine!="loongarch64" and platform_system!="AIX" and platform_python_implementation != "PyPy"',
+    'oldest-supported-numpy; python_version!="3.7" or (platform_machine=="arm64" and platform_system=="Darwin") or platform_machine=="aarch64" or platform_machine=="loongarch64" or platform_system=="AIX" or platform_python_implementation == "PyPy"',
 ]
 
 [tool.mypy]
@@ -26,33 +26,18 @@ ignore_missing_imports = true
 
 [tool.cibuildwheel]
 build = [
-    "cp*-manylinux_aarch64",
-    "cp*-manylinux_x86_64",
-    "cp*-macosx_x86_64",
+    "cp37-manylinux_x86_64",
+    "cp37-manylinux-aarch64",
+    "cp37-macosx_x86_64",
 ]
 build-verbosity = "3"
 before-all = "cp licenses/LICENSE*.txt ."
-test-command = [
-    "mkdir /tmp/nanoqm",
-    "cp {project}/setup.cfg /tmp/nanoqm/",
-    "cp {project}/conftest.py /tmp/nanoqm/conftest.py",
-    "cp -r {project}/test /tmp/nanoqm/test",
-    "cd /tmp/nanoqm",
-    "pytest -m 'not (slow or long)' test",
-]
-test-extras = ["test"]
 
 [tool.cibuildwheel.linux]
 environment = { QMFLOWS_INCLUDEDIR="", QMFLOWS_LIBDIR="", CFLAGS="-Werror", LDFLAGS="-Wl,--strip-debug" }
 manylinux-x86_64-image = "ghcr.io/nlesc-nano/manylinux2014_x86_64-qmflows"
 manylinux-aarch64-image = "ghcr.io/nlesc-nano/manylinux2014_aarch64-qmflows"
 repair-wheel-command = "auditwheel -v repair -w {dest_dir} {wheel}"
-before-test = "bash {project}/scripts/download_cp2k.sh x86_64 9.1"
-test-skip = "cp310-manylinux_aarch64"  # TODO: Remove once aarch64 python 3.10 wheels are available for h5py
-
-[[tool.cibuildwheel.overrides]]
-select = "*-manylinux_aarch64"
-before-test = "bash {project}/scripts/download_cp2k.sh arm64 9.1"
 
 [tool.cibuildwheel.macos]
 # TODO: Install CP2K for the tests once a workaround can be found for SCM-NV/qmflows#295
