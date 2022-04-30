@@ -6,8 +6,8 @@ from typing import TYPE_CHECKING
 
 import setuptools
 import numpy as np
-from Cython.Distutils import build_ext
 from setuptools import Extension, find_packages, setup
+from setuptools.command.build_ext import build_ext
 
 if TYPE_CHECKING:
     from distutils.ccompiler import CCompiler
@@ -91,7 +91,7 @@ class BuildExt(build_ext):
         for ext in self.extensions:
             ext.extra_compile_args = opts
             ext.extra_link_args = link_opts
-        build_ext.build_extensions(self)
+        super().build_extensions()
 
 
 def parse_requirements(path: "str | os.PathLike[str]") -> "list[str]":

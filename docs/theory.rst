@@ -20,7 +20,7 @@ eigenstates :math:`\phi_{i}(\mathbf{R}(t))`,
 The time-dependent coefficients are propagated according to
 
 .. math::
-   
+
    \frac{dc_j(t)}{dt} = -i\hbar^2 c_j(t) E_j(t) - \sum^{N}_{i=1}c_i(t)\sigma_{ji}(t) \quad \mathbf(2)
 
 where :math:`E_j(t)` is the energy of the jth adiabatic state and :math:`\sigma_{ji}(t)` the nonadiabatic matrix, which elements are given by the expression
@@ -52,7 +52,7 @@ Where :math:C_{\mu i} are the Molecular orbital coefficients and :math:`\mathbf{
 Nonadiabatic coupling algorithm implementation
 ----------------------------------------------
 
-The  figure belows shows schematically the workflow for calculating the Nonadiabatic 
+The  figure belows shows schematically the workflow for calculating the Nonadiabatic
 coupling matrices from a molecular dynamic trajectory. The uppermost node represent
 a molecular dynamics
 trajectory that is subsequently divided in its components andfor each geometry the molecular
@@ -73,7 +73,6 @@ Also, all the heavy numerical processing is carried out by the highly optimized 
 .. _libint2: https://github.com/evaleev/libint/wiki
 .. _HDF5: http://www.h5py.org/
 .. _PYXAID: https://www.acsu.buffalo.edu/~alexeyak/pyxaid/overview.html
-.. _Cython: http://cython.org
 .. _multiprocessing: https://docs.python.org/3.6/library/multiprocessing.html
 .. _NumPy: http://www.numpy.org
 .. _noodles: http://nlesc.github.io/noodles/
