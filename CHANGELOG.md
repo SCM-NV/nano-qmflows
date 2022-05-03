@@ -3,7 +3,11 @@
 # 0.13.3 (*unreleased*)
 
 ## New
-* *Placeholder*.
+* Replace `pybind11` as a build dependency with `numpy`.
+* Generate ABI3 wheels.
+
+## Changed
+* Remove `cython` leftovers.
 
 
 # 0.13.2 (26/04/2022)
