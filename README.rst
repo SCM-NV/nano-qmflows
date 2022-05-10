@@ -21,7 +21,11 @@ For further information on the theory behind nano-qmflows and how to use the pro
 
 Installation
 ------------
-Pre-compiled binaries are available on pypi and can be installed via ``pip install nano-qmflows`` on MacOS and Linux.
+Pre-compiled binaries are available on pypi and can be installed on MacOS and Linux as following:
+
+.. code:: bash
+
+   pip install nano-qmflows --upgrade
 
 Building from source
 --------------------
@@ -31,12 +35,21 @@ Building Nano-QMFlows from source first requires an installation of *Miniconda* 
 
 Then, to install the **nano-qmflows** library type the following commands inside the conda environment:
 
-- ``conda create -n qmflows -c conda-forge boost eigen libint==2.6.0 highfive``
-- ``conda activate qmflows``
-- ``pip install nano-qmflows --upgrade``
+.. code:: bash
+
+   # Create the conda environment
+   conda create -n qmflows -c conda-forge boost eigen libint==2.6.0 highfive
+   conda activate qmflows
+
+   # Clone the repo
+   git clone https://github.com/SCM-NV/nano-qmflows
+   cd nano-qmflows
+
+   # Build and install nano-qmflows
+   pip install -e . --upgrade
 
 .. note::
-   Older compilers, such as GCC <7, might not be compatible with the latest ``eigen`` version and require specification of *.e.g* ``eigen=3.3``.
+   Older compilers, such as GCC <7, might not be compatible with the latest ``eigen`` version and require specification of *e.g.* ``eigen=3.3``.
 
 Advantages and Limitations
 --------------------------
