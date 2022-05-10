@@ -403,7 +403,7 @@ libint2::svector<Shell> create_shells_for_atom(const CP2K_Basis_Atom &data,
   for (int i = 0; i != static_cast<int>(data.exponents.size()); i++) {
     exponents = data.exponents[i];
     basis_format = data.basis_format[i];
-    for (auto contractions : basis_format) {
+    for (auto &contractions : basis_format) {
       for (int j = 0; j < contractions.count; j++) {
         shells.push_back({
           exponents,
