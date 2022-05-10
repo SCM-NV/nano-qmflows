@@ -1,7 +1,5 @@
-assertionlib
-codacy-coverage
-pytest
-pytest-cov
-pytest-mock
-setuptools
-ipython
+assertionlib>=2.2.3
+pytest>=5.4.0
+pytest-cov>=2.3.1
+pytest-mock>=0.4.0
+ipython>=5.0.0
