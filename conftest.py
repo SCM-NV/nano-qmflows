@@ -2,10 +2,21 @@ from __future__ import annotations
 
 import os
 import shutil
+import warnings
 from collections.abc import Generator
 
 import pytest
 from nanoqm._logger import logger, stdout_handler
+
+
+@pytest.fixture(autouse=True, scope="session")
+def is_release() -> Generator[bool, None, None]:
+    """Yield whether the test suite is run for a nano-qmflows release or not."""
+    env_var = os.environ.get("IS_RELEASE", 0)
+    try:
+        yield bool(int(env_var))
+    except ValueError as ex:
+        raise ValueError("The `IS_RELEASE` environment variable expected an integer") from ex
 
 
 @pytest.fixture(autouse=True, scope="function")

@@ -117,12 +117,15 @@ jobs:
               bash scripts/download_cp2k.sh x86_64 $CP2K_VERSION ;;
           esac
 
-          mkdir /tmp/nanoqm
-          cp setup.cfg /tmp/nanoqm/
-          cp conftest.py /tmp/nanoqm/conftest.py
-          cp -r test /tmp/nanoqm/test
+          bash scripts/prepare_test_dir.sh
           cd /tmp/nanoqm
 
+          case "${{ github.event_name }}" in
+            "release")
+              export IS_RELEASE=1 ;;
+            *)
+              export IS_RELEASE=0 ;;
+          esac
           pytest -m "not (slow or long)"
 
   test_wheels_aarch64:
@@ -185,11 +188,15 @@ jobs:
             pip list
 
             echo "::group::Run tests"
-            mkdir /tmp/nanoqm
-            cp setup.cfg /tmp/nanoqm/
-            cp conftest.py /tmp/nanoqm/
-            cp -r test /tmp/nanoqm/
+            bash scripts/prepare_test_dir.sh
             cd /tmp/nanoqm
+
+            case "${{ github.event_name }}" in
+              "release")
+                export IS_RELEASE=1 ;;
+              *)
+                export IS_RELEASE=0 ;;
+            esac
             pytest -m "not (slow or long)"
 
   build_sdist:
@@ -262,12 +269,15 @@ jobs:
 
     - name: Test with pytest
       run: |
-        mkdir /tmp/nanoqm
-        cp setup.cfg /tmp/nanoqm/
-        cp conftest.py /tmp/nanoqm/conftest.py
-        cp -r test /tmp/nanoqm/test
+        bash scripts/prepare_test_dir.sh
         cd /tmp/nanoqm
 
+        case "${{ github.event_name }}" in
+          "release")
+            export IS_RELEASE=1 ;;
+          *)
+            export IS_RELEASE=0 ;;
+        esac
         pytest -m "not (slow or long)"
 
   upload_wheels:
