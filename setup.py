@@ -1,6 +1,7 @@
 """Installation recipe."""
 import os
 import sys
+import tempfile
 from os.path import join
 from typing import TYPE_CHECKING
 
@@ -31,19 +32,15 @@ def readme() -> str:
 
 
 def has_flag(compiler: "CCompiler", flagname: str) -> bool:
-    """Return a boolean indicating whether a flag name is supported on the specified compiler.
-
-    As of Python 3.6, CCompiler has a `has_flag` method.
-    http: // bugs.python.org/issue26689
-    """
-    import tempfile
+    """Return a boolean indicating whether a flag name is supported on the specified compiler."""
     with tempfile.NamedTemporaryFile('w', suffix='.cc') as f:
         f.write('int main (int argc, char **argv) { return 0; }')
         try:
             compiler.compile([f.name], extra_postargs=[flagname])
         except CompileError:
             return False
-    return True
+        else:
+            return True
 
 
 def cpp_flag(compiler: "CCompiler") -> str:

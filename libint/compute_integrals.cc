@@ -98,7 +98,7 @@ void set_nthread() {
  * \brief Get the number of basis
  */
 size_t nbasis(const std::vector<libint2::Shell> &shells) {
-  return std::accumulate(cbegin(shells), cend(shells), 0,
+  return std::accumulate(shells.cbegin(), shells.cend(), 0,
                          [](size_t acc, const libint2::Shell &shell) {
                            return acc + shell.size();
                          });
