@@ -1,22 +1,14 @@
 """Installation recipe."""
+
 import os
 import sys
-import tempfile
 from os.path import join
-from typing import TYPE_CHECKING
 
 import setuptools
 import numpy as np
 from setuptools import Extension, find_packages, setup
 from setuptools.command.build_ext import build_ext
 from wheel.bdist_wheel import bdist_wheel
-
-if TYPE_CHECKING:
-    from distutils.ccompiler import CCompiler
-    from distutils.errors import CompileError
-else:
-    CCompiler = setuptools.distutils.ccompiler.CCompiler
-    CompileError = setuptools.distutils.errors.CompileError
 
 here = os.path.abspath(os.path.dirname(__file__))
 
@@ -29,32 +21,6 @@ def readme() -> str:
     """Load readme."""
     with open('README.rst', 'r', encoding='utf8') as f:
         return f.read()
-
-
-def has_flag(compiler: "CCompiler", flagname: str) -> bool:
-    """Return a boolean indicating whether a flag name is supported on the specified compiler."""
-    with tempfile.NamedTemporaryFile('w', suffix='.cc') as f:
-        f.write('int main (int argc, char **argv) { return 0; }')
-        try:
-            compiler.compile([f.name], extra_postargs=[flagname])
-        except CompileError:
-            return False
-        else:
-            return True
-
-
-def cpp_flag(compiler: "CCompiler") -> str:
-    """Return the -std=c++[17/14/11] compiler flag.
-
-    The newer version is prefered over c++11 (when it is available).
-    """
-    flags = ['-std=c++17', '-std=c++14', '-std=c++11']
-    for flag in flags:
-        if has_flag(compiler, flag):
-            return flag
-
-    raise RuntimeError('Unsupported compiler -- at least C++11 support '
-                       'is needed!')
 
 
 class BuildExt(build_ext):
@@ -80,12 +46,7 @@ class BuildExt(build_ext):
         opts = self.c_opts.get(ct, [])
         link_opts = self.l_opts.get(ct, [])
         if ct == 'unix':
-            opts.append('-DVERSION_INFO="%s"' % self.distribution.get_version())
-            opts.append(cpp_flag(self.compiler))
-            if has_flag(self.compiler, '-fvisibility=hidden'):
-                opts.append('-fvisibility=hidden')
-        elif ct == 'msvc':
-            opts.append('/DVERSION_INFO=\\"%s\\"' % self.distribution.get_version())
+            opts += ["-std=c++11", "-fvisibility=hidden"]
         for ext in self.extensions:
             ext.extra_compile_args = opts
             ext.extra_link_args = link_opts
@@ -127,10 +88,12 @@ def get_paths() -> "tuple[list[str], list[str]]":
     Examples
     --------
     .. code-block:: bash
+
         export QMFLOWS_INCLUDEDIR="/libint/include:/eigen3/include"
         export QMFLOWS_LIBDIR="/hdf5/lib:/libint/lib"
 
     .. code-block:: python
+
         >>> get_paths()
         (['/libint/include', '/eigen3/include'], ['/hdf5/lib', '/libint/lib'])
 
