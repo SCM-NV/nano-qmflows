@@ -8,6 +8,7 @@
 
 ## Changed
 * Remove `cython` leftovers.
+* Add minimum versions to most dependencies.
 
 
 # 0.13.2 (26/04/2022)

@@ -2,7 +2,7 @@
 # Minimum requirements for the build system to execute.
 requires = [
     'setuptools>=48.0',
-    'wheel',
+    'wheel>=0.21',
 
     # Older numpy versions aren't fully compatible with Python's limited API
     'numpy==1.17.1; python_version=="3.7" and (platform_machine!="arm64" or platform_system!="Darwin") and platform_machine!="aarch64" and platform_machine!="loongarch64" and platform_system!="AIX" and platform_python_implementation != "PyPy"',
