@@ -205,7 +205,7 @@ jobs:
         uses: actions/setup-python@v3
 
       - name: Install dependencies
-        run: pip install wheel setuptools numpy
+        run: pip install build
 
       - name: Python info
         run: |
@@ -217,7 +217,7 @@ jobs:
 
       - name: Build sdist
         run: |
-          python setup.py sdist
+          python -m build --sdist
           tree dist
 
       - uses: actions/upload-artifact@v3
