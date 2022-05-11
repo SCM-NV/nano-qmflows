@@ -59,7 +59,7 @@ struct CP2K_Basis_Atom {
 };
 
 // Map from atomic_number to symbol
-std::unordered_map<int, std::string> map_elements = {
+const std::unordered_map<int, std::string> map_elements = {
     {1, "h"},   {2, "he"},  {3, "li"},  {4, "be"},  {5, "b"},   {6, "c"},
     {7, "n"},   {8, "o"},   {9, "f"},   {10, "ne"}, {11, "na"}, {12, "mg"},
     {13, "al"}, {14, "si"}, {15, "p"},  {16, "s"},  {17, "cl"}, {18, "ar"},
