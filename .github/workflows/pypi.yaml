@@ -15,6 +15,7 @@ defaults:
 
 env:
   CP2K_VERSION: "9.1"
+  TAG: "1.0.2"  # The nlesc-nano/nano-qmflows-manylinux tag
 
 jobs:
   build_wheels:
@@ -24,9 +25,9 @@ jobs:
       fail-fast: false
       matrix:
         buildplat:
-        - [ubuntu-20.04, manylinux_x86_64]
-        - [ubuntu-20.04, manylinux_aarch64]
-        - [macos-10.15, macosx_x86_64]
+        - [ubuntu-latest, manylinux_x86_64]
+        - [ubuntu-latest, manylinux_aarch64]
+        - [macos-latest, macosx_x86_64]
 
     steps:
       - uses: actions/checkout@v3
@@ -39,21 +40,22 @@ jobs:
 
       - name: Get MacOS build dependencies
         if: matrix.buildplat[1] == 'macosx_x86_64'
+        env:
+          BUILD_PLAT: ${{ matrix.buildplat[1] }}
         run: |
-          git clone https://github.com/nlesc-nano/nano-qmflows-manylinux
-
-          cd nano-qmflows-manylinux/macos
-          tar -xzf macos_deps.tar.gz
-          cp -r output/bin/* /usr/local/bin/
-          cp -r output/lib/* /usr/local/lib/
-          cp -r output/include/* /usr/local/include/
-          cp -r output/share/* /usr/local/share/
+          curl -Lsf https://github.com/nlesc-nano/nano-qmflows-manylinux/releases/download/$TAG/$BUILD_PLAT.tar.gz -o $BUILD_PLAT.tar.gz
+          tar -xzf $BUILD_PLAT.tar.gz
+          cp -r $BUILD_PLAT/bin/* /usr/local/bin/
+          cp -r $BUILD_PLAT/lib/* /usr/local/lib/
+          cp -r $BUILD_PLAT/include/* /usr/local/include/
+          cp -r $BUILD_PLAT/share/* /usr/local/share/
 
       - name: Build wheels (x86_64)
         uses: pypa/cibuildwheel@v2.5.0
         if: matrix.buildplat[1] != 'manylinux_aarch64'
         env:
           CIBW_BUILD: cp37-${{ matrix.buildplat[1] }}
+          CIBW_MANYLINUX_X86_64_IMAGE: "ghcr.io/nlesc-nano/manylinux2014_x86_64-qmflows:${{ env.TAG }}"
 
       - name: Build wheels (aarch64)
         uses: pypa/cibuildwheel@v2.4.0
@@ -61,6 +63,7 @@ jobs:
         env:
           CIBW_BUILD: cp37-${{ matrix.buildplat[1] }}
           CIBW_ARCHS_LINUX: aarch64
+          CIBW_MANYLINUX_AARCH64_IMAGE: "ghcr.io/nlesc-nano/manylinux2014_aarch64-qmflows:${{ env.TAG }}"
 
       - uses: actions/upload-artifact@v3
         with:
