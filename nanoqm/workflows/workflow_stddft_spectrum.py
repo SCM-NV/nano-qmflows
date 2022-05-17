@@ -12,6 +12,7 @@ from __future__ import annotations
 
 __all__ = ['workflow_stddft']
 
+import warnings
 from os.path import join
 from typing import Tuple, TYPE_CHECKING
 
@@ -21,6 +22,7 @@ from scipy.spatial.distance import cdist
 from noodles import gather, schedule, unpack
 from noodles.interface import PromisedObject
 from qmflows.parsers import parse_string_xyz
+from qmflows.warnings_qmflows import Orbital_Warning
 from qmflows.type_hints import PathLike
 
 from .. import logger
@@ -71,19 +73,74 @@ def run_workflow_stddft(config: DictConfig) -> PromisedObject:
     return gather(results, energy_paths_hdf5)
 
 
+def validate_active_space(
+    config: DictConfig,
+    nocc_molog: int,
+    nvirt_molog: int,
+) -> tuple[int, int]:
+    """Validate and return the number of occupied and virtual MOs.
+
+    The ``active_space`` keyword is treated as an upper bound by CP2K, so its values
+    might be larger than the actual available number of occupied and/or virtual MOs.
+
+    Parameters
+    ----------
+    config : DictConfig
+        The Nano-QMFlows configuration.
+    nocc_molog/nvirt_molog : int
+        The number of occupied and virtual orbitals as extracted from the MOLog orbital file.
+
+    Returns
+    -------
+    tuple[int, int]
+        The (corrected) number of occupied and virtual orbitals.
+
+    """
+    nocc_inp = config.active_space[0]
+    nvirt_inp = config.active_space[1]
+
+    # Correct for the presence of SOMOs, which translates to either additional
+    # occupied or unoccupied orbitals depending on the spin
+    if config.orbitals_type == "alphas":
+        nocc_inp += (config.multiplicity - 1)
+    elif config.orbitals_type == "beta":
+        nvirt_inp += (config.multiplicity - 1)
+
+    if (nocc_inp == nocc_molog) and (nvirt_inp == nvirt_molog):
+        return nocc_inp, nvirt_inp
+    else:
+        config.active_space = [nocc_molog, nvirt_molog]
+
+    # The input and MOlog file have different numbers of active and/or virtual orbitals;
+    # issue a warning and return the correct number
+    mo_type_list = []
+    if nocc_inp > nocc_molog:
+        mo_type_list.append("occupied")
+    if nvirt_inp > nvirt_molog:
+        mo_type_list.append("virtual")
+    mo_type = config.orbitals_type + " " if config.orbitals_type in ("alphas", "betas") else ""
+    mo_type += "and ".join(f"{i} " for i in mo_type_list)
+
+    warnings.warn(
+        f"The requested activate space is larger than the available number of {mo_type}MOs; "
+        "adjusting active space", Orbital_Warning,
+    )
+    return nocc_molog, nvirt_molog
+
+
 def compute_excited_states_tddft(
-        config: DictConfig, path_MOs: str, dict_input: DictConfig) -> None:
+        config: DictConfig, path_MOs: list[str], dict_input: DictConfig) -> None:
     """Compute the excited states properties (energy and coefficients).
 
     Take a given `mo_index_range`, the `tddft` method and `xc_dft` exchange functional.
     """
     logger.info("Reading energies and mo coefficients")
+
     # type of calculation
-    energy, c_ao = retrieve_hdf5_data(config.path_hdf5, path_MOs)
+    energy, c_ao, nocc_nvirt = retrieve_hdf5_data(config.path_hdf5, path_MOs)
 
     # Number of virtual orbitals
-    nocc = config.active_space[0]
-    nvirt = config.active_space[1]
+    nocc, nvirt = validate_active_space(config, *nocc_nvirt)
     dict_input.update({"energy": energy, "c_ao": c_ao,
                        "nocc": nocc, "nvirt": nvirt})
 
@@ -149,11 +206,10 @@ def get_omega_xia(
 def compute_sing_orb(inp: DictConfig) -> Tuple[NDArray[f8], NDArray[f8]]:
     """Compute the Single Orbital approximation."""
     energy, nocc, nvirt = tuple(inp[x]for x in ("energy", "nocc", "nvirt"))
-    omega = -np.subtract(
-        energy[:nocc].reshape(nocc, 1), energy[nocc:].reshape(nvirt, 1).T).reshape(nocc * nvirt)
-    xia = np.eye(nocc * nvirt)
 
-    return omega, xia
+    omega = energy[:nocc][..., None] - energy[nocc:][..., None].T
+    xia = np.eye(omega.size)
+    return -omega.ravel(), xia
 
 
 def compute_std_aproximation(
@@ -475,8 +531,12 @@ def write_output_tddft(inp: DictConfig) -> np.ndarray:
 def transition_density_charges(mol, config, s, c_ao):
     """TODO: add Documentation."""
     n_atoms = len(mol)
-    sqrt_s = sqrtm(s)
+
+    # Due to numerical noise `srtm(s)` can produce a complex array with
+    # (approximately) 0-valued imaginary components; get rid of these
+    sqrt_s = np.real_if_close(sqrtm(s))
     c_mo = np.dot(sqrt_s, c_ao)
+
     # Size of the transition density tensor : n_atoms x n_mos x n_mos
     q = np.zeros((n_atoms, c_mo.shape[1], c_mo.shape[1]))
     n_sph_atoms = number_spherical_functions_per_atom(
@@ -485,7 +545,9 @@ def transition_density_charges(mol, config, s, c_ao):
     index = 0
     for i in range(n_atoms):
         q[i, :, :] = np.dot(
-            c_mo[index:(index + n_sph_atoms[i]), :].T, c_mo[index:(index + n_sph_atoms[i]), :])
+            c_mo[index:(index + n_sph_atoms[i]), :].T,
+            c_mo[index:(index + n_sph_atoms[i]), :],
+        )
         index += n_sph_atoms[i]
 
     return q

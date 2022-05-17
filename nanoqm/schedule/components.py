@@ -18,7 +18,7 @@ from os.path import join
 from typing import (Any, DefaultDict, Dict, List, NamedTuple, Sequence, Tuple,
                     Union)
 
-from more_itertools import chunked
+import numpy as np
 from noodles import gather, schedule
 from qmflows.common import CP2KInfoMO
 from qmflows.type_hints import PathLike, PromisedObject
@@ -94,7 +94,9 @@ def calculate_mos(config: DictConfig) -> List[str]:
         # Path where the MOs will be store in the HDF5
         dict_input["node_MOs"] = [
             join(orbitals_type, "eigenvalues", f"point_{k}"),
-            join(orbitals_type, "coefficients", f"point_{k}")]
+            join(orbitals_type, "coefficients", f"point_{k}"),
+            join(orbitals_type, "occupation", f"point_{k}"),
+        ]
 
         dict_input["node_energy"] = join(orbitals_type, "energy", f"point_{k}")
 
@@ -176,7 +178,11 @@ def save_orbitals_in_hdf5(mos: OrbitalType, config: DictConfig, job_name: str) -
 
 
 def dump_orbitals_to_hdf5(
-        data: CP2KInfoMO, config: DictConfig, job_name: str, orbitals_type: str = "") -> None:
+    data: CP2KInfoMO,
+    config: DictConfig,
+    job_name: str,
+    orbitals_type: str = "",
+) -> None:
     """Store the result in HDF5 format.
 
     Parameters
@@ -194,6 +200,12 @@ def dump_orbitals_to_hdf5(
     for name, array in zip(("eigenvalues", "coefficients"), (data.eigenvalues, data.eigenvectors)):
         path_property = join(orbitals_type, name, job_name)
         store_arrays_in_hdf5(config.path_hdf5, path_property, array)
+
+    # Store the number of occupied and virtual orbitals as a size-2 dataset.
+    # Occupied in this context is equivalent to "non-zero occupation"
+    path_property = join(orbitals_type, "occupation", job_name)
+    occ_array = np.array(data.get_nocc_nvirt(), dtype=np.int64)
+    store_arrays_in_hdf5(config.path_hdf5, path_property, occ_array, dtype=np.int64)
 
 
 @schedule

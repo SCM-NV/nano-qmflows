@@ -4,13 +4,13 @@ import textwrap
 import fnmatch
 import os
 import shutil
-from distutils.spawn import find_executable
 from os.path import join
 from pathlib import Path
 from typing import Union
 
 import h5py
 from qmflows.packages import Result
+from qmflows.test_utils import find_executable
 
 __all__ = [
     "PATH_NANOQM",

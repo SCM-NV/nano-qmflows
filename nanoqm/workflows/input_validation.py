@@ -164,19 +164,17 @@ class InputSanitizer:
         self.add_functional_c()
 
     def compute_homo_index(self) -> int:
-        """Compute the HOMO index."""
+        """Compute the index of the (doubly occupied) HOMO."""
         charge = self.general['charge']
+        multiplicity = self.general['multiplicity']
         mol = Molecule(self.user_input["path_traj_xyz"], 'xyz')
 
-        number_of_electrons = sum(valence_electrons[at.symbol] for at in mol.atoms)
-        # Correct for total charge of the system
-        number_of_electrons = number_of_electrons - charge
+        n_paired_electrons = sum(valence_electrons[at.symbol] for at in mol.atoms)
+        n_paired_electrons -= charge  # Correct for total charge of the system
+        n_paired_electrons -= (multiplicity - 1)  # Correct for the number of SOMOs
 
-        if (number_of_electrons % 2) != 0:
-            warnings.warn(
-                "Unpair number of electrons detected when computing the HOMO")
-
-        return (number_of_electrons // 2) + (number_of_electrons % 2)
+        assert (n_paired_electrons % 2) == 0
+        return n_paired_electrons // 2
 
     def add_basis(self) -> None:
         """Add path to the basis and potential."""
@@ -259,6 +257,7 @@ class InputSanitizer:
                     self.general[p] for p in ('cp2k_settings_main', 'cp2k_settings_guess')):
                 s.specific.cp2k.force_eval.dft.multiplicity = self.general['multiplicity']
                 s.specific.cp2k.force_eval.dft.uks = ""
+        self.user_input["multiplicity"] = self.general["multiplicity"]
 
     def add_functional_x(self) -> None:
         """Add the keyword for the exchange part of the DFT functional: GGA or MGGA."""
@@ -290,27 +289,31 @@ class InputSanitizer:
 
     def add_mo_index_range(self) -> None:
         """Compute the MO range to print."""
-        active_space = self.user_input["active_space"]
+        nocc, nvirt = self.user_input["active_space"]
+        nSOMO = self.general["multiplicity"] - 1
         nHOMO = self.user_input["nHOMO"]
-        mo_index_range = nHOMO - active_space[0], nHOMO + active_space[1]
+
+        mo_index_range = nHOMO - nocc, nHOMO + nSOMO + nvirt
         self.user_input["mo_index_range"] = mo_index_range
 
         # mo_index_range keyword
         cp2k_main = self.general['cp2k_settings_main']
         dft_main_print = cp2k_main.specific.cp2k.force_eval.dft.print
-        dft_main_print.mo.mo_index_range = "{} {}".format(
-            mo_index_range[0] + 1, mo_index_range[1])
+        dft_main_print.mo.mo_index_range = f"{mo_index_range[0] + 1} {mo_index_range[1]}"
 
         # added_mos
-        cp2k_main.specific.cp2k.force_eval.dft.scf.added_mos = mo_index_range[1] - nHOMO
+        dft = cp2k_main.specific.cp2k.force_eval.dft
+        if nSOMO == 0:
+            dft.scf.added_mos = mo_index_range[1] - nHOMO - nSOMO
+        else:
+            dft.scf.added_mos = f"{mo_index_range[1] - nHOMO - nSOMO} {mo_index_range[1] - nHOMO}"
 
         # Add section to Print the orbitals
-        mo = cp2k_main.specific.cp2k.force_eval.dft.print.mo
-        mo.add_last = "numeric"
-        mo.each.qs_scf = 0
-        mo.eigenvalues = ""
-        mo.eigenvectors = ""
-        mo.ndigits = 36
+        dft.print.mo.add_last = "numeric"
+        dft.print.mo.each.qs_scf = 0
+        dft.print.mo.eigenvalues = ""
+        dft.print.mo.eigenvectors = ""
+        dft.print.mo.ndigits = 36
 
     def print_final_input(self) -> None:
         """Print the input after post-processing."""

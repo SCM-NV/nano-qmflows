@@ -5,13 +5,15 @@ from pathlib import Path
 
 import h5py
 import pytest
-import qmflows
 import numpy as np
+from qmflows.warnings_qmflows import Orbital_Warning
 from qmflows.test_utils import requires_cp2k
-from nanoqm.common import retrieve_hdf5_data
+from assertionlib import assertion
+
+from nanoqm.common import retrieve_hdf5_data, DictConfig
 from nanoqm.workflows import workflow_stddft
 from nanoqm.workflows.input_validation import process_input
-
+from nanoqm.workflows.workflow_stddft_spectrum import validate_active_space
 from .utilsTest import PATH_TEST, remove_files
 
 
@@ -78,3 +80,14 @@ class TestComputeOscillators:
         with h5py.File(PATH_TEST / "test_files.hdf5", "r") as f:
             ref = f[f"test_absorption_spectrum/TestComputeOscillators/{name}/dipole"][...]
         np.testing.assert_allclose(dipole_matrices, ref, rtol=0, atol=1e-08)
+
+
+def test_active_space_readjustment() -> None:
+    config = DictConfig(
+        active_space=(6, 8),
+        multiplicity=2,
+        orbitals_type="betas",
+    )
+    with pytest.warns(Orbital_Warning):
+        out = validate_active_space(config, 4, 6)
+    assertion.eq(out, (4, 6))

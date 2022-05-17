@@ -6,26 +6,26 @@ xc_dft:
   pbe
 tddft:
   stda
-active_space: [10, 15]
+active_space: [6, 15]
 
 path_hdf5:
   "test/test_files/Cd.hdf5"
 path_traj_xyz:
-  "test/test_files/Cd.xyz" 
+  "test/test_files/Cd.xyz"
 scratch_path:
   "/tmp/namd/absorption_spectrum"
-  
+
 cp2k_general_settings:
   basis:  "DZVP-MOLOPT-SR-GTH"
   potential: "GTH-PBE"
   cell_parameters: 5.0
   cell_angles: [90.0, 90.0, 90.0]
   periodic: none
-  
+
   cp2k_settings_main:
     specific:
       template: pbe_main
 
   cp2k_settings_guess:
-    specific: 
+    specific:
       template: pbe_guess

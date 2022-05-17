@@ -27,7 +27,7 @@ if TYPE_CHECKING:
 class CouplingsOutput(NamedTuple):
     name: str
     config: DictConfig
-    tmp_hdf5: Path
+    tmp_hdf5: str
     orbitals_type: str
     hamiltonians: tuple[list[str], ...]
 
@@ -82,14 +82,16 @@ class TestCoupling:
             config_range = range(len(output.config.geometries) - 1)
             return [os.path.join(orbitals_type, f'{keyword}_{x}') for x in config_range]
 
-        _overlaps_path_product = product(create_paths('overlaps'), ['mtx_sji_t0', 'mtx_sji_t0_corrected'])
-        overlaps_path = [f"{i}/{j}" for i, j in _overlaps_path_product]
+        overlaps_path = [f"{i}/mtx_sji_t0" for i in create_paths('overlaps')]
+        overlaps_corrected_path = [f"{i}/mtx_sji_t0_corrected" for i in create_paths('overlaps')]
         couplings_path = create_paths('coupling')
 
         # Check that couplings and overlaps exists
         assertion.assert_(is_data_in_hdf5, output.tmp_hdf5, overlaps_path, message="overlaps dataset")
+        assertion.assert_(is_data_in_hdf5, output.tmp_hdf5, overlaps_corrected_path, message="overlaps dataset")
         assertion.assert_(is_data_in_hdf5, output.tmp_hdf5, couplings_path, message="couplings dataset")
-        overlaps = np.array(retrieve_hdf5_data(output.tmp_hdf5, overlaps_path))
+        overlaps = np.abs(retrieve_hdf5_data(output.tmp_hdf5, overlaps_path))
+        corrected_overlaps = retrieve_hdf5_data(output.tmp_hdf5, overlaps_corrected_path)
         couplings = np.array(retrieve_hdf5_data(output.tmp_hdf5, couplings_path))
 
         # All the elements are different of inifinity or nan
@@ -99,16 +101,23 @@ class TestCoupling:
         for mtx in couplings:
             np.testing.assert_allclose(mtx, -mtx.T, rtol=0, atol=1e-8)
 
-        # Compare with reference data
+        # The precision of the unrestricted calculations is not great, use a larger tolerance
         if orbitals_type in {"alphas", "betas"}:
             name = f"{output.name}-{orbitals_type}"
+            atol = 1e-02
         else:
             name = output.name
+            atol = 1e-06
         with h5py.File(PATH_TEST / "test_files.hdf5", "r") as f:
             ref_couplings = f[f"test_coupling/TestCoupling/{name}/couplings"][...]
-            ref_overlaps = f[f"test_coupling/TestCoupling/{name}/overlaps"][...]
-        np.testing.assert_allclose(couplings, ref_couplings, rtol=0, atol=1e-06)
-        np.testing.assert_allclose(overlaps, ref_overlaps, rtol=0, atol=1e-06)
+            _ref_overlaps = f[f"test_coupling/TestCoupling/{name}/overlaps"][...]
+            ref_overlaps = np.abs(_ref_overlaps[0::2])
+            ref_corrected_overlaps = _ref_overlaps[1::2]
+
+        # Compare with reference data
+        np.testing.assert_allclose(couplings, ref_couplings, rtol=0, atol=atol)
+        np.testing.assert_allclose(overlaps, ref_overlaps, rtol=0, atol=atol)
+        np.testing.assert_allclose(corrected_overlaps, ref_corrected_overlaps, rtol=0, atol=atol)
 
     def test_hamiltonians(self, output: CouplingsOutput) -> None:
         if len(output.hamiltonians) == 1:
@@ -137,5 +146,9 @@ class TestCoupling:
         with h5py.File(PATH_TEST / "test_files.hdf5", "r") as f:
             ref_energies = f[f"test_coupling/TestCoupling/{name}/txt_energies"][...]
             ref_couplings = f[f"test_coupling/TestCoupling/{name}/txt_couplings"][...]
-        np.testing.assert_allclose(energies, ref_energies, rtol=0, atol=1e-06)
-        np.testing.assert_allclose(couplings, ref_couplings, rtol=0, atol=1e-06)
+        if "alphas" in name or "betas" in name:
+            atol = 1e-02
+        else:
+            atol = 1e-06
+        np.testing.assert_allclose(energies, ref_energies, rtol=0, atol=atol)
+        np.testing.assert_allclose(couplings, ref_couplings, rtol=0, atol=5 * atol)
