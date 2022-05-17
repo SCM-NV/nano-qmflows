@@ -11,84 +11,65 @@ concurrency:
     group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
     cancel-in-progress: true
 
+env:
+  CP2K_DEFAULT: "9.1"
+  CP2K_DATA_DIR: /usr/share/cp2k/data
+  TAG: "1.0.2"
+
 jobs:
-  test:
-    name: ${{ matrix.os }}; py ${{ matrix.python-version }}; CP2K ${{ matrix.cp2k }}; gcc ${{ matrix.gcc }}; pre-release ${{ matrix.pre_release }}
+  test_conda:
+    name: Test python ${{ matrix.version }} (conda) on ${{ matrix.os }}; ${{ matrix.special[0] }} ${{ matrix.special[1] }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        python-version: ["3.10"]
-        gcc: [7, 8, 9, 10, 11]
-        cp2k: ["9.1"]
-        pre_release: [false]
+        version: ["3.7", "3.8", "3.9", "3.10"]
+        special:
+          - ["", ""]
         include:
-          # Python 3.7/3.8/3.9 tests
-          - os: ubuntu-latest
-            python-version: "3.7"
-            gcc: 11
-            cp2k: "9.1"
-            pre_release: False
-          - os: ubuntu-latest
-            python-version: "3.8"
-            gcc: 11
-            cp2k: "9.1"
-            pre_release: False
-          - os: ubuntu-latest
-            python-version: "3.9"
-            gcc: 11
-            cp2k: "9.1"
-            pre_release: False
-          # GCC 5/6 tests
+          # GCC 5/11 tests
           - os: ubuntu-18.04
-            python-version: "3.10"
-            gcc: 5
-            cp2k: "9.1"
-            pre_release: False
-          - os: ubuntu-18.04
-            python-version: "3.10"
-            gcc: 6
-            cp2k: "9.1"
-            pre_release: False
+            version: "3.10"
+            special: ["GCC", "5"]
+          - os: ubuntu-latest
+            version: "3.10"
+            special: ["GCC", "11"]
           # CP2K 6.1/7.1/8.2 tests
           - os: ubuntu-latest
-            python-version: "3.10"
-            gcc: 11
-            cp2k: "6.1"
-            pre_release: False
+            version: "3.10"
+            special: ["CP2K", "6.1"]
           - os: ubuntu-latest
-            python-version: "3.10"
-            gcc: 11
-            cp2k: "7.1"
-            pre_release: False
+            version: "3.10"
+            special: ["CP2K", "7.1"]
           - os: ubuntu-latest
-            python-version: "3.10"
-            gcc: 11
-            cp2k: "8.2"
-            pre_release: False
+            version: "3.10"
+            special: ["CP2K", "8.2"]
           # Pre-release tests
           - os: ubuntu-latest
-            python-version: "3.10"
-            gcc: 11
-            cp2k: "9.1"
-            pre_release: True
-    env:
-      CP2K_DATA_DIR: /usr/share/cp2k/data
-
+            version: "3.10"
+            special: ["pre-release", ""]
     steps:
     - uses: actions/checkout@v3
 
     - name: Install CP2K
-      run: bash scripts/download_cp2k.sh x86_64 "${{ matrix.cp2k }}"
+      run: |
+        case "${{ matrix.special[0] }}" in
+          "CP2K")
+            CP2K_VERSION="${{ matrix.special[1] }}" ;;
+          *)
+            CP2K_VERSION=$CP2K_DEFAULT ;;
+        esac
+        bash scripts/download_cp2k.sh x86_64 $CP2K_VERSION
 
     - name: Info CP2K
       run: cp2k.popt --version
 
     - name: Install GCC
+      if: matrix.special[0] == 'GCC'
       uses: egor-tensin/setup-gcc@v1
       with:
-        version: ${{ matrix.gcc }}
+        version: ${{ matrix.special[1] }}
         platform: x64
 
     - name: Info GCC
@@ -101,16 +82,10 @@ jobs:
 
     - name: Install dependencies
       run: |
-        case ${{ matrix.gcc }} in
-          5|6)
-            conda create -n test -c conda-forge python=${{ matrix.python-version }} boost eigen=3.3 "libint>=2.6.0" highfive ;;
-          *)
-            conda create -n test -c conda-forge python=${{ matrix.python-version }} boost eigen "libint>=2.6.0" highfive ;;
-        esac
-
+        conda create -n test -c conda-forge python=${{ matrix.version }} boost eigen "libint>=2.6.0" highfive
         source $CONDA/bin/activate test
-        case "${{ matrix.pre_release }}" in
-          "true")
+        case "${{ matrix.special[0] }}" in
+          "pre-release")
             pip install --pre -r ./install_requirements.txt -r ./test_requirements.txt --upgrade --force-reinstall
             pip install git+https://github.com/SCM-NV/qmflows@master --upgrade
             pip uninstall plams -y; pip install git+https://github.com/SCM-NV/PLAMS@master --upgrade
@@ -138,6 +113,54 @@ jobs:
     - name: Test with pytest
       run: |
         source $CONDA/bin/activate test
+        pytest -m "not (slow or long)"
+
+    - name: coverage
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage.xml
+        name: codecov-umbrella
+
+  test_pypi:
+    name: Test python ${{ matrix.version }} (pypi) on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        version: ["3.7", "3.8", "3.9", "3.10"]
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Build wheels
+      uses: pypa/cibuildwheel@v2.5.0
+      env:
+        CIBW_BUILD: cp37-manylinux_x86_64
+        CIBW_MANYLINUX_X86_64_IMAGE: "ghcr.io/nlesc-nano/manylinux2014_x86_64-qmflows:${{ env.TAG }}"
+
+    - name: Set up Python
+      uses: actions/setup-python@v3
+      with:
+        python-version: ${{ matrix.version }}
+
+    - name: Install dependencies
+      run: |
+        WHL_NAME=$(python scripts/get_whl_name.py wheelhouse manylinux2014_x86_64)
+        pip install "$WHL_NAME"[test]
+
+    - name: Python info
+      run: |
+        which python
+        python --version
+
+    - name: Installed packages
+      run: pip list
+
+    - name: Test with pytest
+      run: |
+        bash scripts/download_cp2k.sh x86_64 $CP2K_DEFAULT
+        bash scripts/prepare_test_dir.sh && cd /tmp/nanoqm
         pytest -m "not (slow or long)"
 
     - name: coverage

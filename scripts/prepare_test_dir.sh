@@ -12,3 +12,4 @@ cp setup.cfg /tmp/nanoqm/
 cp conftest.py /tmp/nanoqm/
 cp -r test /tmp/nanoqm/
 cp CITATION.cff /tmp/nanoqm/
+cp codecov.yaml /tmp/nanoqm/
