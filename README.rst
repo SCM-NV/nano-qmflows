@@ -38,7 +38,7 @@ Then, to install the **nano-qmflows** library type the following commands inside
 .. code:: bash
 
    # Create the conda environment
-   conda create -n qmflows -c conda-forge boost eigen libint==2.6.0 highfive
+   conda create -n qmflows -c conda-forge boost eigen "libint>=2.6.0" highfive
    conda activate qmflows
 
    # Clone the repo

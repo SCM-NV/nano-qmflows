@@ -46,14 +46,11 @@ Matrix compute_integrals_couplings(const string &path_xyz_1,
                                    const string &basis_name);
 
 int main() {
-
-  string path_xyz = "../test/test_files/ethylene.xyz";
-  string path_hdf5 = "../test/test_files/ethylene.hdf5";
-  string basis_name = "DZVP-MOLOPT-SR-GTH";
-  string dataset_name = "ethylene/point_n";
-
-  auto xs =
-      compute_integrals_couplings(path_xyz, path_xyz, path_hdf5, basis_name);
+  const string path_xyz = "../test/test_files/ethylene.xyz";
+  const string path_hdf5 = "../test/test_files/ethylene.hdf5";
+  const string basis_name = "DZVP-MOLOPT-SR-GTH";
+  const string dataset_name = "ethylene/point_n";
+  auto xs = compute_integrals_couplings(path_xyz, path_xyz, path_hdf5, basis_name);
 }
 
 // OpenMP or multithread computations
@@ -73,13 +70,16 @@ template <typename Lambda> void parallel_do(Lambda &lambda) {
 #else // use C++11 threads
   std::vector<std::thread> threads;
   for (int thread_id = 0; thread_id != libint2::nthreads; ++thread_id) {
-    if (thread_id != nthreads - 1)
+    if (thread_id != nthreads - 1) {
       threads.push_back(std::thread(lambda, thread_id));
-    else
+    }
+    else {
       lambda(thread_id);
+    }
   } // threads_id
-  for (int thread_id = 0; thread_id < nthreads - 1; ++thread_id)
+  for (int thread_id = 0; thread_id < nthreads - 1; ++thread_id) {
     threads[thread_id].join();
+  }
 #endif
 }
 } // namespace libint2
@@ -94,22 +94,26 @@ void set_nthread() {
   omp_set_num_threads(nthreads);
 #endif
 }
+
 /**
  * \brief Get the number of basis
  */
 size_t nbasis(const std::vector<libint2::Shell> &shells) {
-  return std::accumulate(shells.cbegin(), shells.cend(), 0,
-                         [](size_t acc, const libint2::Shell &shell) {
-                           return acc + shell.size();
-                         });
+  return std::accumulate(
+    shells.cbegin(),
+    shells.cend(),
+    0,
+    [](const size_t acc, const libint2::Shell &shell) { return acc + shell.size(); });
 }
+
 /**
  * \brief compute the maximum number of n-primitives
  */
 size_t max_nprim(const std::vector<libint2::Shell> &shells) {
   size_t n = 0;
-  for (const auto &shell : shells)
+  for (const auto &shell : shells) {
     n = std::max(shell.nprim(), n);
+  }
   return n;
 }
 
@@ -117,11 +121,12 @@ size_t max_nprim(const std::vector<libint2::Shell> &shells) {
  * \brief compute the maximum number of l-primitives
  */
 int max_l(const std::vector<libint2::Shell> &shells) {
-
   int l = 0;
-  for (const auto &shell : shells)
-    for (const auto &c : shell.contr)
+  for (const auto &shell : shells) {
+    for (const auto &c : shell.contr) {
       l = std::max(c.l, l);
+    }
+  }
   return l;
 }
 
@@ -162,10 +167,10 @@ Matrix compute_overlaps_for_couplings(const std::vector<Shell> &shells_1,
     engines[i] = engines[0];
   }
 
-  auto shell2bf = map_shell_to_basis_function(shells_1);
+  const auto shell2bf = map_shell_to_basis_function(shells_1);
 
   // Function to compute the integrals in parallel
-  auto compute = [&](int thread_id) {
+  auto compute = [&](const int thread_id) {
     // buf[0] points to the target shell set after every call  to
     // engine.compute()
     const auto &buf = engines[thread_id].results();
@@ -218,13 +223,13 @@ std::vector<Matrix> compute_multipoles(
   const auto n = nbasis(shells);
 
   std::vector<Matrix> result(nopers);
-  for (auto &r : result)
+  for (auto &r : result) {
     r = Matrix::Zero(n, n);
+  }
 
   // construct the multipole engine integrals engine
   std::vector<libint2::Engine> engines(nthreads);
-  engines[0] =
-      libint2::Engine(operator_type, max_nprim(shells), max_l(shells), 0);
+  engines[0] = libint2::Engine(operator_type, max_nprim(shells), max_l(shells), 0);
 
   // pass operator params to the engines
   engines[0].set_params(oparams);
@@ -232,7 +237,7 @@ std::vector<Matrix> compute_multipoles(
     engines[i] = engines[0];
   }
 
-  auto shell2bf = map_shell_to_basis_function(shells);
+  const auto shell2bf = map_shell_to_basis_function(shells);
 
   // Function to compute the integrals in parallel
   auto compute = [&](int thread_id) {
@@ -362,15 +367,24 @@ CP2K_Basis_Atom read_basis_from_hdf5(const string &path_file,
 std::vector<string> get_unique_symbols(const std::vector<Atom> &atoms) {
   // Return a set of unique symbols
   std::vector<int> elements;
-  std::transform(atoms.begin(), atoms.end(), std::back_inserter(elements),
-                 [](const Atom &at) { return at.atomic_number; });
+  std::transform(
+    atoms.begin(),
+    atoms.end(),
+    std::back_inserter(elements),
+    [](const Atom &at) { return at.atomic_number; }
+  );
+
   // Unique set of elements
-  std::unordered_set<int> set(elements.begin(), elements.end());
+  const std::unordered_set<int> set(elements.begin(), elements.end());
 
   // create a unique vector of symbols
   std::vector<string> symbols;
-  std::transform(set.cbegin(), set.cend(), std::back_inserter(symbols),
-                 [](int x) { return map_elements[x]; });
+  std::transform(
+    set.cbegin(),
+    set.cend(),
+    std::back_inserter(symbols),
+    [](const int x) { return map_elements.at(x); }
+  );
   return symbols;
 }
 
@@ -383,10 +397,9 @@ create_map_symbols_basis(const string &path_hdf5,
   std::unordered_map<string, CP2K_Basis_Atom> dict;
 
   // Select the unique atomic symbols
-  std::vector<string> symbols = get_unique_symbols(atoms);
+  const std::vector<string> symbols = get_unique_symbols(atoms);
   for (const auto &at : symbols)
     dict[at] = read_basis_from_hdf5(path_hdf5, at, basis);
-
   return dict;
 }
 
@@ -425,17 +438,13 @@ std::vector<Shell> make_cp2k_basis(const std::vector<Atom> &atoms,
                                    const string &basis) {
   std::vector<Shell> shells;
 
-  // set of symbols
-  std::vector<string> symbols = get_unique_symbols(atoms);
-
   // Read basis set data from the HDF5
-  std::unordered_map<string, CP2K_Basis_Atom> dict =
+  const std::unordered_map<string, CP2K_Basis_Atom> dict =
       create_map_symbols_basis(path_hdf5, atoms, basis);
 
   for (const auto &atom : atoms) {
-
-    CP2K_Basis_Atom data = dict[map_elements[atom.atomic_number]];
-    auto xs = create_shells_for_atom(data, atom);
+    const CP2K_Basis_Atom data = dict.at(map_elements.at(atom.atomic_number));
+    const auto xs = create_shells_for_atom(data, atom);
     shells.insert(shells.end(), xs.begin(), xs.end());
   }
 
@@ -447,11 +456,11 @@ Matrix compute_integrals_couplings(const string &path_xyz_1,
                                    const string &basis_name) {
 
   set_nthread();
-  std::vector<Atom> mol_1 = read_xyz_from_file(path_xyz_1);
-  std::vector<Atom> mol_2 = read_xyz_from_file(path_xyz_2);
+  const std::vector<Atom> mol_1 = read_xyz_from_file(path_xyz_1);
+  const std::vector<Atom> mol_2 = read_xyz_from_file(path_xyz_2);
 
-  auto shells_1 = make_cp2k_basis(mol_1, path_hdf5, basis_name);
-  auto shells_2 = make_cp2k_basis(mol_2, path_hdf5, basis_name);
+  const auto shells_1 = make_cp2k_basis(mol_1, path_hdf5, basis_name);
+  const auto shells_2 = make_cp2k_basis(mol_2, path_hdf5, basis_name);
 
   // safe to use libint now
   libint2::initialize();
@@ -479,10 +488,12 @@ std::array<double, 3> calculate_center_of_mass(const std::vector<Atom> &atoms) {
     rs[1] += at.y * z, rs[2] += at.z * z;
   }
 
-  auto m =
-      std::accumulate(atoms.begin(), atoms.end(), 0, [](double acc, Atom at) {
-        return acc + double(at.atomic_number);
-      });
+  auto m = std::accumulate(
+    atoms.begin(),
+    atoms.end(),
+    0,
+    [](const double acc, const Atom &at) { return acc + double(at.atomic_number); }
+  );
   return {rs[0] / m, rs[1] / m, rs[2] / m};
 }
 
@@ -514,15 +525,15 @@ Matrix compute_integrals_multipole(const string &path_xyz,
                                    const string &basis_name,
                                    const string &multipole) {
   set_nthread();
-  std::vector<Atom> mol = read_xyz_from_file(path_xyz);
+  const std::vector<Atom> mol = read_xyz_from_file(path_xyz);
 
-  auto shells = make_cp2k_basis(mol, path_hdf5, basis_name);
+  const auto shells = make_cp2k_basis(mol, path_hdf5, basis_name);
 
   // safe to use libint now
   libint2::initialize();
 
   // compute Overlap integrals
-  auto matrices = select_multipole(mol, shells, multipole);
+  const auto matrices = select_multipole(mol, shells, multipole);
 
   // stop using libint2
   libint2::finalize();
@@ -557,7 +568,7 @@ int py_obj_to_string(PyObject *py_str, void *ptr) {
     return 0;
   }
 
-  int num = PyBytes_AsStringAndSize(py_bytes, &str, &size);
+  const int num = PyBytes_AsStringAndSize(py_bytes, &str, &size);
   Py_DecRef(py_bytes);
   if (num == -1) {
     return 0;
@@ -650,7 +661,7 @@ PyObject * py_get_thread_count(PyObject *self, PyObject *args) {
 
 /** \brief Get the type of threads */
 PyObject * py_get_thread_type(PyObject *self, PyObject *args) {
-  PyObject * ret;
+  PyObject *ret;
 
 #if defined(_OPENMP)
   ret = PyUnicode_FromString("OpenMP");
@@ -681,6 +692,10 @@ PyModuleDef py_module = {
 };
 
 // Workaround to prevent C++ name mangling
+//
+// The `PyMODINIT_FUNC` macro should be able to take care of it, but it doesn't
+// seem to work on python <= 3.8.
+// Possibly related to the "-fvisibility=hidden" flag?
 
 #if defined(WIN32) || defined(_WIN32)
   #define MODULE_EXPORT __declspec(dllexport)

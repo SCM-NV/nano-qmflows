@@ -20,7 +20,7 @@ from typing import (Any, DefaultDict, Dict, List, NamedTuple, Sequence, Tuple,
 
 from more_itertools import chunked
 from noodles import gather, schedule
-from qmflows.common import InfoMO
+from qmflows.common import CP2KInfoMO
 from qmflows.type_hints import PathLike, PromisedObject
 from qmflows.warnings_qmflows import SCF_Convergence_Warning
 
@@ -30,7 +30,7 @@ from ..common import (DictConfig, Matrix, is_data_in_hdf5,
 from .scheduleCP2K import prepare_job_cp2k
 
 #: Molecular orbitals from both restricted and unrestricted calculations
-OrbitalType = Union[InfoMO, Tuple[InfoMO, InfoMO]]
+OrbitalType = Union[CP2KInfoMO, Tuple[CP2KInfoMO, CP2KInfoMO]]
 
 
 class JobFiles(NamedTuple):
@@ -167,7 +167,7 @@ def store_molecular_orbitals(
 
 def save_orbitals_in_hdf5(mos: OrbitalType, config: DictConfig, job_name: str) -> None:
     """Store the orbitals from restricted and unrestricted calculations."""
-    if isinstance(mos, InfoMO):
+    if isinstance(mos, CP2KInfoMO):
         dump_orbitals_to_hdf5(mos, config, job_name)
     else:
         alphas, betas = mos
@@ -176,7 +176,7 @@ def save_orbitals_in_hdf5(mos: OrbitalType, config: DictConfig, job_name: str) -
 
 
 def dump_orbitals_to_hdf5(
-        data: InfoMO, config: DictConfig, job_name: str, orbitals_type: str = "") -> None:
+        data: CP2KInfoMO, config: DictConfig, job_name: str, orbitals_type: str = "") -> None:
     """Store the result in HDF5 format.
 
     Parameters
