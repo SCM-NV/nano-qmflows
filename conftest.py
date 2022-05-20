@@ -1,12 +1,13 @@
 from __future__ import annotations
 
+import logging
+
 import os
 import shutil
-import warnings
 from collections.abc import Generator
 
 import pytest
-from nanoqm._logger import logger, stdout_handler
+from nanoqm._logger import logger as nanoqm_logger
 
 
 @pytest.fixture(autouse=True, scope="session")
@@ -34,7 +35,27 @@ def cleunup_files() -> Generator[None, None, None]:
 @pytest.fixture(autouse=True, scope="session")
 def prepare_logger() -> Generator[None, None, None]:
     """Remove the logging output to stdout while running tests."""
-    assert stdout_handler in logger.handlers
-    logger.removeHandler(stdout_handler)
+    import noodles
+    import qmflows
+    noodles_logger = logging.getLogger("noodles")
+    qmflows_logger = logging.getLogger("qmflows")
+
+    nanoqm_handlers = nanoqm_logger.handlers.copy()
+    noodles_handlers = noodles_logger.handlers.copy()
+    qmflows_handlers = qmflows_logger.handlers.copy()
+
+    for handler in nanoqm_handlers:
+        nanoqm_logger.removeHandler(handler)
+    for handler in noodles_handlers:
+        noodles_logger.removeHandler(handler)
+    for handler in qmflows_handlers:
+        qmflows_logger.removeHandler(handler)
+
     yield None
-    logger.addHandler(stdout_handler)
+
+    for handler in nanoqm_handlers:
+        nanoqm_logger.addHandler(handler)
+    for handler in noodles_handlers:
+        noodles_logger.addHandler(handler)
+    for handler in qmflows_handlers:
+        qmflows_logger.addHandler(handler)
