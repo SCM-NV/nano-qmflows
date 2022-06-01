@@ -15,6 +15,7 @@ env:
   CP2K_DEFAULT: "9.1"
   CP2K_DATA_DIR: /usr/share/cp2k/data
   TAG: "1.0.2"
+  PY_COLORS: "1"
 
 jobs:
   test_conda:
