@@ -11,7 +11,7 @@ stride:
 path_hdf5:
   "test/test_files/Cd33Se33.hdf5"
 path_traj_xyz:
-  "test/test_files/Cd33Se33_fivePoints.xyz" 
+  "test/test_files/Cd33Se33_fivePoints.xyz"
 scratch_path:
   "/tmp/namd"
 workdir: "."
@@ -25,13 +25,14 @@ job_scheduler:
   wall_time: "24:00:00"
   load_modules: "source activate qmflows\nmodule load cp2k/3.0"
 
-  
+
 cp2k_general_settings:
   basis:  "DZVP-MOLOPT-SR-GTH"
   potential: "GTH-PBE"
   cell_parameters: 28.0
   cell_angles: [90.0, 90.0, 90.0]
   periodic: xyz
+  executable: cp2k.ssmp
 
   cp2k_settings_main:
     specific:

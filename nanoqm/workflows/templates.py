@@ -67,7 +67,7 @@ cp2k:
   force_eval:
     dft:
       scf:
-        eps_scf: 5e-4
+        eps_scf: 1e-06
         max_scf: 200
         scf_guess: "restart"
 """, Loader=UniqueSafeLoader))
@@ -111,7 +111,7 @@ cp2k:
       xc:
         xc_functional pbe: {}
       scf:
-        eps_scf: 5e-4
+        eps_scf: 1e-06
         max_scf: 200
         scf_guess: "restart"
 """, Loader=UniqueSafeLoader))
@@ -168,7 +168,7 @@ cp2k:
           xc_deriv: "spline3"
           xc_smooth_rho: "None"
       scf:
-        eps_scf: 5e-4
+        eps_scf: 1e-06
         max_scf: 200
         scf_guess: "restart"
 """, Loader=UniqueSafeLoader))
@@ -253,7 +253,7 @@ cp2k:
              max_memory: "5000"
              eps_storage_scaling: "0.1"
        scf:
-          eps_scf: 5e-4
+          eps_scf: 1e-06
           max_scf: 200
           scf_guess: "restart"
 """, Loader=UniqueSafeLoader))
@@ -390,7 +390,7 @@ cp2k:
       xc:
         xc_functional b3lyp: {}
       scf:
-        eps_scf: 5e-4
+        eps_scf: 1e-06
         max_scf: 200
         scf_guess: "restart"
 """, Loader=UniqueSafeLoader))

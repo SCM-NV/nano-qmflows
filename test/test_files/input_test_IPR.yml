@@ -1,18 +1,19 @@
 workflow:
   ipr_calculation
-project_name: Cd33Se33
+project_name: F2
 
-active_space: [50, 50]
-path_hdf5: "test/test_files/Cd33Se33.hdf5"
-path_traj_xyz: "test/test_files/Cd33Se33.xyz"
+active_space: [5, 1]
+path_hdf5: "test/test_files/F2.hdf5"
+path_traj_xyz: "test/test_files/F2.xyz"
 scratch_path: "/tmp/IPR"
 
 
 cp2k_general_settings:
-  basis:  "DZVP-MOLOPT-SR-GTH"
+  basis:  "SZV-MOLOPT-SR-GTH"
   potential: "GTH-PBE"
-  cell_parameters: 20.0
+  cell_parameters: 6.0
   periodic: none
+  executable: cp2k.ssmp
 
   cp2k_settings_main:
     specific:

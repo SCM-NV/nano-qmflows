@@ -1,4 +1,4 @@
-Absorption Spectrum 
+Absorption Spectrum
 ===================
 
 This other workflow computes the excited states energies, transition dipole moments and oscillator strength using the STDDFT approach.
@@ -48,7 +48,7 @@ At this point, your *input_test_absorption_spectrum_basic.yml* contains all the 
 
 - **workflow**: The workflow you need for your calculations, in this case absorption_spectrum to compute excited states properties.
 - **project_name**: Project name for the calculations. You can choose what you wish.
-- **active_space**: Range of (occupied, virtual) molecular orbitals to be computed. For example, if 50 occupied and 100 virtual should be considered in your calculations, the active space should be set to [50, 100].
+- **active_space**: Range of (doubly occupied, virtual) molecular orbitals to be computed. For example, if 50 occupied and 100 virtual should be considered in your calculations, the active space should be set to [50, 100]. The range will automatically be appended with additional singly occupied MOs based on the systems (user-specified) multiplicity.
 - **compute_orbitals**: Specify if the energy and eigenvalues of the selected orbitals are to be computed. The default is set to True so we will not consider it in the advanced examples.
 - **path_hdf5**: Path where the hdf5 should be created / can be found. The hdf5 is the format used to store the molecular orbitals and other information.
 - **path_traj_xyz**: Path to the pre-optimized geometry of your system. It should be provided in xyz format.
@@ -89,7 +89,7 @@ We are now ready to move to a more advanced example in which we want to compute 
     calculate_guesses: "first"
 
     xc_dft: pbe
-    tddft: stda 
+    tddft: stda
     stride: 4
 
     cp2k_general_settings:
@@ -107,7 +107,7 @@ We are now ready to move to a more advanced example in which we want to compute 
         specific:
           template: pbe_guess
 
-In your working directory, create an *input_test_absorption_spectrum_advanced.yml* file and copy the previous input inside it (remember to respect the indentation). 
+In your working directory, create an *input_test_absorption_spectrum_advanced.yml* file and copy the previous input inside it (remember to respect the indentation).
 Also copy locally the small pre-computed MD trajectory of the guanine system, guanine_twentyPoints.xyz.
 
 In the input file, pay particular attention to the following parameters that have been added/modified with respect to the previous example:
@@ -121,7 +121,7 @@ In the input file, pay particular attention to the following parameters that hav
 
   #. Down-sampling issues might arise from the number of points that are actually printed during the MD calculations. Some programs, indeed, offer the possibility to print (in the output file) only one point out of ten (or more) calculated. In this case, applying a stride: 4 would in practice mean that you are sampling 1 point out of 40 points in the trajectory.
 
-Setting up the calculation 
+Setting up the calculation
 ---------------------------
 
 Once all settings of your yml input have been customized, you are ready to launch your single point calculation.
@@ -129,18 +129,18 @@ Once all settings of your yml input have been customized, you are ready to launc
 - First, activate the conda environment with QMFlows:
 
   ``conda activate qmflows``
-  
+
 - Then, load the module with your version of cp2k, for example:
 
   ``module load CP2K/7.1.0``
-  
+
 - Finally, use the command run_workflow.py to submit your calculation:
 
   ``run_workflow.py -i input_test_absorption_spectrum_basic.yml``
-  
+
 for the basic example.
 
-Results 
+Results
 -------
 
 Once your calculation has finished successfully, you will find one (or more) *output_n_stda.txt* file(s) in your scratch directory (with *n* being the index of the geometry at which the spectrum analysis has been performed). The first two lines of the file *output_0_stda.txt* generated in our basic example are reported below.
@@ -169,7 +169,7 @@ The next six columns report some useful information about the dominant single or
 Copy the output file(s) to your working directory and plot the absorption spectrum using the script convolution.py_:
 
   ``convolution.py -nm True``
-  
+
 In case of multiple output files, the returned absorption spectrum is an average over all sampled strucutures, unless you define the index of a specific sample using the -n option.
 
 .. _convolution.py: https://github.com/SCM-NV/nano-qmflows/blob/master/scripts/qmflows/convolution.py
@@ -183,5 +183,3 @@ To report an issue or request a new feature you can use the github issues_ track
 .. _QMflows: https://github.com/SCM-NV/qmflows
 .. _PYXAID: https://www.acsu.buffalo.edu/~alexeyak/pyxaid/overview.html
 .. _YAML: https://pyyaml.org/wiki/PyYAML
-
-

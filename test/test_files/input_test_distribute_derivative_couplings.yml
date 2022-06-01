@@ -7,7 +7,7 @@ active_space: [10, 10]
 algorithm: "levine"
 tracking: False
 path_hdf5: "test/test_files/Cd33Se33.hdf5"
-path_traj_xyz: "test/test_files/Cd33Se33_fivePoints.xyz" 
+path_traj_xyz: "test/test_files/Cd33Se33_fivePoints.xyz"
 scratch_path: "/tmp/namd"
 workdir: "."
 blocks: 2
@@ -29,7 +29,7 @@ cp2k_general_settings:
   cell_parameters: 28.0
   file_cell_parameters: "test/test_files/file_distribute_cell_parameters.txt"
   periodic: none
-  executable: cp2k.popt
+  executable: cp2k.ssmp
 
   cp2k_settings_main:
     specific:

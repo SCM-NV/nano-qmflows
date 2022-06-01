@@ -1,12 +1,26 @@
 from __future__ import annotations
 
+import logging
+
 import os
 import shutil
-import warnings
 from collections.abc import Generator
 
 import pytest
-from nanoqm._logger import logger, stdout_handler
+from nanoqm._logger import logger as nanoqm_logger
+from scm.plams import add_to_class, Cp2kJob
+
+
+@add_to_class(Cp2kJob)
+def get_runscript(self) -> str:
+    """Run a parallel version of CP2K with mpirun or srun, \
+    as this can cause issues with some executables.
+
+    This method is monkey-patched into the PLAMS ``Cp2kJob`` class.
+
+    """
+    cp2k_command = self.settings.get("executable", "cp2k.ssmp")
+    return  f"{cp2k_command} -i {self._filename('inp')} -o {self._filename('out')}"
 
 
 @pytest.fixture(autouse=True, scope="session")
@@ -34,7 +48,27 @@ def cleunup_files() -> Generator[None, None, None]:
 @pytest.fixture(autouse=True, scope="session")
 def prepare_logger() -> Generator[None, None, None]:
     """Remove the logging output to stdout while running tests."""
-    assert stdout_handler in logger.handlers
-    logger.removeHandler(stdout_handler)
+    import noodles
+    import qmflows
+    noodles_logger = logging.getLogger("noodles")
+    qmflows_logger = logging.getLogger("qmflows")
+
+    nanoqm_handlers = nanoqm_logger.handlers.copy()
+    noodles_handlers = noodles_logger.handlers.copy()
+    qmflows_handlers = qmflows_logger.handlers.copy()
+
+    for handler in nanoqm_handlers:
+        nanoqm_logger.removeHandler(handler)
+    for handler in noodles_handlers:
+        noodles_logger.removeHandler(handler)
+    for handler in qmflows_handlers:
+        qmflows_logger.removeHandler(handler)
+
     yield None
-    logger.addHandler(stdout_handler)
+
+    for handler in nanoqm_handlers:
+        nanoqm_logger.addHandler(handler)
+    for handler in noodles_handlers:
+        noodles_logger.addHandler(handler)
+    for handler in qmflows_handlers:
+        qmflows_logger.addHandler(handler)

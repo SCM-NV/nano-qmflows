@@ -4,7 +4,7 @@ workflow:
 project_name:
   ethylene
 
-# Step of the MD (Femtoseconds)  
+# Step of the MD (Femtoseconds)
 dt: 1
 
 # Algorithm to compute the derivative couplings
@@ -15,17 +15,17 @@ algorithm:
 tracking:
   True
 
-# Occupied and Virtual orbitals to compute the couplings  
+# Occupied and Virtual orbitals to compute the couplings
 active_space:
   [4, 4]
 
-# Path to the file to store all the intermediate tensors  
+# Path to the file to store all the intermediate tensors
 path_hdf5:
   "test/test_files/ethylene.hdf5"
 
 # MD trajectory
 path_traj_xyz:
-  "test/test_files/ethylene_couplings.xyz" 
+  "test/test_files/ethylene_couplings.xyz"
 
 # Path where all the temporal files are store
 scratch_path:
@@ -38,6 +38,7 @@ cp2k_general_settings:
   cell_parameters: 10.0
   cell_angles: [90.0, 90.0, 90.0]
   periodic: none
+  executable: cp2k.ssmp
 
   # Configuration to compute the molecular orbitals
   cp2k_settings_main:
@@ -48,4 +49,4 @@ cp2k_general_settings:
   cp2k_settings_guess:
      specific:
       template:
-        pbe_guess    
+        pbe_guess
