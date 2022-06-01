@@ -6,7 +6,6 @@ import os
 import shutil
 import tempfile
 from collections.abc import Sequence, Generator, Generator
-from itertools import product
 from pathlib import Path
 from typing import TYPE_CHECKING, NamedTuple
 
@@ -17,8 +16,9 @@ from assertionlib import assertion
 from nanoqm.common import DictConfig, is_data_in_hdf5, retrieve_hdf5_data
 from nanoqm.workflows.input_validation import process_input
 from nanoqm.workflows.workflow_coupling import workflow_derivative_couplings
+from packaging.version import Version
 
-from .utilsTest import PATH_TEST, remove_files
+from .utilsTest import PATH_TEST, remove_files, CP2K_VERSION
 
 if TYPE_CHECKING:
     import _pytest
@@ -105,6 +105,8 @@ class TestCoupling:
         if orbitals_type in {"alphas", "betas"}:
             name = f"{output.name}-{orbitals_type}"
             atol = 1e-02
+            if CP2K_VERSION < Version("8.0"):
+                pytest.xfail("Precision issues in CP2K <8.0")
         else:
             name = output.name
             atol = 1e-06
@@ -148,6 +150,8 @@ class TestCoupling:
             ref_couplings = f[f"test_coupling/TestCoupling/{name}/txt_couplings"][...]
         if "alphas" in name or "betas" in name:
             atol = 1e-02
+            if CP2K_VERSION < Version("8.0"):
+                pytest.xfail("Precision issues in CP2K <8.0")
         else:
             atol = 1e-06
         np.testing.assert_allclose(energies, ref_energies, rtol=0, atol=atol)

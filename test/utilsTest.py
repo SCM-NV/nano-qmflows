@@ -1,5 +1,7 @@
 """Functions use for testing."""
 
+import re
+import subprocess
 import textwrap
 import fnmatch
 import os
@@ -8,19 +10,36 @@ from pathlib import Path
 
 from qmflows.packages import Result
 from qmflows.test_utils import find_executable
+from packaging.version import Version
 
 __all__ = [
-    "PATH_NANOQM",
     "PATH_TEST",
-    "copy_basis_and_orbitals",
-    "cp2k_available",
+    "CP2K_VERSION",
     "remove_files",
     "validate_status",
 ]
 
+
+def _get_cp2K_version(executable: str = "cp2k.ssmp") -> Version:
+    path = find_executable(executable)
+    if path is None:
+        return Version("0.0")
+
+    out = subprocess.run(
+        f"{path} --version",
+        check=True, capture_output=True, text=True, shell=True,
+    )
+
+    match = re.search(r"CP2K version\s+(\S+)", out.stdout)
+    if match is None:
+        raise ValueError(f"Failed to parse the `{path!r} --version` output:\n\n{out.stdout}")
+    return Version(match[1])
+
+
 # Environment data
 ROOT = Path(__file__).parents[1]
 PATH_TEST = ROOT / "test" / "test_files"
+CP2K_VERSION = _get_cp2K_version()
 
 
 def remove_files() -> None:
@@ -31,12 +50,6 @@ def remove_files() -> None:
         name = f"cache.{ext}"
         if os.path.exists(name):
             os.remove(name)
-
-
-def cp2k_available(executable: str = "cp2k.ssmp") -> bool:
-    """Check if cp2k is installed."""
-    path = find_executable(executable)
-    return path is not None
 
 
 def _read_result_file(result: Result, extension: str, max_line: int = 100) -> "None | str":
