@@ -8,6 +8,7 @@ import os
 import shutil
 from pathlib import Path
 
+import pytest
 from qmflows.packages import Result
 from qmflows.test_utils import find_executable
 from packaging.version import Version
@@ -17,10 +18,22 @@ __all__ = [
     "CP2K_VERSION",
     "remove_files",
     "validate_status",
+    "requires_cp2k",
 ]
 
+# Environment data
+CP2K_EXEC = "cp2k.ssmp"
+ROOT = Path(__file__).parents[1]
+PATH_TEST = ROOT / "test" / "test_files"
 
-def _get_cp2K_version(executable: str = "cp2k.ssmp") -> Version:
+#: A mark for skipping tests if CP2K is not installed
+requires_cp2k = pytest.mark.skipif(
+    find_executable(CP2K_EXEC) is None,
+    reason="Requires CP2K",
+)
+
+
+def _get_cp2K_version(executable: str) -> Version:
     path = find_executable(executable)
     if path is None:
         return Version("0.0")
@@ -37,9 +50,7 @@ def _get_cp2K_version(executable: str = "cp2k.ssmp") -> Version:
 
 
 # Environment data
-ROOT = Path(__file__).parents[1]
-PATH_TEST = ROOT / "test" / "test_files"
-CP2K_VERSION = _get_cp2K_version()
+CP2K_VERSION = _get_cp2K_version(CP2K_EXEC)
 
 
 def remove_files() -> None:

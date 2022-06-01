@@ -18,7 +18,7 @@ from nanoqm.workflows.input_validation import process_input
 from nanoqm.workflows.workflow_coupling import workflow_derivative_couplings
 from packaging.version import Version
 
-from .utilsTest import PATH_TEST, remove_files, CP2K_VERSION
+from .utilsTest import PATH_TEST, remove_files, CP2K_VERSION, requires_cp2k
 
 if TYPE_CHECKING:
     import _pytest
@@ -32,6 +32,7 @@ class CouplingsOutput(NamedTuple):
     hamiltonians: tuple[list[str], ...]
 
 
+@requires_cp2k
 class TestCoupling:
     PARAMS = {
         "couplings": ("input_fast_test_derivative_couplings.yml", ""),

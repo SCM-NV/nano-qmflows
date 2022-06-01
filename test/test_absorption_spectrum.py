@@ -7,14 +7,13 @@ import h5py
 import pytest
 import numpy as np
 from qmflows.warnings_qmflows import Orbital_Warning
-from qmflows.test_utils import requires_cp2k
 from assertionlib import assertion
 
 from nanoqm.common import retrieve_hdf5_data, DictConfig
 from nanoqm.workflows import workflow_stddft
 from nanoqm.workflows.input_validation import process_input
 from nanoqm.workflows.workflow_stddft_spectrum import validate_active_space
-from .utilsTest import PATH_TEST, remove_files
+from .utilsTest import PATH_TEST, remove_files, requires_cp2k
 
 
 @requires_cp2k
