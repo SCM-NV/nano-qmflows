@@ -14,6 +14,7 @@ cp2k_general_settings:
   potential: "GTH-PBE"
   cell_parameters: 6.0
   periodic: none
+  executable: cp2k.ssmp
 
   cp2k_settings_main:
     specific:

@@ -4,11 +4,8 @@ import textwrap
 import fnmatch
 import os
 import shutil
-from os.path import join
 from pathlib import Path
-from typing import Union
 
-import h5py
 from qmflows.packages import Result
 from qmflows.test_utils import find_executable
 
@@ -36,10 +33,9 @@ def remove_files() -> None:
             os.remove(name)
 
 
-def cp2k_available(executable: str = "cp2k.popt") -> bool:
+def cp2k_available(executable: str = "cp2k.ssmp") -> bool:
     """Check if cp2k is installed."""
     path = find_executable(executable)
-
     return path is not None
 
 

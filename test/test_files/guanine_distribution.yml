@@ -35,6 +35,7 @@ cp2k_general_settings:
   charge: 0
   cell_parameters: 25.0
   cell_angles: [90.0,90.0,90.0]
+  executable: cp2k.ssmp
 
   cp2k_settings_main:
     specific:

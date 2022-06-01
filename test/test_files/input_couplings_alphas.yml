@@ -13,7 +13,7 @@ cp2k_general_settings:
   multiplicity: 3
   cell_parameters: 4.0
   periodic: none
-  executable: cp2k.popt
+  executable: cp2k.ssmp
 
   cp2k_settings_main:
     specific:

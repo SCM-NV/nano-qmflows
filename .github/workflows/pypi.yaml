@@ -246,7 +246,7 @@ jobs:
       run: bash scripts/download_cp2k.sh x86_64 $CP2K_VERSION
 
     - name: Info CP2K
-      run: cp2k.popt --version
+      run: cp2k.ssmp --version
 
     - name: Setup conda
       uses: s-weigand/setup-conda@v1

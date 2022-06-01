@@ -21,6 +21,7 @@ cp2k_general_settings:
   cell_parameters: 5.0
   cell_angles: [90.0, 90.0, 90.0]
   periodic: none
+  executable: cp2k.ssmp
 
   cp2k_settings_main:
     specific:
