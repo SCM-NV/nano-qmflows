@@ -1,9 +1,9 @@
 # Change Log
 
-# 0.13.4 (*unreleased*)
+# 0.13.4 (02/06/2022)
 
-## New
-* *placeholder*.
+## Fixed
+* Fix the minimum macosx version of vendored libraries.
 
 
 # 0.13.3 (02/06/2022)
