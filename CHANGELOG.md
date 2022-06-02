@@ -1,6 +1,6 @@
 # Change Log
 
-# 0.13.3 (*unreleased*)
+# 0.13.3 (02/06/2022)
 
 ## New
 * Replace `pybind11` as a build dependency with `numpy`.
@@ -9,6 +9,12 @@
 ## Changed
 * Remove `cython` leftovers.
 * Add minimum versions to most dependencies.
+* Always compile with C++11 as we don't use any newer features.
+* Bump the minimum qmflows version to >= 1.12.1.
+* Increase the SCF convergence in the (non-guess) templates from 5e-04 to 1e-06.
+
+## Fixed
+* Fix the ill-defined active space for unrestricted calculations.
 
 
 # 0.13.2 (26/04/2022)
