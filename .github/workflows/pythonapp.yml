@@ -14,7 +14,7 @@ concurrency:
 env:
   CP2K_DEFAULT: "9.1"
   CP2K_DATA_DIR: /usr/share/cp2k/data
-  TAG: "1.0.2"
+  TAG: "1.0.3"  # The nlesc-nano/nano-qmflows-manylinux tag
   PY_COLORS: "1"
 
 jobs:
