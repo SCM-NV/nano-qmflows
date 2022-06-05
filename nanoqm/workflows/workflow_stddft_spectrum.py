@@ -103,7 +103,7 @@ def validate_active_space(
     # occupied or unoccupied orbitals depending on the spin
     if config.orbitals_type == "alphas":
         nocc_inp += (config.multiplicity - 1)
-    elif config.orbitals_type == "beta":
+    elif config.orbitals_type == "betas":
         nvirt_inp += (config.multiplicity - 1)
 
     if (nocc_inp == nocc_molog) and (nvirt_inp == nvirt_molog):
