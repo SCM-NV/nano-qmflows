@@ -229,10 +229,8 @@ def calcOverlapMtx(config: DictConfig, molecules: Tuple[MolXYZ, MolXYZ]) -> Matr
     mol_i, mol_j = tuple(tuplesXYZ_to_plams(x) for x in molecules)
 
     # unique molecular paths
-    path_i = join(config["scratch_path"],
-                  f"molecule_{uuid.uuid4()}.xyz")
-    path_j = join(config["scratch_path"],
-                  "molecule_{uuid.uuid4()}.xyz")
+    path_i = join(config["scratch_path"], f"molecule_{uuid.uuid4()}.xyz")
+    path_j = join(config["scratch_path"], f"molecule_{uuid.uuid4()}.xyz")
 
     # Write the molecules in atomic units
     mol_i.write(path_i)
