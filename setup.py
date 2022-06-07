@@ -129,7 +129,7 @@ def get_paths() -> "tuple[list[str], list[str]]":
 include_list, lib_list = get_paths()
 libint_ext = Extension(
     'nanoqm.compute_integrals',
-    sources=['libint/compute_integrals.cc'],
+    sources=['libint/compute_integrals.cc', 'libint/py_compute_integrals.cc'],
     include_dirs=[
         "libint/include",
         *include_list,
