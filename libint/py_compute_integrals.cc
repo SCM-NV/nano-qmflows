@@ -89,9 +89,8 @@ PyObject *py_compute_integrals_couplings(PyObject *self, PyObject *args) {
 
   try {
     mat = compute_integrals_couplings(path_xyz_1, path_xyz_2, path_hdf5, basis_name);
-  } catch (HighFive::Exception &err) {
-    PyErr_SetString(PyExc_RuntimeError, err.what());
-    return nullptr;
+  } catch (std::exception &err) {
+    return PyErr_SetFromErrno(PyExc_RuntimeError);
   }
   return mat_to_npy_array(mat);
 }
@@ -115,9 +114,8 @@ PyObject *py_compute_integrals_multipole(PyObject *self, PyObject *args) {
 
   try {
     mat = compute_integrals_multipole(path_xyz, path_hdf5, basis_name, multipole);
-  } catch (HighFive::Exception &err) {
-    PyErr_SetString(PyExc_RuntimeError, err.what());
-    return nullptr;
+  } catch (std::exception &err) {
+    return PyErr_SetFromErrno(PyExc_RuntimeError);
   }
   return mat_to_npy_array(mat);
 }
