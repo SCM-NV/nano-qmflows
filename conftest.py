@@ -13,7 +13,7 @@ from scm.plams import add_to_class, Cp2kJob
 
 @add_to_class(Cp2kJob)
 def get_runscript(self) -> str:
-    """Run a parallel version of CP2K with mpirun or srun, \
+    """Run a parallel version of CP2K without mpirun or srun, \
     as this can cause issues with some executables.
 
     This method is monkey-patched into the PLAMS ``Cp2kJob`` class.
