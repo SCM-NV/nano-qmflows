@@ -109,14 +109,20 @@ jobs:
       - name: Installed packages
         run: pip list
 
-      - name: Test with pytest
+      - name: Install CP2K
         run: |
-          # TODO: Install CP2K on macos once a workaround is found for SCM-NV/qmflows#295
           case "${{ matrix.buildplat[0] }}" in
             "ubuntu-latest")
               bash scripts/download_cp2k.sh x86_64 $CP2K_VERSION ;;
+            "macos-latest")
+              brew install cp2k ;;
           esac
 
+      - name: CP2K info
+        run: cp2k.ssmp --version
+
+      - name: Test with pytest
+        run: |
           bash scripts/prepare_test_dir.sh
           cd /tmp/nanoqm
 
