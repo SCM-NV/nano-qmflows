@@ -20,6 +20,7 @@ from ..common import MolXYZ, h2ev, number_spherical_functions_per_atom, retrieve
 from ..integrals.multipole_matrices import compute_matrix_multipole
 from .initialization import initialize
 from .tools import compute_single_point_eigenvalues_coefficients
+from .orbitals_type import select_orbitals_type
 
 if TYPE_CHECKING:
     from numpy.typing import NDArray
@@ -29,8 +30,17 @@ if TYPE_CHECKING:
 __all__ = ['workflow_crystal_orbital_overlap_population']
 
 
-def workflow_crystal_orbital_overlap_population(config: _data.COOP) -> NDArray[f8]:
+def workflow_crystal_orbital_overlap_population(
+    config: _data.COOP,
+) -> NDArray[f8] | tuple[NDArray[f8], NDArray[f8]]:
     """Compute the Crystal Orbital Overlap Population."""
+    return select_orbitals_type(config, _workflow_crystal_orbital_overlap_population)
+
+
+def _workflow_crystal_orbital_overlap_population(config: _data.COOP) -> NDArray[f8]:
+    """Compute the Crystal Orbital Overlap Population."""
+    prefix = "" if not config.orbitals_type else f"{config.orbitals_type} "
+
     # Dictionary containing the general information
     initialize(config)
 
@@ -39,7 +49,7 @@ def workflow_crystal_orbital_overlap_population(config: _data.COOP) -> NDArray[f
     compute_single_point_eigenvalues_coefficients(config)
 
     # Logger info
-    logger.info("Starting COOP calculation.")
+    logger.info(f"Starting {prefix}COOP calculation.")
 
     # Get eigenvalues and coefficients from hdf5
     atomic_orbitals, energies = get_eigenvalues_coefficients(config)
@@ -63,9 +73,8 @@ def workflow_crystal_orbital_overlap_population(config: _data.COOP) -> NDArray[f
     )
 
     # Lastly, we save the COOP as a txt-file
-    result_coop = print_coop(energies, coop)
-    logger.info("COOP calculation completed.")
-
+    result_coop = print_coop(energies, coop, config.orbitals_type)
+    logger.info(f"{prefix}COOP calculation completed.")
     return result_coop
 
 
@@ -175,10 +184,10 @@ def compute_coop(
     return coop
 
 
-def print_coop(energies: NDArray[f8], coop: NDArray[f8]) -> NDArray[f8]:
+def print_coop(energies: NDArray[f8], coop: NDArray[f8], orbitals_type: str) -> NDArray[f8]:
     """Save the COOP in a txt-file."""
     result_coop = np.zeros((len(coop), 2))
     result_coop[:, 0], result_coop[:, 1] = energies, coop
-    np.savetxt('COOP.txt', result_coop)
-
+    name = "COOP.txt" if orbitals_type else f"COOP_{orbitals_type}.txt"
+    np.savetxt(name, result_coop)
     return result_coop
