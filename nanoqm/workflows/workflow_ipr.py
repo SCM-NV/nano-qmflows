@@ -12,6 +12,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from typing import TYPE_CHECKING
+
 import numpy as np
 from scipy.linalg import sqrtm
 from qmflows.parsers import readXYZ
@@ -21,14 +23,24 @@ from ..common import h2ev, number_spherical_functions_per_atom, retrieve_hdf5_da
 from ..integrals.multipole_matrices import compute_matrix_multipole
 from .initialization import initialize
 from .tools import compute_single_point_eigenvalues_coefficients
+from .orbitals_type import select_orbitals_type
 
 if TYPE_CHECKING:
+    from numpy.typing import NDArray
+    from numpy import float64 as f8
     from .. import _data
 
 __all__ = ['workflow_ipr']
 
 
-def workflow_ipr(config: _data.IPR) -> np.ndarray:
+def workflow_ipr(
+    config: _data.IPR,
+) -> NDArray[f8] | tuple[NDArray[f8], NDArray[f8]]:
+    """Compute the Inverse Participation Ratio main function."""
+    return select_orbitals_type(config, _workflow_ipr)
+
+
+def _workflow_ipr(config: _data.IPR) -> np.ndarray:
     """Compute the Inverse Participation Ratio main function."""
     # Dictionary containing the general information
     initialize(config)
@@ -37,7 +49,8 @@ def workflow_ipr(config: _data.IPR) -> np.ndarray:
     compute_single_point_eigenvalues_coefficients(config)
 
     # Logger info
-    logger.info("Starting IPR calculation.")
+    prefix = "" if not config.orbitals_type else f"{config.orbitals_type} "
+    logger.info(f"Starting {prefix}IPR calculation.")
 
     # Get eigenvalues and coefficients from hdf5
     node_path_coefficients = 'coefficients/point_0/'
@@ -65,7 +78,7 @@ def workflow_ipr(config: _data.IPR) -> np.ndarray:
     )  # Array with number of spherical orbitals per atom
 
     # New matrix with the atoms on the rows and the MOs on the columns
-    indices = np.zeros(len(mol), dtype='int')
+    indices = np.zeros(len(mol), dtype=np.int64)
     indices[1:] = np.cumsum(sphericals[:-1])
     accumulated_transf_orbitals = np.add.reduceat(transformed_orbitals, indices, 0)
 
@@ -73,12 +86,15 @@ def workflow_ipr(config: _data.IPR) -> np.ndarray:
     ipr = np.zeros(accumulated_transf_orbitals.shape[1])
 
     for i in range(accumulated_transf_orbitals.shape[1]):
-        ipr[i] = np.sum(np.absolute(accumulated_transf_orbitals[:, i])**4) / \
-            (np.sum(np.absolute(accumulated_transf_orbitals[:, i])**2))**2
+        ipr[i] = (
+            np.sum(np.abs(accumulated_transf_orbitals[:, i])**4)
+            / np.sum(np.abs(accumulated_transf_orbitals[:, i])**2)**2
+        )
 
     # Lastly, we save the output as a txt-file
     result = np.zeros((accumulated_transf_orbitals.shape[1], 2))
     result[:, 0] = energies
     result[:, 1] = 1.0 / ipr
-    np.savetxt('IPR.txt', result)
+    name = "IPR.txt" if config.orbitals_type else f"IPR_{config.orbitals_type}.txt"
+    np.savetxt(name, result)
     return result
