@@ -34,7 +34,7 @@ build-verbosity = "3"
 before-all = "cp licenses/LICENSE*.txt ."
 
 [tool.cibuildwheel.linux]
-environment = { QMFLOWS_INCLUDEDIR="", QMFLOWS_LIBDIR="", CFLAGS="-Werror", LDFLAGS="-Wl,--strip-debug" }
+environment = { QMFLOWS_INCLUDEDIR="", QMFLOWS_LIBDIR="", CFLAGS="-Werror -fopenmp", LDFLAGS="-Wl,--strip-debug -fopenmp" }
 manylinux-x86_64-image = "ghcr.io/nlesc-nano/manylinux2014_x86_64-qmflows"
 manylinux-aarch64-image = "ghcr.io/nlesc-nano/manylinux2014_aarch64-qmflows"
 repair-wheel-command = "auditwheel -v repair -w {dest_dir} {wheel}"
