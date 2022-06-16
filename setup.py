@@ -6,6 +6,7 @@ import platform
 from os.path import join
 
 import setuptools
+import pkg_resources
 import numpy as np
 from setuptools import Extension, find_packages, setup
 from setuptools.command.build_ext import build_ext
@@ -82,14 +83,9 @@ class BDistWheelABI3(bdist_wheel):
 
 
 def parse_requirements(path: "str | os.PathLike[str]") -> "list[str]":
-    """Parse a ``requirements.txt`` file and strip all empty and commented lines."""
-    ret = []
+    """Parse a ``requirements.txt`` file."""
     with open(path, "r", encoding="utf8") as f:
-        for i in f:
-            j = i.split("#", 1)[0].strip().rstrip()
-            if j:
-                ret.append(j)
-    return ret
+        return [str(i) for i in pkg_resources.parse_requirements(f)]
 
 
 def get_paths() -> "tuple[list[str], list[str]]":
