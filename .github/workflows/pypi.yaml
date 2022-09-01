@@ -56,7 +56,7 @@ jobs:
         run: echo "CIBW_ARCHS_LINUX=aarch64" >> $GITHUB_ENV
 
       - name: Build wheels
-        uses: pypa/cibuildwheel@v2.6.1
+        uses: pypa/cibuildwheel@v2.9.0
         env:
           CIBW_BUILD: cp37-${{ matrix.buildplat[1] }}
           CIBW_MANYLINUX_AARCH64_IMAGE: "ghcr.io/nlesc-nano/manylinux2014_aarch64-qmflows:${{ env.TAG }}"
@@ -87,7 +87,7 @@ jobs:
       - uses: actions/checkout@v3
 
       - name: Set up Python
-        uses: actions/setup-python@v3
+        uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.version[1] }}
 
@@ -216,7 +216,9 @@ jobs:
       - uses: actions/checkout@v3
 
       - name: Set up Python
-        uses: actions/setup-python@v3
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.x"
 
       - name: Install dependencies
         run: pip install build
@@ -320,7 +322,7 @@ jobs:
 
       - name: Publish wheels
         if: github.event_name == 'release'
-        uses: pypa/gh-action-pypi-publish@master
+        uses: pypa/gh-action-pypi-publish@release/v1
         with:
           user: __token__
           password: ${{ secrets.PYPI_TOKEN }}
