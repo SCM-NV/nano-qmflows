@@ -14,7 +14,7 @@ defaults:
     shell: bash
 
 env:
-  CP2K_VERSION: "9.1"
+  CP2K_VERSION: "2022.1"
   TAG: "1.2.1"  # The nlesc-nano/nano-qmflows-manylinux tag
   PY_COLORS: "1"
 

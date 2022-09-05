@@ -12,8 +12,7 @@ concurrency:
     cancel-in-progress: true
 
 env:
-  CP2K_DEFAULT: "9.1"
-  CP2K_DATA_DIR: /usr/share/cp2k/data
+  CP2K_DEFAULT: "2022.1"
   TAG: "1.2.1"  # The nlesc-nano/nano-qmflows-manylinux tag
   PY_COLORS: "1"
 
@@ -36,7 +35,7 @@ jobs:
           - os: ubuntu-latest
             version: "3.10"
             special: ["GCC", "11"]
-          # CP2K 6.1/7.1/8.2 tests
+          # CP2K 6.1/7.1/8.2/9.1 tests
           - os: ubuntu-latest
             version: "3.10"
             special: ["CP2K", "6.1"]
@@ -46,6 +45,9 @@ jobs:
           - os: ubuntu-latest
             version: "3.10"
             special: ["CP2K", "8.2"]
+          - os: ubuntu-latest
+            version: "3.10"
+            special: ["CP2K", "9.1"]
           # Pre-release tests
           - os: ubuntu-latest
             version: "3.10"
