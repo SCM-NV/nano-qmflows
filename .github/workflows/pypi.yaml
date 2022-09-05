@@ -15,7 +15,7 @@ defaults:
 
 env:
   CP2K_VERSION: "9.1"
-  TAG: "1.0.3"  # The nlesc-nano/nano-qmflows-manylinux tag
+  TAG: "1.2.1"  # The nlesc-nano/nano-qmflows-manylinux tag
   PY_COLORS: "1"
 
 jobs:
