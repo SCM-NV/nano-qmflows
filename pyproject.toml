@@ -41,7 +41,6 @@ manylinux-aarch64-image = "ghcr.io/nlesc-nano/manylinux2014_aarch64-qmflows"
 repair-wheel-command = "auditwheel -v repair -w {dest_dir} {wheel}"
 
 [tool.cibuildwheel.macos]
-# TODO: Install CP2K for the tests once a workaround can be found for SCM-NV/qmflows#295
 environment = { QMFLOWS_INCLUDEDIR="", QMFLOWS_LIBDIR="", LDFLAGS="-Wl", MACOSX_DEPLOYMENT_TARGET="10.14" }
 repair-wheel-command = [
     "delocate-listdeps {wheel}",
