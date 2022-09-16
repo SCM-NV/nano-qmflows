@@ -2,6 +2,7 @@
 
 import os
 import sys
+import platform
 from os.path import join
 
 import setuptools
@@ -23,6 +24,13 @@ def readme() -> str:
         return f.read()
 
 
+def is_macos_arm64() -> bool:
+    """Return whether nano-qmflows is being (cross) compiled for macosx_arm64."""
+    if sys.platform != "darwin":
+        return False
+    return "arm64" in os.environ.get("CIBW_ARCHS_MACOS", "") or platform.machine() == "arm64"
+
+
 class BuildExt(build_ext):
     """A custom build extension for adding compiler-specific options."""
 
@@ -36,7 +44,12 @@ class BuildExt(build_ext):
     }
 
     if sys.platform == 'darwin':
-        darwin_opts = ['-stdlib=libc++', '-mmacosx-version-min=10.14', '-fno-sized-deallocation']
+        min_version = "11" if is_macos_arm64() else "10.14"
+        darwin_opts = [
+            '-stdlib=libc++',
+            '-mmacosx-version-min={}'.format(min_version),
+            '-fno-sized-deallocation',
+        ]
         c_opts['unix'] += darwin_opts
         l_opts['unix'] += darwin_opts
 
@@ -61,7 +74,9 @@ class BDistWheelABI3(bdist_wheel):
 
         if python.startswith("cp"):
             # on CPython, our wheels are abi3 and compatible back to 3.7
-            return "cp37", "abi3", plat
+            # (or 3.8 in case of MacOS ARM64)
+            cp = "cp38" if is_macos_arm64() else "cp37"
+            return cp, "abi3", plat
         else:
             return python, abi, plat
 

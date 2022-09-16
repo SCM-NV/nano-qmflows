@@ -15,20 +15,21 @@ defaults:
 
 env:
   CP2K_VERSION: "2022.1"
-  TAG: "1.2.1"  # The nlesc-nano/nano-qmflows-manylinux tag
+  TAG: "2.0.0"  # The nlesc-nano/nano-qmflows-manylinux tag
   PY_COLORS: "1"
 
 jobs:
   build_wheels:
-    name: Build wheels ${{ matrix.buildplat[1] }}
+    name: Build wheels ${{ matrix.buildplat[2] }}-${{ matrix.buildplat[1] }}
     runs-on: ${{ matrix.buildplat[0] }}
     strategy:
       fail-fast: false
       matrix:
         buildplat:
-        - [ubuntu-latest, manylinux_x86_64]
-        - [ubuntu-latest, manylinux_aarch64]
-        - [macos-latest, macosx_x86_64]
+        - [ubuntu-latest, manylinux_x86_64, cp37]
+        - [ubuntu-latest, manylinux_aarch64, cp37]
+        - [macos-latest, macosx_x86_64, cp37]
+        - [macos-latest, macosx_arm64, cp38]
 
     steps:
       - uses: actions/checkout@v3
@@ -40,25 +41,27 @@ jobs:
           platforms: arm64
 
       - name: Get MacOS build dependencies
-        if: matrix.buildplat[1] == 'macosx_x86_64'
+        if: matrix.buildplat[0] == 'macos-latest'
         env:
           BUILD_PLAT: ${{ matrix.buildplat[1] }}
         run: |
           curl -Lsf https://github.com/nlesc-nano/nano-qmflows-manylinux/releases/download/$TAG/$BUILD_PLAT.tar.gz -o $BUILD_PLAT.tar.gz
           tar -xzf $BUILD_PLAT.tar.gz
           cp -r $BUILD_PLAT/bin/* /usr/local/bin/
-          cp -r $BUILD_PLAT/lib/* /usr/local/lib/
+          sudo cp -r $BUILD_PLAT/lib/* /usr/local/lib/
           cp -r $BUILD_PLAT/include/* /usr/local/include/
           cp -r $BUILD_PLAT/share/* /usr/local/share/
 
-      - name: Enable manylinux_aarch64 compilation
-        if: matrix.buildplat[1] == 'manylinux_aarch64'
-        run: echo "CIBW_ARCHS_LINUX=aarch64" >> $GITHUB_ENV
+      - name: Enable aarch64/arm64 compilation
+        if: matrix.buildplat[1] == 'manylinux_aarch64' || matrix.buildplat[1] == 'macosx_arm64'
+        run: |
+          echo "CIBW_ARCHS_LINUX=aarch64" >> $GITHUB_ENV
+          echo "CIBW_ARCHS_MACOS=arm64" >> $GITHUB_ENV
 
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.9.0
         env:
-          CIBW_BUILD: cp37-${{ matrix.buildplat[1] }}
+          CIBW_BUILD: ${{ matrix.buildplat[2] }}-${{ matrix.buildplat[1] }}
           CIBW_MANYLINUX_AARCH64_IMAGE: "ghcr.io/nlesc-nano/manylinux2014_aarch64-qmflows:${{ env.TAG }}"
           CIBW_MANYLINUX_X86_64_IMAGE: "ghcr.io/nlesc-nano/manylinux2014_x86_64-qmflows:${{ env.TAG }}"
 
