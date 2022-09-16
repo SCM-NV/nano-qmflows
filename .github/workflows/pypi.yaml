@@ -169,7 +169,7 @@ jobs:
             --volume "${{github.workspace}}:/workspace"
             --env CP2K_VERSION=${CP2K_VERSION}
           install: |
-            echo "::group::Install Python"
+            echo "\n::group::Install Python"
             apt update
             apt install -y software-properties-common
             add-apt-repository ppa:deadsnakes/ppa
@@ -178,26 +178,26 @@ jobs:
             ln -sf /usr/bin/${{ matrix.version[1] }} /usr/bin/python3
             export PYTHONPATH=/usr/bin/${{ matrix.version[1] }}
 
-            echo "::group::Install pip"
+            echo "\n::group::Install pip"
             apt install -y python3-pip
 
-            echo "::group::Install curl"
+            echo "\n::group::Install curl"
             apt install -y curl
           run: |
             cd /workspace
 
-            echo "::group::Install CP2K"
+            echo "\n::group::Install CP2K"
             bash scripts/download_cp2k.sh arm64 $CP2K_VERSION
 
-            echo "::group::Install the package"
+            echo "\n::group::Install the package"
             WHL_NAME=$(python scripts/get_whl_name.py dist manylinux2014_aarch64)
             pip install $WHL_NAME[test] --prefer-binary
 
-            echo "::group::Python info"
+            echo "\n::group::Python info"
             python --version
             pip list
 
-            echo "::group::Run tests"
+            echo "\n::group::Run tests"
             bash scripts/prepare_test_dir.sh
             cd /tmp/nanoqm
 
