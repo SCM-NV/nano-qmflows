@@ -59,7 +59,7 @@ jobs:
           echo "CIBW_ARCHS_MACOS=arm64" >> $GITHUB_ENV
 
       - name: Build wheels
-        uses: pypa/cibuildwheel@v2.9.0
+        uses: pypa/cibuildwheel@v2.10.1
         env:
           CIBW_BUILD: ${{ matrix.buildplat[2] }}-${{ matrix.buildplat[1] }}
           CIBW_MANYLINUX_AARCH64_IMAGE: "ghcr.io/nlesc-nano/manylinux2014_aarch64-qmflows:${{ env.TAG }}"
