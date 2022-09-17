@@ -187,7 +187,7 @@ jobs:
             cd /workspace
 
             echo "\n::group::Install CP2K"
-            bash scripts/download_cp2k.sh arm64 $CP2K_VERSION
+            bash scripts/download_cp2k.sh aarch64 $CP2K_VERSION
 
             echo "\n::group::Install the package"
             WHL_NAME=$(python scripts/get_whl_name.py dist manylinux2014_aarch64)
