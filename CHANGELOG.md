@@ -2,8 +2,11 @@
 
 # 0.13.5 (*unreleased*)
 
-## Fixed
-* *placeholder*.
+## New
+* Add MacOS arm64 wheels.
+
+## Changed
+* Move the C++ python bindings to a dedicated file.
 
 
 # 0.13.4 (02/06/2022)
