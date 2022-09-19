@@ -28,10 +28,10 @@ jobs:
         special:
           - ["", ""]
         include:
-          # GCC 5/11 tests
-          - os: ubuntu-18.04
+          # GCC 7/11 tests
+          - os: ubuntu-latest
             version: "3.10"
-            special: ["GCC", "5"]
+            special: ["GCC", "7"]
           - os: ubuntu-latest
             version: "3.10"
             special: ["GCC", "11"]
