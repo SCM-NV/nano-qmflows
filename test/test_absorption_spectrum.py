@@ -2,6 +2,7 @@
 import shutil
 from os.path import join
 from pathlib import Path
+from typing import Literal
 
 import h5py
 import pytest
@@ -35,7 +36,7 @@ class TestComputeOscillators:
         project: str,
         inp: str,
         orbital_type: str,
-        approx: str,
+        approx: Literal["sing_orb", "stda"],
     ) -> None:
         """Compute the oscillator strenght and check the results."""
         name += f"-{approx}"
@@ -54,15 +55,17 @@ class TestComputeOscillators:
         finally:
             remove_files()
 
-    def calculate_oscillators(self, path: Path, scratch: Path, approx: str, inp: str) -> None:
+    def calculate_oscillators(
+        self, path: Path, scratch: Path, approx: Literal["sing_orb", "stda"], inp: str
+    ) -> None:
         """Compute a couple of couplings with the Levine algorithm using precalculated MOs."""
         input_file = PATH_TEST / inp
         config = process_input(input_file, 'absorption_spectrum')
-        config['path_hdf5'] = path.absolute().as_posix()
-        config['scratch_path'] = scratch
-        config['workdir'] = scratch
-        config['tddft'] = approx
-        config['path_traj_xyz'] = Path(config.path_traj_xyz).absolute().as_posix()
+        config.path_hdf5 = path.absolute().as_posix()
+        config.scratch_path = scratch
+        config.workdir = scratch
+        config.tddft = approx
+        config.path_traj_xyz = Path(config.path_traj_xyz).absolute().as_posix()
         workflow_stddft(config)
 
     def check_properties(self, path: Path, orbitals_type: str, name: str) -> None:

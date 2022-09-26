@@ -1,7 +1,6 @@
 """Test the COOP workflow."""
 
 import os
-import sys
 from pathlib import Path
 from os.path import join
 
@@ -9,8 +8,7 @@ import pytest
 import numpy as np
 
 from nanoqm.workflows.input_validation import process_input
-from nanoqm.workflows.workflow_coop import \
-    workflow_crystal_orbital_overlap_population
+from nanoqm.workflows.workflow_coop import workflow_crystal_orbital_overlap_population
 
 from .utilsTest import PATH_TEST, requires_cp2k
 

@@ -31,7 +31,7 @@ from scipy.optimize import linear_sum_assignment
 from qmflows.parsers import parse_string_xyz
 
 from .. import logger
-from ..common import (DictConfig, Matrix, MolXYZ, Tensor3D, Vector, hbar,
+from ..common import (Matrix, MolXYZ, Tensor3D, Vector, hbar,
                       femtosec2au, h2ev, is_data_in_hdf5, retrieve_hdf5_data,
                       store_arrays_in_hdf5)
 from ..integrals import (calculate_couplings_3points,
@@ -42,13 +42,14 @@ from ..integrals.nonAdiabaticCoupling import (compute_range_orbitals,
 
 if TYPE_CHECKING:
     import numpy.typing as npt
+    from .. import _data
 
 __all__ = ["calculate_overlap", "lazy_couplings", "write_hamiltonians"]
 
 
 @schedule
 def lazy_couplings(
-    config: DictConfig,
+    config: _data.DerivativeCoupling,
     paths_overlaps: List[str],
 ) -> Tuple[npt.NDArray[np.int_], List[str]]:
     """Compute the Nonadibatic coupling.
@@ -83,8 +84,7 @@ def lazy_couplings(
         # Do not track the crossings
         mtx_0 = retrieve_hdf5_data(config.path_hdf5, paths_overlaps[0])
         _, dim = mtx_0.shape
-        overlaps = np.stack(
-            retrieve_hdf5_data(config.path_hdf5, paths_overlaps))
+        overlaps = np.stack(retrieve_hdf5_data(config.path_hdf5, paths_overlaps))
         nOverlaps, nOrbitals, _ = overlaps.shape
         swaps = np.tile(np.arange(nOrbitals), (nOverlaps + 1, 1))
         mtx_phases = compute_phases(overlaps, nOverlaps, dim)
@@ -100,8 +100,8 @@ def lazy_couplings(
     coupling_algorithms = {'levine': (calculate_couplings_levine, 1),
                            '3points': (calculate_couplings_3points, 2)}
     # Choose an algorithm to compute the couplings
-    fun_coupling, step = coupling_algorithms[config["algorithm"]]
-    config["fun_coupling"] = fun_coupling
+    fun_coupling, step = coupling_algorithms[config.algorithm]
+    config.fun_coupling = fun_coupling
 
     # Number of couplings to compute
     nCouplings = fixed_phase_overlaps.shape[0] - step + 1
@@ -113,7 +113,7 @@ def lazy_couplings(
 
 def compute_the_fixed_phase_overlaps(
     paths_overlaps: List[str],
-    config: DictConfig,
+    config: _data.DerivativeCoupling,
 ) -> Tuple[npt.NDArray[np.float64], npt.NDArray[np.int_]]:
     """Fix the phase of the overlaps.
 
@@ -173,7 +173,11 @@ def compute_the_fixed_phase_overlaps(
     return fixed_phase_overlaps, swaps
 
 
-def calculate_couplings(config: DictConfig, i: int, fixed_phase_overlaps: Tensor3D) -> str:
+def calculate_couplings(
+    config: _data.DerivativeCoupling,
+    i: int,
+    fixed_phase_overlaps: Tensor3D,
+) -> str:
     """Compute couplings for the i-th geometry.
 
     Search for the ith Coupling in the HDF5, if it is not available compute it
@@ -202,12 +206,12 @@ def calculate_couplings(config: DictConfig, i: int, fixed_phase_overlaps: Tensor
             # Extract the overlap matrices involved in the coupling computation
             sji_t0 = fixed_phase_overlaps[i]
             # Compute the couplings with the phase corrected overlaps
-            couplings = config["fun_coupling"](
-                dt_au, sji_t0, sji_t0.transpose())
+            couplings = config.fun_coupling(dt_au, sji_t0, sji_t0.T)
         elif config.algorithm == '3points':
             sji_t0, sji_t1 = fixed_phase_overlaps[i: i + 2]
-            couplings = config["fun_coupling"](dt_au, sji_t0, sji_t0.transpose(), sji_t1,
-                                               sji_t1.transpose())
+            couplings = config.fun_coupling(
+                dt_au, sji_t0, sji_t0.T, sji_t1, sji_t1.T
+            )
 
             # Store the Coupling in the HDF5
         store_arrays_in_hdf5(config.path_hdf5, path, couplings)
@@ -325,7 +329,10 @@ def swap_forward(
 
 
 @schedule
-def calculate_overlap(config: DictConfig, mo_paths_hdf5: List[str]) -> List[str]:
+def calculate_overlap(
+    config: _data.DerivativeCoupling,
+    mo_paths_hdf5: List[str],
+) -> List[str]:
     """Calculate the Overlap matrices.
 
     Parameters
@@ -359,7 +366,10 @@ def calculate_overlap(config: DictConfig, mo_paths_hdf5: List[str]) -> List[str]
 
 
 def single_machine_overlaps(
-        config: DictConfig, mo_paths_hdf5: List[str], i: int) -> str:
+    config: _data.DerivativeCoupling,
+    mo_paths_hdf5: List[str],
+    i: int,
+) -> str:
     """Compute the overlaps in the CPUs avaialable on the local machine.
 
     Returns
@@ -386,14 +396,14 @@ def single_machine_overlaps(
     return overlaps_paths_hdf5
 
 
-def create_overlap_path(config: DictConfig, i: int) -> str:
+def create_overlap_path(config: _data.DerivativeCoupling, i: int) -> str:
     """Create the path inside the HDF5 where the overlap is going to be store."""
     root = join(config.orbitals_type, 'overlaps_{}'.format(
         i + config.enumerate_from))
     return join(root, 'mtx_sji_t0')
 
 
-def select_molecules(config: DictConfig, i: int) -> Tuple[MolXYZ, MolXYZ]:
+def select_molecules(config: _data.DerivativeCoupling, i: int) -> Tuple[MolXYZ, MolXYZ]:
     """Select the pairs of molecules to compute the couplings."""
     k = 0 if config.overlaps_deph else i
     return (
@@ -402,7 +412,7 @@ def select_molecules(config: DictConfig, i: int) -> Tuple[MolXYZ, MolXYZ]:
     )
 
 
-def check_if_overlap_is_done(config: DictConfig, overlaps_paths_hdf5: str) -> bool:
+def check_if_overlap_is_done(config: _data.DerivativeCoupling, overlaps_paths_hdf5: str) -> bool:
     """Search for a given Overlap inside the HDF5."""
     if is_data_in_hdf5(config.path_hdf5, overlaps_paths_hdf5):
         logger.info(f"{overlaps_paths_hdf5} Overlaps are already in the HDF5")
@@ -413,9 +423,10 @@ def check_if_overlap_is_done(config: DictConfig, overlaps_paths_hdf5: str) -> bo
 
 
 def write_hamiltonians(
-        config: DictConfig,
-        crossing_and_couplings: Tuple[np.ndarray, List[Matrix]],
-        mo_paths_hdf5: List[str]) -> List[Tuple[str, str]]:
+    config: _data.DerivativeCoupling,
+    crossing_and_couplings: Tuple[np.ndarray, List[Matrix]],
+    mo_paths_hdf5: List[str],
+) -> List[Tuple[str, str]]:
     """Write the real and imaginary components of the hamiltonian.
 
     It uses both the orbitals energies and the derivative coupling accoring to:

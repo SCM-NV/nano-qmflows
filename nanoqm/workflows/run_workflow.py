@@ -13,8 +13,12 @@ Available workflow:
 
 """
 
+from __future__ import annotations
+
 import argparse
 import os
+from collections.abc import Callable
+from typing import Any
 
 import yaml
 
@@ -30,22 +34,21 @@ from .workflow_stddft_spectrum import workflow_stddft
 msg = "run_workflow.py -i input.yml"
 
 parser = argparse.ArgumentParser(description=msg)
-parser.add_argument('-i', required=True,
-                    help="Input file in YAML format")
+parser.add_argument('-i', required=True, help="Input file in YAML format")
 
-
-dict_workflows = {
+dict_workflows: dict[str, Callable[[Any], object]] = {
     'absorption_spectrum': workflow_stddft,
     'derivative_couplings': workflow_derivative_couplings,
     'single_points': workflow_single_points,
     'ipr_calculation': workflow_ipr,
-    'coop_calculation': workflow_crystal_orbital_overlap_population}
+    'coop_calculation': workflow_crystal_orbital_overlap_population,
+}
 
 
-def main():
+def main() -> None:
     """Parse the command line arguments and run workflow."""
     args = parser.parse_args()
-    input_file = args.i
+    input_file: str = args.i
     with open(input_file, 'r') as f:
         dict_input = yaml.load(f, Loader=UniqueSafeLoader)
     if 'workflow' not in dict_input:

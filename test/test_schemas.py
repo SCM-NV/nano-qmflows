@@ -2,6 +2,7 @@
 from assertionlib import assertion
 
 from nanoqm.workflows.input_validation import process_input
+from nanoqm import _data
 
 from .utilsTest import PATH_TEST
 
@@ -13,4 +14,4 @@ def test_input_validation():
              ["input_test_absorption_spectrum.yml", "input_fast_test_derivative_couplings.yml"]]
     for s, p in zip(schemas, paths):
         d = process_input(p, s)
-        assertion.isinstance(d, dict)
+        assertion.isinstance(d, _data.GeneralOptions)

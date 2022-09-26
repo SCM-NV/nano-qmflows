@@ -39,18 +39,18 @@ def plot_stuff(x_grid, y_grid, x_grid_scaled, y_grid_scaled, sd, w_en, w_en_scal
     plt.xlabel('Time (fs)')
     plt.ylabel('Excess Energy (eV)')
     for iconds in range(nconds):
-        plt.imshow(y_grid_scaled[iconds, :, :].T, aspect='auto', extent=(0, len(ts)*dt, np.min(x_grid_scaled), np.max(x_grid_scaled)), origin='lower', interpolation='bicubic', cmap='hot')  
+        plt.imshow(y_grid_scaled[iconds, :, :].T, aspect='auto', extent=(0, len(ts)*dt, np.min(x_grid_scaled), np.max(x_grid_scaled)), origin='lower', interpolation='bicubic', cmap='hot')
     plt.plot(ts * dt, w_en_scaled, 'w')
     interactive(True)
     plt.show()
 
-    plt.figure(3) 
+    plt.figure(3)
     plt.xlabel('Time (fs)')
     plt.ylabel('State Number')
     for iconds in range(nconds):
-        plt.imshow(outs[:, :, iconds].T, aspect='auto', origin='lower', extent = ( 0, len(ts) * dt, 0, outs.shape[1]), interpolation='bicubic', cmap='hot')    
+        plt.imshow(outs[:, :, iconds].T, aspect='auto', origin='lower', extent = ( 0, len(ts) * dt, 0, outs.shape[1]), interpolation='bicubic', cmap='hot')
     interactive(True)
-    plt.show() 
+    plt.show()
 
     plt.figure(4)
     plt.xlabel('Energy (eV)')
@@ -76,9 +76,9 @@ def plot_stuff(x_grid, y_grid, x_grid_scaled, y_grid_scaled, sd, w_en, w_en_scal
     plt.figure(7)
     plt.ylabel('State Number')
     plt.xlabel('Freqencies cm-1')
-    sd_int = sd[:, 0, :int(sd.shape[2]/2)] 
+    sd_int = sd[:, 0, :int(sd.shape[2]/2)]
     sd_freq = sd[0, 1, :int(sd.shape[2]/2)]
-    plt.imshow(sd_int, aspect='auto', origin='lower', extent = (np.min(sd_freq), np.max(sd_freq), 0, sd_int.shape[0] ), interpolation='bicubic', cmap='hot')    
+    plt.imshow(sd_int, aspect='auto', origin='lower', extent = (np.min(sd_freq), np.max(sd_freq), 0, sd_int.shape[0] ), interpolation='bicubic', cmap='hot')
     interactive(False)
     plt.show()
 
@@ -94,18 +94,24 @@ def main(path_output, nstates, nconds, dt, sigma):
     highest_hl_gap = np.amax(energies, axis=1)
     # Convolute a gaussian for each timestep and for each initial condition
     x_grid = np.linspace(np.min(lowest_hl_gap), np.max(highest_hl_gap), 100)
-    y_grid = np.stack(np.stack(
-        convolute(energies[time, :, iconds], outs[time, :, iconds], x_grid, sigma)
-        for time in range(energies.shape[0]) )
-        for iconds in range(nconds) )   
+    y_grid = np.stack([
+        np.stack([
+            convolute(energies[time, :, iconds], outs[time, :, iconds], x_grid, sigma)
+            for time in range(energies.shape[0])
+        ]) for iconds in range(nconds)
+    ])
     # Scale the energy for computing the excess energy plots
-    energies_scaled = np.stack(energies[:, istate, :] - lowest_hl_gap for istate in range(nstates-1)) 
-    energies_scaled = energies_scaled.swapaxes(0,1) # Just reshape to have the energies shape (time, nstates, nconds) 
+    energies_scaled = np.stack([
+        energies[:, istate, :] - lowest_hl_gap for istate in range(nstates-1)
+    ])
+    energies_scaled = energies_scaled.swapaxes(0,1) # Just reshape to have the energies shape (time, nstates, nconds)
     x_grid_scaled = np.linspace(0, np.max(energies_scaled), 100)
-    y_grid_scaled = np.stack(np.stack(
-        convolute(energies_scaled[time, :, iconds], outs[time, :, iconds], x_grid_scaled, sigma)
-        for time in range(energies_scaled.shape[0]) )
-        for iconds in range(nconds) ) 
+    y_grid_scaled = np.stack([
+        np.stack([
+            convolute(energies_scaled[time, :, iconds], outs[time, :, iconds], x_grid_scaled, sigma)
+            for time in range(energies_scaled.shape[0])
+        ]) for iconds in range(nconds)
+    ])
     # This part is done
     ##################################
     # Compute weighted energies vs population at a given time t
@@ -113,13 +119,15 @@ def main(path_output, nstates, nconds, dt, sigma):
     el_ene_outs = np.sum(eav_outs, axis=1)
     # Scale them to the lowest excitation energy
     ene_outs_ref0 = el_ene_outs - lowest_hl_gap
-    #Average over initial conditions 
-    ene_outs_ref0 = np.average(ene_outs_ref0, axis=1) 
-    el_ene_av = np.average(el_ene_outs, axis = 1) 
+    #Average over initial conditions
+    ene_outs_ref0 = np.average(ene_outs_ref0, axis=1)
+    el_ene_av = np.average(el_ene_outs, axis = 1)
     ##################################
-    # Compute autocorrelation function for consecutive pair of states 
-    d_en = np.stack(energies[:, istate, 0] - energies[:, istate-1, 0] for istate in range(1, nstates-1))
-    acf = np.stack(autocorrelate(d_en[istate, :]) for istate in range(d_en.shape[0]))
+    # Compute autocorrelation function for consecutive pair of states
+    d_en = np.stack(
+        [energies[:, istate, 0] - energies[:, istate-1, 0] for istate in range(1, nstates-1)]
+    )
+    acf = np.stack([autocorrelate(d_en[istate, :]) for istate in range(d_en.shape[0])])
     # Compute spectral density
     nacf = acf[:, 1, :]
     sd = np.stack(spectral_density(nacf[istate, :], dt) for istate in range(d_en.shape[0]))
@@ -146,7 +154,7 @@ if __name__ == "__main__":
       -nconds <number of initial conditions>\
       -dt <nuclear time step>\
       -sigma <line broadening for convoluton>"
-      
+
     parser = argparse.ArgumentParser(description=msg)
     parser.add_argument('-p', required=True,
                         help='path to the Hamiltonian files in Pyxaid format')

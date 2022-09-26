@@ -18,7 +18,7 @@ import fnmatch
 import os
 from os.path import join
 from pathlib import Path
-from typing import Any, Dict
+from typing import TYPE_CHECKING
 
 from noodles import schedule  # Workflow Engine
 from qmflows import Settings, cp2k, templates
@@ -27,6 +27,8 @@ from qmflows.parsers import string_to_plams_Molecule
 from qmflows.type_hints import PromisedObject
 
 from .. import logger
+if TYPE_CHECKING:
+    from .. import _data
 
 
 def try_to_read_wf(path_dir: str | os.PathLike[str]) -> str:
@@ -55,7 +57,10 @@ def try_to_read_wf(path_dir: str | os.PathLike[str]) -> str:
 
 
 def prepare_cp2k_settings(
-        settings: Settings, dict_input: Dict[str, Any], guess_job: CP2K_Result) -> Settings:
+    settings: Settings,
+    dict_input: _data.ComponentsData,
+    guess_job: None | CP2K_Result,
+) -> Settings:
     """Fill in the parameters for running a single job in CP2K.
 
     Parameters
@@ -74,15 +79,15 @@ def prepare_cp2k_settings(
 
     """
     dft = settings.specific.cp2k.force_eval.dft
-    dft['print']['mo']['filename'] = dict_input["job_files"].get_MO
+    dft['print']['mo']['filename'] = dict_input.job_files.get_MO
 
     # Global parameters for CP2K
-    settings.specific.cp2k['global']['project'] = f'point_{dict_input["k"]}'
+    settings.specific.cp2k['global']['project'] = f'point_{dict_input.k}'
 
     if guess_job is not None:
         plams_dir = guess_job.archive['plams_dir']
         if plams_dir is None:
-            raise RuntimeError(f"There are no wave function file in path: None\n")
+            raise RuntimeError("There are no wave function file in path: None\n")
         dft.wfn_restart_file_name = try_to_read_wf(plams_dir)
 
     input_args = templates.singlepoint.overlay(settings)
@@ -92,7 +97,10 @@ def prepare_cp2k_settings(
 
 @schedule
 def prepare_job_cp2k(
-        settings: Settings, dict_input: Dict[str, Any], guess_job: PromisedObject) -> CP2K:
+    settings: Settings,
+    dict_input: _data.ComponentsData,
+    guess_job: None | PromisedObject,
+) -> CP2K:
     """Generate a :class:`qmflows.packages.CP2K` job.
 
     Parameters
@@ -118,8 +126,9 @@ def prepare_job_cp2k(
             del job_settings[x]
 
     return cp2k(
-        job_settings, string_to_plams_Molecule(dict_input["geometry"]),
-        work_dir=dict_input['point_dir'])
+        job_settings, string_to_plams_Molecule(dict_input.geometry),
+        work_dir=dict_input.point_dir,
+    )
 
 
 def print_cp2k_error(path_dir: str | os.PathLike[str], prefix: str) -> str:

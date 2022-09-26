@@ -26,7 +26,8 @@ def main(path_output, s1, s2, dt):
         files_im = glob.glob('Ham_*_im')
         # Read the couplings
         couplings = np.stack(
-           np.loadtxt(f'Ham_{f}_im') for f in range(len(files_im)))
+           [np.loadtxt(f'Ham_{f}_im') for f in range(len(files_im))]
+        )
         # Save the file for fast reading afterwards
         np.save('couplings', couplings)
     else:

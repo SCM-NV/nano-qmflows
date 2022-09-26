@@ -39,7 +39,8 @@ def convolute(x, y, x_points, sigma):
     prefactor = np.sqrt(2.0) / (sigma * np.sqrt(np.pi))
     # Convolute spectrum over grid
     y_points = prefactor * np.stack(
-        np.sum(y * g(x, x_point, sigma)) for x_point in x_points)
+        [np.sum(y * g(x, x_point, sigma)) for x_point in x_points]
+    )
     return y_points
 
 
@@ -66,11 +67,9 @@ def plot_stuff(ys, energies, legends, emin, emax):
     sigma = 0.2
     x_points = np.linspace(energies[0], energies[-1], 1000)
     # Take transpose to have it in (x_points, # dos) format
-    dos = np.stack(convolute(
-        energies, ys[:, i], x_points, sigma) for i in range(ys.shape[1])).T
+    dos = np.stack([convolute(energies, ys[:, i], x_points, sigma) for i in range(ys.shape[1])]).T
     # Cumulate dos for all atoms/ligands
-    cum_dos = np.stack(np.sum(dos[:, 0:i+1], axis=1)
-                       for i in range(dos.shape[1])).T
+    cum_dos = np.stack([np.sum(dos[:, 0:i+1], axis=1) for i in range(dos.shape[1])]).T
     #   Plotting now
     plt.figure(2)
     ref = np.zeros(x_points.size)
@@ -110,8 +109,7 @@ def main(group, emin, emax):
     # Read Files with PDOS info
     xs = [np.loadtxt(files[i]) for i in range(len(files))]
     # Add up all orbitals contribution for each atom type
-    ys = np.stack(np.sum(xs[i][:, 3:], axis=1)
-                  for i in range(len(files))).transpose()
+    ys = np.stack([np.sum(xs[i][:, 3:], axis=1) for i in range(len(files))]).T
 
     if group:
         lig_atoms = 0

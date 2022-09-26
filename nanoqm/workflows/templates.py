@@ -10,16 +10,19 @@ Index
 
 from __future__ import annotations
 
-__all__ = ["create_settings_from_template"]
-
 import os
+from collections.abc import Iterable
+from typing import TYPE_CHECKING
+
 import yaml
 from scm.plams import Molecule
-
 from qmflows import Settings
-from qmflows.type_hints import PathLike
 from nanoqm.common import UniqueSafeLoader, valence_electrons, aux_fit
-from typing import Any, Dict, Iterable, FrozenSet
+
+if TYPE_CHECKING:
+    from .. import _data
+
+__all__ = ["create_settings_from_template"]
 
 
 def generate_auxiliar_basis(
@@ -431,7 +434,7 @@ templates_dict = {
 
 
 def create_settings_from_template(
-    general: Dict[str, Any],
+    general: _data.CP2KGeneralSetting,
     template_name: str,
     path_traj_xyz: str | os.PathLike[str],
 ) -> Settings:
@@ -439,18 +442,18 @@ def create_settings_from_template(
     setts = templates_dict[template_name]
     elements = read_unique_atomic_labels(path_traj_xyz)
 
-    kinds = generate_kinds(elements, general['basis'], general['potential'])
+    kinds = generate_kinds(elements, general.basis, general.potential)
 
     if 'pbe0' in template_name:
         s = Settings()
-        return generate_auxiliar_basis(setts + s + kinds, general['basis'], general['aux_fit'])
+        return generate_auxiliar_basis(setts + s + kinds, general.basis, general.aux_fit)
     elif 'hse06' in template_name:
-        return generate_auxiliar_basis(setts + kinds, general['basis'], general['aux_fit'])
+        return generate_auxiliar_basis(setts + kinds, general.basis, general.aux_fit)
     else:
         return setts + kinds
 
 
-def read_unique_atomic_labels(path_traj_xyz: str | os.PathLike[str]) -> FrozenSet[str]:
+def read_unique_atomic_labels(path_traj_xyz: str | os.PathLike[str]) -> frozenset[str]:
     """Return the unique atomic labels."""
     mol = Molecule(path_traj_xyz, 'xyz')
 

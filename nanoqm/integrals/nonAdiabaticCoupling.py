@@ -25,20 +25,25 @@ API
 .. autofunction:: correct_phases
 
 """
-__all__ = ['calculate_couplings_3points', 'calculate_couplings_levine',
-           'compute_overlaps_for_coupling', 'correct_phases']
+
+from __future__ import annotations
 
 import os
 import uuid
 from os.path import join
-from typing import List, Tuple
+from typing import TYPE_CHECKING
 
 import numpy as np
 
 from .. import logger
-from ..common import (DictConfig, Matrix, MolXYZ, Tensor3D, retrieve_hdf5_data,
-                      tuplesXYZ_to_plams)
+from ..common import Matrix, MolXYZ, Tensor3D, retrieve_hdf5_data, tuplesXYZ_to_plams
 from ..compute_integrals import compute_integrals_couplings, get_thread_count, get_thread_type
+
+if TYPE_CHECKING:
+    from .. import _data
+
+__all__ = ['calculate_couplings_3points', 'calculate_couplings_levine',
+           'compute_overlaps_for_coupling', 'correct_phases']
 
 
 def calculate_couplings_3points(
@@ -172,9 +177,10 @@ def correct_phases(overlaps: Tensor3D, mtx_phases: Matrix) -> np.ndarray:
 
 
 def compute_overlaps_for_coupling(
-        config: DictConfig,
-        pair_molecules: Tuple[MolXYZ, MolXYZ],
-        coefficients: Tuple[Matrix, Matrix]) -> Matrix:
+    config: _data.GeneralOptions,
+    pair_molecules: tuple[MolXYZ, MolXYZ],
+    coefficients: tuple[Matrix, Matrix],
+) -> Matrix:
     """Compute the Overlap matrices used to compute the couplings.
 
     Parameters
@@ -201,7 +207,7 @@ def compute_overlaps_for_coupling(
     return np.dot(css0.T, np.dot(suv, css1))
 
 
-def read_overlap_data(config: DictConfig, mo_paths: List[str]) -> Tuple[Matrix, Matrix]:
+def read_overlap_data(config: _data.GeneralOptions, mo_paths: list[str]) -> tuple[Matrix, Matrix]:
     """Read the Molecular orbital coefficients."""
     mos = retrieve_hdf5_data(config.path_hdf5, mo_paths)
 
@@ -212,7 +218,7 @@ def read_overlap_data(config: DictConfig, mo_paths: List[str]) -> Tuple[Matrix, 
     return css0, css1
 
 
-def compute_range_orbitals(config: DictConfig) -> Tuple[int, int]:
+def compute_range_orbitals(config: _data.GeneralOptions) -> tuple[int, int]:
     """Compute the lowest and highest index used to extract a subset of Columns from the MOs."""
     lowest = config.nHOMO - (config.mo_index_range[0] + config.active_space[0])
     highest = config.nHOMO + config.active_space[1] - config.mo_index_range[0]
@@ -220,7 +226,7 @@ def compute_range_orbitals(config: DictConfig) -> Tuple[int, int]:
     return lowest, highest
 
 
-def calcOverlapMtx(config: DictConfig, molecules: Tuple[MolXYZ, MolXYZ]) -> Matrix:
+def calcOverlapMtx(config: _data.GeneralOptions, molecules: tuple[MolXYZ, MolXYZ]) -> Matrix:
     """Compute the overlap matrix between two geometries.
 
     The calculation of the overlap matrix uses the libint2 library
@@ -229,21 +235,21 @@ def calcOverlapMtx(config: DictConfig, molecules: Tuple[MolXYZ, MolXYZ]) -> Matr
     mol_i, mol_j = tuple(tuplesXYZ_to_plams(x) for x in molecules)
 
     # unique molecular paths
-    path_i = join(config["scratch_path"], f"molecule_{uuid.uuid4()}.xyz")
-    path_j = join(config["scratch_path"], f"molecule_{uuid.uuid4()}.xyz")
+    path_i = join(config.scratch_path, f"molecule_{uuid.uuid4()}.xyz")
+    path_j = join(config.scratch_path, f"molecule_{uuid.uuid4()}.xyz")
 
     # Write the molecules in atomic units
     mol_i.write(path_i)
     mol_j.write(path_j)
 
-    basis_name = config["cp2k_general_settings"]["basis"]
+    basis_name = config.cp2k_general_settings.basis
 
     thread_count = get_thread_count()
     thread_type = get_thread_type()
     logger.info(f"Will scale over {thread_count} {thread_type} threads")
     try:
         integrals = compute_integrals_couplings(
-            path_i, path_j, config["path_hdf5"], basis_name)
+            path_i, path_j, config.path_hdf5, basis_name)
     finally:
         os.remove(path_i)
         os.remove(path_j)

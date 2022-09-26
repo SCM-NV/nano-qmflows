@@ -8,15 +8,10 @@ API
 
 from __future__ import annotations
 
-__all__ = ["calculate_mos", "create_point_folder",
-           "split_file_geometries"]
-
 import fnmatch
 import os
-from collections import defaultdict
 from os.path import join
-from typing import (Any, DefaultDict, Dict, List, NamedTuple, Sequence, Tuple,
-                    Union)
+from typing import NamedTuple, Tuple, Union
 
 import numpy as np
 from noodles import gather, schedule
@@ -25,9 +20,11 @@ from qmflows.type_hints import PathLike, PromisedObject
 from qmflows.warnings_qmflows import SCF_Convergence_Warning
 
 from .. import logger
-from ..common import (DictConfig, Matrix, is_data_in_hdf5,
-                      read_cell_parameters_as_array, store_arrays_in_hdf5)
+from .. import _data
+from ..common import Matrix, is_data_in_hdf5, read_cell_parameters_as_array, store_arrays_in_hdf5
 from .scheduleCP2K import prepare_job_cp2k
+
+__all__ = ["calculate_mos", "create_point_folder", "split_file_geometries"]
 
 #: Molecular orbitals from both restricted and unrestricted calculations
 OrbitalType = Union[CP2KInfoMO, Tuple[CP2KInfoMO, CP2KInfoMO]]
@@ -42,7 +39,7 @@ class JobFiles(NamedTuple):
     get_MO: PathLike
 
 
-def calculate_mos(config: DictConfig) -> List[str]:
+def calculate_mos(config: _data.GeneralOptions) -> PromisedObject:
     """Look for the MO in the HDF5 file and compute them if they are not present.
 
     The orbitals are computed  by splitting the jobs in batches given by
@@ -56,8 +53,10 @@ def calculate_mos(config: DictConfig) -> List[str]:
         * path_hdf5: Path to the HDF5 file that contains the numerical results.
         * folders: path to the directories containing the MO outputs
         * settings_main: Settings for the job to run.
-        * calc_new_wf_guess_on_points: Calculate a new Wave function guess in each of the geometries indicated. By Default only an initial guess is computed.
-        * enumerate_from: Number from where to start enumerating the folders create for each point in the MD
+        * calc_new_wf_guess_on_points: Calculate a new Wave function guess in
+          each of the geometries indicated. By Default only an initial guess is computed.
+        * enumerate_from: Number from where to start enumerating the folders create for
+          each point in the MD
 
     Returns
     -------
@@ -65,15 +64,17 @@ def calculate_mos(config: DictConfig) -> List[str]:
 
     """
     # Read Cell parameters file
-    general = config['cp2k_general_settings']
-    file_cell_parameters = general["file_cell_parameters"]
+    general = config.cp2k_general_settings
+    file_cell_parameters = general.file_cell_parameters
     if file_cell_parameters is not None:
         array_cell_parameters = read_cell_parameters_as_array(file_cell_parameters)[
             1]
 
     # First calculation has no initial guess
     # calculate the rest of the jobs using the previous point as initial guess
-    orbitals = []  # list to the nodes in the HDF5 containing the MOs
+
+    # list to the nodes in the HDF5 containing the MOs
+    orbitals: list[None | tuple[str, str, str]] = []
     energies = []
     guess_job = None
 
@@ -87,29 +88,27 @@ def calculate_mos(config: DictConfig) -> List[str]:
         k = j + config.enumerate_from
 
         # dictionary containing the information of the j-th job
-        dict_input = defaultdict(lambda: None)  # type:  DefaultDict[str, Any]
-        dict_input["geometry"] = gs
-        dict_input["k"] = k
-
-        # Path where the MOs will be store in the HDF5
-        dict_input["node_MOs"] = [
-            join(orbitals_type, "eigenvalues", f"point_{k}"),
-            join(orbitals_type, "coefficients", f"point_{k}"),
-            join(orbitals_type, "occupation", f"point_{k}"),
-        ]
-
-        dict_input["node_energy"] = join(orbitals_type, "energy", f"point_{k}")
+        dict_input = _data.ComponentsData(
+            geometry=gs,
+            k=k,
+            node_MOs=(  # Path where the MOs will be store in the HDF5
+                join(orbitals_type, "eigenvalues", f"point_{k}"),
+                join(orbitals_type, "coefficients", f"point_{k}"),
+                join(orbitals_type, "occupation", f"point_{k}"),
+            ),
+            node_energy=join(orbitals_type, "energy", f"point_{k}"),
+        )
 
         # If the MOs are already store in the HDF5 format return the path
         # to them and skip the calculation
-        if config["compute_orbitals"]:
-            predicate = dict_input["node_MOs"]
+        if config.compute_orbitals:
+            predicate: str | tuple[str, str, str] = dict_input.node_MOs
         else:
-            predicate = dict_input["node_energy"]
+            predicate = dict_input.node_energy
 
         if is_data_in_hdf5(config.path_hdf5, predicate):
             logger.info(f"point_{k} has already been calculated")
-            orbitals.append(dict_input["node_MOs"])
+            orbitals.append(dict_input.node_MOs)
         else:
             logger.info(f"point_{k} has been scheduled")
 
@@ -117,10 +116,9 @@ def calculate_mos(config: DictConfig) -> List[str]:
             if file_cell_parameters is not None:
                 adjust_cell_parameters(general, array_cell_parameters, j)
             # Path to I/O files
-            dict_input["point_dir"] = config.folders[j]
-            dict_input["job_files"] = create_file_names(
-                dict_input["point_dir"], k)
-            dict_input["job_name"] = f'point_{k}'
+            dict_input.point_dir = config.folders[j]
+            dict_input.job_files = create_file_names(dict_input.point_dir, k)
+            dict_input.job_name = f'point_{k}'
 
             # Compute the MOs and return a new guess
             promise_qm = compute_orbitals(config, dict_input, guess_job)
@@ -129,7 +127,7 @@ def calculate_mos(config: DictConfig) -> List[str]:
             promise_qm = schedule_check(promise_qm, config, dict_input)
 
             # Store the computation
-            if config["compute_orbitals"]:
+            if config.compute_orbitals:
                 orbitals.append(store_molecular_orbitals(config, dict_input, promise_qm))
             else:
                 orbitals.append(None)
@@ -142,7 +140,10 @@ def calculate_mos(config: DictConfig) -> List[str]:
 
 @schedule
 def store_molecular_orbitals(
-        config: DictConfig, dict_input: DefaultDict[str, Any], promise_qm: PromisedObject) -> str:
+    config: _data.GeneralOptions,
+    dict_input: _data.ComponentsData,
+    promise_qm: PromisedObject,
+) -> tuple[str, str, str]:
     """Store the MOs in the HDF5.
 
     Returns
@@ -156,7 +157,7 @@ def store_molecular_orbitals(
 
     # Store in the HDF5
     try:
-        save_orbitals_in_hdf5(mos, config, dict_input["job_name"])
+        save_orbitals_in_hdf5(mos, config, dict_input.job_name)
     # Remove the ascii MO file
     finally:
         if config.remove_log_file:
@@ -164,10 +165,10 @@ def store_molecular_orbitals(
             path_mos = fnmatch.filter(os.listdir(work_dir), 'mo_*MOLog')[0]
             os.remove(join(work_dir, path_mos))
 
-    return dict_input["node_MOs"]
+    return dict_input.node_MOs
 
 
-def save_orbitals_in_hdf5(mos: OrbitalType, config: DictConfig, job_name: str) -> None:
+def save_orbitals_in_hdf5(mos: OrbitalType, config: _data.GeneralOptions, job_name: str) -> None:
     """Store the orbitals from restricted and unrestricted calculations."""
     if isinstance(mos, CP2KInfoMO):
         dump_orbitals_to_hdf5(mos, config, job_name)
@@ -179,7 +180,7 @@ def save_orbitals_in_hdf5(mos: OrbitalType, config: DictConfig, job_name: str) -
 
 def dump_orbitals_to_hdf5(
     data: CP2KInfoMO,
-    config: DictConfig,
+    config: _data.GeneralOptions,
     job_name: str,
     orbitals_type: str = "",
 ) -> None:
@@ -210,7 +211,10 @@ def dump_orbitals_to_hdf5(
 
 @schedule
 def store_enery(
-        config: DictConfig, dict_input: Dict, promise_qm: PromisedObject) -> str:
+    config: _data.GeneralOptions,
+    dict_input: _data.ComponentsData,
+    promise_qm: PromisedObject,
+) -> str:
     """Store the total energy in the HDF5 file.
 
     Returns
@@ -219,23 +223,21 @@ def store_enery(
         Node path to the energy in the HDF5
 
     """
-    store_arrays_in_hdf5(
-        config.path_hdf5, dict_input['node_energy'], promise_qm.energy)
-
-    logger.info(
-        f"Total energy of point {dict_input['k']} is: {promise_qm.energy}")
-
-    return dict_input["node_energy"]
+    store_arrays_in_hdf5(config.path_hdf5, dict_input.node_energy, promise_qm.energy)
+    logger.info(f"Total energy of point {dict_input.k} is: {promise_qm.energy}")
+    return dict_input.node_energy
 
 
 def compute_orbitals(
-        config: DictConfig, dict_input: Dict, guess_job: PromisedObject) -> PromisedObject:
+    config: _data.GeneralOptions,
+    dict_input: _data.ComponentsData,
+    guess_job: None | PromisedObject,
+) -> PromisedObject:
     """Call a Quantum chemisty package to compute the MOs.
 
     When finish store the MOs in the HdF5 and returns a new guess.
     """
-    dict_input["job_files"] = create_file_names(
-        dict_input["point_dir"], dict_input["k"])
+    dict_input.job_files = create_file_names(dict_input.point_dir, dict_input.k)
 
     # Calculating initial guess
     compute_guess = config.calc_new_wf_guess_on_points is not None
@@ -244,27 +246,24 @@ def compute_orbitals(
     # wf guesses are not empty
     is_restart = guess_job is None and compute_guess
 
-    pred = (dict_input['k']
-            in config.calc_new_wf_guess_on_points) or is_restart
+    pred = (dict_input.k in config.calc_new_wf_guess_on_points) or is_restart
 
     general = config.cp2k_general_settings
 
     if pred:
-        guess_job = prepare_job_cp2k(
-            general["cp2k_settings_guess"], dict_input, guess_job)
-
-    promise_qm = prepare_job_cp2k(
-        general["cp2k_settings_main"], dict_input, guess_job)
-
-    return promise_qm
+        guess_job = prepare_job_cp2k(general.cp2k_settings_guess, dict_input, guess_job)
+    return prepare_job_cp2k(general.cp2k_settings_main, dict_input, guess_job)
 
 
 @schedule
 def schedule_check(
-        promise_qm: PromisedObject, config: DictConfig, dict_input: DictConfig) -> PromisedObject:
+    promise_qm: PromisedObject,
+    config: _data.GeneralOptions,
+    dict_input: _data.ComponentsData,
+) -> PromisedObject:
     """Check wether a calculation finishes succesfully otherwise run a new guess."""
-    job_name = dict_input["job_name"]
-    point_dir = dict_input["point_dir"]
+    job_name = dict_input.job_name
+    point_dir = dict_input.point_dir
 
     # Warnings of the computation
     warnings = promise_qm.warnings
@@ -277,7 +276,7 @@ def schedule_check(
         logger.warning(msg)
 
         # recompute a new guess
-        msg1 = "Computing a new wave function guess for job: {job_name}"
+        msg1 = f"Computing a new wave function guess for job: {job_name}"
         logger.warning(msg1)
 
         # Remove the previous ascii file containing the MOs
@@ -287,14 +286,14 @@ def schedule_check(
         os.remove(join(point_dir, path))
 
         # Compute new guess at point k
-        config.calc_new_wf_guess_on_points.append(dict_input["k"])
+        config.calc_new_wf_guess_on_points.append(dict_input.k)
         return compute_orbitals(config, dict_input, None)
     else:
         return promise_qm
 
 
 def create_point_folder(
-        work_dir: str | os.PathLike[str], n: int, enumerate_from: int) -> List[str]:
+        work_dir: str | os.PathLike[str], n: int, enumerate_from: int) -> list[str]:
     """Create a new folder for each point in the MD trajectory."""
     folders = []
     for k in range(enumerate_from, n + enumerate_from):
@@ -305,7 +304,7 @@ def create_point_folder(
     return folders
 
 
-def split_file_geometries(path_xyz: PathLike) -> Sequence[str]:
+def split_file_geometries(path_xyz: PathLike) -> list[str]:
     """Read a set of molecular geometries in xyz format."""
     # Read Cartesian Coordinates
     with open(path_xyz) as f:
@@ -334,18 +333,15 @@ def create_file_names(work_dir: str | os.PathLike[str], i: int) -> JobFiles:
 
 
 def adjust_cell_parameters(
-        general: DictConfig,
-        array_cell_parameters: Matrix,
-        j: int) -> None:
+    general: _data.CP2KGeneralSetting,
+    array_cell_parameters: Matrix,
+    j: int,
+) -> None:
     """Adjust the cell parameters on the fly.
 
     If the cell parameters change during the MD simulations, adjust them
     for the molecular orbitals computation.
     """
-    for s in (
-        general[p] for p in (
-            'cp2k_settings_main',
-            'cp2k_settings_guess')):
-        s.cell_parameters = array_cell_parameters[j, 2:11].reshape(
-            3, 3).tolist()
+    for s in (general.cp2k_settings_main, general.cp2k_settings_guess):
+        s.cell_parameters = array_cell_parameters[j, 2:11].reshape(3, 3).tolist()
         s.cell_angles = None

@@ -10,11 +10,10 @@ Index
 
 from __future__ import annotations
 
-__all__ = ['workflow_stddft']
-
+import copy
 import warnings
 from os.path import join
-from typing import Tuple, TYPE_CHECKING
+from typing import Any, TYPE_CHECKING
 
 import numpy as np
 from scipy.linalg import sqrtm
@@ -23,10 +22,11 @@ from noodles import gather, schedule, unpack
 from noodles.interface import PromisedObject
 from qmflows.parsers import parse_string_xyz
 from qmflows.warnings_qmflows import Orbital_Warning
-from qmflows.type_hints import PathLike
+from qmflows.common import AtomXYZ
 
+from .. import _data
 from .. import logger
-from ..common import (DictConfig, angs2au, change_mol_units, h2ev, hardness,
+from ..common import (angs2au, change_mol_units, h2ev, hardness,
                       is_data_in_hdf5, number_spherical_functions_per_atom,
                       retrieve_hdf5_data, store_arrays_in_hdf5, xc)
 from ..integrals.multipole_matrices import get_multipole_matrix
@@ -37,8 +37,10 @@ if TYPE_CHECKING:
     from numpy.typing import NDArray
     from numpy import float64 as f8
 
+__all__ = ['workflow_stddft']
 
-def workflow_stddft(config: DictConfig) -> None:
+
+def workflow_stddft(config: _data.AbsorptionSpectrum) -> None:
     """Compute the excited states using simplified TDDFT.
 
     Both restricted and unrestricted orbitals calculations are available.
@@ -52,7 +54,7 @@ def workflow_stddft(config: DictConfig) -> None:
     return select_orbitals_type(config, run_workflow_stddft)
 
 
-def run_workflow_stddft(config: DictConfig) -> PromisedObject:
+def run_workflow_stddft(config: _data.AbsorptionSpectrum) -> PromisedObject:
     """Compute the excited states using simplified TDDFT using `config`."""
     # Single Point calculations settings using CP2K
     mo_paths_hdf5, energy_paths_hdf5 = unpack(calculate_mos(config), 2)
@@ -65,16 +67,19 @@ def run_workflow_stddft(config: DictConfig) -> PromisedObject:
     # Noodles promised call
     scheduleTDDFT = schedule(compute_excited_states_tddft)
 
-    results = gather(
-        *[scheduleTDDFT(config, mo_paths_hdf5[i], DictConfig(
-            {'i': i * config.stride, 'mol': mol}))
-          for i, mol in enumerate(molecules_au)])
+    results = gather(*[
+        scheduleTDDFT(
+            config,
+            mo_paths_hdf5[i],
+            _data.AbsorptionData(i=i * config.stride, mol=mol),
+        ) for i, mol in enumerate(molecules_au)
+    ])
 
     return gather(results, energy_paths_hdf5)
 
 
 def validate_active_space(
-    config: DictConfig,
+    config: _data.AbsorptionSpectrum,
     nocc_molog: int,
     nvirt_molog: int,
 ) -> tuple[int, int]:
@@ -85,7 +90,7 @@ def validate_active_space(
 
     Parameters
     ----------
-    config : DictConfig
+    config
         The Nano-QMFlows configuration.
     nocc_molog/nvirt_molog : int
         The number of occupied and virtual orbitals as extracted from the MOLog orbital file.
@@ -109,7 +114,7 @@ def validate_active_space(
     if (nocc_inp == nocc_molog) and (nvirt_inp == nvirt_molog):
         return nocc_inp, nvirt_inp
     else:
-        config.active_space = [nocc_molog, nvirt_molog]
+        config.active_space = (nocc_molog, nvirt_molog)
 
     # The input and MOlog file have different numbers of active and/or virtual orbitals;
     # issue a warning and return the correct number
@@ -129,7 +134,10 @@ def validate_active_space(
 
 
 def compute_excited_states_tddft(
-        config: DictConfig, path_MOs: list[str], dict_input: DictConfig) -> None:
+    config: _data.AbsorptionSpectrum,
+    path_MOs: list[str],
+    dict_input: _data.AbsorptionData,
+) -> None:
     """Compute the excited states properties (energy and coefficients).
 
     Take a given `mo_index_range`, the `tddft` method and `xc_dft` exchange functional.
@@ -138,34 +146,37 @@ def compute_excited_states_tddft(
 
     # type of calculation
     energy, c_ao, nocc_nvirt = retrieve_hdf5_data(config.path_hdf5, path_MOs)
+    dict_input.energy = energy
+    dict_input.c_ao = c_ao
 
     # Number of virtual orbitals
     nocc, nvirt = validate_active_space(config, *nocc_nvirt)
-    dict_input.update({"energy": energy, "c_ao": c_ao,
-                       "nocc": nocc, "nvirt": nvirt})
+    dict_input.nocc = nocc
+    dict_input.nvirt = nvirt
 
     # Pass the molecule in Angstrom to the libint calculator
-    copy_dict = DictConfig(dict_input.copy())
-    copy_dict["mol"] = change_mol_units(dict_input["mol"], factor=1 / angs2au)
+    copy_dict = copy.copy(dict_input)
+    copy_dict.mol = change_mol_units(dict_input.mol, factor=1 / angs2au)
 
     # compute the multipoles if they are not stored
     multipoles = get_multipole_matrix(config, copy_dict, 'dipole')
 
     # read data from the HDF5 or calculate it on the fly
-    dict_input["overlap"] = multipoles[0]
+    dict_input.overlap = multipoles[0]
 
     # retrieve or compute the omega xia values
     omega, xia = get_omega_xia(config, dict_input)
-
-    # add arrays to the dictionary
-    dict_input.update(
-        {"multipoles": multipoles[1:], "omega": omega, "xia": xia})
+    dict_input.multipoles = multipoles[1:]
+    dict_input.omega = omega
+    dict_input.xia = xia
 
     compute_oscillator_strengths(config, dict_input)
 
 
 def get_omega_xia(
-        config: DictConfig, dict_input: DictConfig) -> Tuple[NDArray[f8], NDArray[f8]]:
+    config: _data.AbsorptionSpectrum,
+    dict_input: _data.AbsorptionData,
+) -> tuple[NDArray[f8], NDArray[f8]]:
     """Search for the multipole_matrices, Omega and xia values in the HDF5.
 
     if they are not available compute and store them.
@@ -203,17 +214,17 @@ def get_omega_xia(
         return omega, xia
 
 
-def compute_sing_orb(inp: DictConfig) -> Tuple[NDArray[f8], NDArray[f8]]:
+def compute_sing_orb(inp: _data.AbsorptionData) -> tuple[NDArray[f8], NDArray[f8]]:
     """Compute the Single Orbital approximation."""
-    energy, nocc, nvirt = tuple(inp[x]for x in ("energy", "nocc", "nvirt"))
-
-    omega = energy[:nocc][..., None] - energy[nocc:][..., None].T
+    omega = inp.energy[:inp.nocc][..., None] - inp.energy[inp.nocc:][..., None].T
     xia = np.eye(omega.size)
     return -omega.ravel(), xia
 
 
 def compute_std_aproximation(
-        config: DictConfig, dict_input: DictConfig) -> Tuple[NDArray[f8], NDArray[f8]]:
+    config: _data.AbsorptionSpectrum,
+    dict_input: _data.AbsorptionData,
+) -> tuple[NDArray[f8], NDArray[f8]]:
     """Compute the oscillator strenght using either the stda or stddft approximations."""
     logger.info("Reading or computing the dipole matrices")
 
@@ -221,13 +232,14 @@ def compute_std_aproximation(
     logger.info("Computing the transition density charges")
     # multipoles[0] is the overlap matrix
     q = transition_density_charges(
-        dict_input.mol, config, dict_input.overlap, dict_input.c_ao)
+        dict_input.mol, config, dict_input.overlap, dict_input.c_ao
+    )
 
     # Make a function that compute the Mataga-Nishimoto-Ohno_Klopman
     # damped Columb and Excgange law functions
     logger.info(
         "Computing the gamma functions for Exchange and Coulomb integrals")
-    gamma_J, gamma_K = compute_MNOK_integrals(dict_input["mol"], config.xc_dft)
+    gamma_J, gamma_K = compute_MNOK_integrals(dict_input.mol, config.xc_dft)
 
     # Compute the Couloumb and Exchange integrals
     # If xc_dft is a pure functional, ax=0, thus the pqrs_J ints are not needed
@@ -245,7 +257,8 @@ def compute_std_aproximation(
     # Construct the Tamm-Dancoff matrix A for each pair of i->a transition
     logger.info("Constructing the A matrix for TDDFT calculation")
     a_mat = construct_A_matrix_tddft(
-        pqrs_J, pqrs_K, dict_input.nocc, dict_input.nvirt, config.xc_dft, dict_input.energy)
+        pqrs_J, pqrs_K, dict_input.nocc, dict_input.nvirt, config.xc_dft, dict_input.energy
+    )
 
     if config.tddft == 'stddft':
         logger.info('sTDDFT has not been implemented yet !')
@@ -261,7 +274,10 @@ def compute_std_aproximation(
     return omega, xia
 
 
-def compute_oscillator_strengths(config: DictConfig, inp: DictConfig) -> None:
+def compute_oscillator_strengths(
+    config: _data.AbsorptionSpectrum,
+    inp: _data.AbsorptionData,
+) -> None:
     """Compute oscillator strengths.
 
     The formula can be rearranged like this:
@@ -305,11 +321,12 @@ def compute_oscillator_strengths(config: DictConfig, inp: DictConfig) -> None:
     f = 2 / 3 * inp.omega * (d_x ** 2 + d_y ** 2 + d_z ** 2)
 
     # Write to output
-    inp.update({"dipole": (d_x, d_y, d_z), "oscillator": f})
+    inp.dipole = (d_x, d_y, d_z)
+    inp.oscillator = f
     write_output(config, inp)
 
 
-def write_output(config: DictConfig, inp: DictConfig) -> None:
+def write_output(config: _data.AbsorptionSpectrum, inp: _data.AbsorptionData) -> None:
     """Write the results using numpy functionality."""
     output = write_output_tddft(inp)
 
@@ -371,13 +388,15 @@ def ex_descriptor(omega, f, xia, n_lowest, c_ao, s, tdm, tqm, nocc, nvirt, mol, 
     omega_ab = get_omega_ab(d0I_ao, s, n_lowest, mol, config)
     r_ab = get_r_ab(mol)
 
-    d_exc_apprx = np.stack(
-        np.sqrt(np.sum(omega_ab[i, :, :] * (r_ab ** 2)) / om[i]) for i in range(n_lowest))
+    d_exc_apprx = np.stack([
+        np.sqrt(np.sum(omega_ab[i, :, :] * (r_ab ** 2)) / om[i]) for i in range(n_lowest)
+    ])
     # binding energy approximated
-    xs = np.stack((omega_ab[i, :, :] / r_ab) for i in range(n_lowest))
+    xs = np.stack([(omega_ab[i, :, :] / r_ab) for i in range(n_lowest)])
     xs[np.isinf(xs)] = 0
-    binding_en_apprx = np.stack(
-        (np.sum(xs[i, :, :]) / om[i]) for i in range(n_lowest))
+    binding_en_apprx = np.stack([
+        (np.sum(xs[i, :, :]) / om[i]) for i in range(n_lowest)
+    ])
 
     descriptors = write_output_descriptors(
         d_exc, d_exc_apprx, d_he, sigma_h, sigma_e, r_eh, binding_en_apprx, n_lowest, omega, f)
@@ -425,12 +444,13 @@ def get_omega_ab(d0I_ao, s, n_lowest, mol, config):
     # Lowdin transformation of the transition density matrix
     n_atoms = len(mol)
     s_sqrt = sqrtm(s)
-    d0I_mo = np.stack(
-        np.linalg.multi_dot([s_sqrt, d0I_ao[i, :, :], s_sqrt]) for i in range(n_lowest))
+    d0I_mo = np.stack([
+        np.linalg.multi_dot([s_sqrt, d0I_ao[i, :, :], s_sqrt]) for i in range(n_lowest)
+    ])
 
     # Compute the number of spherical functions for each atom
     n_sph_atoms = number_spherical_functions_per_atom(
-        mol, config['package_name'], config['basis_name'], config['path_hdf5'])
+        mol, config.package_name, config.basis_name, config.path_hdf5)
 
     # Compute omega_ab
     omega_ab = np.zeros((n_lowest, n_atoms, n_atoms))
@@ -451,23 +471,23 @@ def get_omega_ab(d0I_ao, s, n_lowest, mol, config):
 def get_exciton_positions(d0I_ao, s, moment, n_lowest, carrier):
     """TODO: add Documentation."""
     def compute_component_hole(k):
-        return np.stack(
+        return np.stack([
             np.trace(
                 np.linalg.multi_dot([d0I_ao[i, :, :].T, moment[k, :, :], d0I_ao[i, :, :], s]))
-            for i in range(n_lowest))
+            for i in range(n_lowest)])
 
     def compute_component_electron(k):
-        return np.stack(
+        return np.stack([
             np.trace(
                 np.linalg.multi_dot([d0I_ao[i, :, :].T, s, d0I_ao[i, :, :], moment[k, :, :]]))
-            for i in range(n_lowest))
+            for i in range(n_lowest)])
 
     def compute_component_he(k):
-        return np.stack(
+        return np.stack([
             np.trace(
                 np.linalg.multi_dot(
                     [d0I_ao[i, :, :].T, moment[0, :, :], d0I_ao[i, :, :], moment[0, :, :]]))
-            for i in range(n_lowest))
+            for i in range(n_lowest)])
 
     if carrier == 'hole':
         return tuple(compute_component_hole(k) for k in range(3))
@@ -479,7 +499,7 @@ def get_exciton_positions(d0I_ao, s, moment, n_lowest, carrier):
         raise RuntimeError(f"unkown option: {carrier}")
 
 
-def write_output_tddft(inp: DictConfig) -> np.ndarray:
+def write_output_tddft(inp: _data.AbsorptionData) -> np.ndarray:
     """Write out as a table in plane text."""
     energy = inp.energy
 
@@ -528,7 +548,12 @@ def write_output_tddft(inp: DictConfig) -> np.ndarray:
     return output
 
 
-def transition_density_charges(mol, config, s, c_ao):
+def transition_density_charges(
+    mol: list[AtomXYZ],
+    config: _data.AbsorptionSpectrum,
+    s: NDArray[np.floating[Any]],
+    c_ao: NDArray[np.floating[Any]],
+) -> NDArray[f8]:
     """TODO: add Documentation."""
     n_atoms = len(mol)
 
@@ -540,7 +565,8 @@ def transition_density_charges(mol, config, s, c_ao):
     # Size of the transition density tensor : n_atoms x n_mos x n_mos
     q = np.zeros((n_atoms, c_mo.shape[1], c_mo.shape[1]))
     n_sph_atoms = number_spherical_functions_per_atom(
-        mol, config['package_name'], config.cp2k_general_settings['basis'], config['path_hdf5'])
+        mol, config.package_name, config.cp2k_general_settings.basis, config.path_hdf5
+    )
 
     index = 0
     for i in range(n_atoms):
@@ -553,7 +579,7 @@ def transition_density_charges(mol, config, s, c_ao):
     return q
 
 
-def compute_MNOK_integrals(mol, xc_dft):
+def compute_MNOK_integrals(mol: list[AtomXYZ], xc_dft: str) -> tuple[NDArray[f8], NDArray[f8]]:
     """TODO: add Documentation."""
     n_atoms = len(mol)
     r_ab = get_r_ab(mol)

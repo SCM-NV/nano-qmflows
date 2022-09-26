@@ -5,7 +5,7 @@ import sys
 import platform
 from os.path import join
 
-import setuptools
+import setuptools  # noqa: F401
 import pkg_resources
 import numpy as np
 from setuptools import Extension, find_packages, setup

@@ -7,25 +7,31 @@ Index
     workflow_ipr
 
 """
-__all__ = ['workflow_ipr']
+
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 import numpy as np
 from scipy.linalg import sqrtm
-
 from qmflows.parsers import readXYZ
 
 from .. import logger
-from ..common import (DictConfig, h2ev, number_spherical_functions_per_atom,
-                      retrieve_hdf5_data)
+from ..common import h2ev, number_spherical_functions_per_atom, retrieve_hdf5_data
 from ..integrals.multipole_matrices import compute_matrix_multipole
 from .initialization import initialize
 from .tools import compute_single_point_eigenvalues_coefficients
 
+if TYPE_CHECKING:
+    from .. import _data
 
-def workflow_ipr(config: DictConfig) -> np.ndarray:
+__all__ = ['workflow_ipr']
+
+
+def workflow_ipr(config: _data.IPR) -> np.ndarray:
     """Compute the Inverse Participation Ratio main function."""
     # Dictionary containing the general information
-    config.update(initialize(config))
+    initialize(config)
 
     # Checking if hdf5 contains the required eigenvalues and coefficientsa
     compute_single_point_eigenvalues_coefficients(config)
@@ -54,8 +60,9 @@ def workflow_ipr(config: DictConfig) -> np.ndarray:
     sphericals = number_spherical_functions_per_atom(
         mol,
         'cp2k',
-        config.cp2k_general_settings["basis"],
-        config.path_hdf5)  # Array with number of spherical orbitals per atom
+        config.cp2k_general_settings.basis,
+        config.path_hdf5,
+    )  # Array with number of spherical orbitals per atom
 
     # New matrix with the atoms on the rows and the MOs on the columns
     indices = np.zeros(len(mol), dtype='int')

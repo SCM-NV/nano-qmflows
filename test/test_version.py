@@ -12,7 +12,8 @@ def test_version() -> None:
 
 def test_dev_version(is_release: bool) -> None:
     if not is_release:
-        return pytest.skip("Requires a nano-qmflows release")
+        pytest.skip("Requires a nano-qmflows release")
+        return None
     version = Version(nanoqm.__version__)
     assertion.not_(version.is_devrelease)
 
