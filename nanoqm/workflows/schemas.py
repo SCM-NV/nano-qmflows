@@ -104,11 +104,11 @@ schema_cp2k_general_settings = Schema({
     Optional("functional_c", default=None): str,
 
     # Settings describing the input of the quantum package
-    "cp2k_settings_main": object,
+    "cp2k_settings_main": Use(Settings),
 
     # Settings describing the input of the quantum package
     # to compute the guess wavefunction"
-    "cp2k_settings_guess": object,
+    "cp2k_settings_guess": Use(Settings),
 
     # Restart File Name
     Optional("wfn_restart_file_name", default=None): Or(str, None),

@@ -94,23 +94,15 @@ class InputSanitizer:
 
     def sanitize(self) -> Dict:
         """Apply all the sanity check on the input."""
-        self.create_settings()
         self.apply_templates()
         self.add_missing_keywords()
         self.add_executable()
         self.print_final_input()
-
         return self.user_input
-
-    def create_settings(self) -> None:
-        """Transform the CP2K input dict into :class:`QMFLows.Settings`."""
-        self.general['cp2k_settings_main'] = Settings(self.general['cp2k_settings_main'])
-        self.general['cp2k_settings_guess'] = Settings(self.general['cp2k_settings_guess'])
 
     def apply_templates(self) -> None:
         """Apply a template for CP2K if the user requested it."""
-        for s in [
-                self.general[x] for x in ('cp2k_settings_main', 'cp2k_settings_guess')]:
+        for s in [self.general[x] for x in ('cp2k_settings_main', 'cp2k_settings_guess')]:
             val = s['specific']
 
             if "template" in val:
