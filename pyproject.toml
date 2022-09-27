@@ -9,13 +9,14 @@ requires = [
 [tool.mypy]
 plugins = "numpy.typing.mypy_plugin"
 show_error_codes = true
+mypy_path = "typings"
+files = ["nanoqm", "typings"]
 
 [[tool.mypy.overrides]]
 module = [
     "scm.plams.*",
     "h5py.*",
     "scipy.*",
-    "noodles.*",
     "schema.*",
     "mendeleev.*",
     "wheel.*",
