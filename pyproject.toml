@@ -16,7 +16,6 @@ files = ["nanoqm", "typings"]
 module = [
     "scm.plams.*",
     "h5py.*",
-    "scipy.*",
     "schema.*",
 ]
 ignore_missing_imports = true
