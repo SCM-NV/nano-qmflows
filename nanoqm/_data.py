@@ -11,6 +11,7 @@ import dataclasses
 import warnings
 from typing import Any, TYPE_CHECKING, Protocol, Literal
 
+import qmflows
 from scm.plams import Settings
 from qmflows.common import AtomXYZ
 from qmflows.warnings_qmflows import QMFlowsDeprecationWarning
@@ -136,8 +137,8 @@ class CP2KGeneralSetting(_DataConfig):
     potential_file_name: None | str
     functional_x: None | str
     functional_c: None | str
-    cp2k_settings_main: Settings
-    cp2k_settings_guess: Settings
+    cp2k_settings_main: qmflows.Settings
+    cp2k_settings_guess: qmflows.Settings
     wfn_restart_file_name: None | str
     file_cell_parameters: None | str
     aux_fit: Literal["low", "medium", "good", "verygood", "excellent"]

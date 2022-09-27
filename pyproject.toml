@@ -14,7 +14,6 @@ files = ["nanoqm", "typings"]
 
 [[tool.mypy.overrides]]
 module = [
-    "scm.plams.*",
     "h5py.*",
     "schema.*",
 ]
