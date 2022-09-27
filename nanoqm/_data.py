@@ -9,7 +9,7 @@ import pprint
 import functools
 import dataclasses
 import warnings
-from typing import Any, TYPE_CHECKING
+from typing import Any, TYPE_CHECKING, Protocol, Literal
 
 from scm.plams import Settings
 from qmflows.common import AtomXYZ
@@ -17,7 +17,6 @@ from qmflows.warnings_qmflows import QMFlowsDeprecationWarning
 
 if TYPE_CHECKING:
     from dataclasses import dataclass
-    from typing_extensions import Protocol, Literal
     from numpy.typing import NDArray
     from numpy import float32 as f4, float64 as f8
     from .schedule.components import JobFiles
@@ -32,10 +31,7 @@ else:
     else:
         dataclass = functools.partial(dataclasses.dataclass, repr=False)
 
-if sys.version_info >= (3, 8):
-    pformat = functools.partial(pprint.pformat, compact=True, sort_dicts=False)
-else:
-    pformat = functools.partial(pprint.pformat, compact=True)
+pformat = functools.partial(pprint.pformat, compact=True, sort_dicts=False)
 
 __all__ = [
     "CP2KGeneralSetting",

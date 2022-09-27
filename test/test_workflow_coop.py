@@ -4,7 +4,6 @@ import os
 from pathlib import Path
 from os.path import join
 
-import pytest
 import numpy as np
 
 from nanoqm.workflows.input_validation import process_input
@@ -13,10 +12,6 @@ from nanoqm.workflows.workflow_coop import workflow_crystal_orbital_overlap_popu
 from .utilsTest import PATH_TEST, requires_cp2k
 
 
-@pytest.mark.skipif(
-    sys.version_info < (3, 8),
-    reason="Workflow tends to get stuck and timeout on GitHub Actions for reasons unknown",
-)
 @requires_cp2k
 def test_workflow_coop(tmp_path: Path) -> None:
     """Test the Crystal Orbital Overlap Population workflow."""

@@ -4,7 +4,6 @@ import os
 from os.path import join
 from pathlib import Path
 
-import pytest
 import numpy as np
 from nanoqm.workflows.input_validation import process_input
 from nanoqm.workflows.workflow_ipr import workflow_ipr
@@ -12,10 +11,6 @@ from nanoqm.workflows.workflow_ipr import workflow_ipr
 from .utilsTest import PATH_TEST, requires_cp2k
 
 
-@pytest.mark.skipif(
-    sys.version_info < (3, 8),
-    reason="Workflow tends to get stuck and timeout on GitHub Actions for reasons unknown",
-)
 @requires_cp2k
 def test_workflow_IPR(tmp_path: Path) -> None:
     """Test the Inverse Participation Ratio workflow."""

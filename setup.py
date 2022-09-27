@@ -74,10 +74,8 @@ class BDistWheelABI3(bdist_wheel):
         python, abi, plat = super().get_tag()
 
         if python.startswith("cp"):
-            # on CPython, our wheels are abi3 and compatible back to 3.7
-            # (or 3.8 in case of MacOS ARM64)
-            cp = "cp38" if is_macos_arm64() else "cp37"
-            return cp, "abi3", plat
+            # on CPython, our wheels are abi3 and compatible back to 3.8
+            return "cp38", "abi3", plat
         else:
             return python, abi, plat
 
@@ -174,7 +172,6 @@ setup(
         'Programming Language :: Python',
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3 :: Only',
-        'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
         'Programming Language :: Python :: 3.9',
         'Programming Language :: Python :: 3.10',
@@ -186,7 +183,7 @@ setup(
     ],
     install_requires=parse_requirements("install_requirements.txt"),
     cmdclass={'build_ext': BuildExt, "bdist_wheel": BDistWheelABI3},
-    python_requires='>=3.7',
+    python_requires='>=3.8',
     ext_modules=[libint_ext],
     extras_require={
         'test': parse_requirements("test_requirements.txt"),

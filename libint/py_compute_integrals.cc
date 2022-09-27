@@ -8,7 +8,7 @@
  */
 
 #define PY_SSIZE_T_CLEAN
-#define Py_LIMITED_API 0x03070000
+#define Py_LIMITED_API 0x03080000
 #define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 #include <Python.h>
 #include <numpy/arrayobject.h>

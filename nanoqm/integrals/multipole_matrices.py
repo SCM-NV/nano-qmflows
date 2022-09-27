@@ -22,7 +22,7 @@ import os
 import uuid
 from os.path import join
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
 from qmflows.common import AtomXYZ
 
@@ -31,7 +31,6 @@ from ..common import is_data_in_hdf5, retrieve_hdf5_data, store_arrays_in_hdf5, 
 from ..compute_integrals import compute_integrals_multipole, get_thread_count, get_thread_type
 
 if TYPE_CHECKING:
-    from typing_extensions import Literal
     from numpy.typing import NDArray
     from numpy import float64 as f8
     from .. import _data
