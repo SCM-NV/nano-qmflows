@@ -193,8 +193,8 @@ jobs:
       - name: Installed packages
         run: pip list
 
-      - name: Run pycodestyle
-        run: pycodestyle nanoqm test
+      - name: Run flake8
+        run: flake8 nanoqm test setup.py
 
       - name: Run pydocstyle
         run: pydocstyle nanoqm
