@@ -29,7 +29,9 @@ import json
 from itertools import chain
 from pathlib import Path
 from collections.abc import Iterable, Sequence
-from typing import Any, Dict, List, NamedTuple, overload, TypeVar, TYPE_CHECKING
+from typing import (
+    Any, Dict, List, NamedTuple, overload, TypeVar, TYPE_CHECKING, TypedDict, Literal
+)
 
 import h5py
 import mendeleev
@@ -111,6 +113,7 @@ if isinstance(physical_constants['atomic unit of length'][0], float):
 else:
     angs2au = femtosec2au = h2ev = r2meV = fs_to_cm = fs_to_nm = hbar = 1.0
 
+
 # type hints
 MolXYZ = List[AtomXYZ]
 Vector = np.ndarray
@@ -148,7 +151,16 @@ def hardness(s: str) -> float:
     return d[s] / 27.211
 
 
-_XC_DICT = {
+class _XCDict(TypedDict):
+    type: Literal["pure", "hybrid", "rhs"]
+    alpha1: float
+    alpha2: float
+    ax: float
+    beta1: float
+    beta2: float
+
+
+_XC_DICT: dict[str, _XCDict] = {
     'pbe': {
         'type': 'pure', 'alpha1': 1.42, 'alpha2': 0.48, 'ax': 0, 'beta1': 0.2, 'beta2': 1.83
     },
@@ -179,7 +191,7 @@ _XC_DICT = {
 }
 
 
-def xc(s: str) -> dict[str, Any]:
+def xc(s: str) -> _XCDict:
     """Return the exchange functional composition."""
     return _XC_DICT[s]
 

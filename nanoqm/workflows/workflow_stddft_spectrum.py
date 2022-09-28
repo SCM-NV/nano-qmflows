@@ -260,18 +260,13 @@ def compute_std_aproximation(
         pqrs_J, pqrs_K, dict_input.nocc, dict_input.nvirt, config.xc_dft, dict_input.energy
     )
 
-    if config.tddft == 'stddft':
-        logger.info('sTDDFT has not been implemented yet !')
-        # Solve the eigenvalue problem = A * cis = omega * cis
-    elif config.tddft == 'stda':
-        logger.info(
-            "This is a TDA calculation ! \n Solving the eigenvalue problem")
+    if config.tddft == 'stda':
+        logger.info("This is a TDA calculation ! \n Solving the eigenvalue problem")
         omega, xia = np.linalg.eig(a_mat)
     else:
         msg = f"The {config.tddft} method has not been implemented"
         raise NotImplementedError(msg)
-
-    return omega, xia
+    return np.real_if_close(omega), np.real_if_close(xia)
 
 
 def compute_oscillator_strengths(
@@ -287,7 +282,8 @@ def compute_oscillator_strengths(
     # 1) Get the inp.energy matrix i->a. Size: Inp.Nocc * Inp.Nvirt
     delta_ia = -np.subtract(
         inp.energy[:inp.nocc].reshape(inp.nocc, 1),
-        inp.energy[inp.nocc:].reshape(inp.nvirt, 1).T).reshape(inp.nocc * inp.nvirt)
+        inp.energy[inp.nocc:].reshape(inp.nvirt, 1).T
+    ).reshape(inp.nocc * inp.nvirt)
 
     def compute_transition_matrix(matrix):
         if tddft == 'sing_orb':
