@@ -13,7 +13,7 @@ concurrency:
 
 env:
   CP2K_DEFAULT: "2022.1"
-  TAG: "2.0.0"  # The nlesc-nano/nano-qmflows-manylinux tag
+  TAG: "3.0.0"  # The nlesc-nano/nano-qmflows-manylinux tag
   PY_COLORS: "1"
 
 jobs:
@@ -24,7 +24,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        version: ["3.7", "3.8", "3.9", "3.10"]
+        version: ["3.8", "3.9", "3.10"]
         special:
           - ["", ""]
         include:
@@ -131,15 +131,15 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        version: ["3.7", "3.8", "3.9", "3.10"]
+        version: ["3.8", "3.9", "3.10"]
 
     steps:
     - uses: actions/checkout@v3
 
     - name: Build wheels
-      uses: pypa/cibuildwheel@v2.10.1
+      uses: pypa/cibuildwheel@v2.10.2
       env:
-        CIBW_BUILD: cp37-manylinux_x86_64
+        CIBW_BUILD: cp38-manylinux_x86_64
         CIBW_MANYLINUX_X86_64_IMAGE: "ghcr.io/nlesc-nano/manylinux2014_x86_64-qmflows:${{ env.TAG }}"
 
     - name: Set up Python
@@ -193,8 +193,8 @@ jobs:
       - name: Installed packages
         run: pip list
 
-      - name: Run pycodestyle
-        run: pycodestyle nanoqm test
+      - name: Run flake8
+        run: flake8 nanoqm test setup.py
 
       - name: Run pydocstyle
         run: pydocstyle nanoqm

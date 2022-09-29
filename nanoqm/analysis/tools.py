@@ -10,8 +10,9 @@ API
 
 """
 
+from __future__ import annotations
+
 import os
-from typing import List, Tuple
 
 import numpy as np
 import pyparsing as pa
@@ -19,7 +20,7 @@ from scipy.optimize import curve_fit
 
 from ..common import fs_to_cm, h2ev, hbar, r2meV
 
-""" Functions to fit data """
+# Functions to fit data
 
 
 def gauss_function(x: float, sigma: float) -> np.ndarray:
@@ -74,7 +75,7 @@ def convolute(x: np.ndarray, y: np.ndarray, x_points: np.ndarray, sigma: float) 
 """ Useful functions to compute autocorrelation, dephasing, etc. """
 
 
-def autocorrelate(f: np.ndarray) -> Tuple[float, float]:
+def autocorrelate(f: np.ndarray) -> tuple[float, float]:
     """Compute the un-normalized and normalized autocorrelation of a function."""
     d_f = f - f.mean()
     d_f2 = np.append(d_f, d_f, axis=0)
@@ -103,18 +104,23 @@ def spectral_density(f, dt):
 def dephasing(f: np.ndarray, dt: float):
     """Compute the dephasing time of a given function.
 
-        f            = energies, in eV  (if other function/unit: then the line_broadening will not be in eV)
-        dt           = time step, in fs
-
     Use the optical response formalisms:
     S. Mukamel, Principles of Nonlinear Optical Spectroscopy, 1995
     About the implementation we use the 2nd order cumulant expansion.
     See also eq. (2) in : Kilina et al. Phys. Rev. Lett., 110, 180404, (2013)
     To calculate the dephasing time tau we fit the dephasing function to a
     gaussian of the type : exp(-0.5 * (-x / tau) ** 2)
+
+    Parameters
+    ----------
+    f : np.ndarray
+        energies, in eV  (if other function/unit: then the line_broadening will not be in eV).
+    dt : float
+        time step, in fs.
+
     """
     # Conversion of hbar to hartree * fs
-    hbar_au = hbar / h2ev
+    # hbar_au = hbar / h2ev
     ts = np.arange(f.shape[0]) * dt
     cumu_ii = np.asarray([np.trapz(f[0:i + 1], dx=(dt / hbar), axis=0) for i in range(ts.size)])
     cumu_i = np.asarray([np.trapz(cumu_ii[0:i + 1], dx=(dt / hbar), axis=0)
@@ -140,30 +146,38 @@ def fit_dephasing(fit_func, deph, ts, res, t_deph_guess):
         popt, pcov = curve_fit(gauss_function, ts, deph, p0=(t_deph_guess, deph[0]))    # [0]
         ts_fit = np.arange(res * deph.shape[0]) * dt / res
         deph_fit = popt[1] * np.exp(-0.5 * (-ts_fit / popt[0]) ** 2)
-        deph_time = popt[0]                                           # in fs (defined as standard deviation of a Gaussian)
-        e_fwhm = std_to_fwhm * hbar / deph_time                       # FWHM in eV
+        deph_time = popt[0]  # in fs (defined as standard deviation of a Gaussian)
+        e_fwhm = std_to_fwhm * hbar / deph_time  # FWHM in eV
         perr = np.sqrt(np.diag(pcov))
-        deph_time_err = perr[0]                                            # error (standard deviation) for the deph. time
-        e_fwhm_err = deph_time_err * std_to_fwhm * hbar / (deph_time ** 2)  # error (standard deviation) for the FWHM
+
+        # error (standard deviation) for the deph. time
+        deph_time_err = perr[0]
+
+        # error (standard deviation) for the FWHM
+        e_fwhm_err = deph_time_err * std_to_fwhm * hbar / (deph_time ** 2)
     elif fit_func == 1:
         # fit with exponential
         popt, pcov = curve_fit(exp_function, ts, deph, p0=(t_deph_guess, deph[0]))  # [0]
         ts_fit = np.arange(res * deph.shape[0]) * dt / res
         deph_fit = popt[1] * np.exp(-ts_fit / popt[0])
-        deph_time = popt[0]                                           # in fs (defined as the exp. time constant)
-        e_fwhm = 2 * hbar / deph_time                                 # FWHM in eV
+        deph_time = popt[0]  # in fs (defined as the exp. time constant)
+        e_fwhm = 2 * hbar / deph_time  # FWHM in eV
         perr = np.sqrt(np.diag(pcov))
-        deph_time_err = perr[0]                                       # error (standard deviation) for the deph. time
-        e_fwhm_err = deph_time_err * 2 * hbar / (deph_time ** 2)      # error (standard deviation) for the FWHM
+
+        # error (standard deviation) for the deph. time
+        deph_time_err = perr[0]
+
+        # error (standard deviation) for the FWHM
+        e_fwhm_err = deph_time_err * 2 * hbar / (deph_time ** 2)
 
     return ts_fit, deph_fit, deph_time, deph_time_err, e_fwhm, e_fwhm_err
 
 
 def read_couplings(path_hams, ts):
-    """Read the non adiabatic coupling vectors from the files generated for the NAMD simulations."""
-    files_im = [os.path.join(path_hams, f'Ham_{i}_im')
-                for i in range(ts)]
-    xs = np.stack(np.loadtxt(fn) for fn in files_im)
+    """Read the non adiabatic coupling vectors from the files generated \
+    for the NAMD simulations."""
+    files_im = [os.path.join(path_hams, f'Ham_{i}_im') for i in range(ts)]
+    xs = np.stack([np.loadtxt(fn) for fn in files_im])
     return xs * r2meV  # return energies in meV
 
 
@@ -174,16 +188,17 @@ def read_energies(path_hams, ts):
     """
     files_re = [os.path.join(path_hams, f'Ham_{i}_re')
                 for i in range(ts)]
-    xs = np.stack(np.diag(np.loadtxt(fn)) for fn in files_re)
+    xs = np.stack([np.diag(np.loadtxt(fn)) for fn in files_re])
     return xs * r2meV / 1000  # return energies in eV
 
 
 def read_energies_pyxaid(path, fn, nstates, nconds):
-    """Read the molecular orbital energies of each state from the output files generated by PYXAID."""
+    """Read the molecular orbital energies of each state from the \
+    output files generated by PYXAID."""
     inpfile = os.path.join(path, fn)
     cols = tuple(range(5, nstates * 2 + 5, 2))
-    xs = np.stack(np.loadtxt(f'{inpfile}{j}', usecols=cols)
-                  for j in range(nconds)).transpose()
+    xs = np.stack([np.loadtxt(f'{inpfile}{j}', usecols=cols)
+                  for j in range(nconds)]).T
     # Rows = timeframes ; Columns = states ; tensor = initial conditions
     xs = xs.swapaxes(0, 1)
     return xs
@@ -193,14 +208,14 @@ def read_pops_pyxaid(path, fn, nstates, nconds):
     """Read the population of each state from the output files generated by PYXAID."""
     inpfile = os.path.join(path, fn)
     cols = tuple(range(3, nstates * 2 + 3, 2))
-    xs = np.stack(np.loadtxt(f'{inpfile}{j}', usecols=cols)
-                  for j in range(nconds)).transpose()
+    xs = np.stack([np.loadtxt(f'{inpfile}{j}', usecols=cols)
+                  for j in range(nconds)]).T
     # Rows = timeframes ; Columns = states ; tensor = initial conditions
     xs = xs.swapaxes(0, 1)
     return xs
 
 
-def parse_list_of_lists(xs: str) -> List[List[int]]:
+def parse_list_of_lists(xs: str) -> list[list[int]]:
     """Parse a list of list of integers using pyparsing."""
     enclosed = pa.Forward()  # Parser to be defined later
     natural = pa.Word(pa.nums)  # Natural Number

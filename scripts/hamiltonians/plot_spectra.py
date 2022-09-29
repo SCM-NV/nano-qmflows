@@ -112,11 +112,9 @@ def main(path_hams, s1, s2, dt, ts, wsd, wdeph):
     # Generate a matrix with s1, s2 and diff between them
     en_states = np.column_stack((energies[:, s1], energies[:, s2], d_E))
     # Compute autocorrelation function for each column (i.e. state)
-    acf = np.stack(
-        autocorrelate(en_states[:, i]) for i in range(en_states.shape[1])).transpose()
+    acf = np.stack([autocorrelate(en_states[:, i]) for i in range(en_states.shape[1])]).T
     # Compute the spectral density for each column using the normalized acf
-    sd = np.stack(
-        spectral_density(acf[:, 1, i], dt) for i in range(en_states.shape[1])).transpose()
+    sd = np.stack([spectral_density(acf[:, 1, i], dt) for i in range(en_states.shape[1])]).T
     # Compute the dephasing time for the uncorrelated acf between two states
     deph, rate = dephasing(acf[:, 0, 2], dt)
     # Plot stuff

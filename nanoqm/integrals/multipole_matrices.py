@@ -22,22 +22,25 @@ import os
 import uuid
 from os.path import join
 from pathlib import Path
-from typing import List, Union, TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
-import numpy as np
 from qmflows.common import AtomXYZ
 
 from .. import logger
-from ..common import (DictConfig, is_data_in_hdf5, retrieve_hdf5_data,
-                      store_arrays_in_hdf5, tuplesXYZ_to_plams)
+from ..common import is_data_in_hdf5, retrieve_hdf5_data, store_arrays_in_hdf5, tuplesXYZ_to_plams
 from ..compute_integrals import compute_integrals_multipole, get_thread_count, get_thread_type
 
 if TYPE_CHECKING:
     from numpy.typing import NDArray
     from numpy import float64 as f8
+    from .. import _data
 
 
-def get_multipole_matrix(config: DictConfig, inp: DictConfig, multipole: str) -> NDArray[f8]:
+def get_multipole_matrix(
+    config: _data.AbsorptionSpectrum,
+    inp: _data.AbsorptionData,
+    multipole: Literal["overlap", "dipole", "quadrupole"],
+) -> NDArray[f8]:
     """Retrieve the `multipole` number `i` from the trajectory. Otherwise compute it.
 
     Parameters
@@ -69,7 +72,10 @@ def get_multipole_matrix(config: DictConfig, inp: DictConfig, multipole: str) ->
 
 
 def search_multipole_in_hdf5(
-        path_hdf5: Union[str, Path], path_multipole_hdf5: str, multipole: str) -> None | NDArray[f8]:
+    path_hdf5: str | Path,
+    path_multipole_hdf5: str,
+    multipole: str,
+) -> None | NDArray[f8]:
     """Search if the multipole is already store in the HDF5."""
     if is_data_in_hdf5(path_hdf5, path_multipole_hdf5):
         logger.info(f"retrieving multipole: {multipole} from the hdf5")
@@ -80,7 +86,10 @@ def search_multipole_in_hdf5(
 
 
 def compute_matrix_multipole(
-        mol: List[AtomXYZ], config: DictConfig, multipole: str) -> NDArray[f8]:
+    mol: list[AtomXYZ],
+    config: _data.GeneralOptions,
+    multipole: Literal["overlap", "dipole", "quadrupole"],
+) -> NDArray[f8]:
     """Compute a `multipole` matrix: overlap, dipole, etc. for a given geometry `mol`.
 
     The multipole is Computed in spherical coordinates.
@@ -111,7 +120,7 @@ def compute_matrix_multipole(
     mol_plams.write(path)
 
     # name of the basis set
-    basis_name = config["cp2k_general_settings"]["basis"]
+    basis_name = config.cp2k_general_settings.basis
     thread_count = get_thread_count()
     thread_type = get_thread_type()
     logger.info(f"Will scale over {thread_count} {thread_type} threads")
@@ -134,7 +143,8 @@ def compute_matrix_multipole(
             path, path_hdf5, basis_name, multipole)
         dim = super_matrix.shape[1]
 
-        # Reshape to 3d tensor containing overlap + {x, y, z} + {xx, xy, xz, yy, yz, zz} quadrupole matrices
+        # Reshape to 3d tensor containing overlap + {x, y, z} + {xx, xy, xz, yy, yz, zz}
+        # quadrupole matrices
         matrix_multipole = super_matrix.reshape(10, dim, dim)
 
     # Delete the tmp molecule file

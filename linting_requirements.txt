@@ -1,5 +1,5 @@
 pydocstyle
-pycodestyle
+flake8
 
 # Mypy-related stuff
 mypy

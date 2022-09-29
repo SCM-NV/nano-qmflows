@@ -11,6 +11,20 @@ API
 {autodata}
 
 """
+
+from __future__ import annotations
+
+import os
+from numbers import Real
+from collections.abc import Iterable
+from typing import Any
+
+import pkg_resources as pkg
+from schema import And, Optional, Or, Regex, Schema, Use
+from qmflows import Settings
+
+from .. import _data
+
 __all__ = [
     'schema_cp2k_general_settings',
     'schema_derivative_couplings',
@@ -20,14 +34,8 @@ __all__ = [
     'schema_distribute_single_points',
     'schema_absorption_spectrum',
     'schema_ipr',
-    'schema_coop']
-
-import os
-from numbers import Real
-from typing import Any, Dict, Iterable
-
-import pkg_resources as pkg
-from schema import And, Optional, Or, Regex, Schema, Use
+    'schema_coop',
+]
 
 
 def equal_lambda(name: str) -> And:
@@ -42,7 +50,7 @@ def any_lambda(array: Iterable[str]) -> And:
         str, Use(str.lower), lambda s: s in array)
 
 
-def merge(d1: Dict[str, Any], d2: Dict[str, Any]) -> Dict[str, Any]:
+def merge(d1: dict[str, Any], d2: dict[str, Any]) -> dict[str, Any]:
     """Merge two dictionaries using without modifying the original."""
     x = d1.copy()
 
@@ -61,8 +69,28 @@ def _parse_filenames(f: "None | str | list[str]") -> "None | list[str]":
         raise TypeError(type(f).__name__)
 
 
+class _DataSchema(Schema):
+    """Schema subclass that casts the return type into a user-specified dataclass."""
+
+    def __init__(
+        self,
+        *args: Any,
+        data_cls: None | type[Any] = None,
+        **kwargs: Any,
+    ) -> None:
+        super().__init__(*args, **kwargs)
+        self._data_cls = data_cls
+
+    def validate(self, data: Any, **kwargs: Any) -> Any:
+        ret = super().validate(data, **kwargs)
+        if type(self.schema) is dict and self._data_cls is not None:
+            return self._data_cls(**ret)
+        else:
+            return ret
+
+
 #: Schema to validate the CP2K general settings
-schema_cp2k_general_settings = Schema({
+schema_cp2k_general_settings = _DataSchema({
 
     # "Basis set to carry out the quantum chemistry simulation"
     "basis": str,
@@ -86,7 +114,7 @@ schema_cp2k_general_settings = Schema({
     "periodic": any_lambda(("none", "x", "y", "z", "xy", "xy", "yz", "xyz")),
 
     # Specify the angles between the vectors defining the unit cell
-    Optional("cell_angles"): list,
+    Optional("cell_angles", default=None): list,
 
     # Path to the folder containing the basis set specifications
     Optional("path_basis", default=pkg.resource_filename("nanoqm", "basis")): os.path.isdir,
@@ -104,11 +132,11 @@ schema_cp2k_general_settings = Schema({
     Optional("functional_c", default=None): str,
 
     # Settings describing the input of the quantum package
-    "cp2k_settings_main": object,
+    "cp2k_settings_main": Use(Settings),
 
     # Settings describing the input of the quantum package
     # to compute the guess wavefunction"
-    "cp2k_settings_guess": object,
+    "cp2k_settings_guess": Use(Settings),
 
     # Restart File Name
     Optional("wfn_restart_file_name", default=None): Or(str, None),
@@ -121,30 +149,31 @@ schema_cp2k_general_settings = Schema({
     Optional("aux_fit", default="verygood"):
         any_lambda(("low", "medium", "good", "verygood", "excellent")),
 
-    # executable name
-    # "sdbg" Serial single core testing and debugging
-    # "sopt" Serial general single core usage
-    # "ssmp" Parallel (only OpenMP), single node, multi core
-    # "pdbg" Parallel (only MPI) multi-node testing and debugging
-    # "popt" Parallel (only MPI) general usage, no threads
-    # "psmp" parallel (MPI + OpenMP) general usage, threading might improve scalability and memory usage
+    # executable name:
+    # * "sdbg" Serial single core testing and debugging
+    # * "sopt" Serial general single core usage
+    # * "ssmp" Parallel (only OpenMP), single node, multi core
+    # * "pdbg" Parallel (only MPI) multi-node testing and debugging
+    # * "popt" Parallel (only MPI) general usage, no threads
+    # * "psmp" parallel (MPI + OpenMP) general usage,
+    #   threading might improve scalability and memory usage
 
     Optional("executable", default="cp2k.psmp"):
         Regex(r'.*cp2k\.(?:popt|psmp|sdbg|sopt|ssmp|pdbg)', flags=2)  # flag 2 == IGNORECASE
-})
+}, data_cls=_data.CP2KGeneralSetting)
 
 
 #: Dictionary with the options common to all workflows
 dict_general_options = {
 
     # Number of occupied/virtual orbitals to use
-    Optional('active_space', default=[10, 10]): And(list, lambda xs: len(xs) == 2),
+    Optional('active_space', default=(10, 10)): And(Use(tuple), lambda xs: len(xs) == 2),
 
     # Index of the HOMO
-    Optional("nHOMO"): int,
+    Optional("nHOMO", default=None): int,
 
     # Index of the orbitals to compute the couplings
-    Optional("mo_index_range"): tuple,
+    Optional("mo_index_range", default=None): tuple,
 
     # "default quantum package used"
     Optional("package_name", default="cp2k"): str,
@@ -220,11 +249,11 @@ dict_merged_derivative_couplings = merge(
     dict_general_options, dict_derivative_couplings)
 
 #: Schema to validate the input for a derivative coupling calculation
-schema_derivative_couplings = Schema(
-    dict_merged_derivative_couplings)
+schema_derivative_couplings = _DataSchema(
+    dict_merged_derivative_couplings, data_cls=_data.DerivativeCoupling)
 
 #: Schema to validate the input for a job scheduler
-schema_job_scheduler = Schema({
+schema_job_scheduler = _DataSchema({
     Optional("scheduler", default="slurm"):
     any_lambda(("slurm", "pbs")),
     Optional("nodes", default=1): int,
@@ -234,7 +263,7 @@ schema_job_scheduler = Schema({
     Optional("queue_name", default="short"): str,
     Optional("load_modules", default=""): str,
     Optional("free_format", default=""): str
-})
+}, data_cls=_data.JobScheduler)
 
 #: Input options to distribute a job
 dict_distribute = {
@@ -262,12 +291,13 @@ dict_distribute_derivative_couplings = {
 
 
 #: Schema to validate the input to distribute a derivate coupling calculation
-schema_distribute_derivative_couplings = Schema(
+schema_distribute_derivative_couplings = _DataSchema(
     merge(
         dict_distribute,
-        merge(
-            dict_merged_derivative_couplings,
-            dict_distribute_derivative_couplings)))
+        merge(dict_merged_derivative_couplings, dict_distribute_derivative_couplings)
+    ),
+    data_cls=_data.DistributeDerivativeCoupling,
+)
 
 #: Input for an absorption spectrum calculation
 dict_absorption_spectrum = {
@@ -292,7 +322,10 @@ dict_merged_absorption_spectrum = merge(
     dict_general_options, dict_absorption_spectrum)
 
 #: Schema to validate the input for an absorption spectrum calculation
-schema_absorption_spectrum = Schema(dict_merged_absorption_spectrum)
+schema_absorption_spectrum = _DataSchema(
+    dict_merged_absorption_spectrum,
+    data_cls=_data.AbsorptionSpectrum,
+)
 
 
 dict_distribute_absorption_spectrum = {
@@ -301,9 +334,13 @@ dict_distribute_absorption_spectrum = {
     "workflow": equal_lambda("distribute_absorption_spectrum")
 }
 
-schema_distribute_absorption_spectrum = Schema(
-    merge(dict_distribute, merge(
-        dict_merged_absorption_spectrum, dict_distribute_absorption_spectrum)))
+schema_distribute_absorption_spectrum = _DataSchema(
+    merge(
+        dict_distribute,
+        merge(dict_merged_absorption_spectrum, dict_distribute_absorption_spectrum)
+    ),
+    data_cls=_data.DistributeAbsorptionSpectrum,
+)
 
 dict_single_points = {
     # Name of the workflow to run
@@ -322,25 +359,30 @@ dict_distribute_single_points = {
 
 #: Input for a Crystal Orbital Overlap Population calculation
 dict_coop = {
-    # List of the two elements to calculate the COOP for
-    "coop_elements": list}
+    # List/tuple of the two elements to calculate the COOP for
+    "coop_elements": And(Use(tuple), lambda xs: len(xs) == 2),
+}
 
 
 dict_merged_single_points = merge(dict_general_options, dict_single_points)
 
 #: Schema to validate the input of a single pointe calculation
-schema_single_points = Schema(dict_merged_single_points)
+schema_single_points = _DataSchema(dict_merged_single_points, data_cls=_data.SinglePoints)
 
 #: Schema to validate the input for a Inverse Participation Ratio calculation
-schema_ipr = schema_single_points
+schema_ipr = _DataSchema(dict_merged_single_points, data_cls=_data.IPR)
 
 #: Input for a Crystal Orbital Overlap Population calculation
 dict_merged_coop = merge(dict_merged_single_points, dict_coop)
 
 #: Schema to validate the input for a Crystal Orbital Overlap Population calculation
-schema_coop = Schema(dict_merged_coop)
+schema_coop = _DataSchema(dict_merged_coop, data_cls=_data.COOP)
 
 #: Schema to validate the input to distribute a single point calculation
-schema_distribute_single_points = Schema(
-    merge(dict_distribute, merge(
-        dict_merged_single_points, dict_distribute_single_points)))
+schema_distribute_single_points = _DataSchema(
+    merge(
+        dict_distribute,
+        merge(dict_merged_single_points, dict_distribute_single_points),
+    ),
+    data_cls=_data.DistributeSinglePoints,
+)

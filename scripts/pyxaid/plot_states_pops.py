@@ -72,14 +72,14 @@ def main(path_output, ms, nconds):
             outs_fin.append(x)
         else:
             outs_fin.append(np.sum(x, axis=1))
-    outs_fin = np.array(outs_fin).transpose()
+    outs_fin = np.array(outs_fin).T
 
     for x in pops_avg:
         if x.ndim == 1:
             pops_fin.append(x)
         else:
             pops_fin.append(np.sum(x, axis=1))
-    pops_fin = np.array(pops_fin).transpose()
+    pops_fin = np.array(pops_fin).T
 
     plot_stuff(outs_fin, pops_fin)
 

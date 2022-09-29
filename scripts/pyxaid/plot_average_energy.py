@@ -38,8 +38,7 @@ def plot_stuff(outs, pops):
 def read_energies(path, fn, nstates, nconds):
     inpfile = os.path.join(path, fn)
     cols = tuple(range(5, nstates * 2 + 5, 2))
-    xs = np.stack(np.loadtxt(f'{inpfile}{j}', usecols=cols)
-                  for j in range(nconds)).transpose()
+    xs = np.stack([np.loadtxt(f'{inpfile}{j}', usecols=cols) for j in range(nconds)]).T
     # Rows = timeframes ; Columns = states ; tensor = initial conditions
     xs = xs.swapaxes(0, 1)
     return xs
@@ -48,8 +47,7 @@ def read_energies(path, fn, nstates, nconds):
 def read_pops(path, fn, nstates, nconds):
     inpfile = os.path.join(path, fn)
     cols = tuple(range(3, nstates * 2 + 3, 2))
-    xs = np.stack(np.loadtxt(f'{inpfile}{j}', usecols=cols)
-                  for j in range(nconds)).transpose()
+    xs = np.stack([np.loadtxt(f'{inpfile}{j}', usecols=cols) for j in range(nconds)]).T
     # Rows = timeframes ; Columns = states ; tensor = initial conditions
     xs = xs.swapaxes(0, 1)
     return xs

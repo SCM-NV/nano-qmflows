@@ -6,7 +6,6 @@ import os
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-import qmflows
 import h5py
 import pytest
 import yaml
@@ -46,10 +45,8 @@ def create_config(tmp_path: Path, scrath_is_None: bool) -> None:
     with open(path_inp, 'w') as f:
         yaml.dump(inp, f)
 
-    new_inp = process_input(path_inp, 'derivative_couplings')
-
-    config = initialize(new_inp)
-
+    config = process_input(path_inp, 'derivative_couplings')
+    initialize(config)
     assert Path(config.path_hdf5).exists()
 
 

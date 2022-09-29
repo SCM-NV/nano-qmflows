@@ -15,8 +15,6 @@ API
 
 from __future__ import annotations
 
-__all__ = ['initialize', 'read_swaps', 'split_trajectory']
-
 import re
 import fnmatch
 import getpass
@@ -26,7 +24,7 @@ import tempfile
 from os.path import join
 from pathlib import Path
 from subprocess import PIPE, Popen
-from typing import List, Union
+from typing import List, Union, TYPE_CHECKING
 
 import h5py
 import numpy as np
@@ -40,21 +38,19 @@ from qmflows.type_hints import PathLike
 
 from .. import logger, __version__, __path__ as nanoqm_path
 from .._logger import EnableFileHandler
-from ..common import (BasisFormats, DictConfig, Matrix, change_mol_units,
+from ..common import (BasisFormats, Matrix, change_mol_units,
                       is_data_in_hdf5, retrieve_hdf5_data,
                       store_arrays_in_hdf5)
 from ..schedule.components import create_point_folder, split_file_geometries
 
+if TYPE_CHECKING:
+    from .. import _data
 
-def initialize(config: DictConfig) -> DictConfig:
-    """Initialize all the data required to schedule the workflows.
+__all__ = ['initialize', 'read_swaps', 'split_trajectory']
 
-    Returns
-    -------
-    DictConfig
-        Input to run the workflow.
 
-    """
+def initialize(config: _data.GeneralOptions) -> None:
+    """Initialize all the data required to schedule the workflows."""
     with EnableFileHandler(f'{config.project_name}.log'):
         logger.info(f"Using nano-qmflows version: {qmflows.__version__} ")
         logger.info(f"nano-qmflows path is: {nanoqm_path[0]}")
@@ -62,51 +58,50 @@ def initialize(config: DictConfig) -> DictConfig:
         logger.info(f"Data will be stored in HDF5 file: {config.path_hdf5}")
 
         # Scratch folder
-        scratch_path = create_path_option(config["scratch_path"])
+        scratch_path = create_path_option(config.scratch_path)
         if scratch_path is None:
             scratch_path = (
                 Path(tempfile.gettempdir()) / getpass.getuser() / config.project_name
             )
+            config.scratch_path = scratch_path
             logger.warning(f"path to scratch was not defined, using: {scratch_path}")
-        config['workdir'] = scratch_path
+        config.workdir = scratch_path
 
         # If the directory does not exist create it
         if not scratch_path.exists():
             scratch_path.mkdir(parents=True)
 
         # Touch HDF5 if it doesn't exists
-        if not os.path.exists(config.path_hdf5):
-            Path(config.path_hdf5).touch()
+        with h5py.File(config.path_hdf5, "a"):
+            pass
 
         # all_geometries type :: [String]
-        geometries = split_file_geometries(config["path_traj_xyz"])
-        config['geometries'] = geometries
+        geometries = split_file_geometries(config.path_traj_xyz)
+        config.geometries = geometries
 
         # Create a folder for each point the the dynamics
-        enumerate_from = config["enumerate_from"]
+        enumerate_from = config.enumerate_from
         len_geometries = len(geometries)
-        config["folders"] = create_point_folder(
-            scratch_path, len_geometries, enumerate_from)
+        config.folders = create_point_folder(scratch_path, len_geometries, enumerate_from)
 
-        config['calc_new_wf_guess_on_points'] = guesses_to_compute(
-            config['calculate_guesses'], enumerate_from, len_geometries)
+        config.calc_new_wf_guess_on_points = guesses_to_compute(
+            config.calculate_guesses, enumerate_from, len_geometries
+        )
 
         # Generate a list of tuples containing the atomic label
         # and the coordinates to generate the primitive CGFs
         atoms = parse_string_xyz(geometries[0])
-        if 'angstrom' in config["geometry_units"].lower():
+        if 'angstrom' in config.geometry_units.lower():
             atoms = change_mol_units(atoms)
 
         # Save Basis to HDF5
         save_basis_to_hdf5(config)
 
-    return config
 
-
-def save_basis_to_hdf5(config: DictConfig) -> None:
+def save_basis_to_hdf5(config: _data.GeneralOptions) -> None:
     """Store the specification of the basis set in the HDF5 to compute the integrals."""
-    root: str = config['cp2k_general_settings']['path_basis']
-    files: "None | list[str]" = config['cp2k_general_settings']['basis_file_name']
+    root: str = config.cp2k_general_settings.path_basis
+    files: "None | list[str]" = config.cp2k_general_settings.basis_file_name
     if files is not None:
         basis_paths = [os.path.join(root, i) for i in files]
     else:
@@ -166,7 +161,11 @@ def store_cp2k_basis(path_hdf5: PathLike, path_basis: PathLike) -> None:
                          attribute=BasisFormats(name="basisFormat", value=formats))
 
 
-def guesses_to_compute(calculate_guesses: str, enumerate_from: int, len_geometries: int) -> List[int]:
+def guesses_to_compute(
+    calculate_guesses: str,
+    enumerate_from: int,
+    len_geometries: int,
+) -> List[int]:
     """Guess for the wave function."""
     if calculate_guesses is None:
         points_guess = []
@@ -244,6 +243,6 @@ def split_trajectory(path: str | Path, nblocks: int, pathOut: str | os.PathLike[
         return fnmatch.filter(os.listdir(), "chunk_xyz_?")
 
 
-def create_path_option(path: str | os.PathLike[str]) -> Path | None:
+def create_path_option(path: None | str | os.PathLike[str]) -> Path | None:
     """Create a Path object or return None if path is None."""
     return Path(path) if path is not None else None

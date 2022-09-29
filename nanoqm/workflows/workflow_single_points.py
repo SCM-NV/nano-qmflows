@@ -8,21 +8,25 @@ Index
 
 """
 
-__all__ = ['workflow_single_points']
+from __future__ import annotations
 
-
-from typing import List
+from typing import TYPE_CHECKING
 
 from qmflows import run
-from qmflows.packages import Result
 
 from .. import logger
-from ..common import DictConfig
 from ..schedule.components import calculate_mos
 from .initialization import initialize
 
+if TYPE_CHECKING:
+    from .. import _data
 
-def workflow_single_points(config: DictConfig) -> Result:
+__all__ = ['workflow_single_points']
+
+
+def workflow_single_points(
+    config: _data.SinglePoints,
+) -> tuple[list[tuple[str, str, str]], list[str]]:
     """Perform single point calculations for a given trajectory.
 
     Parameters
@@ -36,14 +40,13 @@ def workflow_single_points(config: DictConfig) -> Result:
 
     """
     # Dictionary containing the general configuration
-    config.update(initialize(config))
+    initialize(config)
 
     logger.info("starting!")
 
     # compute the molecular orbitals
     # Unpack
     mo_paths_hdf5 = calculate_mos(config)
-    # Pack
-    results = run(mo_paths_hdf5, folder=config.workdir)
 
-    return results
+    # Pack
+    return tuple(run(mo_paths_hdf5, folder=config.workdir))

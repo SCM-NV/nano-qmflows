@@ -21,7 +21,7 @@ class TestInputValidation:
         """Test the templates and keywords completion."""
         path_input = PATH_TEST / "input_test_pbe0.yml"
         dict_input = process_input(path_input, "derivative_couplings")
-        sett = dict_input['cp2k_general_settings']['cp2k_settings_guess']
+        sett = dict_input.cp2k_general_settings.cp2k_settings_guess
 
         scale_x = sett.specific.cp2k.force_eval.dft.xc.xc_functional.pbe.scale_x
 
@@ -46,7 +46,7 @@ class TestInputValidation:
     def test_basis_filename(self, key: str, is_list: bool) -> None:
         with open(PATH_TEST / "input_test_pbe0.yml", "r") as f:
             s = plams.Settings(yaml.load(f, Loader=yaml.SafeLoader))
-            dft1 = s.cp2k_general_settings[key] = ["a", "b", "c"] if is_list else "a"
+            s.cp2k_general_settings[key] = ["a", "b", "c"] if is_list else "a"
 
         s_output = schema_workflows["derivative_couplings"].validate(s)
         InputSanitizer(s_output).sanitize()
@@ -88,9 +88,9 @@ class TestInputValidation:
             s = plams.Settings(yaml.load(f, Loader=yaml.SafeLoader))
             s.cp2k_general_settings.cp2k_settings_main.specific.template = "main"
             if functional_c:
-                s.cp2k_general_settings["functional_c"] = "GGA_C_LYP"
+                s.cp2k_general_settings.functional_c = "GGA_C_LYP"
             if functional_x:
-                s.cp2k_general_settings["functional_x"] = "GGA_X_OL2"
+                s.cp2k_general_settings.functional_x = "GGA_X_OL2"
 
         s_out = schema_workflows["derivative_couplings"].validate(s)
         InputSanitizer(s_out).sanitize()
@@ -119,11 +119,11 @@ def test_call_cp2k_pbe() -> None:
 def run_plams(path_input: PathLike) -> CP2K_Result:
     """Call Plams to run a CP2K job."""
     # create settings
-    dict_input = process_input(path_input, "derivative_couplings")
-    sett = dict_input['cp2k_general_settings']['cp2k_settings_guess']
+    config = process_input(path_input, "derivative_couplings")
+    sett = config.cp2k_general_settings.cp2k_settings_guess
 
     # adjust the cell parameters
-    file_cell_parameters = dict_input['cp2k_general_settings'].get("file_cell_parameters")
+    file_cell_parameters = config.cp2k_general_settings.file_cell_parameters
     if file_cell_parameters is not None:
         array_cell_parameters = read_cell_parameters_as_array(file_cell_parameters)[1]
         sett.cell_parameters = array_cell_parameters[0, 2:11].reshape(3, 3).tolist()

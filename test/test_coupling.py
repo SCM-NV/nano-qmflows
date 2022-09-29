@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 import shutil
 import tempfile
-from collections.abc import Sequence, Generator, Generator
+from collections.abc import Sequence, Generator
 from pathlib import Path
 from typing import TYPE_CHECKING, NamedTuple
 
@@ -13,9 +13,10 @@ import h5py
 import numpy as np
 import pytest
 from assertionlib import assertion
-from nanoqm.common import DictConfig, is_data_in_hdf5, retrieve_hdf5_data
+from nanoqm.common import is_data_in_hdf5, retrieve_hdf5_data
 from nanoqm.workflows.input_validation import process_input
 from nanoqm.workflows.workflow_coupling import workflow_derivative_couplings
+from nanoqm import _data
 from packaging.version import Version
 
 from .utilsTest import PATH_TEST, remove_files, CP2K_VERSION, requires_cp2k
@@ -26,7 +27,7 @@ if TYPE_CHECKING:
 
 class CouplingsOutput(NamedTuple):
     name: str
-    config: DictConfig
+    config: _data.DerivativeCoupling
     tmp_hdf5: str
     orbitals_type: str
     hamiltonians: tuple[list[str], ...]
@@ -51,11 +52,11 @@ class TestCoupling:
 
             path_input = PATH_TEST / input_file
             config = process_input(path_input, 'derivative_couplings')
-            config["scratch_path"] = tmp_path
+            config.scratch_path = tmp_path
             tmp_hdf5 = os.path.join(tmp_path, 'fast_couplings.hdf5')
             shutil.copy(config.path_hdf5, tmp_hdf5)
-            config['path_hdf5'] = tmp_hdf5
-            config['write_overlaps'] = True
+            config.path_hdf5 = tmp_hdf5
+            config.write_overlaps = True
 
             # Run the calculation again to test that the data is read from the hdf5
             _ = workflow_derivative_couplings(config)
@@ -88,9 +89,15 @@ class TestCoupling:
         couplings_path = create_paths('coupling')
 
         # Check that couplings and overlaps exists
-        assertion.assert_(is_data_in_hdf5, output.tmp_hdf5, overlaps_path, message="overlaps dataset")
-        assertion.assert_(is_data_in_hdf5, output.tmp_hdf5, overlaps_corrected_path, message="overlaps dataset")
-        assertion.assert_(is_data_in_hdf5, output.tmp_hdf5, couplings_path, message="couplings dataset")
+        assertion.assert_(
+            is_data_in_hdf5, output.tmp_hdf5, overlaps_path, message="overlaps dataset"
+        )
+        assertion.assert_(
+            is_data_in_hdf5, output.tmp_hdf5, overlaps_corrected_path, message="overlaps dataset"
+        )
+        assertion.assert_(
+            is_data_in_hdf5, output.tmp_hdf5, couplings_path, message="couplings dataset"
+        )
         overlaps = np.abs(retrieve_hdf5_data(output.tmp_hdf5, overlaps_path))
         corrected_overlaps = retrieve_hdf5_data(output.tmp_hdf5, overlaps_corrected_path)
         couplings = np.array(retrieve_hdf5_data(output.tmp_hdf5, couplings_path))
@@ -138,8 +145,12 @@ class TestCoupling:
         couplings = np.stack([np.loadtxt(ts[0]) for ts in hamiltonians])
 
         # check that energies and couplings are finite values
-        assertion.assert_(np.isfinite, energies, post_process=np.all, message=f"energies{suffix}")
-        assertion.assert_(np.isfinite, couplings, post_process=np.all, message=f"couplings{suffix}")
+        assertion.assert_(
+            np.isfinite, energies, post_process=np.all, message=f"energies{suffix}"
+        )
+        assertion.assert_(
+            np.isfinite, couplings, post_process=np.all, message=f"couplings{suffix}"
+        )
 
         # Check that the couplings diagonal is zero
         trace = np.trace(couplings, axis1=1, axis2=2)

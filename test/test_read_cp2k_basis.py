@@ -21,7 +21,8 @@ class TestRedCP2KBasis:
     def test_pass(self, tmp_path: Path) -> None:
         """Read Basis set in CP2K format."""
         tmp_hdf5 = Path(tmp_path) / 'cp2k_basis.hdf5'
-        tmp_hdf5.touch()
+        with h5py.File(tmp_hdf5, "x"):
+            pass
 
         path_basis = pkg_resources.resource_filename(
             "nanoqm", "basis/BASIS_MOLOPT")

@@ -3,32 +3,26 @@
 requires = [
     'setuptools>=48.0',
     'wheel>=0.21',
-
-    # Older numpy versions aren't fully compatible with Python's limited API
-    'numpy==1.17.1; python_version=="3.7" and (platform_machine!="arm64" or platform_system!="Darwin") and platform_machine!="aarch64" and platform_machine!="loongarch64" and platform_system!="AIX" and platform_python_implementation != "PyPy"',
-    'oldest-supported-numpy; python_version!="3.7" or (platform_machine=="arm64" and platform_system=="Darwin") or platform_machine=="aarch64" or platform_machine=="loongarch64" or platform_system=="AIX" or platform_python_implementation == "PyPy"',
+    'oldest-supported-numpy',
 ]
 
 [tool.mypy]
 plugins = "numpy.typing.mypy_plugin"
 show_error_codes = true
+mypy_path = "typings"
+files = ["nanoqm", "typings"]
 
 [[tool.mypy.overrides]]
 module = [
-    "scm.plams.*",
-    "h5py.*",
-    "scipy.*",
-    "noodles.*",
     "schema.*",
-    "mendeleev.*",
 ]
 ignore_missing_imports = true
 
 [tool.cibuildwheel]
 build = [
-    "cp37-manylinux_x86_64",
-    "cp37-manylinux-aarch64",
-    "cp37-macosx_x86_64",
+    "cp38-manylinux_x86_64",
+    "cp38-manylinux-aarch64",
+    "cp38-macosx_x86_64",
     "cp38-macosx_arm64",
 ]
 build-verbosity = "3"
@@ -36,8 +30,8 @@ before-all = "cp licenses/LICENSE*.txt ."
 
 [tool.cibuildwheel.linux]
 environment = { QMFLOWS_INCLUDEDIR="", QMFLOWS_LIBDIR="", CFLAGS="-Werror -fopenmp", LDFLAGS="-Wl,--strip-debug -fopenmp" }
-manylinux-x86_64-image = "ghcr.io/nlesc-nano/manylinux2014_x86_64-qmflows"
-manylinux-aarch64-image = "ghcr.io/nlesc-nano/manylinux2014_aarch64-qmflows"
+manylinux-x86_64-image = "ghcr.io/nlesc-nano/manylinux2014_x86_64-qmflows:latest"
+manylinux-aarch64-image = "ghcr.io/nlesc-nano/manylinux2014_aarch64-qmflows:latest"
 repair-wheel-command = "auditwheel -v repair -w {dest_dir} {wheel}"
 
 [tool.cibuildwheel.macos]

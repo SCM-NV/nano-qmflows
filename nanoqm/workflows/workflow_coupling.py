@@ -12,29 +12,31 @@ Index
 
 from __future__ import annotations
 
-__all__ = ['workflow_derivative_couplings']
-
 import os
 from os.path import join
-from typing import List, Tuple, Union
+from typing import List, Tuple, TYPE_CHECKING
 
 from noodles import gather, schedule, unpack
 from noodles.interface import PromisedObject
-from qmflows.type_hints import PathLike
 
 from .. import logger
-from ..common import DictConfig
 from ..schedule.components import calculate_mos
 from ..schedule.scheduleCoupling import (calculate_overlap, lazy_couplings,
                                          write_hamiltonians)
 from .orbitals_type import select_orbitals_type
+
+if TYPE_CHECKING:
+    from .. import _data
+
+__all__ = ['workflow_derivative_couplings']
 
 #: Type defining the derivative couplings calculation
 ResultPaths = Tuple[List[str], List[str]]
 
 
 def workflow_derivative_couplings(
-        config: DictConfig) -> Union[ResultPaths, Tuple[ResultPaths, ResultPaths]]:
+    config: _data.DerivativeCoupling
+) -> ResultPaths | tuple[ResultPaths, ResultPaths]:
     """Compute the derivative couplings for a molecular dynamic trajectory.
 
     Parameters
@@ -50,7 +52,7 @@ def workflow_derivative_couplings(
     return select_orbitals_type(config, run_workflow_couplings)
 
 
-def run_workflow_couplings(config: DictConfig) -> PromisedObject:
+def run_workflow_couplings(config: _data.DerivativeCoupling) -> PromisedObject:
     """Run the derivative coupling workflow using `config`."""
     # compute the molecular orbitals
     logger.info("starting couplings calculation!")
@@ -70,7 +72,7 @@ def run_workflow_couplings(config: DictConfig) -> PromisedObject:
     schedule_write_ham = schedule(write_hamiltonians)
 
     # Number of matrix computed
-    config["npoints"] = len(config.geometries) - 2
+    config.npoints = len(config.geometries) - 2
 
     # Write Hamilotians in PYXAID format
     promise_files = schedule_write_ham(

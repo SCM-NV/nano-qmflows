@@ -24,18 +24,14 @@ API
 
 from __future__ import annotations
 
-__all__ = ['DictConfig', 'Matrix', 'Tensor3D', 'Vector',
-           'change_mol_units', 'getmass', 'h2ev', 'hardness',
-           'number_spherical_functions_per_atom', 'retrieve_hdf5_data',
-           'is_data_in_hdf5', 'store_arrays_in_hdf5', 'UniqueSafeLoader',
-           'valence_electrons', 'aux_fit']
-
 import os
 import json
 from itertools import chain
 from pathlib import Path
-from typing import (Any, Dict, Iterable, List, Mapping, NamedTuple, Tuple,
-                    Sequence, overload, TypeVar, TYPE_CHECKING, Iterator)
+from collections.abc import Iterable, Sequence
+from typing import (
+    Any, Dict, List, NamedTuple, overload, TypeVar, TYPE_CHECKING, TypedDict, Literal
+)
 
 import h5py
 import mendeleev
@@ -52,6 +48,12 @@ if TYPE_CHECKING:
     import numpy.typing as npt
 
 _T = TypeVar("_T")
+
+__all__ = ['DictConfig', 'Matrix', 'Tensor3D', 'Vector',
+           'change_mol_units', 'getmass', 'h2ev', 'hardness',
+           'number_spherical_functions_per_atom', 'retrieve_hdf5_data',
+           'is_data_in_hdf5', 'store_arrays_in_hdf5', 'UniqueSafeLoader',
+           'valence_electrons', 'aux_fit']
 
 
 _path_valence_electrons = Path(nanoqm_path[0]) / "basis" / "valence_electrons.json"
@@ -85,7 +87,7 @@ class BasisFormats(NamedTuple):
     value: list[npt.NDArray[np.int64]]
 
 
-def concat(xss: Iterable[Iterable[_T]]) -> List[_T]:
+def concat(xss: Iterable[Iterable[_T]]) -> list[_T]:
     """Concatenate of all the elements of a list."""
     return list(chain(*xss))
 
@@ -110,6 +112,7 @@ if isinstance(physical_constants['atomic unit of length'][0], float):
     hbar = 1e15 * physical_constants['Planck constant over 2 pi in eV s'][0]
 else:
     angs2au = femtosec2au = h2ev = r2meV = fs_to_cm = fs_to_nm = hbar = 1.0
+
 
 # type hints
 MolXYZ = List[AtomXYZ]
@@ -148,37 +151,64 @@ def hardness(s: str) -> float:
     return d[s] / 27.211
 
 
-def xc(s: str) -> Dict[str, Any]:
+class _XCDict(TypedDict):
+    type: Literal["pure", "hybrid", "rhs"]
+    alpha1: float
+    alpha2: float
+    ax: float
+    beta1: float
+    beta2: float
+
+
+_XC_DICT: dict[str, _XCDict] = {
+    'pbe': {
+        'type': 'pure', 'alpha1': 1.42, 'alpha2': 0.48, 'ax': 0, 'beta1': 0.2, 'beta2': 1.83
+    },
+    'blyp': {
+        'type': 'pure', 'alpha1': 1.42, 'alpha2': 0.48, 'ax': 0, 'beta1': 0.2, 'beta2': 1.83
+    },
+    'bp': {
+        'type': 'pure', 'alpha1': 1.42, 'alpha2': 0.48, 'ax': 0, 'beta1': 0.2, 'beta2': 1.83
+    },
+    'pbe0': {
+        'type': 'hybrid', 'alpha1': 1.42, 'alpha2': 0.48, 'ax': 0.25, 'beta1': 0.2, 'beta2': 1.83
+    },
+    'b3lyp': {
+        'type': 'hybrid', 'alpha1': 1.42, 'alpha2': 0.48, 'ax': 0.20, 'beta1': 0.2, 'beta2': 1.83
+    },
+    'bhlyp': {
+        'type': 'hybrid', 'alpha1': 1.42, 'alpha2': 0.48, 'ax': 0.50, 'beta1': 0.2, 'beta2': 1.83
+    },
+    'cam-b3lyp': {
+        'type': 'rhs', 'alpha1': 1.86, 'alpha2': 0.00, 'ax': 0.38, 'beta1': 0.90, 'beta2': 0
+    },
+    'lc-blyp': {
+        'type': 'rhs', 'alpha1': 8.0, 'alpha2': 0.00, 'ax': 0.53, 'beta1': 4.50, 'beta2': 0
+    },
+    'wb97': {
+        'type': 'rhs', 'alpha1': 8.0, 'alpha2': 0.00, 'ax': 0.61, 'beta1': 4.41, 'beta2': 0.0
+    },
+}
+
+
+def xc(s: str) -> _XCDict:
     """Return the exchange functional composition."""
-    d = {
-        'pbe': {
-            'type': 'pure', 'alpha1': 1.42, 'alpha2': 0.48, 'ax': 0, 'beta1': 0.2, 'beta2': 1.83},
-        'blyp': {
-            'type': 'pure', 'alpha1': 1.42, 'alpha2': 0.48, 'ax': 0, 'beta1': 0.2, 'beta2': 1.83},
-        'bp': {
-            'type': 'pure', 'alpha1': 1.42, 'alpha2': 0.48, 'ax': 0, 'beta1': 0.2, 'beta2': 1.83},
-        'pbe0': {
-            'type': 'hybrid', 'alpha1': 1.42, 'alpha2': 0.48, 'ax': 0.25, 'beta1': 0.2, 'beta2': 1.83},
-        'b3lyp': {
-            'type': 'hybrid', 'alpha1': 1.42, 'alpha2': 0.48, 'ax': 0.20, 'beta1': 0.2, 'beta2': 1.83},
-        'bhlyp': {
-            'type': 'hybrid', 'alpha1': 1.42, 'alpha2': 0.48, 'ax': 0.50, 'beta1': 0.2, 'beta2': 1.83},
-        'cam-b3lyp': {
-            'type': 'rhs', 'alpha1': 1.86, 'alpha2': 0.00, 'ax': 0.38, 'beta1': 0.90, 'beta2': 0},
-        'lc-blyp': {
-            'type': 'rhs', 'alpha1': 8.0, 'alpha2': 0.00, 'ax': 0.53, 'beta1': 4.50, 'beta2': 0},
-        'wb97': {
-            'type': 'rhs', 'alpha1': 8.0, 'alpha2': 0.00, 'ax': 0.61, 'beta1': 4.41, 'beta2': 0.0}}
-    return d[s]
+    return _XC_DICT[s]
 
 
 @overload
-def retrieve_hdf5_data(path_hdf5: str | os.PathLike[str], paths_to_prop: str) -> npt.NDArray[Any]:
+def retrieve_hdf5_data(
+    path_hdf5: str | os.PathLike[str],
+    paths_to_prop: str,
+) -> npt.NDArray[Any]:
     ...
 
 
 @overload
-def retrieve_hdf5_data(path_hdf5: str | os.PathLike[str], paths_to_prop: List[str]) -> List[npt.NDArray[Any]]:
+def retrieve_hdf5_data(
+    path_hdf5: str | os.PathLike[str],
+    paths_to_prop: list[str],
+) -> list[npt.NDArray[Any]]:
     ...
 
 
@@ -209,10 +239,10 @@ def retrieve_hdf5_data(
     path_hdf5 = os.fspath(path_hdf5)
     try:
         with h5py.File(path_hdf5, 'r') as f5:
-            if isinstance(paths_to_prop, list):
-                return [f5[path][()] for path in paths_to_prop]
-            else:
+            if isinstance(paths_to_prop, str):
                 return f5[paths_to_prop][()]
+            else:
+                return [f5[path][()] for path in paths_to_prop]
     except KeyError:
         msg = f"There is not {paths_to_prop} stored in the HDF5\n"
         raise KeyError(msg)
@@ -221,7 +251,7 @@ def retrieve_hdf5_data(
         raise RuntimeError(msg)
 
 
-def is_data_in_hdf5(path_hdf5: str | os.PathLike[str], xs: str | List[str]) -> bool:
+def is_data_in_hdf5(path_hdf5: str | os.PathLike[str], xs: str | Iterable[str]) -> bool:
     """Search if the node exists in the HDF5 file.
 
     Parameters
@@ -239,18 +269,18 @@ def is_data_in_hdf5(path_hdf5: str | os.PathLike[str], xs: str | List[str]) -> b
     """
     path_hdf5 = os.fspath(path_hdf5)
     if os.path.exists(path_hdf5):
-        with h5py.File(path_hdf5, 'r+') as f5:
-            if isinstance(xs, list):
-                return all(path in f5 for path in xs)
-            else:
+        with h5py.File(path_hdf5, 'r') as f5:
+            if isinstance(xs, str):
                 return xs in f5
+            else:
+                return all(path in f5 for path in xs)
     else:
         return False
 
 
 def store_arrays_in_hdf5(
     path_hdf5: PathLike,
-    paths: str | List[str],
+    paths: str | list[str],
     tensor: np.ndarray | Sequence[np.ndarray],
     dtype: npt.DTypeLike = np.float32,
     attribute: BasisFormats | None = None,
@@ -278,19 +308,19 @@ def store_arrays_in_hdf5(
             data_set.attrs[attribute.name] = attribute.value[k]
 
     with h5py.File(path_hdf5, 'r+') as f5:
-        if isinstance(paths, list):
+        if isinstance(paths, str):
+            dset = f5.require_dataset(paths, shape=np.shape(
+                tensor), data=tensor, dtype=dtype)
+            add_attribute(dset)
+        else:
             for k, path in enumerate(paths):
                 data = tensor[k]
                 dset = f5.require_dataset(path, shape=np.shape(data),
                                           data=data, dtype=dtype)
                 add_attribute(dset, k)
-        else:
-            dset = f5.require_dataset(paths, shape=np.shape(
-                tensor), data=tensor, dtype=dtype)
-            add_attribute(dset)
 
 
-def change_mol_units(mol: List[AtomXYZ], factor: float = angs2au) -> List[AtomXYZ]:
+def change_mol_units(mol: list[AtomXYZ], factor: float = angs2au) -> list[AtomXYZ]:
     """Change the units of the molecular coordinates."""
     new_molecule = []
     for atom in mol:
@@ -299,7 +329,7 @@ def change_mol_units(mol: List[AtomXYZ], factor: float = angs2au) -> List[AtomXY
     return new_molecule
 
 
-def tuplesXYZ_to_plams(xs: List[AtomXYZ]) -> Molecule:
+def tuplesXYZ_to_plams(xs: list[AtomXYZ]) -> Molecule:
     """Transform a list of namedTuples to a Plams molecule."""
     plams_mol = Molecule()
     for at in xs:
@@ -311,7 +341,7 @@ def tuplesXYZ_to_plams(xs: List[AtomXYZ]) -> Molecule:
 
 
 def number_spherical_functions_per_atom(
-    mol: List[AtomXYZ],
+    mol: list[AtomXYZ],
     package_name: str,
     basis_name: str,
     path_hdf5: PathLike,
@@ -361,7 +391,7 @@ def calc_n_spherics(fss: npt.NDArray[np.int_]) -> np.int_:
 
 def read_cell_parameters_as_array(
     file_cell_parameters: str | os.PathLike[str],
-) -> Tuple[str, npt.NDArray[np.float64]]:
+) -> tuple[str, npt.NDArray[np.float64]]:
     """Read the cell parameters as a numpy array."""
     arr = np.loadtxt(file_cell_parameters, skiprows=1)
 

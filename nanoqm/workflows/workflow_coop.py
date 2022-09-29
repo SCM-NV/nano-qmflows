@@ -10,17 +10,13 @@ Index
 
 from __future__ import annotations
 
-__all__ = ['workflow_crystal_orbital_overlap_population']
-
-from typing import Tuple, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 import numpy as np
-
 from qmflows.parsers import readXYZ
 
 from .. import logger
-from ..common import (DictConfig, MolXYZ, h2ev,
-                      number_spherical_functions_per_atom, retrieve_hdf5_data)
+from ..common import MolXYZ, h2ev, number_spherical_functions_per_atom, retrieve_hdf5_data
 from ..integrals.multipole_matrices import compute_matrix_multipole
 from .initialization import initialize
 from .tools import compute_single_point_eigenvalues_coefficients
@@ -28,12 +24,15 @@ from .tools import compute_single_point_eigenvalues_coefficients
 if TYPE_CHECKING:
     from numpy.typing import NDArray
     from numpy import float64 as f8, int64 as i8
+    from .. import _data
+
+__all__ = ['workflow_crystal_orbital_overlap_population']
 
 
-def workflow_crystal_orbital_overlap_population(config: DictConfig) -> NDArray[f8]:
+def workflow_crystal_orbital_overlap_population(config: _data.COOP) -> NDArray[f8]:
     """Compute the Crystal Orbital Overlap Population."""
     # Dictionary containing the general information
-    config.update(initialize(config))
+    initialize(config)
 
     # Checking hdf5 for eigenvalues and coefficients. If not present, they are
     # computed.
@@ -70,7 +69,7 @@ def workflow_crystal_orbital_overlap_population(config: DictConfig) -> NDArray[f
     return result_coop
 
 
-def get_eigenvalues_coefficients(config: DictConfig) -> Tuple[NDArray[f8], NDArray[f8]]:
+def get_eigenvalues_coefficients(config: _data.COOP) -> tuple[NDArray[f8], NDArray[f8]]:
     """Retrieve eigenvalues and coefficients from hdf5 file."""
     # Define paths to eigenvalues and coefficients hdf5
     node_path_coefficients = 'coefficients/point_0/'
@@ -89,8 +88,8 @@ def get_eigenvalues_coefficients(config: DictConfig) -> Tuple[NDArray[f8], NDArr
 
 def compute_overlap_and_atomic_orbitals(
     mol: MolXYZ,
-    config: DictConfig,
-) -> Tuple[NDArray[i8], NDArray[i8], NDArray[f8]]:
+    config: _data.COOP,
+) -> tuple[NDArray[i8], NDArray[i8], NDArray[f8]]:
     """Compute the indices of the atomic orbitals of the two selected elements.
 
     Computes the overlap matrix, containing only the elements related to those two elements.
@@ -102,12 +101,13 @@ def compute_overlap_and_atomic_orbitals(
     sphericals = number_spherical_functions_per_atom(
         mol,
         'cp2k',
-        config["cp2k_general_settings"]["basis"],
-        config["path_hdf5"])
+        config.cp2k_general_settings.basis,
+        config.path_hdf5,
+    )
 
     # Getting the indices for the two selected elements
-    element_1 = config["coop_elements"][0]
-    element_2 = config["coop_elements"][1]
+    element_1 = config.coop_elements[0]
+    element_2 = config.coop_elements[1]
 
     element_1_index = [i for i, s in enumerate(mol) if element_1.lower() in s]
     element_2_index = [i for i, s in enumerate(mol) if element_2.lower() in s]

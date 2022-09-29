@@ -106,7 +106,6 @@ def validate_status(result: Result, *, print_out: bool = True, print_err: bool =
     if result.status == "successful":
         return None
 
-    indent = 4 * " "
     msg = f"Unexpected {result.job_name} status: {result.status!r}"
 
     if print_out:

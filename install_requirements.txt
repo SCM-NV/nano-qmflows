@@ -1,7 +1,7 @@
 h5py>=2.9.0
 mendeleev>=0.1.0
 more-itertools>=2.4.0
-noodles>=0.3.3
+noodles>=0.3.4
 numpy>=1.17.1
 scipy>=1.1.0
 schema>=0.6.0,!=0.7.5

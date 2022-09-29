@@ -27,21 +27,20 @@ own configuration in the yaml input file.
 
 from __future__ import annotations
 
+import copy
 import argparse
 import os
 import shutil
 import subprocess
 from os.path import join
-from typing import Dict, Tuple
 
 import numpy as np
 import yaml
 
-from qmflows import Settings
-
-from ..common import DictConfig, read_cell_parameters_as_array, UniqueSafeLoader
+from ..common import read_cell_parameters_as_array, UniqueSafeLoader
 from .initialization import split_trajectory
 from .input_validation import process_input
+from .. import _data
 
 
 def read_cmd_line() -> str:
@@ -66,15 +65,16 @@ def main() -> None:
 
     # Read and process input
     workflow_type = args['workflow'].lower()
-    dict_input = process_input(input_file, workflow_type)
+    config = process_input(input_file, workflow_type)
+
     # Write scripts to run calculations
     if workflow_type == "distribute_derivative_couplings":
-        distribute_computations(dict_input, hamiltonians=True)
+        distribute_computations(config, hamiltonians=True)
     else:
-        distribute_computations(dict_input)
+        distribute_computations(config)
 
 
-def distribute_computations(config: DictConfig, hamiltonians: bool = False) -> None:
+def distribute_computations(config: _data.Distribute, hamiltonians: bool = False) -> None:
     """Prepare the computation and write the scripts."""
     # Check if workdir exits otherwise create it
     os.makedirs(config.workdir, exist_ok=True)
@@ -85,8 +85,7 @@ def distribute_computations(config: DictConfig, hamiltonians: bool = False) -> N
         config.path_traj_xyz, config.blocks, config.workdir)
     chunks_trajectory.sort()
 
-    file_cell_parameters = config.cp2k_general_settings.get(
-        "file_cell_parameters")
+    file_cell_parameters = config.cp2k_general_settings.file_cell_parameters
     if file_cell_parameters is not None:
         header_array_cell_parameters = read_cell_parameters_as_array(
             file_cell_parameters)
@@ -96,13 +95,17 @@ def distribute_computations(config: DictConfig, hamiltonians: bool = False) -> N
     accumulated_number_of_geometries = 0
 
     for index, file_xyz in enumerate(chunks_trajectory):
-        copy_config = DictConfig(config.copy())
-        copy_config["scratch_path"] = os.path.join(parent_scratch, f"scratch_chunk_{index}")
+        copy_config = copy.copy(config)
+        copy_config.scratch_path = os.path.join(parent_scratch, f"scratch_chunk_{index}")
 
         folder_path = os.path.abspath(join(copy_config.workdir, f'chunk_{index}'))
 
-        dict_input = DictConfig({
-            'folder_path': folder_path, "file_xyz": file_xyz, 'index': index})
+        dict_input = _data.DistributeData(
+            folder_path=folder_path,
+            file_xyz=file_xyz,
+            index=index,
+            hamiltonians_dir=None,
+        )
 
         create_folders(copy_config, dict_input)
 
@@ -110,29 +113,30 @@ def distribute_computations(config: DictConfig, hamiltonians: bool = False) -> N
         dim_batch = compute_number_of_geometries(join(folder_path, file_xyz))
 
         # change the window of molecules to compute
-        copy_config['enumerate_from'] = accumulated_number_of_geometries
+        copy_config.enumerate_from = accumulated_number_of_geometries
 
         # HDF5 file where both the Molecular orbitals and coupling are stored
         copy_config.path_hdf5 = join(copy_config.scratch_path, f'chunk_{index}.hdf5')
 
         # Change hdf5 and trajectory path of each batch
-        copy_config["path_traj_xyz"] = file_xyz
+        copy_config.path_traj_xyz = file_xyz
 
         if file_cell_parameters is not None:
-            add_chunk_cell_parameters(
-                header_array_cell_parameters, copy_config, dict_input)
+            add_chunk_cell_parameters(header_array_cell_parameters, copy_config, dict_input)
 
         # files with PYXAID
         if hamiltonians:
-            path_ham = "hamiltonians" if not config.orbitals_type else f"{config.orbitals_type}_hamiltonians"
-            dict_input.hamiltonians_dir = join(
-                copy_config.scratch_path, path_ham)
+            if not config.orbitals_type:
+                path_ham = "hamiltonians"
+            else:
+                path_ham = f"{config.orbitals_type}_hamiltonians"
+            dict_input.hamiltonians_dir = join(copy_config.scratch_path, path_ham)
 
         # Write input file
         write_input(folder_path, copy_config)
 
         # Slurm executable
-        scheduler = copy_config.job_scheduler["scheduler"].upper()
+        scheduler = copy_config.job_scheduler.scheduler.upper()
         if scheduler == "SLURM":
             write_slurm_script(copy_config, dict_input, dim_batch, accumulated_number_of_geometries)
         else:
@@ -142,34 +146,35 @@ def distribute_computations(config: DictConfig, hamiltonians: bool = False) -> N
         accumulated_number_of_geometries += dim_batch
 
 
-def write_input(folder_path: str | os.PathLike[str], original_config: DictConfig) -> None:
+def write_input(folder_path: str | os.PathLike[str], original_config: _data.Distribute) -> None:
     """Write the python script to compute the PYXAID hamiltonians."""
     file_path = join(folder_path, "input.yml")
 
     # transform settings to standard dictionary
-    config = Settings(original_config).as_dict()
+    config = original_config.asdict()
 
     # basis and potential
     config["cp2k_general_settings"]["path_basis"] = os.path.abspath(
-        config["cp2k_general_settings"]["path_basis"])
+        config["cp2k_general_settings"]["path_basis"]
+    )
 
     # remove unused keys from input
-    for k in ['blocks', 'job_scheduler', 'mo_index_range',
-              'workdir']:
+    for k in ['blocks', 'job_scheduler', 'mo_index_range', 'workdir']:
         del config[k]
 
     # rename the workflow to execute
-    dict_distribute = {"distribute_derivative_couplings": "derivative_couplings",
-                       "distribute_absorption_spectrum": "absorption_spectrum",
-                       "distribute_single_points": "single_points"
-                       }
+    dict_distribute = {
+        "distribute_derivative_couplings": "derivative_couplings",
+        "distribute_absorption_spectrum": "absorption_spectrum",
+        "distribute_single_points": "single_points",
+    }
     workflow_type = config["workflow"].lower()
     config['workflow'] = dict_distribute[workflow_type]
     with open(file_path, "w") as f:
         yaml.dump(config, f, default_flow_style=False, allow_unicode=True)
 
 
-def create_folders(config: DictConfig, dict_input: DictConfig) -> None:
+def create_folders(config: _data.Distribute, dict_input: _data.DistributeData) -> None:
     """Create folder for each batch and copy the xyz."""
     # Move xyz to temporal file
     os.makedirs(dict_input.folder_path, exist_ok=True)
@@ -180,8 +185,12 @@ def create_folders(config: DictConfig, dict_input: DictConfig) -> None:
     os.makedirs(batch_dir, exist_ok=True)
 
 
-def write_slurm_script(config: DictConfig, dict_input: DictConfig,
-                       dim_batch: int, acc: int) -> None:
+def write_slurm_script(
+    config: _data.Distribute,
+    dict_input: _data.DistributeData,
+    dim_batch: int,
+    acc: int,
+) -> None:
     """Write an Slurm launch script."""
     index = dict_input.index
     python = "\n\nrun_workflow.py -i input.yml\n"
@@ -190,7 +199,7 @@ def write_slurm_script(config: DictConfig, dict_input: DictConfig,
     slurm_config = config.job_scheduler
 
     # Copy a subset of Hamiltonians
-    if dict_input.get("hamiltonians_dir") is None:
+    if dict_input.hamiltonians_dir is None:
         copy = ""
     else:
         range_batch = (acc, acc + dim_batch - 1)
@@ -205,22 +214,22 @@ def write_slurm_script(config: DictConfig, dict_input: DictConfig,
         f.write(content)
 
 
-def format_slurm_parameters(slurm: Dict[str, str]) -> str:
+def format_slurm_parameters(slurm: _data.JobScheduler) -> str:
     """Format as a string some SLURM parameters."""
     sbatch = "#SBATCH -{} {}\n".format
 
     header = "#! /bin/bash\n"
-    time = sbatch('t', slurm["wall_time"])
-    nodes = sbatch('N', slurm["nodes"])
-    tasks = sbatch('n', slurm["tasks"])
-    name = sbatch('J', slurm["job_name"])
-    queue = sbatch('p', slurm["queue_name"])
+    time = sbatch('t', slurm.wall_time)
+    nodes = sbatch('N', slurm.nodes)
+    tasks = sbatch('n', slurm.tasks)
+    name = sbatch('J', slurm.job_name)
+    queue = sbatch('p', slurm.queue_name)
 
-    modules = slurm["load_modules"]
+    modules = slurm.load_modules
 
-    if "free_format" in slurm:
+    if slurm.free_format:
         # Remove empty spaces
-        lines = slurm["free_format"].splitlines()
+        lines = slurm.free_format.splitlines()
         return '\n'.join(' '.join(x.split()) for x in lines if x)
     else:
         return ''.join((header, time, nodes, tasks, name, queue, modules))
@@ -240,14 +249,15 @@ def compute_number_of_geometries(file_name: str | os.PathLike[str]) -> int:
 
 
 def add_chunk_cell_parameters(
-        header_array_cell_parameters: Tuple[str, np.ndarray],
-        config: DictConfig, dict_input: DictConfig) -> None:
+    header_array_cell_parameters: tuple[str, np.ndarray],
+    config: _data.Distribute,
+    dict_input: _data.DistributeData,
+) -> None:
     """Add the corresponding set of cell parameters for a given chunk."""
-    path_file_cell_parameters = join(
-        dict_input.folder_path, "cell_parameters.txt")
+    path_file_cell_parameters = join(dict_input.folder_path, "cell_parameters.txt")
 
     # Adjust settings
-    config.cp2k_general_settings["file_cell_parameters"] = path_file_cell_parameters
+    config.cp2k_general_settings.file_cell_parameters = path_file_cell_parameters
 
     # extract cell parameters for a chunk
     header, arr = header_array_cell_parameters

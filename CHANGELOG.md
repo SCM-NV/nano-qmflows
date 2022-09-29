@@ -1,12 +1,14 @@
 # Change Log
 
-# 0.13.5 (*unreleased*)
+# 0.14.0 (*unreleased*)
 
 ## New
 * Add MacOS arm64 wheels.
 
 ## Changed
 * Move the C++ python bindings to a dedicated file.
+* Drop support for Python 3.7.
+* Use dataclasses internally for storing nano-qmflows settings.
 
 
 # 0.13.4 (02/06/2022)
