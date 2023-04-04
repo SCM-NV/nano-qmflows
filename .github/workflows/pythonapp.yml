@@ -29,12 +29,12 @@ jobs:
           - ["", ""]
         include:
           # GCC 7/11 tests
-          - os: ubuntu-latest
+          - os: ubuntu-20.04
             version: "3.11"
             special: ["GCC", "7"]
           - os: ubuntu-latest
             version: "3.11"
-            special: ["GCC", "11"]
+            special: ["GCC", "12"]
           # CP2K 6.1/7.1/8.2/9.1 tests
           - os: ubuntu-latest
             version: "3.11"
