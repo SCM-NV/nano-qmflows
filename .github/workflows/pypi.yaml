@@ -84,6 +84,7 @@ jobs:
         - ["cp38", "3.8"]
         - ["cp39", "3.9"]
         - ["cp310", "3.10"]
+        - ["cp311", "3.11"]
 
     steps:
       - uses: actions/checkout@v3
@@ -149,6 +150,7 @@ jobs:
         - ["cp38", "python3.8"]
         - ["cp39", "python3.9"]
         - ["cp310", "python3.10"]
+        - ["cp311", "python3.11"]
 
     steps:
       - uses: actions/checkout@v3
