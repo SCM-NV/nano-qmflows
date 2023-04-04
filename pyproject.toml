@@ -32,13 +32,17 @@ before-all = "cp licenses/LICENSE_LIBHDF5.txt licenses/LICENSE_LIBINT2.txt ."
 environment = { QMFLOWS_INCLUDEDIR="", QMFLOWS_LIBDIR="", CFLAGS="-Werror", LDFLAGS="-Wl,--strip-debug" }
 manylinux-x86_64-image = "ghcr.io/nlesc-nano/manylinux2014_x86_64-qmflows:latest"
 manylinux-aarch64-image = "ghcr.io/nlesc-nano/manylinux2014_aarch64-qmflows:latest"
-repair-wheel-command = "auditwheel -v repair -w {dest_dir} {wheel}"
+repair-wheel-command = [
+    "auditwheel -v repair -w {dest_dir} {wheel}",
+    "pipx run abi3audit --strict --verbose --report {wheel}",
+]
 
 [tool.cibuildwheel.macos]
 environment = { QMFLOWS_INCLUDEDIR="", QMFLOWS_LIBDIR="", LDFLAGS="-Wl", MACOSX_DEPLOYMENT_TARGET="10.14" }
 repair-wheel-command = [
     "delocate-listdeps {wheel}",
     "delocate-wheel --require-archs {delocate_archs} -w {dest_dir} {wheel}",
+    "pipx run abi3audit --strict --verbose --report {wheel}",
 ]
 
 [[tool.cibuildwheel.overrides]]
