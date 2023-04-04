@@ -36,7 +36,7 @@ jobs:
 
       - name: Set up QEMU
         if: matrix.buildplat[1] == 'manylinux_aarch64'
-        uses: docker/setup-qemu-action@v1
+        uses: docker/setup-qemu-action@v2
         with:
           platforms: arm64
 
@@ -59,7 +59,7 @@ jobs:
           echo "CIBW_ARCHS_MACOS=arm64" >> $GITHUB_ENV
 
       - name: Build wheels
-        uses: pypa/cibuildwheel@v2.10.2
+        uses: pypa/cibuildwheel@v2.12.1
         env:
           CIBW_BUILD: cp38-${{ matrix.buildplat[1] }}
           CIBW_MANYLINUX_AARCH64_IMAGE: "ghcr.io/nlesc-nano/manylinux2014_aarch64-qmflows:${{ env.TAG }}"
@@ -303,7 +303,9 @@ jobs:
           path: dist
 
       - name: Set up Python
-        uses: actions/setup-python@v3
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.*"
 
       - name: Install dependencies
         run: pip install twine
@@ -330,7 +332,7 @@ jobs:
 
       - name: Attach wheels to GitHub release
         if: github.event_name == 'release'
-        uses: AButler/upload-release-assets@v2.0
+        uses: AButler/upload-release-assets@v2.0.2
         with:
           files: 'dist/*'
           repo-token: ${{ secrets.GITHUB_TOKEN }}
