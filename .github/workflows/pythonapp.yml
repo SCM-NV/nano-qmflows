@@ -13,7 +13,7 @@ concurrency:
 
 env:
   CP2K_DEFAULT: "2023.1"
-  TAG: "3.0.0"  # The nlesc-nano/nano-qmflows-manylinux tag
+  TAG: "3.1.0"  # The nlesc-nano/nano-qmflows-manylinux tag
   PY_COLORS: "1"
 
 jobs:
