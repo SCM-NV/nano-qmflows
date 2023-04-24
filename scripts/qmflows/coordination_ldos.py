@@ -138,8 +138,6 @@ def store_coordination(coord: NestedDict, name: str, path_results: str):
 
 @EnableFileHandler("output.log")
 def main(workdir: str):
-    set_logger()
-
     # Create workdir if it doesn't exist (scratch)
     if not os.path.exists(workdir):
         os.mkdir(workdir)
