@@ -203,5 +203,5 @@ jobs:
         run: pydocstyle nanoqm
 
       - name: Run mypy
-        run: mypy nanoqm setup.py
+        run: mypy nanoqm setup.py scripts
         continue-on-error: true
