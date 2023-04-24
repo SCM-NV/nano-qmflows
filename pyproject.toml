@@ -15,6 +15,7 @@ files = ["nanoqm", "typings"]
 [[tool.mypy.overrides]]
 module = [
     "schema.*",
+    "matplotlib.*",
 ]
 ignore_missing_imports = true
 
