@@ -1,5 +1,6 @@
-pydocstyle
-flake8
+pydocstyle[toml]>=6.1
+flake8>=5
+Flake8-pyproject>=1.0.1
 
 # Mypy-related stuff
 mypy
