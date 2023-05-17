@@ -118,7 +118,7 @@ jobs:
             "ubuntu-latest")
               bash scripts/download_cp2k.sh x86_64 $CP2K_VERSION ;;
             "macos-latest")
-              brew install cp2k ;;
+              brew update && brew install cp2k ;;
           esac
 
       - name: CP2K info
