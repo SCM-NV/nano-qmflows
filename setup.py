@@ -12,14 +12,17 @@ from setuptools import Extension, find_packages, setup
 from setuptools.command.build_ext import build_ext
 from wheel.bdist_wheel import bdist_wheel
 
-here = os.path.abspath(os.path.dirname(__file__))
 
-version: "dict[str, str]" = {}
-with open(os.path.join(here, 'nanoqm', '_version.py'), 'r', encoding='utf8') as f:
-    exec(f.read(), version)
+def get_version() -> str:
+    """Load the version."""
+    here = os.path.abspath(os.path.dirname(__file__))
+    version: "dict[str, str]" = {}
+    with open(os.path.join(here, 'nanoqm', '_version.py'), 'r', encoding='utf8') as f:
+        exec(f.read(), version)
+    return version["__version__"]
 
 
-def readme() -> str:
+def get_readme() -> str:
     """Load readme."""
     with open('README.rst', 'r', encoding='utf8') as f:
         return f.read()
@@ -152,7 +155,7 @@ libint_ext = Extension(
 
 setup(
     name='nano-qmflows',
-    version=version['__version__'],
+    version=get_version(),
     description='Derivative coupling calculation',
     license='Apache-2.0',
     license_files=["LICENSE*.txt"],
@@ -160,7 +163,7 @@ setup(
     author='Felipe Zapata & Ivan Infante',
     author_email='f.zapata@esciencecenter.nl',
     keywords='chemistry Photochemistry Simulation',
-    long_description=readme() + '\n\n',
+    long_description=get_readme() + '\n\n',
     long_description_content_type='text/x-rst',
     packages=find_packages(exclude=["test"]),
     classifiers=[
