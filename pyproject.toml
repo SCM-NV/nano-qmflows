@@ -6,6 +6,16 @@ requires = [
     'oldest-supported-numpy',
 ]
 
+[project]
+name = "nano-qmflows"
+dynamic = ["dependencies", "optional-dependencies"]
+
+[tool.setuptools.dynamic]
+dependencies = { file = ["install_requirements.txt"] }
+optional-dependencies.test = { file = ["test_requirements.txt"] }
+optional-dependencies.doc = { file = ["doc_requirements.txt"] }
+optional-dependencies.lint = { file = ["linting_requirements.txt"] }
+
 [tool.mypy]
 plugins = "numpy.typing.mypy_plugin"
 show_error_codes = true

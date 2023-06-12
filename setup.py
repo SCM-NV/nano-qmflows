@@ -6,7 +6,7 @@ import platform
 from os.path import join
 
 import setuptools  # noqa: F401
-import pkg_resources
+
 import numpy as np
 from setuptools import Extension, find_packages, setup
 from setuptools.command.build_ext import build_ext
@@ -81,12 +81,6 @@ class BDistWheelABI3(bdist_wheel):
             return "cp38", "abi3", plat
         else:
             return python, abi, plat
-
-
-def parse_requirements(path: "str | os.PathLike[str]") -> "list[str]":
-    """Parse a ``requirements.txt`` file."""
-    with open(path, "r", encoding="utf8") as f:
-        return [str(i) for i in pkg_resources.parse_requirements(f)]
 
 
 def get_paths() -> "tuple[list[str], list[str]]":
@@ -185,15 +179,9 @@ setup(
         'Topic :: Scientific/Engineering :: Chemistry',
         'Typing :: Typed',
     ],
-    install_requires=parse_requirements("install_requirements.txt"),
     cmdclass={'build_ext': BuildExt, "bdist_wheel": BDistWheelABI3},
     python_requires='>=3.8',
     ext_modules=[libint_ext],
-    extras_require={
-        'test': parse_requirements("test_requirements.txt"),
-        'doc': parse_requirements("doc_requirements.txt"),
-        'lint': parse_requirements("linting_requirements.txt"),
-    },
     package_data={
         'nanoqm': ['basis/*.json', 'basis/BASIS*', 'basis/GTH_POTENTIALS', 'py.typed', '*.pyi']
     },
