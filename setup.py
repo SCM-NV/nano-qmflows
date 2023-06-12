@@ -8,15 +8,9 @@ from os.path import join
 import setuptools  # noqa: F401
 
 import numpy as np
-from setuptools import Extension, find_packages, setup
+from setuptools import Extension, setup
 from setuptools.command.build_ext import build_ext
 from wheel.bdist_wheel import bdist_wheel
-
-
-def get_readme() -> str:
-    """Load readme."""
-    with open('README.rst', 'r', encoding='utf8') as f:
-        return f.read()
 
 
 def is_macos_arm64() -> bool:
@@ -139,47 +133,14 @@ libint_ext = Extension(
 )
 
 setup(
-    name='nano-qmflows',
-    description='Derivative coupling calculation',
-    license='Apache-2.0',
-    license_files=["LICENSE*.txt"],
-    url='https://github.com/SCM-NV/nano-qmflows',
-    author='Felipe Zapata & Ivan Infante',
-    author_email='f.zapata@esciencecenter.nl',
-    keywords='chemistry Photochemistry Simulation',
-    long_description=get_readme() + '\n\n',
-    long_description_content_type='text/x-rst',
-    packages=find_packages(exclude=["test"]),
-    classifiers=[
-        'License :: OSI Approved :: Apache Software License',
-        'Natural Language :: English',
-        'Operating System :: MacOS',
-        'Operating System :: POSIX :: Linux',
-        'Programming Language :: C++',
-        'Programming Language :: Python',
-        'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3 :: Only',
-        'Programming Language :: Python :: 3.8',
-        'Programming Language :: Python :: 3.9',
-        'Programming Language :: Python :: 3.10',
-        'Programming Language :: Python :: 3.11',
-        'Programming Language :: Python :: Implementation :: CPython',
-        'Development Status :: 4 - Beta',
-        'Intended Audience :: Science/Research',
-        'Topic :: Scientific/Engineering :: Chemistry',
-        'Typing :: Typed',
-    ],
     cmdclass={'build_ext': BuildExt, "bdist_wheel": BDistWheelABI3},
-    python_requires='>=3.8',
     ext_modules=[libint_ext],
-    package_data={
-        'nanoqm': ['basis/*.json', 'basis/BASIS*', 'basis/GTH_POTENTIALS', 'py.typed', '*.pyi']
-    },
+    url="https://github.com/SCM-NV/nano-qmflows",
     entry_points={
         'console_scripts': [
             'run_workflow.py=nanoqm.workflows.run_workflow:main',
-            'distribute_jobs.py=nanoqm.workflows.distribute_jobs:main'
-        ]
+            'distribute_jobs.py=nanoqm.workflows.distribute_jobs:main',
+        ],
     },
     scripts=[
         'scripts/convert_legacy_hdf5.py',
@@ -195,5 +156,5 @@ setup(
         'scripts/qmflows/removeHDF5folders.py',
         'scripts/qmflows/remove_mos_hdf5.py',
         'scripts/qmflows/convolution.py'
-    ]
+    ],
 )
