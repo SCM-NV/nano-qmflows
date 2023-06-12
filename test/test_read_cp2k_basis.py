@@ -2,17 +2,18 @@
 
 from __future__ import annotations
 
+import os
 import shutil
 from pathlib import Path
 
 import numpy as np
 import yaml
 import h5py
-import pkg_resources
 from nanoutils import RecursiveKeysView, RecursiveItemsView
 from packaging.version import Version
 from assertionlib import assertion
 
+import nanoqm
 from nanoqm.workflows.initialization import store_cp2k_basis
 from .utilsTest import PATH_TEST
 
@@ -24,8 +25,11 @@ class TestRedCP2KBasis:
         with h5py.File(tmp_hdf5, "x"):
             pass
 
-        path_basis = pkg_resources.resource_filename(
-            "nanoqm", "basis/BASIS_MOLOPT")
+        path_basis = os.path.join(
+            os.path.dirname(nanoqm.__file__),
+            'basis',
+            'BASIS_MOLOPT',
+        )
 
         store_cp2k_basis(tmp_hdf5, path_basis)
 
