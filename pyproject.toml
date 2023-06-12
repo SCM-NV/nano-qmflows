@@ -1,20 +1,28 @@
 [build-system]
 # Minimum requirements for the build system to execute.
 requires = [
-    'setuptools>=48.0',
-    'wheel>=0.21',
-    'oldest-supported-numpy',
+    "setuptools>=48.0",
+    "wheel>=0.21",
+    "oldest-supported-numpy",
+    "setuptools_scm[toml]>=6.2",
 ]
 
 [project]
 name = "nano-qmflows"
-dynamic = ["dependencies", "optional-dependencies"]
+dynamic = [
+    "dependencies",
+    "optional-dependencies",
+    "version",
+]
 
 [tool.setuptools.dynamic]
 dependencies = { file = ["install_requirements.txt"] }
 optional-dependencies.test = { file = ["test_requirements.txt"] }
 optional-dependencies.doc = { file = ["doc_requirements.txt"] }
 optional-dependencies.lint = { file = ["linting_requirements.txt"] }
+
+[tool.setuptools_scm]
+write_to = "nanoqm/_version.py"
 
 [tool.mypy]
 plugins = "numpy.typing.mypy_plugin"

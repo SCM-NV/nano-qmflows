@@ -13,15 +13,6 @@ from setuptools.command.build_ext import build_ext
 from wheel.bdist_wheel import bdist_wheel
 
 
-def get_version() -> str:
-    """Load the version."""
-    here = os.path.abspath(os.path.dirname(__file__))
-    version: "dict[str, str]" = {}
-    with open(os.path.join(here, 'nanoqm', '_version.py'), 'r', encoding='utf8') as f:
-        exec(f.read(), version)
-    return version["__version__"]
-
-
 def get_readme() -> str:
     """Load readme."""
     with open('README.rst', 'r', encoding='utf8') as f:
@@ -149,7 +140,6 @@ libint_ext = Extension(
 
 setup(
     name='nano-qmflows',
-    version=get_version(),
     description='Derivative coupling calculation',
     license='Apache-2.0',
     license_files=["LICENSE*.txt"],
