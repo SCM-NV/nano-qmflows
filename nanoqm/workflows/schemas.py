@@ -19,10 +19,10 @@ from numbers import Real
 from collections.abc import Iterable
 from typing import Any
 
-import pkg_resources as pkg
 from schema import And, Optional, Or, Regex, Schema, Use
 from qmflows import Settings
 
+from .. import __file__ as _nanoqm_file
 from .. import _data
 
 __all__ = [
@@ -117,7 +117,10 @@ schema_cp2k_general_settings = _DataSchema({
     Optional("cell_angles", default=None): list,
 
     # Path to the folder containing the basis set specifications
-    Optional("path_basis", default=pkg.resource_filename("nanoqm", "basis")): os.path.isdir,
+    Optional(
+        "path_basis",
+        default=os.path.join(os.path.dirname(_nanoqm_file), 'basis'),
+    ): os.path.isdir,
 
     # Name(s) of the basis set file(s) stored in ``path_basis``
     Optional("basis_file_name", default=None): Use(_parse_filenames),

@@ -1,10 +1,76 @@
 [build-system]
 # Minimum requirements for the build system to execute.
 requires = [
-    'setuptools>=48.0',
-    'wheel>=0.21',
-    'oldest-supported-numpy',
+    "setuptools>=61.0",
+    "wheel>=0.21",
+    "oldest-supported-numpy",
+    "setuptools_scm[toml]>=6.2",
 ]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "nano-qmflows"
+dynamic = [
+    "dependencies",
+    "optional-dependencies",
+    "version",
+    "readme",
+]
+description = "Derivative coupling calculation"
+license = { text = "Apache-2.0" }
+authors = [
+    { name = "Felipe Zapata & Ivan Infante", email = "f.zapata@esciencecenter.nl" },
+]
+keywords = [
+    "chemistry",
+    "Photochemistry",
+    "Simulation",
+]
+classifiers = [
+    "License :: OSI Approved :: Apache Software License",
+    "Natural Language :: English",
+    "Operating System :: MacOS",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: C++",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Chemistry",
+    "Typing :: Typed",
+]
+requires-python = ">=3.8"
+
+[tool.setuptools]
+license-files = ["LICENSE*.txt"]
+
+[tool.setuptools.packages.find]
+exclude = ["test"]
+
+[tool.setuptools.package-data]
+nanoqm = [
+    "basis/*.json",
+    "basis/BASIS*",
+    "basis/GTH_POTENTIALS",
+    "py.typed",
+    "*.pyi",
+]
+
+[tool.setuptools.dynamic]
+dependencies = { file = ["install_requirements.txt"] }
+optional-dependencies.test = { file = ["test_requirements.txt"] }
+optional-dependencies.doc = { file = ["doc_requirements.txt"] }
+optional-dependencies.lint = { file = ["linting_requirements.txt"] }
+readme = { file = ["README.rst"], content-type = "text/x-rst" }
+
+[tool.setuptools_scm]
+write_to = "nanoqm/_version.py"
 
 [tool.mypy]
 plugins = "numpy.typing.mypy_plugin"
