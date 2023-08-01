@@ -47,6 +47,15 @@ classifiers = [
 ]
 requires-python = ">=3.8"
 
+[project.urls]
+Homepage = "https://github.com/SCM-NV/nano-qmflows"
+"Bug Tracker" = "https://github.com/SCM-NV/nano-qmflows/issues"
+Documentation = "https://qmflows-namd.readthedocs.io/en/latest/"
+
+[project.scripts]
+"run_workflow.py" = "nanoqm.workflows.run_workflow:main"
+"distribute_jobs.py" = "nanoqm.workflows.distribute_jobs:main"
+
 [tool.setuptools]
 license-files = ["LICENSE*.txt"]
 

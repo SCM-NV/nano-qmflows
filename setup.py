@@ -135,13 +135,9 @@ libint_ext = Extension(
 setup(
     cmdclass={'build_ext': BuildExt, "bdist_wheel": BDistWheelABI3},
     ext_modules=[libint_ext],
-    url="https://github.com/SCM-NV/nano-qmflows",
-    entry_points={
-        'console_scripts': [
-            'run_workflow.py=nanoqm.workflows.run_workflow:main',
-            'distribute_jobs.py=nanoqm.workflows.distribute_jobs:main',
-        ],
-    },
+
+    # Equivalent to `script-files` in pyproject.toml,
+    # but that keyword is deprecated so keep things here for now
     scripts=[
         'scripts/convert_legacy_hdf5.py',
         'scripts/hamiltonians/plot_mos_energies.py',
