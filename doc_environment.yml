@@ -1,0 +1,9 @@
+name: nanoqm-doc
+channels:
+  - conda-forge
+dependencies:
+  - python
+  - boost
+  - eigen
+  - "libint>=2.6.0"
+  - highfive
