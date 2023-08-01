@@ -6,7 +6,7 @@ import h5py
 from nanoqm import logger
 
 
-def main(path_hdf5: str, remove_overlaps: bool):
+def main(path_hdf5: str, remove_overlaps: bool) -> None:
     """Remove unused array from the HDF5."""
     path_swaps = ['swaps']
     paths_overlaps_corrected = [

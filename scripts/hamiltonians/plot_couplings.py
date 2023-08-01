@@ -10,6 +10,9 @@ s1 = state 1 index
 s2 = state 2 index
 dt = time step in fs
 """
+
+from __future__ import annotations
+
 import numpy as np
 import matplotlib.pyplot as plt
 import argparse
@@ -19,7 +22,7 @@ import os.path
 r2meV = 13605.698  # From Rydeberg to eV
 
 
-def main(path_output, s1, s2, dt):
+def main(path_output: str, s1: int, s2: int, dt: float) -> None:
     # Check if the file with couplings exists
     if not os.path.isfile('couplings.npy'):
         # Check all the files stored
@@ -39,15 +42,12 @@ def main(path_output, s1, s2, dt):
         plt.show()
 
 
-def read_cmd_line(parser):
+def read_cmd_line(parser: argparse.ArgumentParser) -> tuple[str, int, int, float]:
     """
     Parse Command line options.
     """
     args = parser.parse_args()
-
-    attributes = ['p', 's1', 's2', 'dt']
-
-    return [getattr(args, p) for p in attributes]
+    return (args.p, args.s1, args.s2, args.dt)
 
 
 if __name__ == "__main__":

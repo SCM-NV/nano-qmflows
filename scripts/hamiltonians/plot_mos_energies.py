@@ -5,15 +5,29 @@ Note that you have to provide the location of the folder where the NAMD
 hamiltonian elements are stored using the -p flag
 """
 
-import numpy as np
-import matplotlib.pyplot as plt
+from __future__ import annotations
+
 import glob
 import argparse
 import os
+from typing import TYPE_CHECKING
+
+import numpy as np
+import matplotlib.pyplot as plt
 from nanoqm.analysis import read_energies
 
+if TYPE_CHECKING:
+    from numpy.typing import NDArray
+    from numpy import float64 as f8
 
-def plot_stuff(energies, ts, ihomo, nhomos, nlumos):
+
+def plot_stuff(
+    energies: NDArray[f8],
+    ts: int,
+    ihomo: int,
+    nhomos: int,
+    nlumos: int,
+) -> None:
     """
     energies - a vector of energy values that can be plotted
     """
@@ -29,17 +43,17 @@ def plot_stuff(energies, ts, ihomo, nhomos, nlumos):
     plt.show()
 
 
-def main(path_hams, ts, ihomo, nhomos, nlumos):
+def main(path_hams: str, ts: str, ihomo: int, nhomos: int, nlumos: int) -> None:
     if ts == 'All':
         files = glob.glob(os.path.join(path_hams, 'Ham_*_re'))
-        ts = len(files)
+        ts_int = len(files)
     else:
-        ts = int(ts)
-    energies = read_energies(path_hams, ts)
-    plot_stuff(energies, ts, ihomo, nhomos, nlumos)
+        ts_int = int(ts)
+    energies = read_energies(path_hams, ts_int)
+    plot_stuff(energies, ts_int, ihomo, nhomos, nlumos)
 
 
-def read_cmd_line(parser):
+def read_cmd_line(parser: argparse.ArgumentParser) -> tuple[str, str, int, int, int]:
     """
     Parse Command line options.
     """
@@ -47,7 +61,7 @@ def read_cmd_line(parser):
 
     attributes = ['p', 'ts', 'ihomo', 'nhomos', 'nlumos']
 
-    return [getattr(args, p) for p in attributes]
+    return (args.p, args.ts, args.ihomo, args.nhomos, args.nlumos)
 
 
 if __name__ == "__main__":

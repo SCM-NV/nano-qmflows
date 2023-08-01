@@ -21,9 +21,12 @@ Note that you have to provide the location of the folder where the NAMD hamilton
  elements are stored using the -p flag.
 """
 
+from __future__ import annotations
+
 import argparse
 import glob
 import os
+from typing import TYPE_CHECKING
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -33,8 +36,25 @@ from nanoqm.analysis import (autocorrelate, dephasing, read_couplings,
                              read_energies, spectral_density)
 from nanoqm.common import fs_to_nm
 
+if TYPE_CHECKING:
+    from numpy.typing import NDArray
+    from numpy import float64 as f8
 
-def plot_stuff(ens, coupls, acf, sd, deph, rate, s1, s2, ts, wsd, wdeph, dt):
+
+def plot_stuff(
+    ens: NDArray[f8],
+    coupls: NDArray[f8],
+    acf: NDArray[f8],
+    sd: NDArray[f8],
+    deph: NDArray[f8],
+    rate: NDArray[f8],
+    s1: int,
+    s2: int,
+    ts: int,
+    wsd: int,
+    wdeph: int,
+    dt: float,
+) -> None:
     """
     arr - a vector of y-values that are plot
     plot_mean, save_plot - bools telling to plot the mean and save the plot or not,
@@ -99,14 +119,14 @@ def plot_stuff(ens, coupls, acf, sd, deph, rate, s1, s2, ts, wsd, wdeph, dt):
     plt.show()
 
 
-def main(path_hams, s1, s2, dt, ts, wsd, wdeph):
+def main(path_hams: str, s1: int, s2: int, dt: float, ts: str, wsd: int, wdeph: int) -> None:
     if ts == 'All':
         files = glob.glob(os.path.join(path_hams, 'Ham_*_re'))
-        ts = len(files)
+        ts_int = len(files)
     else:
-        ts = int(ts)
-    energies = read_energies(path_hams, ts)
-    couplings = read_couplings(path_hams, ts)
+        ts_int = int(ts)
+    energies = read_energies(path_hams, ts_int)
+    couplings = read_couplings(path_hams, ts_int)
     # Compute the energy difference between pair of states
     d_E = energies[:, s1] - energies[:, s2]
     # Generate a matrix with s1, s2 and diff between them
@@ -119,18 +139,15 @@ def main(path_hams, s1, s2, dt, ts, wsd, wdeph):
     deph, rate = dephasing(acf[:, 0, 2], dt)
     # Plot stuff
     plot_stuff(
-        en_states, couplings, acf, sd, deph, rate, s1, s2, ts, wsd, wdeph, dt)
+        en_states, couplings, acf, sd, deph, rate, s1, s2, ts_int, wsd, wdeph, dt)
 
 
-def read_cmd_line(parser):
+def read_cmd_line(parser: argparse.ArgumentParser) -> tuple[str, int, int, float, str, int, int]:
     """
     Parse Command line options.
     """
     args = parser.parse_args()
-
-    attributes = ['p', 's1', 's2', 'dt', 'ts', 'wsd', 'wdeph']
-
-    return [getattr(args, p) for p in attributes]
+    return (args.p, args.s1, args.s2, args.dt, args.ts, args.wsd, args.dweph)
 
 
 if __name__ == "__main__":

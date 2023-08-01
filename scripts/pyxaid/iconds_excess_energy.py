@@ -14,20 +14,27 @@ excess is an excess of energy (in eV) from where to begin the electron/hole cool
 delta is an energy range to select states around the excess energy
 
 """
+from __future__ import annotations
 
-import numpy as np
 import os
 import argparse
+from typing import TYPE_CHECKING
+
+import numpy as np
+
+if TYPE_CHECKING:
+    from numpy.typing import NDArray
+    from numpy import float64 as f8
 
 
-def read_energies(path, fn, nstates):
+def read_energies(path: str, fn: str, nstates: int) -> NDArray[f8]:
     inpfile = os.path.join(path, fn)
     cols = tuple(range(5, nstates * 2 + 5, 2))
     xs = np.loadtxt(f'{inpfile}', usecols=cols)
     return xs
 
 
-def main(path_output, nstates, iconds, excess, delta, cool):
+def main(path_output: str, nstates: int, iconds: list[int], excess: float, delta: float) -> None:
 
     # Read Energies
     energies = read_energies(path_output, 'me_energies0', nstates)
@@ -53,15 +60,12 @@ def main(path_output, nstates, iconds, excess, delta, cool):
         f.write(t)
 
 
-def read_cmd_line(parser):
+def read_cmd_line(parser: argparse.ArgumentParser) -> tuple[str, int, list[int], float, float]:
     """
     Parse Command line options.
     """
     args = parser.parse_args()
-
-    attributes = ['p', 'nstates', 'iconds', 'excess', 'delta']
-
-    return [getattr(args, p) for p in attributes]
+    return (args.p, args.nstates, args.iconds, args.excess, args.delta)
 
 
 # ============<>===============

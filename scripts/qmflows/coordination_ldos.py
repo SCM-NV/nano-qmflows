@@ -2,10 +2,12 @@
 """Performs a molecular optimization using CP2K and prints local PDOS
 projected on subsets of atoms based on the atom type and coordination number."""
 
+from __future__ import annotations
+
 import argparse
 import itertools
 import os
-from typing import Dict, List
+from typing import TYPE_CHECKING
 
 from nanoCAT.recipes import coordination_number
 from qmflows import Settings, cp2k, run, templates
@@ -15,8 +17,9 @@ from nanoqm import logger, __path__ as nanoqm_path
 from nanoqm._logger import EnableFileHandler
 from nanoqm.workflows.templates import generate_kinds
 
-#: A nested dictonary
-NestedDict = Dict[str, Dict[int, List[int]]]
+if TYPE_CHECKING:
+    #: A nested dictonary
+    NestedDict = dict[str, dict[int, list[int]]]
 
 names = ("Ac", "MA")
 
@@ -70,7 +73,7 @@ def compute_geo_opt(mol: Molecule, name: str, workdir: str, path_results: str) -
     return optimized_geometry
 
 
-def store_optimized_molecule(optimized_geometry: Molecule, name: str, path_results: str):
+def store_optimized_molecule(optimized_geometry: Molecule, name: str, path_results: str) -> None:
     """Store the xyz molecular geometry."""
     path_geometry = f"{path_results}/{name}"
     if not os.path.exists(path_geometry):
@@ -122,7 +125,7 @@ def compute_ldos(mol: Molecule, coord: NestedDict, name: str, workdir: str, path
     logger.info(f"{name} LDOS has been printed with CP2K")
 
 
-def store_coordination(coord: NestedDict, name: str, path_results: str):
+def store_coordination(coord: NestedDict, name: str, path_results: str) -> None:
     """Store the LDOS lists informations."""
     tuple_generator = ((outerKey, innerKey, values) for outerKey, innerDict in coord.items()
                        for innerKey, values in innerDict.items())
@@ -137,7 +140,7 @@ def store_coordination(coord: NestedDict, name: str, path_results: str):
 
 
 @EnableFileHandler("output.log")
-def main(workdir: str):
+def main(workdir: str) -> None:
     # Create workdir if it doesn't exist (scratch)
     if not os.path.exists(workdir):
         os.mkdir(workdir)

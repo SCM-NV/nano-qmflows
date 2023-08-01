@@ -11,6 +11,8 @@ Use the nm to obtain a plot in nm scale.
 You can choose to write the coordinates obtained from the convolution with the write flag.
 """
 
+from __future__ import annotations
+
 import argparse
 import glob
 
@@ -20,7 +22,7 @@ import numpy as np
 from nanoqm.analysis import convolute
 
 
-def main(sigma, n, nm, write):
+def main(sigma: float, n: int, nm: bool, write: bool) -> None:
     # Check output files
     files = sorted(glob.glob('output_*.txt'))
 
@@ -81,15 +83,12 @@ def main(sigma, n, nm, write):
                    fmt='%11.3f %10.5f', header=header)
 
 
-def read_cmd_line(parser):
+def read_cmd_line(parser) -> tuple[float, int, bool, bool]:
     """
     Parse Command line options.
     """
     args = parser.parse_args()
-
-    attributes = ['sigma', 'n', 'nm', 'write']
-
-    return [getattr(args, p) for p in attributes]
+    return (args.sigma, args.n, args.nm, args.write)
 
 
 # ============<>===============

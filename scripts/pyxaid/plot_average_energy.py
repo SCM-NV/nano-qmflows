@@ -12,13 +12,21 @@ Note that the number of states is the same as given in the pyxaid output.
  It must include the ground state as well.
 """
 
-import numpy as np
+from __future__ import annotations
+
 import os
-import matplotlib.pyplot as plt
 import argparse
+from typing import TYPE_CHECKING
+
+import numpy as np
+import matplotlib.pyplot as plt
+
+if TYPE_CHECKING:
+    from numpy.typing import NDArray
+    from numpy import float64 as f8
 
 
-def plot_stuff(outs, pops):
+def plot_stuff(outs: NDArray[f8], pops: NDArray[f8]) -> None:
     """
     energies - a vector of energy values that can be plotted
     """
@@ -35,25 +43,29 @@ def plot_stuff(outs, pops):
     plt.savefig(fileName, format='png', dpi=300)
 
 
-def read_energies(path, fn, nstates, nconds):
+def read_energies(path: str, fn: str, nstates: int, nconds: int) -> NDArray[f8]:
     inpfile = os.path.join(path, fn)
     cols = tuple(range(5, nstates * 2 + 5, 2))
-    xs = np.stack([np.loadtxt(f'{inpfile}{j}', usecols=cols) for j in range(nconds)]).T
+    xs = np.stack(
+        [np.loadtxt(f'{inpfile}{j}', usecols=cols, dtype=np.float64) for j in range(nconds)]
+    ).T
     # Rows = timeframes ; Columns = states ; tensor = initial conditions
     xs = xs.swapaxes(0, 1)
     return xs
 
 
-def read_pops(path, fn, nstates, nconds):
+def read_pops(path: str, fn: str, nstates: int, nconds: int) -> NDArray[f8]:
     inpfile = os.path.join(path, fn)
     cols = tuple(range(3, nstates * 2 + 3, 2))
-    xs = np.stack([np.loadtxt(f'{inpfile}{j}', usecols=cols) for j in range(nconds)]).T
+    xs = np.stack(
+        [np.loadtxt(f'{inpfile}{j}', usecols=cols, dtype=np.float64) for j in range(nconds)]
+    ).T
     # Rows = timeframes ; Columns = states ; tensor = initial conditions
     xs = xs.swapaxes(0, 1)
     return xs
 
 
-def main(path_output, nstates, nconds):
+def main(path_output: str, nstates: int, nconds: int) -> None:
     outs = read_pops(path_output, 'out', nstates, nconds)
     pops = read_pops(path_output, 'me_pop', nstates, nconds)
     energies = read_energies(path_output, 'me_energies', nstates, nconds)
@@ -74,15 +86,12 @@ def main(path_output, nstates, nconds):
     plot_stuff(ene_outs_ref0, ene_pops_ref0)
 
 
-def read_cmd_line(parser):
+def read_cmd_line(parser: argparse.ArgumentParser) -> tuple[str, int, int]:
     """
     Parse Command line options.
     """
     args = parser.parse_args()
-
-    attributes = ['p', 'nstates', 'nconds']
-
-    return [getattr(args, p) for p in attributes]
+    return (args.p, args.nstates, args.nconds)
 
 
 # ============<>===============

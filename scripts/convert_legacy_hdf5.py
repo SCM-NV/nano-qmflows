@@ -2,10 +2,12 @@
 
 """Convert old HDF5 files to the new storage layout."""
 
+from __future__ import annotations
+
 import argparse
 from itertools import chain
 from pathlib import Path
-from typing import Iterable, Optional, Set
+from collections.abc import Iterable
 
 import h5py
 import numpy as np
