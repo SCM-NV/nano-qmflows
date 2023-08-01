@@ -1,5 +1,6 @@
 #! /usr/bin/env python
-"""This programs performs a density of states (DOS) calculation  with cp2k using generic settings, i.e. DFT/PBE
+"""This programs performs a density of states (DOS) calculation  with cp2k \
+using generic settings, i.e. DFT/PBE
 
 Note that is mandatory to define a cell_parameter, and a xyz structure.
 If you have a restart file, a basis set and you can also define it

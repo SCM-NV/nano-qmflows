@@ -147,7 +147,7 @@ def main(path_output: str, s1: int, s2: int, dt: float, wsd: int, wdeph: int) ->
     # Take the transpose to have the correct shape for spectral_density
     acf = np.stack([autocorrelate(en_states[i, :]) for i in range(en_states.shape[0])]).T
     # Compute the spectral density for each column using the normalized acf
-    sd = np.stack([spectral_density(acf[:, 1, i], dt)  for i in range(en_states.shape[0])])
+    sd = np.stack([spectral_density(acf[:, 1, i], dt) for i in range(en_states.shape[0])])
     # Compute the dephasing time for the uncorrelated acf between two states
     deph, rate = dephasing(acf[:, 0, 2], dt)
     # Plot stuff

@@ -1,5 +1,6 @@
 #! /usr/bin/env python
-""" This script convolutes the calculated oscillator strengts for different snapshots in a MD trajectory and plot the average spectrum.
+""" This script convolutes the calculated oscillator strengts for different snapshots \
+in a MD trajectory and plot the average spectrum.
 
 Usage:
 convolution.py -sigma 0.05 -n 2 -nm True -write True
@@ -94,7 +95,8 @@ def read_cmd_line(parser) -> tuple[float, int, bool, bool]:
 # ============<>===============
 if __name__ == "__main__":
 
-    msg = """convolution.py -sigma <sigma parameter of the gaussian functions> -n <plot only the spectrum of structure n>
+    msg = """convolution.py -sigma <sigma parameter of the gaussian functions> \
+    -n <plot only the spectrum of structure n> \
     -nm <plot in nm> -write <write the coordinates from the convolution>"""
 
     parser = argparse.ArgumentParser(description=msg)

@@ -58,9 +58,6 @@ def read_cmd_line(parser: argparse.ArgumentParser) -> tuple[str, str, int, int, 
     Parse Command line options.
     """
     args = parser.parse_args()
-
-    attributes = ['p', 'ts', 'ihomo', 'nhomos', 'nlumos']
-
     return (args.p, args.ts, args.ihomo, args.nhomos, args.nlumos)
 
 

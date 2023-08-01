@@ -101,7 +101,13 @@ def create_ldos_lists(coord: NestedDict) -> Settings:
     return s
 
 
-def compute_ldos(mol: Molecule, coord: NestedDict, name: str, workdir: str, path_results: str) -> None:
+def compute_ldos(
+    mol: Molecule,
+    coord: NestedDict,
+    name: str,
+    workdir: str,
+    path_results: str,
+) -> None:
     """Compute the DOS projected on subsets of atoms given through lists.
 
     These lists are divided by atom type and coordination number.

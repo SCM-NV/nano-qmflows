@@ -53,8 +53,10 @@ class LegacyConverter:
         points = [k for k in self.source[self.project].keys() if k.startswith("point_")]
         keys = {"coefficients", "eigenvalues", "energy"}
         # "project/point_x/cp2k/mo/<coefficients,eigenvalues,energy>"
-        old_names = chain(*[[f"{self.project}/{point}/cp2k/mo/{k}" for point in points] for k in keys])
-        new_names = chain(*[[f"{k}/{point}" for point in points] for k in keys])
+        old_names = chain.from_iterable(
+            [f"{self.project}/{point}/cp2k/mo/{k}" for point in points] for k in keys
+        )
+        new_names = chain.from_iterable([f"{k}/{point}" for point in points] for k in keys)
         self.copy_node_values(old_names, new_names)
 
     def copy_couplings(self) -> None:

@@ -1,8 +1,9 @@
 #! /usr/bin/env python
 
 """
-This program finds the indexes of the states for electron and hole cooling calculations (ONLY!)
-extrapolated at a desired initial condition. It reads the me_energies0 file from pyxaid [at initial condition t=0].
+This program finds the indexes of the states for electron and hole cooling calculations (ONLY!) \
+extrapolated at a desired initial condition. It reads the me_energies0 file from \
+pyxaid [at initial condition t=0].
 
 Example:
 
