@@ -9,6 +9,9 @@ mergeHDF5.py -i chunk_a.hdf5 chunk_b.hdf5 chunk_c.hdf5 -o total.hdf5
 
 An empty total.hdf5 file should be already available before using the script.
 """
+
+from __future__ import annotations
+
 import argparse
 import h5py
 import os
@@ -23,7 +26,7 @@ parser.add_argument('-o', required=True,
                     help='Path to the HDF5 were the merge is going to be stored')
 
 
-def read_cmd_line():
+def read_cmd_line() -> tuple[str, str]:
     """
     Parse Command line options.
     """
@@ -35,13 +38,13 @@ def read_cmd_line():
 # ===============><==================
 
 
-def mergeHDF5(inp, out):
+def mergeHDF5(inp: str, out: str) -> None:
     """Merge Recursively two hdf5 Files."""
     with h5py.File(inp, 'r') as f5, h5py.File(out, 'r+') as g5:
         merge_recursively(f5, g5)
 
 
-def merge_recursively(f, g):
+def merge_recursively(f: h5py.File, g: h5py.File) -> None:
     """Traverse all the groups tree and copy the different datasets."""
     for k in f.keys():
         if k not in g:
@@ -54,7 +57,7 @@ def merge_recursively(f, g):
             merge_recursively(f[k], g[k])
 
 
-def main():
+def main() -> None:
     inps, out = read_cmd_line()
     if not os.path.exists(out):
         touch(out)
@@ -62,7 +65,7 @@ def main():
         mergeHDF5(i, out)
 
 
-def touch(fname, times=None):
+def touch(fname: str, times: tuple[float, float] | None = None) -> None:
     """Equivalent to unix touch command"""
     with open(fname, 'a'):
         os.utime(fname, times)

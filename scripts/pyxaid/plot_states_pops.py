@@ -20,14 +20,22 @@ form a macrostate of states 1 and 3 indexed as in pyxaid, [4,6] forms
 a macrostates of states 4 and 6.
 """
 
-import numpy as np
+from __future__ import annotations
+
 import os
-import matplotlib.pyplot as plt
 import argparse
+from typing import TYPE_CHECKING
+
+import numpy as np
+import matplotlib.pyplot as plt
 from nanoqm.analysis import parse_list_of_lists
 
+if TYPE_CHECKING:
+    from numpy.typing import NDArray
+    from numpy import float64 as f8
 
-def plot_stuff(outs, pops):
+
+def plot_stuff(outs: NDArray[f8], pops: NDArray[f8]) -> None:
     """energies - a vector of energy values that can be plotted."""
     dim_x = np.arange(outs.shape[0])
 
@@ -49,15 +57,18 @@ def plot_stuff(outs, pops):
     plt.show()
 
 
-def read_populations(path, fn, nconds, ms):
+def read_populations(path: str, fn: str, nconds: int, ms: list[list[int]]) -> list[NDArray[f8]]:
     inpfile = os.path.join(path, fn)
     cols = list(map(lambda row: tuple(map(lambda x: x * 2 + 3, row)), ms))
-    xs = [np.stack(np.loadtxt(f'{inpfile}{j}', usecols=col)
-                   for j in range(nconds)) for col in cols]
+    xs = [
+        np.stack(
+            [np.loadtxt(f'{inpfile}{j}', usecols=col, dtype=np.float64) for j in range(nconds)]
+        ) for col in cols
+    ]
     return xs
 
 
-def main(path_output, ms, nconds):
+def main(path_output: str, ms: list[list[int]], nconds: int) -> None:
 
     outs = read_populations(path_output, 'out', nconds, ms)
     pops = read_populations(path_output, 'me_pop', nconds, ms)
@@ -72,27 +83,24 @@ def main(path_output, ms, nconds):
             outs_fin.append(x)
         else:
             outs_fin.append(np.sum(x, axis=1))
-    outs_fin = np.array(outs_fin).T
+    outs_fin_ar = np.array(outs_fin).T
 
     for x in pops_avg:
         if x.ndim == 1:
             pops_fin.append(x)
         else:
             pops_fin.append(np.sum(x, axis=1))
-    pops_fin = np.array(pops_fin).T
+    pops_fin_ar = np.array(pops_fin).T
 
-    plot_stuff(outs_fin, pops_fin)
+    plot_stuff(outs_fin_ar, pops_fin_ar)
 
 
-def read_cmd_line(parser):
+def read_cmd_line(parser) -> tuple[str, str, int]:
     """
     Parse Command line options.
     """
     args = parser.parse_args()
-
-    attributes = ['p', 'ms', 'nconds']
-
-    return [getattr(args, p) for p in attributes]
+    return (args.p, args.ms, args.nconds)
 
 
 # ============<>===============

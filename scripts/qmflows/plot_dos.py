@@ -12,9 +12,11 @@ If you dont use the ligand flag, each atom contributes independently.
 emin and emax indicates the energy window to make the plot.
 """
 
+from __future__ import annotations
 
 import argparse
 import glob
+from typing import TYPE_CHECKING
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -22,19 +24,23 @@ from matplotlib import interactive
 
 from nanoqm import logger
 
+if TYPE_CHECKING:
+    from numpy.typing import NDArray
+    from numpy import float64 as f8
 
-def readatom(filename):
+
+def readatom(filename: str) -> str:
     # In the first line in column 6, the atom is defined
     with open(filename, 'r') as f:
         atom = f.readline().split()[6]
     return atom
 
 
-def g(x_real, x_grid, delta):
+def g(x_real: NDArray[f8], x_grid, delta: float) -> NDArray[f8]:
     return np.exp(-2 * (x_grid - x_real) ** 2 / delta ** 2)
 
 
-def convolute(x, y, x_points, sigma):
+def convolute(x: NDArray[f8], y: NDArray[f8], x_points: NDArray[f8], sigma: float) -> NDArray[f8]:
     # Compute gaussian prefactor
     prefactor = np.sqrt(2.0) / (sigma * np.sqrt(np.pi))
     # Convolute spectrum over grid
@@ -44,7 +50,13 @@ def convolute(x, y, x_points, sigma):
     return y_points
 
 
-def plot_stuff(ys, energies, legends, emin, emax):
+def plot_stuff(
+    ys: NDArray[f8],
+    energies: NDArray[f8],
+    legends: list[str],
+    emin: float,
+    emax: float,
+) -> None:
     # In case you need more colors, this list should be expanded
     colors = ['black', 'orange', 'blue', 'red',
               'green', 'magenta', 'cyan', 'black', 'yellow']
@@ -88,7 +100,7 @@ def plot_stuff(ys, energies, legends, emin, emax):
     plt.show()
 
 
-def main(group, emin, emax):
+def main(group: list[int], emin: float, emax: float) -> None:
     # Check files with PDOS
     files = sorted(glob.glob('*-k*.pdos'))
     # Define the atom type for each DOS file
@@ -127,15 +139,12 @@ def main(group, emin, emax):
     plot_stuff(ys, energies, legends, emin, emax)
 
 
-def read_cmd_line(parser):
+def read_cmd_line(parser) -> tuple[list[int], float, float]:
     """
     Parse Command line options.
     """
     args = parser.parse_args()
-
-    attributes = ['ligand', 'emin', 'emax']
-
-    return [getattr(args, p) for p in attributes]
+    return (args.ligand, args.emin, args.emax)
 
 
 # ============<>===============

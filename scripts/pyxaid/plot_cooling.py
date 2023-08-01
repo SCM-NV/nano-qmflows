@@ -1,5 +1,6 @@
 #!/usr/bin/env python
-"""This program plots the average electronic energy during a NAMD simulation averaged over several initial conditions.
+"""This program plots the average electronic energy during a NAMD simulation \
+averaged over several initial conditions.
 
 It plots both the SH and SE population based energies.
 
@@ -11,7 +12,10 @@ Note that the number of states is the same as given in the pyxaid output.
  It must include the ground state as well.
 """
 
+from __future__ import annotations
+
 import argparse
+from typing import TYPE_CHECKING
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -20,17 +24,34 @@ from matplotlib import interactive
 from nanoqm.analysis import (autocorrelate, convolute, read_energies_pyxaid,
                              read_pops_pyxaid, spectral_density)
 
+if TYPE_CHECKING:
+    from numpy.typing import NDArray
+    from numpy import float64 as f8
 
-def func(x, a, b, c, d, e):
-    return a * np.exp(- x ** 2 / b ** 2) + d * np.exp(- x / e) + c
 
-def plot_stuff(x_grid, y_grid, x_grid_scaled, y_grid_scaled, sd, w_en, w_en_scaled, nconds, outs, energies, ts, dt):
-
+def plot_stuff(
+    x_grid: NDArray[f8],
+    y_grid: NDArray[f8],
+    x_grid_scaled: NDArray[f8],
+    y_grid_scaled: NDArray[f8],
+    sd: NDArray[f8],
+    w_en: NDArray[f8],
+    w_en_scaled: NDArray[f8],
+    nconds: int,
+    outs: NDArray[f8],
+    energies: NDArray[f8],
+    ts: NDArray[np.intp],
+    dt: float,
+) -> None:
     plt.figure(1)
     plt.xlabel('Time (fs)')
     plt.ylabel('Energy (eV)')
     for iconds in range(nconds):
-        plt.imshow(y_grid[iconds, :, :].T, aspect='auto', extent=(0, len(ts)*dt, np.min(x_grid), np.max(x_grid)), origin='lower', interpolation='bicubic', cmap='hot')
+        plt.imshow(
+            y_grid[iconds, :, :].T, aspect='auto',
+            extent=(0, len(ts)*dt, np.min(x_grid), np.max(x_grid)),
+            origin='lower', interpolation='bicubic', cmap='hot',
+        )
     plt.plot(ts * dt, w_en, 'w')
     interactive(True)
     plt.show()
@@ -39,7 +60,11 @@ def plot_stuff(x_grid, y_grid, x_grid_scaled, y_grid_scaled, sd, w_en, w_en_scal
     plt.xlabel('Time (fs)')
     plt.ylabel('Excess Energy (eV)')
     for iconds in range(nconds):
-        plt.imshow(y_grid_scaled[iconds, :, :].T, aspect='auto', extent=(0, len(ts)*dt, np.min(x_grid_scaled), np.max(x_grid_scaled)), origin='lower', interpolation='bicubic', cmap='hot')
+        plt.imshow(
+            y_grid_scaled[iconds, :, :].T, aspect='auto',
+            extent=(0, len(ts)*dt, np.min(x_grid_scaled), np.max(x_grid_scaled)),
+            origin='lower', interpolation='bicubic', cmap='hot',
+        )
     plt.plot(ts * dt, w_en_scaled, 'w')
     interactive(True)
     plt.show()
@@ -48,7 +73,10 @@ def plot_stuff(x_grid, y_grid, x_grid_scaled, y_grid_scaled, sd, w_en, w_en_scal
     plt.xlabel('Time (fs)')
     plt.ylabel('State Number')
     for iconds in range(nconds):
-        plt.imshow(outs[:, :, iconds].T, aspect='auto', origin='lower', extent = ( 0, len(ts) * dt, 0, outs.shape[1]), interpolation='bicubic', cmap='hot')
+        plt.imshow(
+            outs[:, :, iconds].T, aspect='auto', origin='lower',
+            extent=(0, len(ts) * dt, 0, outs.shape[1]), interpolation='bicubic', cmap='hot'
+        )
     interactive(True)
     plt.show()
 
@@ -78,12 +106,16 @@ def plot_stuff(x_grid, y_grid, x_grid_scaled, y_grid_scaled, sd, w_en, w_en_scal
     plt.xlabel('Freqencies cm-1')
     sd_int = sd[:, 0, :int(sd.shape[2]/2)]
     sd_freq = sd[0, 1, :int(sd.shape[2]/2)]
-    plt.imshow(sd_int, aspect='auto', origin='lower', extent = (np.min(sd_freq), np.max(sd_freq), 0, sd_int.shape[0] ), interpolation='bicubic', cmap='hot')
+    plt.imshow(
+        sd_int, aspect='auto', origin='lower',
+        extent=(np.min(sd_freq), np.max(sd_freq), 0, sd_int.shape[0]),
+        interpolation='bicubic', cmap='hot',
+    )
     interactive(False)
     plt.show()
 
 
-def main(path_output, nstates, nconds, dt, sigma):
+def main(path_output: str, nstates: int, nconds: int, dt: float, sigma: float) -> None:
     outs = read_pops_pyxaid(path_output, 'out', nstates, nconds)
     energies = read_energies_pyxaid(path_output, 'me_energies', nstates, nconds)
     ##################################
@@ -104,12 +136,16 @@ def main(path_output, nstates, nconds, dt, sigma):
     energies_scaled = np.stack([
         energies[:, istate, :] - lowest_hl_gap for istate in range(nstates-1)
     ])
-    energies_scaled = energies_scaled.swapaxes(0,1) # Just reshape to have the energies shape (time, nstates, nconds)
+    # Just reshape to have the energies shape (time, nstates, nconds)
+    energies_scaled = energies_scaled.swapaxes(0, 1)
     x_grid_scaled = np.linspace(0, np.max(energies_scaled), 100)
     y_grid_scaled = np.stack([
         np.stack([
-            convolute(energies_scaled[time, :, iconds], outs[time, :, iconds], x_grid_scaled, sigma)
-            for time in range(energies_scaled.shape[0])
+            convolute(
+                energies_scaled[time, :, iconds],
+                outs[time, :, iconds],
+                x_grid_scaled, sigma,
+            ) for time in range(energies_scaled.shape[0])
         ]) for iconds in range(nconds)
     ])
     # This part is done
@@ -119,9 +155,9 @@ def main(path_output, nstates, nconds, dt, sigma):
     el_ene_outs = np.sum(eav_outs, axis=1)
     # Scale them to the lowest excitation energy
     ene_outs_ref0 = el_ene_outs - lowest_hl_gap
-    #Average over initial conditions
+    # Average over initial conditions
     ene_outs_ref0 = np.average(ene_outs_ref0, axis=1)
-    el_ene_av = np.average(el_ene_outs, axis = 1)
+    el_ene_av = np.average(el_ene_outs, axis=1)
     ##################################
     # Compute autocorrelation function for consecutive pair of states
     d_en = np.stack(
@@ -130,21 +166,22 @@ def main(path_output, nstates, nconds, dt, sigma):
     acf = np.stack([autocorrelate(d_en[istate, :]) for istate in range(d_en.shape[0])])
     # Compute spectral density
     nacf = acf[:, 1, :]
-    sd = np.stack(spectral_density(nacf[istate, :], dt) for istate in range(d_en.shape[0]))
+    sd = np.stack([spectral_density(nacf[istate, :], dt) for istate in range(d_en.shape[0])])
     #################################
     # Call plotting function
     ts = np.arange(energies.shape[0])
-    plot_stuff(x_grid, y_grid, x_grid_scaled, y_grid_scaled, sd, el_ene_av, ene_outs_ref0, nconds, outs, energies, ts, dt)
+    plot_stuff(
+        x_grid, y_grid, x_grid_scaled, y_grid_scaled, sd, el_ene_av,
+        ene_outs_ref0, nconds, outs, energies, ts, dt,
+    )
 
-def read_cmd_line(parser):
+
+def read_cmd_line(parser: argparse.ArgumentParser) -> tuple[str, int, int, float, float]:
     """
     Parse Command line options.
     """
     args = parser.parse_args()
-
-    attributes = ['p', 'nstates', 'nconds', 'dt', 'sigma']
-
-    return [getattr(args, p) for p in attributes]
+    return (args.p, args.nstates, args.nconds, args.dt, args.sigma)
 
 
 # ============<>===============

@@ -1,5 +1,6 @@
 #! /usr/bin/env python
-""" This script convolutes the calculated oscillator strengts for different snapshots in a MD trajectory and plot the average spectrum.
+""" This script convolutes the calculated oscillator strengts for different snapshots \
+in a MD trajectory and plot the average spectrum.
 
 Usage:
 convolution.py -sigma 0.05 -n 2 -nm True -write True
@@ -11,6 +12,8 @@ Use the nm to obtain a plot in nm scale.
 You can choose to write the coordinates obtained from the convolution with the write flag.
 """
 
+from __future__ import annotations
+
 import argparse
 import glob
 
@@ -20,7 +23,7 @@ import numpy as np
 from nanoqm.analysis import convolute
 
 
-def main(sigma, n, nm, write):
+def main(sigma: float, n: int, nm: bool, write: bool) -> None:
     # Check output files
     files = sorted(glob.glob('output_*.txt'))
 
@@ -81,21 +84,19 @@ def main(sigma, n, nm, write):
                    fmt='%11.3f %10.5f', header=header)
 
 
-def read_cmd_line(parser):
+def read_cmd_line(parser) -> tuple[float, int, bool, bool]:
     """
     Parse Command line options.
     """
     args = parser.parse_args()
-
-    attributes = ['sigma', 'n', 'nm', 'write']
-
-    return [getattr(args, p) for p in attributes]
+    return (args.sigma, args.n, args.nm, args.write)
 
 
 # ============<>===============
 if __name__ == "__main__":
 
-    msg = """convolution.py -sigma <sigma parameter of the gaussian functions> -n <plot only the spectrum of structure n>
+    msg = """convolution.py -sigma <sigma parameter of the gaussian functions> \
+    -n <plot only the spectrum of structure n> \
     -nm <plot in nm> -write <write the coordinates from the convolution>"""
 
     parser = argparse.ArgumentParser(description=msg)

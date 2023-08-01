@@ -1,9 +1,11 @@
 #!/usr/bin/env python
 """Comman line interface to reenumerate a bunch of HDF5."""
 
+from __future__ import annotations
+
 import argparse
 from pathlib import Path
-from typing import Iterable, List, Tuple
+from collections.abc import Iterable
 
 import h5py
 
@@ -18,7 +20,7 @@ parser.add_argument('-n', required=True,
 parser.add_argument('-d', help="work directory", default='.')
 
 
-def create_new_group_names(groups: Iterable[str], index: int) -> List[str]:
+def create_new_group_names(groups: Iterable[str], index: int) -> list[str]:
     """Create new names using index for groups."""
     new_names = []
     for g in groups:
@@ -46,7 +48,7 @@ def rename_groups_in_hdf5(path_hdf5: Path, project: str, index: int) -> None:
                 root.move(f"000_{new}", new)
 
 
-def reenumerate(project: str, folder_and_hdf5: Tuple[str, str], acc: int) -> int:
+def reenumerate(project: str, folder_and_hdf5: tuple[str, str], acc: int) -> int:
     """Reenumerate hdf5 files in folder using acc."""
     folder, hdf5 = folder_and_hdf5
     logger.info(f"Renaming {hdf5} by adding {acc} to the index")
@@ -58,7 +60,7 @@ def reenumerate(project: str, folder_and_hdf5: Tuple[str, str], acc: int) -> int
     return acc + number_of_geometries
 
 
-def main():
+def main() -> None:
     """Parse the command line arguments and run workflow."""
     args = parser.parse_args()
     project = args.n

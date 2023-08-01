@@ -22,8 +22,11 @@ Note that you have to provide the location of the folder where the NAMD
  hamiltonian elements are stored using the -p flag.
 """
 
+from __future__ import annotations
+
 import argparse
 import os
+from typing import TYPE_CHECKING
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -33,8 +36,23 @@ from nanoqm import logger
 from nanoqm.analysis import autocorrelate, dephasing, spectral_density
 from nanoqm.common import fs_to_nm
 
+if TYPE_CHECKING:
+    from numpy.typing import NDArray
+    from numpy import float64 as f8
 
-def plot_stuff(ens, acf, sd, deph, rate, s1, s2, dt, wsd, wdeph):
+
+def plot_stuff(
+    ens: NDArray[f8],
+    acf: NDArray[f8],
+    sd: NDArray[f8],
+    deph: NDArray[f8],
+    rate: NDArray[f8],
+    s1: int,
+    s2: int,
+    dt: float,
+    wsd: int,
+    wdeph: int,
+) -> None:
     """
     arr - a vector of y-values that are plot
     plot_mean, save_plot - bools telling to plot the mean and save the plot or not, respectively
@@ -116,7 +134,7 @@ def plot_stuff(ens, acf, sd, deph, rate, s1, s2, dt, wsd, wdeph):
     plt.savefig(fileName, format='png', dpi=300)
 
 
-def main(path_output, s1, s2, dt, wsd, wdeph):
+def main(path_output: str, s1: int, s2: int, dt: float, wsd: int, wdeph: int) -> None:
     fn = 'me_energies0'  # it is only necessary the first initial condition
     inpfile = os.path.join(path_output, fn)
     cols = (s1 * 2 + 5, s2 * 2 + 5)
@@ -129,22 +147,19 @@ def main(path_output, s1, s2, dt, wsd, wdeph):
     # Take the transpose to have the correct shape for spectral_density
     acf = np.stack([autocorrelate(en_states[i, :]) for i in range(en_states.shape[0])]).T
     # Compute the spectral density for each column using the normalized acf
-    sd = np.stack([spectral_density(acf[:, 1, i], dt)  for i in range(en_states.shape[0])])
+    sd = np.stack([spectral_density(acf[:, 1, i], dt) for i in range(en_states.shape[0])])
     # Compute the dephasing time for the uncorrelated acf between two states
     deph, rate = dephasing(acf[:, 0, 2], dt)
     # Plot stuff
     plot_stuff(en_states, acf, sd, deph, rate, s1, s2, dt, wsd, wdeph)
 
 
-def read_cmd_line(parser):
+def read_cmd_line(parser) -> tuple[str, int, int, float, int, int]:
     """
     Parse Command line options.
     """
     args = parser.parse_args()
-
-    attributes = ['p', 's1', 's2', 'dt', 'wsd', 'wdeph']
-
-    return [getattr(args, p) for p in attributes]
+    return (args.p, args.s1, args.s2, args.dt, args.wsd, args.wdeph)
 
 
 # ============<>===============

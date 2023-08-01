@@ -201,7 +201,7 @@ jobs:
         run: pip list
 
       - name: Run flake8
-        run: flake8 nanoqm test setup.py
+        run: flake8 nanoqm test setup.py scripts
 
       - name: Run pydocstyle
         run: pydocstyle nanoqm

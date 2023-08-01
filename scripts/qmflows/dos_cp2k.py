@@ -1,5 +1,6 @@
 #! /usr/bin/env python
-"""This programs performs a density of states (DOS) calculation  with cp2k using generic settings, i.e. DFT/PBE
+"""This programs performs a density of states (DOS) calculation  with cp2k \
+using generic settings, i.e. DFT/PBE
 
 Note that is mandatory to define a cell_parameter, and a xyz structure.
 If you have a restart file, a basis set and you can also define it
@@ -11,6 +12,8 @@ It assumes a DZVP by default, which can be also changed
 It is always advised to submit the script using a JOB Manager like Slurm
 """
 
+from __future__ import annotations
+
 import argparse
 import os
 from os.path import join
@@ -20,7 +23,7 @@ from qmflows import cp2k, run, templates
 from scm.plams import Molecule
 
 
-def main(file_xyz, cell, restart, basis, basis_folder):
+def main(file_xyz: str, cell: str, restart: str, basis: str, basis_folder: str) -> None:
     """
     Define which systems need to be calculated
     """
@@ -58,15 +61,12 @@ def main(file_xyz, cell, restart, basis, basis_folder):
     logger.info(result.energy)
 
 
-def read_cmd_line(parser):
+def read_cmd_line(parser: argparse.ArgumentParser) -> tuple[str, str, str, str, str]:
     """
     Parse Command line options.
     """
     args = parser.parse_args()
-
-    attributes = ['xyz', 'cell', 'restart', 'basis', 'bas_fold']
-
-    return [getattr(args, p) for p in attributes]
+    return (args.xyz, args.cell, args.restart, args.basis, args.bas_fold)
 
 
 # ============<>===============

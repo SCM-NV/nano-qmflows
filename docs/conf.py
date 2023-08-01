@@ -14,26 +14,23 @@
 #
 import os
 import sys
+import datetime
 
+import nanoqm
 
 # -- Project information -----------------------------------------------------
 
-project = 'nano-qmflows'
-copyright = '2022, Felipe Zapata and Ivan Infante'
+project = nanoqm.__name__
+copyright = f'2016-{datetime.datetime.now().year}, Felipe Zapata and Ivan Infante'
 author = 'Felipe Zapata and Ivan Infante'
 
 here = os.path.dirname(__file__)
 sys.path.insert(0, os.path.abspath(os.path.join(here, '..')))
 
-vers = {}
-with open(os.path.join(here, '..', 'nanoqm', '_version.py')) as f:
-    exec(f.read(), vers)
-
-
 # The short X.Y version
-version = vers["__version__"]
+version = f"{nanoqm.__version_tuple__[0]}.{nanoqm.__version_tuple__[1]}"
 # The full version, including alpha/beta/rc tags
-release = vers["__version__"]
+release = nanoqm.__version__
 
 
 # -- General configuration ---------------------------------------------------
@@ -203,20 +200,3 @@ intersphinx_mapping = {
 
 # If true, `todo` and `todoList` produce output, else they produce nothing.
 todo_include_todos = True
-
-# This value contains a list of modules to be mocked up.
-# This is useful when some external dependencies are not met at build time and break the building process.
-# You may only specify the root package of the dependencies themselves and omit the sub-modules:
-autodoc_mock_imports = [
-    'h5py',
-    'qmflows',
-    'nanoqm.compute_integrals',
-    'mendeleev',
-    'scm',
-    'noodles',
-    'more_itertools',
-    'yaml',
-    'schema',
-    'numpy',
-    'scipy',
-]

@@ -1,5 +1,7 @@
 #! /usr/bin/env python
 
+from __future__ import annotations
+
 from os.path import join
 import argparse
 import h5py
@@ -8,18 +10,24 @@ import numpy as np
 from nanoqm import logger
 
 
-def main(project_name, path_hdf5, indices, overlap_flag, mo_flag):
+def main(
+    project_name: str,
+    path_hdf5: str,
+    indices: list[int],
+    overlap_flag: bool,
+    mo_flag: bool,
+) -> None:
 
     # Shift indices to start from 0
-    indices = np.array(indices) - 1
+    indices_ar = np.array(indices) - 1
 
     # path to the failed points
     if mo_flag:
-        mos = [join(project_name, f'point_{i}') for i in indices]
+        mos = [join(project_name, f'point_{i}') for i in indices_ar]
     else:
         mos = []
     if overlap_flag:
-        overlaps = [join(project_name, f'overlaps_{i}') for i in indices]
+        overlaps = [join(project_name, f'overlaps_{i}') for i in indices_ar]
     else:
         overlaps = []
 
@@ -33,15 +41,12 @@ def main(project_name, path_hdf5, indices, overlap_flag, mo_flag):
                 del f5[p]
 
 
-def read_cmd_line(parser):
+def read_cmd_line(parser) -> tuple[str, str, list[int], bool, bool]:
     """
     Parse Command line options.
     """
     args = parser.parse_args()
-
-    attributes = ['pn', 'hdf5', 'i', 'o', 'mo']
-
-    return [getattr(args, p) for p in attributes]
+    return (args.pn, args.hdf5, args.i, args.o, args.mo)
 
 
 if __name__ == "__main__":
