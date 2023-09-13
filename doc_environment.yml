@@ -7,3 +7,7 @@ dependencies:
   - eigen
   - "libint>=2.6.0"
   - highfive
+  - pip
+  - pip:
+    - -r doc_requirements.txt
+    - .
