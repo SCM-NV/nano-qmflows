@@ -96,7 +96,6 @@ jobs:
           "pre-release")
             pip install --pre -r ./install_requirements.txt -r ./test_requirements.txt --upgrade --force-reinstall
             pip install git+https://github.com/SCM-NV/qmflows@master --upgrade
-            pip uninstall plams -y; pip install git+https://github.com/SCM-NV/PLAMS@master --upgrade
             pip install git+https://github.com/NLeSC/noodles@master --upgrade
             ;;
           *)
