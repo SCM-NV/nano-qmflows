@@ -126,8 +126,8 @@ build = [
     "cp38-macosx_x86_64",
     "cp38-macosx_arm64",
 ]
-build-verbosity = "3"
 before-all = "cp licenses/LICENSE_LIBHDF5.txt licenses/LICENSE_LIBINT2.txt ."
+build-frontend = "build"
 
 [tool.cibuildwheel.linux]
 environment = { QMFLOWS_INCLUDEDIR="", QMFLOWS_LIBDIR="", CFLAGS="-Werror", LDFLAGS="-Wl,--strip-debug" }
