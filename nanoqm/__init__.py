@@ -6,7 +6,6 @@ chemical (QM) packages."""
 from . import _monkey_patch
 
 from ._version import __version__ as __version__, __version_tuple__ as __version_tuple__
-from ._version_info import version_info as version_info
 from ._logger import logger as logger
 
 from .analysis import (
@@ -24,7 +23,7 @@ from .workflows import (workflow_derivative_couplings, workflow_stddft)
 del _monkey_patch
 
 __all__ = [
-    '__version__', '__version_tuple__', 'version_info', 'logger',
+    '__version__', '__version_tuple__', 'logger',
     'autocorrelate', 'calculate_couplings_levine', 'calculate_mos',
     'compute_overlaps_for_coupling', 'convolute', 'dephasing',
     'func_conv', 'gauss_function', 'lazy_couplings',
