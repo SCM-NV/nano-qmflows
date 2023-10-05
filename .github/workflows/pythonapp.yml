@@ -145,7 +145,7 @@ jobs:
     - name: Build wheels
       uses: pypa/cibuildwheel@v2.16
       env:
-        CIBW_BUILD: cp38-manylinux_x86_64
+        CIBW_BUILD: cp39-manylinux_x86_64
         CIBW_MANYLINUX_X86_64_IMAGE: "ghcr.io/nlesc-nano/manylinux2014_x86_64-qmflows:${{ env.TAG }}"
 
     - name: Set up Python
