@@ -17,8 +17,8 @@ keywords:
  - materials-science
  - python
  - Workflows
-version: '0.14.0'
-date-released: "2023-04-19"
+version: '0.14.1'
+date-released: "2023-10-07"  # yyyy-mm-dd
 repository-code: https://github.com/SCM-NV/nano-qmflows
 license: "Apache-2.0"
 doi: 10.5281/zenodo.2576893

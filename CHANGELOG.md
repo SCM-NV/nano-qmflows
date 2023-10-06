@@ -1,9 +1,17 @@
 # Change Log
 
-# 0.14.1 (*unreleased*)
+# 0.14.1 (07/10/2023)
 
 ## New
-* *Placeholder*
+* Add formal Python 3.12 support
+
+## Changed
+* Update C++ dependencies in the prebuilt wheels
+* Migrate from setup.cfg to pyproject.toml
+
+## Fixed
+* Fix `cell_angles` being unable to accept `None`
+* Remove references to a removed function in the IDOS workflow
 
 
 # 0.14.0 (19/04/2023)
