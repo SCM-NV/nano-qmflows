@@ -109,7 +109,7 @@ jobs:
       - name: Install dependencies
         run: |
           WHL_NAME=$(python scripts/get_whl_name.py dist ${{ matrix.buildplat[2] }})
-          if [[ "${{ matrix.version }}" == '3.12' ]]; then
+          if [[ "${{ matrix.version[1] }}" == '3.12' ]]; then
             sudo apt-get update
             sudo apt-get install libhdf5-dev
             pip install git+https://github.com/h5py/h5py@89e1e2e78d7fb167d2a67c9a8354ced6491160fe
