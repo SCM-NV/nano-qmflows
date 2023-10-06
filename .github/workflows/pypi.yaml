@@ -20,7 +20,7 @@ env:
 
 jobs:
   build_wheels:
-    name: Build wheels cp38-${{ matrix.buildplat[1] }}
+    name: Build wheels cp39-${{ matrix.buildplat[1] }}
     runs-on: ${{ matrix.buildplat[0] }}
     strategy:
       fail-fast: false
@@ -63,7 +63,7 @@ jobs:
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.16
         env:
-          CIBW_BUILD: cp38-${{ matrix.buildplat[1] }}
+          CIBW_BUILD: cp39-${{ matrix.buildplat[1] }}
           CIBW_MANYLINUX_AARCH64_IMAGE: "ghcr.io/nlesc-nano/manylinux2014_aarch64-qmflows:${{ env.TAG }}"
           CIBW_MANYLINUX_X86_64_IMAGE: "ghcr.io/nlesc-nano/manylinux2014_x86_64-qmflows:${{ env.TAG }}"
 

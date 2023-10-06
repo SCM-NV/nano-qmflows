@@ -241,10 +241,10 @@ class InputSanitizer:
         for s in (self.general.cp2k_settings_main, self.general.cp2k_settings_guess):
             if self.general.file_cell_parameters is None:
                 s.cell_parameters = self.general.cell_parameters
-                s.cell_angles = None
+                s.cell_angles = self.general.cell_angles
             else:
                 s.cell_parameters = None
-            s.cell_angles = None
+                s.cell_angles = None
 
     def add_periodic(self) -> None:
         """Add the keyword for the periodicity of the system."""

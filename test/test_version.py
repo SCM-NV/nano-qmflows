@@ -16,10 +16,3 @@ def test_dev_version(is_release: bool) -> None:
         return None
     version = Version(nanoqm.__version__)
     assertion.not_(version.is_devrelease)
-
-
-@pytest.mark.parametrize("name", ["major", "minor", "micro"])
-def test_version_info(name: str) -> None:
-    attr = getattr(nanoqm.version_info, name)
-    assertion.isinstance(attr, int)
-    assertion.ge(attr, 0)

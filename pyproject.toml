@@ -121,13 +121,13 @@ per-file-ignores = [
 
 [tool.cibuildwheel]
 build = [
-    "cp38-manylinux_x86_64",
-    "cp38-manylinux-aarch64",
-    "cp38-macosx_x86_64",
-    "cp38-macosx_arm64",
+    "cp39-manylinux_x86_64",
+    "cp39-manylinux-aarch64",
+    "cp39-macosx_x86_64",
+    "cp39-macosx_arm64",
 ]
-build-verbosity = "3"
 before-all = "cp licenses/LICENSE_LIBHDF5.txt licenses/LICENSE_LIBINT2.txt ."
+build-frontend = "build"
 
 [tool.cibuildwheel.linux]
 environment = { QMFLOWS_INCLUDEDIR="", QMFLOWS_LIBDIR="", CFLAGS="-Werror", LDFLAGS="-Wl,--strip-debug" }
@@ -147,5 +147,5 @@ repair-wheel-command = [
 ]
 
 [[tool.cibuildwheel.overrides]]
-select = "cp38-macosx_arm64"
+select = "cp39-macosx_arm64"
 environment = { QMFLOWS_INCLUDEDIR="", QMFLOWS_LIBDIR="", LDFLAGS="-Wl", MACOSX_DEPLOYMENT_TARGET="11" }
