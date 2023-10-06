@@ -114,7 +114,10 @@ schema_cp2k_general_settings = _DataSchema({
     "periodic": any_lambda(("none", "x", "y", "z", "xy", "xy", "yz", "xyz")),
 
     # Specify the angles between the vectors defining the unit cell
-    Optional("cell_angles", default=None): list,
+    Optional("cell_angles", default=None): Or(
+        None,
+        lambda xs: isinstance(xs, list) and len(xs) == 3 and all(isinstance(i, Real) for i in xs),
+    ),
 
     # Path to the folder containing the basis set specifications
     Optional(

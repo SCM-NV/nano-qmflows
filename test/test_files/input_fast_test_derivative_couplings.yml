@@ -36,7 +36,7 @@ cp2k_general_settings:
   potential: "GTH-PBE"
   basis: "DZVP-MOLOPT-SR-GTH"
   cell_parameters: 10.0
-  cell_angles: [90.0, 90.0, 90.0]
+  cell_angles: null
   periodic: none
   executable: cp2k.ssmp
 
