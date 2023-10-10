@@ -43,6 +43,8 @@ from .initialization import split_trajectory
 from .input_validation import process_input
 from .. import _data
 
+__all__ = ["distribute_jobs"]
+
 
 def read_cmd_line() -> str:
     """Read the input file and the workflow name from the command line."""
@@ -60,7 +62,11 @@ def main() -> None:
     """Distribute the user specified by the user."""
     # command line argument
     input_file = read_cmd_line()
+    distribute_jobs(input_file)
 
+
+def distribute_jobs(input_file: str) -> None:
+    """Distribute the user specified by the user."""
     with open(input_file, 'r', encoding="utf8") as f:
         args = yaml.load(f, Loader=UniqueSafeLoader)
 
