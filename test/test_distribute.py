@@ -1,42 +1,37 @@
 """Test the distribution script."""
-from qmflows.type_hints import PathLike
-from pathlib import Path
-from subprocess import (PIPE, Popen)
+
 import fnmatch
 import shutil
 import os
+import pytest
+from pathlib import Path
+from typing import Literal
+
+from nanoqm.workflows.distribute_jobs import distribute_jobs
+from nanoqm.workflows.input_validation import process_input
+
+_WorkflowKind = Literal["derivative_couplings", "absorption_spectrum"]
+
+JOBS = {
+    "derivative_couplings": "test/test_files/input_test_distribute_derivative_couplings.yml",
+    "absorption_spectrum": "test/test_files/input_test_distribute_absorption_spectrum.yml",
+}
 
 
-def test_distribute_couplings(tmp_path: PathLike) -> None:
-    """Check that the scripts to compute a trajectory are generated correctly."""
-    call_distribute(
-        tmp_path,
-        "distribute_jobs.py -i test/test_files/input_test_distribute_derivative_couplings.yml",
-    )
-
-
-def test_distribute_absorption(tmp_path: PathLike) -> None:
-    call_distribute(
-        tmp_path,
-        "distribute_jobs.py -i test/test_files/input_test_distribute_absorption_spectrum.yml",
-    )
-
-
-def call_distribute(tmp_path: PathLike, cmd: str) -> None:
+@pytest.mark.parametrize("workflow,file", JOBS.items(), ids=JOBS)
+def test_distribute(workflow: _WorkflowKind, file: str) -> None:
     """Execute the distribute script and check that if finish succesfully."""
     try:
-        p = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, shell=True, encoding="utf8")
-        _, err = p.communicate()
-        if err:
-            raise RuntimeError(err)
-        check_scripts()
+        distribute_jobs(file)
+        check_scripts(workflow)
     finally:
         remove_chunk_folder()
 
 
-def check_scripts() -> None:
+def check_scripts(workflow: _WorkflowKind) -> None:
     """Check that the distribution scripts were created correctly."""
     paths = fnmatch.filter(os.listdir('.'), "chunk*")
+    cwd_old = os.getcwd()
 
     # Check that the files are created correctly
     files = ["launch.sh", "chunk_xyz*", "input.yml"]
@@ -48,6 +43,12 @@ def check_scripts() -> None:
             except StopIteration:
                 msg = f"There is no such file: {f!r}"
                 raise RuntimeError(msg) from None
+            if f == "input.yml":
+                os.chdir(p)
+                try:
+                    process_input(f, workflow)
+                finally:
+                    os.chdir(cwd_old)
 
 
 def remove_chunk_folder() -> None:
