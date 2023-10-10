@@ -213,7 +213,7 @@ def split_trajectory(path: str | Path, nblocks: int, pathOut: str | os.PathLike[
         list of paths to the xyz geometries
 
     """
-    with open(path, 'r') as f:
+    with open(path, 'r', encoding="utf8") as f:
         # Read First line
         ls = f.readline()
         numat = int(ls.split()[0])
@@ -234,11 +234,11 @@ def split_trajectory(path: str | Path, nblocks: int, pathOut: str | os.PathLike[
     # Path where the splitted xyz files are written
     prefix = join(pathOut, 'chunk_xyz_')
     cmd = f'split -a 1 -l {lines_per_block} {path} {prefix}'
-    output = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, shell=True)
+    output = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, shell=True, encoding="utf8")
     rs = output.communicate()
     err = rs[1]
     if err:
-        raise RuntimeError(f"Submission Errors: {err.decode()}")
+        raise RuntimeError(f"Submission Errors: {err}")
     else:
         return fnmatch.filter(os.listdir(), "chunk_xyz_?")
 

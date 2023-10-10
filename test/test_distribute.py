@@ -25,7 +25,7 @@ def test_distribute_absorption(tmp_path: PathLike) -> None:
 def call_distribute(tmp_path: PathLike, cmd: str) -> None:
     """Execute the distribute script and check that if finish succesfully."""
     try:
-        p = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, shell=True, text=True)
+        p = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, shell=True, encoding="utf8")
         _, err = p.communicate()
         if err:
             raise RuntimeError(err)

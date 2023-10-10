@@ -94,7 +94,7 @@ def process_input(input_file: PathLike, workflow_name: str) -> _data.GeneralOpti
     """
     schema = schema_workflows[workflow_name]
 
-    with open(input_file, 'r') as f:
+    with open(input_file, 'r', encoding="utf8") as f:
         dict_input = yaml.load(f.read(), Loader=UniqueSafeLoader)
 
     try:
@@ -317,5 +317,5 @@ class InputSanitizer:
     def print_final_input(self) -> None:
         """Print the input after post-processing."""
         xs = self.user_input.asdict()
-        with open("input_parameters.yml", "w") as f:
+        with open("input_parameters.yml", "w", encoding="utf8") as f:
             yaml.dump(xs, f, indent=4)

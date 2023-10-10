@@ -30,7 +30,7 @@ class TestInputValidation:
     @pytest.mark.parametrize("key", ["potential_file_name", "basis_set_file_name"])
     def test_filename_override(self, key: str) -> None:
         """Test that filename overrides are respected."""
-        with open(PATH_TEST / "input_test_pbe0.yml", "r") as f:
+        with open(PATH_TEST / "input_test_pbe0.yml", "r", encoding="utf8") as f:
             s = plams.Settings(yaml.load(f, Loader=yaml.SafeLoader))
             dft1 = s.cp2k_general_settings.cp2k_settings_main.specific.cp2k.force_eval.dft
             dft1[key] = "test"
@@ -44,7 +44,7 @@ class TestInputValidation:
     @pytest.mark.parametrize("is_list", [True, False], ids=["list", "str"])
     @pytest.mark.parametrize("key", ["potential_file_name", "basis_file_name"])
     def test_basis_filename(self, key: str, is_list: bool) -> None:
-        with open(PATH_TEST / "input_test_pbe0.yml", "r") as f:
+        with open(PATH_TEST / "input_test_pbe0.yml", "r", encoding="utf8") as f:
             s = plams.Settings(yaml.load(f, Loader=yaml.SafeLoader))
             s.cp2k_general_settings[key] = ["a", "b", "c"] if is_list else "a"
 
@@ -60,7 +60,7 @@ class TestInputValidation:
         assert dft2["basis_set_file_name" if key == "basis_file_name" else key] == ref
 
     def test_basis(self) -> None:
-        with open(PATH_TEST / "input_test_pbe0.yml", "r") as f:
+        with open(PATH_TEST / "input_test_pbe0.yml", "r", encoding="utf8") as f:
             s = plams.Settings(yaml.load(f, Loader=yaml.SafeLoader))
             s.cp2k_general_settings.basis = "DZVP-MOLOPT-MGGA-GTH"
             s.cp2k_general_settings.potential = "GTH-MGGA"
@@ -84,7 +84,7 @@ class TestInputValidation:
     @pytest.mark.parametrize("functional_c", [True, False])
     @pytest.mark.parametrize("functional_x", [True, False])
     def test_functional(self, functional_c: bool, functional_x: bool) -> None:
-        with open(PATH_TEST / "input_test_pbe0.yml", "r") as f:
+        with open(PATH_TEST / "input_test_pbe0.yml", "r", encoding="utf8") as f:
             s = plams.Settings(yaml.load(f, Loader=yaml.SafeLoader))
             s.cp2k_general_settings.cp2k_settings_main.specific.template = "main"
             if functional_c:

@@ -57,7 +57,7 @@ def main(path_output: str, nstates: int, iconds: list[int], excess: float, delta
     for i in range(len(iconds)):
         t += f' {iconds[i]}           {indexes[i][0] + 1}\n'
 
-    with open('initial_conditions.out', 'w') as f:
+    with open('initial_conditions.out', 'w', encoding="utf8") as f:
         f.write(t)
 
 

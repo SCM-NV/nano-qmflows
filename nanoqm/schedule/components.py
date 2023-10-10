@@ -307,7 +307,7 @@ def create_point_folder(
 def split_file_geometries(path_xyz: PathLike) -> list[str]:
     """Read a set of molecular geometries in xyz format."""
     # Read Cartesian Coordinates
-    with open(path_xyz) as f:
+    with open(path_xyz, "r", encoding="utf8") as f:
         xss = iter(f.readlines())
 
     data = []
