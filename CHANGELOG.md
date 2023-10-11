@@ -1,5 +1,11 @@
 # Change Log
 
+# 0.14.2 (11/10/2023)
+
+## Fixed
+* Fix various input parsing bugs related to the distributed jobs
+
+
 # 0.14.1 (07/10/2023)
 
 ## New
