@@ -83,10 +83,6 @@ jobs:
         - [ubuntu-latest, manylinux_x86_64, manylinux2014_x86_64]
         - [macos-latest, macosx_x86_64, macosx_10_14_x86_64]
         version:
-        - ["cp38", "3.8"]
-        - ["cp39", "3.9"]
-        - ["cp310", "3.10"]
-        - ["cp311", "3.11"]
         - ["cp312", "3.12"]
 
     steps:
