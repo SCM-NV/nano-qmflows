@@ -139,6 +139,13 @@ def distribute_computations(config: _data.Distribute, hamiltonians: bool = False
                 path_ham = f"{config.orbitals_type}_hamiltonians"
             dict_input.hamiltonians_dir = join(copy_config.scratch_path, path_ham)
 
+        # Disable keys that imply the necasity of pre-processing in the newly chunked jobs
+        # (as that's already done in this function)
+        for name in ["stride", "multiplicity"]:
+            # Attributes set to `NotImplemented` are ignored when writing the input
+            if hasattr(copy_config, name):
+                setattr(copy_config, name, NotImplemented)
+
         # Write input file
         write_input(folder_path, copy_config)
 
