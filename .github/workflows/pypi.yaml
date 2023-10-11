@@ -184,6 +184,7 @@ jobs:
 
             echo "\n::group::Install pip"
             apt install -y python3-pip
+            python -m pip install --upgrade pip
 
             echo "\n::group::Install curl"
             apt install -y curl
@@ -195,11 +196,11 @@ jobs:
 
             echo "\n::group::Install the package"
             WHL_NAME=$(python scripts/get_whl_name.py dist manylinux2014_aarch64)
-            pip install $WHL_NAME[test] --prefer-binary
+            python pip install $WHL_NAME[test] --prefer-binary
 
             echo "\n::group::Python info"
             python --version
-            pip list
+            python pip list
 
             echo "\n::group::Run tests"
             bash scripts/prepare_test_dir.sh
