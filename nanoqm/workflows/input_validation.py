@@ -101,7 +101,7 @@ def process_input(input_file: PathLike, workflow_name: str) -> _data.GeneralOpti
         d = schema.validate(dict_input)
         return InputSanitizer(d).sanitize()
     except SchemaError as e:
-        msg = f"There was an error in the input yaml provided:\n{e}"
+        msg = f"There was an error in the provided {workflow_name!r} input yaml:\n{e}"
         logger.warning(msg)
         raise
 
