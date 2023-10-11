@@ -31,7 +31,7 @@ if TYPE_CHECKING:
 
 def readatom(filename: str) -> str:
     # In the first line in column 6, the atom is defined
-    with open(filename, 'r') as f:
+    with open(filename, 'r', encoding="utf8") as f:
         atom = f.readline().split()[6]
     return atom
 

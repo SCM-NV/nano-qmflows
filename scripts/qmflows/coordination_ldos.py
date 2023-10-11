@@ -78,7 +78,7 @@ def store_optimized_molecule(optimized_geometry: Molecule, name: str, path_resul
     path_geometry = f"{path_results}/{name}"
     if not os.path.exists(path_geometry):
         os.mkdir(path_geometry)
-    with open(f"{path_geometry}/{name}_OPT.xyz", 'w') as f:
+    with open(f"{path_geometry}/{name}_OPT.xyz", 'w', encoding="utf8") as f:
         optimized_geometry.writexyz(f)
 
 
@@ -141,7 +141,7 @@ def store_coordination(coord: NestedDict, name: str, path_results: str) -> None:
         t += f'{v[0]}     {v[1]}      "list{i}"     {v[2]}\n'
 
     path_ldos = f"{path_results}/{name}"
-    with open(f"{path_ldos}/coord_lists.out", 'w') as f:
+    with open(f"{path_ldos}/coord_lists.out", 'w', encoding="utf8") as f:
         f.write(t)
 
 

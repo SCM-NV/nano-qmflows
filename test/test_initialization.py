@@ -29,7 +29,7 @@ def test_run_workflow(tmp_path: Path) -> None:
 
 def create_config(tmp_path: Path, scrath_is_None: bool) -> None:
     path = PATH_TEST / "input_fast_test_derivative_couplings.yml"
-    with open(path, 'r') as f:
+    with open(path, 'r', encoding="utf8") as f:
         inp = yaml.load(f, UniqueSafeLoader)
 
     # change scratch
@@ -42,7 +42,7 @@ def create_config(tmp_path: Path, scrath_is_None: bool) -> None:
         inp["path_hdf5"] = (Path(inp["scratch_path"]) / "test_init.hdf5").as_posix()
 
     path_inp = tmp_path / "test_init.yml"
-    with open(path_inp, 'w') as f:
+    with open(path_inp, 'w', encoding="utf8") as f:
         yaml.dump(inp, f)
 
     config = process_input(path_inp, 'derivative_couplings')
@@ -85,7 +85,7 @@ class TestSaveBasisToHDF5:
             pass
 
         # Construct a set with all keys that are supposed to be in the .hdf5 file
-        with open(PATH_TEST / "test_initialization.yaml", "r") as f:
+        with open(PATH_TEST / "test_initialization.yaml", "r", encoding="utf8") as f:
             keys = set(yaml.load(f, Loader=yaml.SafeLoader)[name])
         return config, keys
 

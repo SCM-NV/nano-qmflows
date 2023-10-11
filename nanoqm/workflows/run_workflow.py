@@ -49,7 +49,7 @@ def main() -> None:
     """Parse the command line arguments and run workflow."""
     args = parser.parse_args()
     input_file: str = args.i
-    with open(input_file, 'r') as f:
+    with open(input_file, 'r', encoding="utf8") as f:
         dict_input = yaml.load(f, Loader=UniqueSafeLoader)
     if 'workflow' not in dict_input:
         raise RuntimeError(

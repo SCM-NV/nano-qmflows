@@ -67,7 +67,7 @@ def main() -> None:
 
 def touch(fname: str, times: tuple[float, float] | None = None) -> None:
     """Equivalent to unix touch command"""
-    with open(fname, 'a'):
+    with open(fname, 'a', encoding="utf8"):
         os.utime(fname, times)
 
 

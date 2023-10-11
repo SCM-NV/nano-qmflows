@@ -9,7 +9,7 @@ from .utilsTest import PATH_TEST
 
 def test_calc_sphericals():
     """Test the calculation of spherical functions."""
-    with open(PATH_TEST / 'Cd33Se33.xyz', 'r') as f:
+    with open(PATH_TEST / 'Cd33Se33.xyz', 'r', encoding="utf8") as f:
         mol = parse_string_xyz(f.read())
     path_hdf5 = PATH_TEST / "Cd33Se33.hdf5"
     xs = number_spherical_functions_per_atom(
