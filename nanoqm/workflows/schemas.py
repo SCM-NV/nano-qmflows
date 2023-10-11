@@ -132,10 +132,10 @@ schema_cp2k_general_settings = _DataSchema({
     Optional("potential_file_name", default=None): Use(_parse_filenames),
 
     # Name(s) of the exchange part of the DFT functional`
-    Optional("functional_x", default=None): str,
+    Optional("functional_x", default=None): Or(str, None),
 
     # Name(s) of the correlation part of the DFT functional`
-    Optional("functional_c", default=None): str,
+    Optional("functional_c", default=None): Or(str, None),
 
     # Settings describing the input of the quantum package
     "cp2k_settings_main": Use(Settings),
