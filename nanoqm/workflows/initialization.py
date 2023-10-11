@@ -52,7 +52,8 @@ __all__ = ['initialize', 'read_swaps', 'split_trajectory']
 def initialize(config: _data.GeneralOptions) -> None:
     """Initialize all the data required to schedule the workflows."""
     with EnableFileHandler(f'{config.project_name}.log'):
-        logger.info(f"Using nano-qmflows version: {qmflows.__version__} ")
+        logger.info(f"Using qmflows version: {qmflows.__version__} ")
+        logger.info(f"Using nano-qmflows version: {__version__} ")
         logger.info(f"nano-qmflows path is: {nanoqm_path[0]}")
         logger.info(f"Working directory is: {os.path.abspath('.')}")
         logger.info(f"Data will be stored in HDF5 file: {config.path_hdf5}")
@@ -213,7 +214,7 @@ def split_trajectory(path: str | Path, nblocks: int, pathOut: str | os.PathLike[
         list of paths to the xyz geometries
 
     """
-    with open(path, 'r') as f:
+    with open(path, 'r', encoding="utf8") as f:
         # Read First line
         ls = f.readline()
         numat = int(ls.split()[0])
@@ -234,11 +235,11 @@ def split_trajectory(path: str | Path, nblocks: int, pathOut: str | os.PathLike[
     # Path where the splitted xyz files are written
     prefix = join(pathOut, 'chunk_xyz_')
     cmd = f'split -a 1 -l {lines_per_block} {path} {prefix}'
-    output = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, shell=True)
+    output = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=PIPE, shell=True, encoding="utf8")
     rs = output.communicate()
     err = rs[1]
     if err:
-        raise RuntimeError(f"Submission Errors: {err.decode()}")
+        raise RuntimeError(f"Submission Errors: {err}")
     else:
         return fnmatch.filter(os.listdir(), "chunk_xyz_?")
 

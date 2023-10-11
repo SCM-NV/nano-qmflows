@@ -48,7 +48,7 @@ class TestRedCP2KBasis:
         shutil.copy2(PATH_TEST / "legacy.hdf5", hdf5_file)
 
         store_cp2k_basis(hdf5_file, PATH_TEST / "BASIS_MOLOPT")
-        with open(PATH_TEST / "test_initialization.yaml", "r") as f1:
+        with open(PATH_TEST / "test_initialization.yaml", "r", encoding="utf8") as f1:
             ref = set(yaml.load(f1, Loader=yaml.SafeLoader)["MOLOPT"])
 
         with h5py.File(hdf5_file, "r") as f2:

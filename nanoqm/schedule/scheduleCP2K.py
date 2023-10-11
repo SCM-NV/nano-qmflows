@@ -136,7 +136,7 @@ def print_cp2k_error(path_dir: str | os.PathLike[str], prefix: str) -> str:
     err_file = next(Path(path_dir).glob(f"*{prefix}"), None)
     msg = ""
     if err_file is not None:
-        with open(err_file, 'r') as handler:
+        with open(err_file, 'r', encoding="utf8") as handler:
             err = handler.read()
         msg = f"CP2K {prefix} file:\n{err}\n"
         logger.error(msg)

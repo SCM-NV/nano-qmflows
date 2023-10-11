@@ -27,6 +27,7 @@ own configuration in the yaml input file.
 
 from __future__ import annotations
 
+import sys
 import copy
 import argparse
 import os
@@ -41,6 +42,8 @@ from ..common import read_cell_parameters_as_array, UniqueSafeLoader
 from .initialization import split_trajectory
 from .input_validation import process_input
 from .. import _data
+
+__all__ = ["distribute_jobs"]
 
 
 def read_cmd_line() -> str:
@@ -59,8 +62,12 @@ def main() -> None:
     """Distribute the user specified by the user."""
     # command line argument
     input_file = read_cmd_line()
+    distribute_jobs(input_file)
 
-    with open(input_file, 'r') as f:
+
+def distribute_jobs(input_file: str) -> None:
+    """Distribute the user specified by the user."""
+    with open(input_file, 'r', encoding="utf8") as f:
         args = yaml.load(f, Loader=UniqueSafeLoader)
 
     # Read and process input
@@ -132,6 +139,13 @@ def distribute_computations(config: _data.Distribute, hamiltonians: bool = False
                 path_ham = f"{config.orbitals_type}_hamiltonians"
             dict_input.hamiltonians_dir = join(copy_config.scratch_path, path_ham)
 
+        # Disable keys that imply the necasity of pre-processing in the newly chunked jobs
+        # (as that's already done in this function)
+        for name in ["stride", "multiplicity"]:
+            # Attributes set to `NotImplemented` are ignored when writing the input
+            if hasattr(copy_config, name):
+                setattr(copy_config, name, NotImplemented)
+
         # Write input file
         write_input(folder_path, copy_config)
 
@@ -170,7 +184,7 @@ def write_input(folder_path: str | os.PathLike[str], original_config: _data.Dist
     }
     workflow_type = config["workflow"].lower()
     config['workflow'] = dict_distribute[workflow_type]
-    with open(file_path, "w") as f:
+    with open(file_path, "w", encoding="utf8") as f:
         yaml.dump(config, f, default_flow_style=False, allow_unicode=True)
 
 
@@ -210,7 +224,7 @@ def write_slurm_script(
     content = format_slurm_parameters(slurm_config) + python + mkdir + copy
 
     # Write the script
-    with open(join(dict_input.folder_path, "launch.sh"), 'w') as f:
+    with open(join(dict_input.folder_path, "launch.sh"), 'w', encoding="utf8") as f:
         f.write(content)
 
 
@@ -237,11 +251,12 @@ def format_slurm_parameters(slurm: _data.JobScheduler) -> str:
 
 def compute_number_of_geometries(file_name: str | os.PathLike[str]) -> int:
     """Count the number of geometries in XYZ formant in a given file."""
-    with open(file_name, 'r') as f:
+    with open(file_name, 'r', encoding="utf8") as f:
         numat = int(f.readline())
 
     cmd = f"wc -l {os.fspath(file_name)}"
-    wc = subprocess.getoutput(cmd).split()[0]
+    kwargs = {"encoding": "utf8"} if sys.version_info >= (3, 11) else {}
+    wc = subprocess.getoutput(cmd, **kwargs).split()[0]
 
     lines_per_geometry = numat + 2
 

@@ -59,7 +59,7 @@ __all__ = ['DictConfig', 'Matrix', 'Tensor3D', 'Vector',
 _path_valence_electrons = Path(nanoqm_path[0]) / "basis" / "valence_electrons.json"
 _path_aux_fit = Path(nanoqm_path[0]) / "basis" / "aux_fit.json"
 
-with open(_path_valence_electrons, 'r') as f1, open(_path_aux_fit, 'r') as f2:
+with open(_path_valence_electrons, 'r', encoding="utf8") as f1, open(_path_aux_fit, 'r', encoding="utf8") as f2:  # noqa
     valence_electrons: "dict[str, int]" = json.load(f1)
     aux_fit: "dict[str, list[int]]" = json.load(f2)
 
@@ -395,7 +395,7 @@ def read_cell_parameters_as_array(
     """Read the cell parameters as a numpy array."""
     arr = np.loadtxt(file_cell_parameters, skiprows=1)
 
-    with open(file_cell_parameters, 'r') as f:
+    with open(file_cell_parameters, 'r', encoding="utf8") as f:
         header = f.readline()
 
     return header, arr

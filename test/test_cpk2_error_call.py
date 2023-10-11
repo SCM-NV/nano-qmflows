@@ -10,7 +10,7 @@ from nanoqm.schedule.scheduleCP2K import try_to_read_wf
 def test_cp2k_call_error(tmp_path: Path):
     """Check cp2k error files."""
     path_err = tmp_path / "cp2k.err"
-    with open(path_err, 'w') as handler:
+    with open(path_err, 'w', encoding="utf8") as handler:
         handler.write("Some CP2K error")
 
     with pytest.raises(RuntimeError) as info:
