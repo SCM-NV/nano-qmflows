@@ -97,7 +97,7 @@ jobs:
         with:
           python-version: ${{ matrix.version[1] }}
 
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: wheels
           path: dist
@@ -159,7 +159,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: wheels
           path: dist
@@ -268,7 +268,7 @@ jobs:
       with:
         update-conda: true
 
-    - uses: actions/download-artifact@v3
+    - uses: actions/download-artifact@v4
       with:
         name: wheels
         path: dist
@@ -305,7 +305,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: wheels
           path: dist
