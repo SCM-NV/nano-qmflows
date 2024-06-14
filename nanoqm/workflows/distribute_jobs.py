@@ -220,7 +220,7 @@ def write_slurm_script(
         files_hams = f"{dict_input.hamiltonians_dir}/Ham_{{{range_batch[0]}..{range_batch[1]}}}_*"
         cp2k_jobs = f"{config.scratch_path}/cp2k_job*"
         copy = f'cp -r {config.path_hdf5} {files_hams} {cp2k_jobs} {results_dir}\n'
-        mkdir2 = f"\nmkdir -p point_{{{range_batch[0]}..{range_batch[1]}}}\n"
+        mkdir2 = f"\nmkdir -p {results_dir}/point_{{{range_batch[0]}..{range_batch[1]}}}\n"
 
     # Script content
     content = format_slurm_parameters(slurm_config) + python + mkdir + copy + mkdir2
